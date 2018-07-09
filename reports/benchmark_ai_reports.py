@@ -17,6 +17,8 @@ from pprint import pprint
 import logging
 import pickle
 from itertools import tee, filterfalse
+from xlsx2html import xlsx2html
+
 
 #import pandas as pd
 
@@ -93,8 +95,11 @@ def groupn(xs, n):
     return groups
 
 
-
-def add_report(worksheet, row, col, benchmarks):
+def add_report(workbook, worksheet, row, col, benchmarks):
+    border = workbook.add_format({"border":1, "border_color": "#000000"})
+    number_format = workbook.add_format({"border":1, "border_color": "#000000", "align": "right", "num_format": "0.00"})
+    #number_format.set_align('right')
+    bold_format = workbook.add_format({'bold': True})
     def get_metrics(metric_data):
         res = []
         for (_,bench) in metric_data.items():
@@ -102,36 +107,39 @@ def add_report(worksheet, row, col, benchmarks):
         res.sort()
         return sorted(list(set(res)))
 
-    worksheet.write(row, 0, "benchmark")
-    worksheet.write(row, 1, "suffix")
+    worksheet.write(row, 0, "benchmark", bold_format)
+    worksheet.write(row, 1, "suffix", bold_format)
     metrics = get_metrics(benchmarks)
     groups = groupn(metrics, 10)
     first_row = row
     for group in groups:
         col_map = map_to_columns(group)
+        if row > first_row:
+            worksheet.write(row, 0, "... continued benchmark")
+            worksheet.write(row, 1, "suffix", bold_format)
         col = 2
         for metric in group:
             metric = metric.replace('_', ' ').replace('Average ','').replace('inference','inf.')
-            worksheet.write(row, col, metric)
+            worksheet.write(row, col, metric, border)
             col += 1
         last_column = col
         row += 1
         for bench_name in sorted(benchmarks.keys()):
             bench = benchmarks[bench_name]
             col = 0
-            worksheet.write(row, col, bench_name)
+            worksheet.write(row, col, bench_name,border)
             col += 1
-            worksheet.write(row, col, bench['suffix'])
+            worksheet.write(row, col, bench['suffix'], border)
             col += 1
             for metric in group:
                 metrics = bench['metrics']
                 if metric in metrics:
                     value = metrics[metric]
                     itemcol = col_map[metric] + col
-                    worksheet.write(row, itemcol, metric)
+                    worksheet.write(row, itemcol, metric, border)
                     itemcol = col_map[metric] + col
                     #worksheet.write(row, itemcol, fmt_value(value))
-                    worksheet.write_number(row, itemcol, value)
+                    worksheet.write_number(row, itemcol, value, number_format)
             row += 1
         row += 1
     #worksheet.add_table(first_row, 0, row, last_column)
@@ -159,11 +167,11 @@ def gen_report(path, benchmarks):
 
     worksheet.write(row, 0, "Benchmark AI report")
     row += 1
-    row = add_report(worksheet, row, 0, rest_benchs_data)
+    row = add_report(workbook, worksheet, row, 0, rest_benchs_data)
     row += 1
-    row = add_report(worksheet, row, 0, onnx_benchs_data)
+    row = add_report(workbook, worksheet, row, 0, onnx_benchs_data)
     row += 1
-    row = add_report(worksheet, row, 0, mms_benchs_data)
+    row = add_report(workbook, worksheet, row, 0, mms_benchs_data)
     row += 1
     workbook.close()
 
@@ -201,7 +209,7 @@ def gather_benchmarks():
                                                MetricName=metric,
                                                StartTime=datetime.now() - timedelta(days=1), EndTime=datetime.now(),
                                                Period=86400, Statistics=['Average'])
-                #print(res)
+                print(res)
                 points = res['Datapoints']
                 if points:
                     if len(points) > 1:
@@ -223,11 +231,12 @@ def main():
     logging.getLogger('boto3').setLevel(logging.CRITICAL)
     logging.getLogger('botocore').setLevel(logging.CRITICAL)
     logging.info("Gathering metrics")
-    benchmarks = gather_benchmarks()
-    pickle.dump(benchmarks, open("benchmarks.pkl", "wb"))
-    #benchmarks = pickle.load(open("benchmarks.pkl", "rb"))
+    #benchmarks = gather_benchmarks()
+    #pickle.dump(benchmarks, open("benchmarks.pkl", "wb"))
+    benchmarks = pickle.load(open("benchmarks.pkl", "rb"))
     print(pprint(benchmarks))
     gen_report("benchmark_ai.xlsx", benchmarks)
+    xlsx2html('benchmark_ai.xlsx','benchmark_ai.html')
     return 0
 
 if __name__ == '__main__':
