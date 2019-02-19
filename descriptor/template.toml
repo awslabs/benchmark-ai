@@ -26,8 +26,8 @@ docker_image = "mxnet/python"
 [ml]
 benchmark_code = "/work/benchmarks/resnet50_inference.py"
 
-# Dataset
-[ml.data]
+  # Dataset
+  [ml.data]
   # Dataset ID
   dataset = "CIFAR10"
   # Path of data download script
@@ -35,9 +35,15 @@ benchmark_code = "/work/benchmarks/resnet50_inference.py"
   # Path where the dataset is stored in the container FS
   data_path = "/work/data/cifar10/"
 
-# Parameters to pass to the script in ml.benchmark_code
-[ml.params]
+  # Parameters to pass to the script in ml.benchmark_code
+  [ml.params]
   batch_size = 32
   num_epochs = 50
   num_gpu = 8
   # Add any params you need
+  # ...
+
+# 4. Output
+[output]
+# Define which metrics will be tracked in this benchmark
+metrics = ["throughput", "time"]
