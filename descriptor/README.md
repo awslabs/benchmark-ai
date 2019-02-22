@@ -24,3 +24,13 @@ This subsection is extracted from the descriptor file and passed on to the Pytho
 
 #### output
 Section for users to declare the metrics they will be tracking with this benchmark.
+
+
+## Descriptor reader
+
+A script is provided to parse descriptor files and generate the corresponding Kubernetes job configuration YAML file. To use the sript:
+
+```
+python descriptor_reader.py path_to_descriptor
+```
+
