@@ -9,4 +9,4 @@ class FilePublisher(Publisher):
 
     def publish(self, metrics_dict):
         for k, v in metrics_dict.items():
-            self.stream.write(f'{str(k)}=v\n')
+            self.stream.write(f'{str(k)}={v}\n')
