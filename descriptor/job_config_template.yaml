@@ -4,7 +4,20 @@ metadata:
   name: mxnet
 spec:
   template:
+    metadata:
+      labels:
+        app: benchmark-ai
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - benchmark-ai
+            topologyKey: kubernetes.io/hostname
       containers:
       - name: mxnetpyth
         image: mxnet/python:1.3.1_cpu_py3
