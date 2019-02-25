@@ -19,24 +19,25 @@ instance_type = "p3.8xlarge"
 # 2. Environment
 [env]
 # Docker hub <hub-user>/<repo-name>:<tag> 
-docker_image = "mxnet/python"
+docker_image = "jlcont/benchmarking:250219"
 
 # 3. Machine learning related settings: 
 # dataset, benchmark code and parameters it takes
 [ml]
-benchmark_code = "/work/benchmarks/resnet50_inference.py"
+benchmark_code = "python /home/benchmark/image_classification.py"
 
   # Dataset
   [ml.data]
   # Dataset ID
-  dataset = "CIFAR10"
+  dataset = "mnist"
   # Path of data download script
-  download_script = "/work/download_data.sh"
+  download_script = "python /home/benchmark/get_data.py"
   # Path where the dataset is stored in the container FS
-  data_path = "/work/data/cifar10/"
+  data_path = "/work/data/mnist/"
 
   # Parameters to pass to the script in ml.benchmark_code
   [ml.params]
+  model = "resnet50_v2"
   batch_size = 32
   num_epochs = 50
   num_gpu = 8
