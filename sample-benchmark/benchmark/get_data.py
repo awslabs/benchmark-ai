@@ -16,9 +16,29 @@
 # under the License.
 
 # pylint: skip-file
-import os, gzip
-import pickle as pickle
-import sys
+import os
+import argparse
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Download dataset for image classification.')
+    parser.add_argument('dataset', type=str, default='mnist',
+                        choices=['mnist', 'cifar10', 'dummy'],
+                        help='Dataset to use. options are mnist, cifar10, and dummy.')
+
+    args = parser.parse_args()
+
+    if args.dataset == 'mnist':
+        print('Downloading MNIST dataset...')
+        GetMNIST_ubyte()
+    elif args.dataset == 'cifar10':
+        print('Downloading CIFAR10 dataset...')
+        GetCifar10()
+    elif args.dataset == 'dummy':
+        print('Using dummy dataset')
+
+
+
 
 # download mnist.pkl.gz
 def GetMNIST_pkl():
@@ -52,3 +72,7 @@ def GetCifar10():
         os.chdir("./data")
         os.system("unzip -u cifar10.zip")
         os.chdir("..")
+
+
+if __name__ == '__main__':
+    main()

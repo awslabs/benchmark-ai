@@ -29,7 +29,6 @@ import mxnet as mx
 def mnist_iterator(batch_size, input_shape):
     """return train and val iterators for mnist"""
     # download data
-    get_data.GetMNIST_ubyte()
     flat = False if len(input_shape) == 3 else True
 
     train_dataiter = mx.io.MNISTIter(
@@ -51,8 +50,6 @@ def mnist_iterator(batch_size, input_shape):
 
 
 def cifar10_iterator(batch_size, data_shape, resize=-1):
-    get_data.GetCifar10()
-
     train = mx.io.ImageRecordIter(
         path_imgrec = "data/cifar/train.rec",
         # mean_img    = "data/cifar/mean.bin",

@@ -24,9 +24,9 @@ logging.basicConfig(level=logging.INFO)
 import numpy as np
 import mxnet as mx
 from mxnet import gluon
-from mxnet.gluon import nn
 from mxnet.gluon.model_zoo import vision as models
 from mxnet import autograd as ag
+from benchmarkai import emit
 
 from data import *
 
@@ -168,7 +168,10 @@ def train(epochs, ctx, dtype):
         name, val_acc = test(ctx, dtype)
         logging.info('[Epoch %d] validation: %s=%f'%(epoch, name, val_acc))
 
+    name, acc = metric.get()
+    emit({name: acc})
     net.save_params('image-classifier-%s-%d.params'%(opt.model, epochs))
+
 
 if __name__ == '__main__':
     if opt.mode == 'symbolic':
