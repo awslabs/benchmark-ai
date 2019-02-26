@@ -34,22 +34,56 @@ destroy_infra(){
 }
 
 get_infra(){
-    echo "Get infra"
-    echo "Running nodes"
     $kubectl get nodes --show-labels
     terraform show $terraform_state
 }
 
 get_benchmark(){
+    local benchmark_name=""
+
+    for arg in "$@" 
+    do
+        echo $arg
+        case "${arg}" in
+        --name=*)
+        benchmark_name="${arg#*=}"
+        echo "found"
+        ;;
+    esac
+    done
+
     local jumper_pem=$(terraform output --state=$terraform_state jumper_pem)
     local jumper_ip=$(terraform output --state=$terraform_state jumper_public_ip)
     local es_endpoint=$(terraform output --state=$terraform_state es_endpoint)
 
-    echo $jumper_pem
-    echo $jumper_ip
-    echo $es_endpoint
+    local query_body="{\"from\" : 0, \"size\" : 1000,\"query\" : {\"term\" : { \"kubernetes.labels.job-name\":\"${benchmark_name}\" }}}"
 
-    ssh -i $data_dir/$jumper_pem ubuntu@$jumper_ip "curl -s ${es_endpoint}" | jq
+    local curl_cmd="curl -X POST -s -H 'Content-Type: application/json' -d '$query_body' ${es_endpoint}/_search"
+
+    ssh -i $data_dir/$jumper_pem ubuntu@$jumper_ip "${curl_cmd}" | jq '.hits.hits[]._source | "(\(."@timestamp") \(.log)"' -j|sort
+}
+
+run_benchmark(){
+    local descriptor=""
+
+    for arg in "$@" 
+    do
+        case "${arg}" in
+        --descriptor=*)
+        descriptor="${arg#*=}"
+        ;;
+    esac
+    done
+
+    python3 $(dirname $BASH_SOURCE)/../../descriptor-file/descriptor_reader.py $(pwd)/$descriptor | $kubectl apply -f -
+}
+
+list_benchmarks(){
+    $kubectl get jobs --selector app=benchmark-ai
+}
+
+schedule_benchmark(){
+    echo "Not yet implemented"
 }
 
 
@@ -58,6 +92,9 @@ echo "$@"
 
 verb=$1
 object=$2
+
+shift
+shift
 
 verbose=0
 data_dir=./bai  
@@ -93,13 +130,13 @@ case "${object}" in
     
     case "${verb}" in
         create)
-        create_infra
+        create_infra $@
         ;;
         destroy)
-        destroy_infra
+        destroy_infra $@
         ;;
         get)
-        get_infra
+        get_infra $@
         ;;
         *)
         print_unsupported_verb $object $verb
@@ -110,13 +147,13 @@ case "${object}" in
 
     case "${verb}" in
         run)
-        run_benchmark
+        run_benchmark $@
         ;;
         schedule)
-        schedule_benchmark
+        schedule_benchmark $@
         ;;
         get)
-        get_benchmark
+        get_benchmark $@
         ;;
         *)
         print_unsupported_verb $object $verb
@@ -127,7 +164,7 @@ case "${object}" in
 
     case "${verb}" in
         list)
-        list_benchmarks
+        list_benchmarks $@
         ;;
         *)
         print_unsupported_verb $object $verb

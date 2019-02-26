@@ -33,19 +33,35 @@ def main():
         job_config = ordered_load(stream, yaml.SafeLoader)
 
     # Fill in the job config file
-    # Extract args from [ml.params] subsection and prepend benchmark_code path
-    container_args = [descriptor['ml']['benchmark_code']] + \
-                     [f'{k}={v}' for k, v in descriptor['ml']['params'].items()]
+    spec = job_config['spec']['template']['spec']
 
-    container = OrderedDict({'name': uuid.uuid4().hex,
-                             'image': descriptor['env']['docker_image'],
+    instance_type = descriptor['hardware']['instance_type']
+    docker_image = descriptor['env']['docker_image']
+    dataset = descriptor['ml']['data']['dataset']
+
+    # Unique identifier for this job, based on the descriptor plus a random part
+    descriptor_id = "bai"
+    descriptor_id = descriptor_id.replace("/","_")
+    job_id = f'{descriptor_id}{uuid.uuid4().hex}'
+
+    # Extract args from [ml.params] subsection and prepend benchmark_code path
+    container_args = spec['containers'][0]['args'][0].split(';')
+    download_cmd = descriptor['ml']['data']['download_script'] + ' ' + dataset
+    benchmark_cmd = ' '.join([descriptor['ml']['benchmark_code']] +
+                             [f'{k}={v}' for k, v in descriptor['ml']['params'].items()])
+    container_args[1] = download_cmd
+    container_args[3] = benchmark_cmd
+    container_args = ['; '.join(container_args).strip()]
+
+    container = OrderedDict({'name': job_id,
+                             'image': docker_image,
+                             'command': spec['containers'][0]['command'],
                              'args': container_args})
 
-    spec = job_config['spec']['template']['spec']
     spec['containers'] = [container]
-    spec['nodeSelector'] = {'beta.kubernetes.io/instance-type': descriptor['hardware']['instance_type']}
+    spec['nodeSelector'] = {'beta.kubernetes.io/instance-type': instance_type}
 
-    job_config['metadata'] = {'name': f'mxnet-{uuid.uuid4().hex}'}
+    job_config['metadata'] = {'name': job_id}
     job_config['spec']['template']['spec'] = spec
 
     if args.f:

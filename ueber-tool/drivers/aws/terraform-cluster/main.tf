@@ -67,7 +67,6 @@ locals {
     },
     {
       # This will launch an autoscaling group with only On-Demand instances
-
       instance_type        = "t3.small"
       subnets              = "${join(",", module.vpc.private_subnets)}"
       asg_desired_capacity = "0"
@@ -76,8 +75,18 @@ locals {
       asg_max_size         = 3
       asg_min_size         = 0
     },
+    {
+      # This will launch an autoscaling group with only On-Demand instances
+      instance_type        = "c5.4xlarge"
+      subnets              = "${join(",", module.vpc.private_subnets)}"
+      asg_desired_capacity = "0"
+      name                 = "c5.4xlarge_group"
+      autoscaling_enabled  = true
+      asg_max_size         = 3
+      asg_min_size         = 0
+    },
   ]
-  worker_groups_count = "2"
+  worker_groups_count = "3"
   #worker_groups_launch_template = [
   #  {
   #    # This will launch an autoscaling group with only Spot Fleet instances
