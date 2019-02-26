@@ -40,6 +40,9 @@ def _getfifo():
 
         import io
         __fifo = io.open(pathname, "w")
+
+        import atexit
+        atexit.register(__fifo.close)
     return __fifo
 
 
