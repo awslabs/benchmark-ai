@@ -1,6 +1,10 @@
-import collections.abc
 import json
 import os
+import six
+if six.PY2:
+    from collections import Mapping
+else:
+    from collections.abc import Mapping
 
 __fifo = None
 
@@ -52,7 +56,7 @@ def _send(fifo, s):
 
 
 def _serialize(metrics):
-    if not isinstance(metrics, collections.abc.Mapping):
+    if not isinstance(metrics, Mapping):
         raise TypeError("The parameter `metrics` should be a dictionary, but it is {}".format(type(metrics)))
     if len(metrics) == 0:
         raise ValueError("The parameter `metrics` is empty")
