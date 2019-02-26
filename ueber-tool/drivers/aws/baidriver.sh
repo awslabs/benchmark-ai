@@ -4,12 +4,10 @@ print_unsupported_verb()
 {
     local object=$1
     local verb=$2
-    echo "Unsupported verb ${verb} for object ${object}"
+    printf "Unsupported verb ${verb} for object ${object}\n"
 }
 
 create_infra(){
-    echo "Create infra"
-
     cd $data_dir
 
     terraform plan --state=$terraform_state --out=$terraform_plan $terraform_dir
@@ -26,7 +24,6 @@ create_infra(){
 }
 
 destroy_infra(){
-    echo "Destroy infra"
     terraform init $terraform_dir
     terraform get $terraform_dir
     terraform plan --destroy --state=$terraform_state $terraform_dir
@@ -34,8 +31,7 @@ destroy_infra(){
 }
 
 get_infra(){
-    $kubectl get nodes --show-labels
-    terraform show $terraform_state
+    $kubectl get nodes -o wide
 }
 
 get_benchmark(){
@@ -43,14 +39,14 @@ get_benchmark(){
 
     for arg in "$@" 
     do
-        echo $arg
         case "${arg}" in
         --name=*)
         benchmark_name="${arg#*=}"
-        echo "found"
         ;;
     esac
     done
+
+    [ -z "$benchmark_name" ] && printf "Missing required argument --name\n" && return 1
 
     local jumper_pem=$(terraform output --state=$terraform_state jumper_pem)
     local jumper_ip=$(terraform output --state=$terraform_state jumper_public_ip)
@@ -75,20 +71,35 @@ run_benchmark(){
     esac
     done
 
-    python3 $(dirname $BASH_SOURCE)/../../descriptor-file/descriptor_reader.py $(pwd)/$descriptor | $kubectl apply -f -
+    [ -z "$descriptor" ] && printf "Missing required argument --descriptor\n" && return 1
+
+    python3 $(dirname $BASH_SOURCE)/../../descriptor-file/descriptor_reader.py $(pwd)/$descriptor | $kubectl apply -f  -
+}
+
+delete_benchmark(){
+    local benchmark_name=""
+
+    for arg in "$@" 
+    do
+        case "${arg}" in
+        --name=*)
+        benchmark_name="${arg#*=}"
+        ;;
+    esac
+    done
+
+    [ -z "$benchmark_name" ] && printf "Missing required argument --name\n" && return 1
+
+    kubectl delete job $benchmark_name
 }
 
 list_benchmarks(){
-    $kubectl get jobs --selector app=benchmark-ai
+    $kubectl get jobs --selector app=benchmark-ai -o wide
 }
 
 schedule_benchmark(){
-    echo "Not yet implemented"
+    printf "Not yet implemented\n"
 }
-
-
-echo AWS driver
-echo "$@"
 
 verb=$1
 object=$2
@@ -96,7 +107,7 @@ object=$2
 shift
 shift
 
-verbose=0
+verbose=""
 data_dir=./bai  
 
 #Common args
@@ -104,15 +115,15 @@ for arg in "$@"
 do
     case "${arg}" in
     --data-dir=*)
-      data_dir="${arg#*=}"
-      ;;
+        data_dir="${arg#*=}"
+    ;;
     --verbose)
-      verbose=1
-      ;;
+        verbose="1"
+    ;;
   esac
 done
 
-kubeconfig=$(grealpath $data_dir/kubeconfig)
+kubeconfig=$(realpath $data_dir/kubeconfig)
 kube_config_arg=--kubeconfig=$kubeconfig
 kubectl="kubectl ${kube_config_arg}"
 terraform_state=$data_dir/terraform.tfstate
@@ -120,9 +131,9 @@ terraform_state_arg=--state=$data_dir/terraform.tfstate
 terraform_dir=$(dirname $BASH_SOURCE)/terraform-cluster
 terraform_plan=$data_dir/terraform.plan
 
-terraform_dir=$(grealpath $terraform_dir)
-terraform_state=$(grealpath $terraform_state)
-terraform_plan=$(grealpath $terraform_plan)
+terraform_dir=$(realpath $terraform_dir)
+terraform_state=$(realpath $terraform_state)
+terraform_plan=$(realpath $terraform_plan)
 
 
 case "${object}" in
@@ -155,6 +166,9 @@ case "${object}" in
         get)
         get_benchmark $@
         ;;
+        delete)
+        delete_benchmark $@
+        ;;
         *)
         print_unsupported_verb $object $verb
     esac
@@ -172,7 +186,7 @@ case "${object}" in
 
     ;;
     *)
-    echo "Unknown object"
+    printf "Unknown object"
 esac
 
 
