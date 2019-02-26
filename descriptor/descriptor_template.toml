@@ -19,27 +19,29 @@ instance_type = "p3.8xlarge"
 # 2. Environment
 [env]
 # Docker hub <hub-user>/<repo-name>:<tag> 
-docker_image = "jlcont/benchmarking:250219"
+docker_image = "jlcont/benchmarking:latest"
 
 # 3. Machine learning related settings: 
 # dataset, benchmark code and parameters it takes
 [ml]
 benchmark_code = "python /home/benchmark/image_classification.py"
 
-  # Dataset
+  # [Opt] Dataset
   [ml.data]
   # Dataset ID
   dataset = "mnist"
-  # Path of data download script
-  download_script = "python /home/benchmark/get_data.py"
-  # Path where the dataset is stored in the container FS
+  # [Opt] Path of data download script.
+  download_script = "python /home/benchmark/get_data.py mnist"
+  # [Opt] Path where the dataset is stored in the container FS
   data_path = "/work/data/mnist/"
 
-  # Parameters to pass to the script in ml.benchmark_code
+  # [Opt] Parameters to pass to the script in ml.benchmark_code
+  # The code is called as defined in ml.benchmark_code, plus
+  # the arguments as --name=value
   [ml.params]
   model = "resnet50_v2"
   batch_size = 32
-  num_epochs = 50
+  epochs = 50
   num_gpu = 8
   # Add any params you need
   # ...
