@@ -75,7 +75,7 @@ special file that was created as a [named pipe](https://docs.python.org/3.7/libr
 library does **NOT** create the *named pipe* file though, it will always use what is already created by the other
 daemon already running.
 
-Another process that will be running alongside the library (a daemon) which is responsible for:
+Another process will be running alongside the library,  a daemon which is responsible for:
 
 - create the *named pipe*
 - read the contents from this pipe
