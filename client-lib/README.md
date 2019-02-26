@@ -23,16 +23,16 @@ from benchmarkai import emit
 
 def my_fancy_benchmark():
     import time
+    begin = time.time()
     for epoch in range(100):
-        begin = time.time()
         execute_training()
-        elapsed_time = time.time() - begin
-        emit({"epoch-%i" % epoch : elapsed_time})
+    elapsed_time = time.time() - begin
+    emit({"alexnet.batchsize16.latency": elapsed_time})
 ```
 
 ## Performance
 
-As the author you don't need to worry about the `emit()` being slow since it does 2 things:
+As the author you don't need to worry about `emit()` being slow since it does 2 things:
 
 - serializes `metrics` into JSON
 - writes this string into a file (see the internal details)
@@ -70,12 +70,13 @@ To control which behavior is desired, the environment variable `BENCHMARK_AI` ca
 
 ### Fifo mode
 
-In this mode the `emit()` method will instead of sending the JSON string to `stdout`, it instead writes it to a
-special file that was created as a [named pipe](https://docs.python.org/3.7/library/os.html#os.mkfifo). The client
-library does **NOT** create the *named pipe* file though, it will always use what is already created by the other
-daemon already running.
+In this mode, the `emit()` method writes JSON string to a file that was created as a 
+[named pipe](https://docs.python.org/3.7/library/os.html#os.mkfifo). It does **NOT** write to `stdout`.
 
-Another process will be running alongside the library,  a daemon which is responsible for:
+Keep in mind that the client library does **NOT** create the *named pipe* file, this is delegated to the
+"daemon process", which will be running alongside the benchmark process in the Benchmark AI infrastructure.
+
+The daemon process is responsible to:
 
 - create the *named pipe*
 - read the contents from this pipe
