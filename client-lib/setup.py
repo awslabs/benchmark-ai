@@ -21,6 +21,7 @@ setup(
     author='Edison Gustavo Muenz',
     author_email='edisongustavo@gmail.com',
     python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
+    install_requires=["six"],
     url='https://github.com/MXNetEdge/benchmark-ai',
     package_dir={'': 'src'},
     packages=find_packages("src"),
