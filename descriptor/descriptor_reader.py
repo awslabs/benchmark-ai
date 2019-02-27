@@ -18,7 +18,7 @@ def main():
                         help='Relative path to descriptor file')
 
     parser.add_argument('--template',
-                        help='Relative path to pod config template file',
+                        help='Path to job config template file',
                         default='job_config_template.yaml')
 
     parser.add_argument('-f', metavar='outfile', nargs='?',
@@ -26,15 +26,15 @@ def main():
                         default=None,
                         const='job_config.yaml')
 
-    setup_yaml()
-
     args = parser.parse_args()
+
+    setup_yaml()
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(current_dir, args.template), 'r') as stream:
         template = ordered_load(stream, yaml.SafeLoader)
 
-    settings = read_descriptor(os.path.join(current_dir, args.descriptor))
+    settings = read_descriptor(args.descriptor)
     job_config = fill_template(settings, template)
 
     if args.f:

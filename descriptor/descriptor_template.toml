@@ -19,7 +19,7 @@ instance_type = "p3.8xlarge"
 # 2. Environment
 [env]
 # Docker hub <hub-user>/<repo-name>:<tag> 
-docker_image = "jlcont/benchmarking:latest"
+docker_image = "jlcont/benchmarking:270219"
 
 # 3. Machine learning related settings: 
 # dataset, benchmark code and parameters it takes
@@ -40,9 +40,9 @@ benchmark_code = "python /home/benchmark/image_classification.py"
   # the arguments as --name=value
   [ml.params]
   model = "resnet50_v2"
-  batch_size = 32
-  epochs = 50
-  num_gpu = 8
+  # batch-size = 32
+  # epochs=50
+  # num-gpu=8
   # Add any params you need
   # ...
 
