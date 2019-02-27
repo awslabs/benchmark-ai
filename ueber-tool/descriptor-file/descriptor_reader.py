@@ -4,7 +4,11 @@ import argparse
 import os
 import sys
 import uuid
+import re
 from collections import OrderedDict
+
+_REGEX_JOB_ID = '[^a-z0-9](^[-a-z0-9]*[a-z0-9])?'
+_K8S_MAX_NAME_LENGTH = 63
 
 
 def main():
@@ -26,49 +30,108 @@ def main():
 
     args = parser.parse_args()
 
-    workdir = os.path.dirname(os.path.abspath(__file__))
-    descriptor = toml.load(os.path.join(workdir, args.descriptor))
-    job_config_path = os.path.join(workdir, args.template)
-    with open(job_config_path, 'r') as stream:
-        job_config = ordered_load(stream, yaml.SafeLoader)
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(current_dir, args.template), 'r') as stream:
+        template = ordered_load(stream, yaml.SafeLoader)
 
-    # Fill in the job config file
-    spec = job_config['spec']['template']['spec']
-
-    instance_type = descriptor['hardware']['instance_type']
-    docker_image = descriptor['env']['docker_image']
-    dataset = descriptor['ml']['data']['dataset']
-
-    # Unique identifier for this job, based on the descriptor plus a random part
-    descriptor_id = "bai"
-    descriptor_id = descriptor_id.replace("/","_")
-    job_id = f'{descriptor_id}{uuid.uuid4().hex}'
-
-    # Extract args from [ml.params] subsection and prepend benchmark_code path
-    container_args = spec['containers'][0]['args'][0].split(';')
-    download_cmd = descriptor['ml']['data']['download_script'] + ' ' + dataset
-    benchmark_cmd = ' '.join([descriptor['ml']['benchmark_code']] +
-                             [f'{k}={v}' for k, v in descriptor['ml']['params'].items()])
-    container_args[1] = download_cmd
-    container_args[3] = benchmark_cmd
-    container_args = ['; '.join(container_args).strip()]
-
-    container = OrderedDict({'name': job_id,
-                             'image': docker_image,
-                             'command': spec['containers'][0]['command'],
-                             'args': container_args})
-
-    spec['containers'] = [container]
-    spec['nodeSelector'] = {'beta.kubernetes.io/instance-type': instance_type}
-
-    job_config['metadata'] = {'name': job_id}
-    job_config['spec']['template']['spec'] = spec
+    settings = read_descriptor(os.path.join(current_dir, args.descriptor))
+    job_config = fill_template(settings, template)
 
     if args.f:
-        with open(os.path.join(workdir, args.f), 'w') as outfile:
+        with open(os.path.join(current_dir, args.f), 'w') as outfile:
             yaml.dump(job_config, outfile, default_flow_style=False)
     else:
         yaml.dump(job_config, sys.stdout, default_flow_style=False)
+
+
+def read_descriptor(descriptor_path):
+    """
+    Reads the values from the descriptor file into a dictionary
+    :param descriptor_path: path to the descriptor file
+    :return:
+    """
+    descriptor = toml.load(descriptor_path)
+
+    settings = {
+        'instance_type': descriptor['hardware']['instance_type'],
+        'docker_image': descriptor['env']['docker_image'],
+        'benchmark_code': descriptor['ml']['benchmark_code'],
+    }
+
+    if 'data' in descriptor['ml'].keys():
+        settings['dataset'] = descriptor['ml']['data']['dataset']
+        if 'download_script' in descriptor['ml']['data'].keys():
+            settings['download_cmd'] = descriptor['ml']['data']['download_script']
+
+    if 'params' in descriptor['ml'].keys():
+        settings['ml.params'] = [f'--{k}={v}' for k, v in descriptor['ml']['params'].items()]
+
+    return settings
+
+
+def fill_template(settings: dict, template: dict):
+    """
+    Fill in the job config file
+    :param settings: dict with the parsed input from the descriptor file
+    :param template: dict with the input from the job config template
+    :return: dict with job config
+    """
+    spec = template['spec']['template']['spec']
+
+    job_id = get_job_id(settings)
+    container_args = get_container_args(settings)
+
+    container = OrderedDict({'name': job_id,
+                             'image': settings['docker_image'],
+                             'command':  spec['containers'][0]['command'],
+                             'args': container_args})
+
+    spec['containers'] = [container]
+    spec['nodeSelector'] = {'beta.kubernetes.io/instance-type': settings['instance_type']}
+
+    template['metadata'] = {'name': job_id}
+    template['spec']['template']['spec'] = spec
+
+    return template
+
+
+def get_job_id(settings):
+    """
+    Creates a unique identifier for this job, based on the descriptor plus a random part
+    :return:
+    """
+    id_components = [settings['docker_image'], settings['instance_type']]
+    if 'dataset' in settings.keys():
+        id_components += settings['dataset']
+
+    # TODO: replace _ with -
+    descriptor_id = '_'.join(id_components)
+
+    job_id = f'{descriptor_id}{uuid.uuid4().hex}'
+    job_id = re.sub(_REGEX_JOB_ID, '', job_id)
+
+    if len(job_id) > _K8S_MAX_NAME_LENGTH:
+        job_id = job_id[:_K8S_MAX_NAME_LENGTH]
+
+    return job_id
+
+
+def get_container_args(settings: dict):
+    """
+    Extracts the args for the container and formats them.
+    :param settings: dict containing the parsed input from the descriptor
+    :return: dict representing the container's args
+    """
+
+    cmd = ' '.join([settings['benchmark_code']] + settings['ml.params'])
+
+    if 'download_cmd' in settings.keys():
+        cmd = [settings['download_cmd'], cmd]
+
+    if isinstance(cmd, str):
+        return cmd + ';'
+    else:
+        return ['; '.join(cmd).strip() + ';']
 
 
 def setup_yaml():
