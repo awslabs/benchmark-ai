@@ -1,11 +1,9 @@
 import toml
-import yaml
 import argparse
 import os
-import sys
 import uuid
 import re
-from collections import OrderedDict
+
 
 _REGEX_JOB_ID = '[^a-z0-9](^[-a-z0-9]*[a-z0-9])?'
 _K8S_MAX_NAME_LENGTH = 63
@@ -28,20 +26,18 @@ def main():
 
     args = parser.parse_args()
 
-    setup_yaml()
-
     current_dir = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(current_dir, args.template), 'r') as stream:
-        template = ordered_load(stream, yaml.SafeLoader)
+        template = stream.read()
 
     settings = read_descriptor(args.descriptor)
     job_config = fill_template(settings, template)
 
     if args.f:
         with open(os.path.join(current_dir, args.f), 'w') as outfile:
-            yaml.dump(job_config, outfile, default_flow_style=False)
+            outfile.write(job_config)
     else:
-        yaml.dump(job_config, sys.stdout, default_flow_style=False)
+        print(job_config)
 
 
 def read_descriptor(descriptor_path):
@@ -63,36 +59,25 @@ def read_descriptor(descriptor_path):
         if 'download_script' in descriptor['ml']['data'].keys():
             settings['download_cmd'] = descriptor['ml']['data']['download_script']
 
-    if 'params' in descriptor['ml'].keys():
-        settings['ml.params'] = [f'--{k}={v}' for k, v in descriptor['ml']['params'].items()]
+    if 'args' in descriptor['ml'].keys():
+        settings['ml_args'] = descriptor['ml']['args']
 
     return settings
 
 
-def fill_template(settings: dict, template: dict):
+def fill_template(settings: dict, template: str):
     """
     Fill in the job config file
     :param settings: dict with the parsed input from the descriptor file
     :param template: dict with the input from the job config template
     :return: dict with job config
     """
-    spec = template['spec']['template']['spec']
-
     job_id = get_job_id(settings)
-    container_args = get_container_args(settings)
+    settings['job_id'] = job_id
+    settings['container_name'] = job_id
+    settings['container_args'] = get_container_args(settings)
 
-    container = OrderedDict({'name': job_id,
-                             'image': settings['docker_image'],
-                             'command':  spec['containers'][0]['command'],
-                             'args': container_args})
-
-    spec['containers'] = [container]
-    spec['nodeSelector'] = {'beta.kubernetes.io/instance-type': settings['instance_type']}
-
-    template['metadata'] = {'name': job_id}
-    template['spec']['template']['spec'] = spec
-
-    return template
+    return template.format(**settings)
 
 
 def get_job_id(settings):
@@ -123,7 +108,10 @@ def get_container_args(settings: dict):
     :return: dict representing the container's args
     """
 
-    cmd = ' '.join([settings['benchmark_code']] + settings['ml.params'])
+    cmd = settings['benchmark_code'] \
+
+    if 'ml_args' in settings.keys():
+        cmd += ' ' + settings['ml_args']
 
     if 'download_cmd' in settings.keys():
         cmd = [settings['download_cmd'], cmd]
@@ -131,32 +119,7 @@ def get_container_args(settings: dict):
     if isinstance(cmd, str):
         return cmd + ';'
     else:
-        return ['; '.join(cmd).strip() + ';']
-
-
-def setup_yaml():
-    """
-    Workaround to allow PyYaml to represent OrderedDicts
-    https://stackoverflow.com/a/8661021
-    """
-    represent_dict_order = lambda self, data:  self.represent_mapping('tag:yaml.org,2002:map', data.items())
-    yaml.add_representer(OrderedDict, represent_dict_order)
-
-
-def ordered_load(stream, Loader=yaml.Loader, object_pairs_hook=OrderedDict):
-    """
-    Workaround to have PyYaml preserve order when loading files
-    """
-    class OrderedLoader(Loader):
-        pass
-
-    def construct_mapping(loader, node):
-        loader.flatten_mapping(node)
-        return object_pairs_hook(loader.construct_pairs(node))
-    OrderedLoader.add_constructor(
-        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-        construct_mapping)
-    return yaml.load(stream, OrderedLoader)
+        return '; '.join(cmd).strip() + ';'
 
 
 if __name__ == '__main__':
