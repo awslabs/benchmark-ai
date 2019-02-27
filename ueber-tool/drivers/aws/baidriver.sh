@@ -28,8 +28,6 @@ create_infra() {
     [ -n "$cluster_name" ] && vars="${vars} -var 'cluster-name=${cluster_name}'"
     [ -n "$region" ] && vars="${vars} -var 'region=${region}'"
 
-    
-
     terraform init $terraform_dir
     terraform get $terraform_dir
 
@@ -95,7 +93,7 @@ get_benchmark() {
 
     local curl_cmd="curl -X POST -s -H 'Content-Type: application/json' -d '$query_body' ${es_endpoint}/_search"
 
-    ssh -i $data_dir/$jumper_pem ubuntu@$jumper_ip "${curl_cmd}" | jq '.hits.hits[]._source | "(\(."@timestamp") \(.log)"' -j | sort
+    ssh -q -o StrictHostKeyChecking=no -i $data_dir/$jumper_pem ubuntu@$jumper_ip "${curl_cmd}" | jq '.hits.hits[]._source | "(\(."@timestamp") \(.log)"' -j | sort
 }
 
 run_benchmark() {
@@ -127,7 +125,7 @@ delete_benchmark() {
 
     [ -z "$benchmark_name" ] && printf "Missing required argument --name\n" && return 1
 
-    kubectl delete job $benchmark_name
+    $kubectl delete job $benchmark_name
 }
 
 list_benchmarks() {
