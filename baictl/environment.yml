@@ -1,0 +1,9 @@
+name: baictl
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - jq >=1.6
+  - terraform >=0.11
+  - aws-iam-authenticator >=1.11
+  - kubernetes >= 1.13
