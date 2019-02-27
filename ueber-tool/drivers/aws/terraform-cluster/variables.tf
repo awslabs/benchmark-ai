@@ -2,6 +2,12 @@ variable "region" {
   default = "eu-west-1"
 }
 
+variable "cluster_name" {
+  type        = "string"
+  default     = "benchmark-cluster"
+}
+
+
 variable "map_accounts" {
   description = "Additional AWS account numbers to add to the aws-auth configmap."
   type        = "list"

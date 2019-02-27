@@ -163,12 +163,12 @@ module "vpc" {
   public_subnets     = ["172.16.48.0/20", "172.16.64.0/20", "172.16.80.0/20"]
   enable_nat_gateway = true
   single_nat_gateway = true
-  tags               = "${merge(local.tags, map("kubernetes.io/cluster/${local.cluster_name}", "shared"))}"
+  tags               = "${merge(local.tags, map("kubernetes.io/cluster/${var.cluster_name}", "shared"))}"
 }
 
 module "eks" {
   source                               = "terraform-aws-modules/eks/aws"
-  cluster_name                         = "${local.cluster_name}"
+  cluster_name                         = "${var.cluster_name}"
   subnets                              = ["${module.vpc.private_subnets}"]
   tags                                 = "${local.tags}"
   vpc_id                               = "${module.vpc.vpc_id}"

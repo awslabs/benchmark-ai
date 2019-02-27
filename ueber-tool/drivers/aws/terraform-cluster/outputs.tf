@@ -23,6 +23,11 @@ output "region" {
   value       = "${var.region}"
 }
 
+output "cluster_name" {
+  description = "AWS EKS cluster name."
+  value       = "${var.cluster_name}"
+}
+
 output "jumper_public_ip" {
   value = "${aws_instance.jumper.public_ip}"
 }
