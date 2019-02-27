@@ -103,7 +103,7 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-# IDEA config
+# PyCharm
 .idea/
 
 # DS_STORE
