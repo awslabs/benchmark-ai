@@ -1,0 +1,52 @@
+# BenchmarkAI meta
+spec_version = "0.1.0"
+
+# These fields don't have any impact on the job to run, they contain
+# merely informative data so the benchmark can be categorized when displayed
+# in the dashboard.
+[info]
+task_name = "Title"
+description = """ \
+    Description of the job. Users might want to include details \
+    such as whether it's inference or training, particular aspects \
+    of their model, etc.\
+    """
+
+# 1. Hardware
+[hardware]
+instance_type = "p3.8xlarge"
+
+# 2. Environment
+[env]
+# Docker hub <hub-user>/<repo-name>:<tag> 
+docker_image = "jlcont/benchmarking:270219"
+
+# 3. Machine learning related settings: 
+# dataset, benchmark code and parameters it takes
+[ml]
+benchmark_code = "python /home/benchmark/image_classification.py"
+
+  # [Opt] Dataset
+  [ml.data]
+  # Dataset ID
+  dataset = "mnist"
+  # [Opt] Path of data download script.
+  download_script = "python /home/benchmark/get_data.py mnist"
+  # [Opt] Path where the dataset is stored in the container FS
+  data_path = "/work/data/mnist/"
+
+  # [Opt] Parameters to pass to the script in ml.benchmark_code
+  # The code is called as defined in ml.benchmark_code, plus
+  # the arguments as --name=value
+  [ml.params]
+  model = "resnet50_v2"
+  # batch-size = 32
+  # epochs=50
+  # num-gpu=8
+  # Add any params you need
+  # ...
+
+# 4. Output
+[output]
+# Define which metrics will be tracked in this benchmark
+metrics = ["throughput", "time"]
