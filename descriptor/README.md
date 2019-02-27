@@ -2,7 +2,7 @@
 
 A descriptor file defines a benchmark job. This directory contains a template descriptor including explanatory comments on all fields. The descriptor is written in [TOML](https://github.com/toml-lang/toml).
 
-The file is divided in the four following sections:
+The file is divided in the five following sections:
 
 #### info
 The fields in this section don't have any impact on the job to run, they contain merely informative data about the benchmark job.
@@ -28,9 +28,10 @@ Section for users to declare the metrics they will be tracking with this benchma
 
 ## Descriptor reader
 
-A script is provided to parse descriptor files and generate the corresponding Kubernetes job configuration YAML file. To use the sript:
+The descriptor_reader Python script is provided to parse descriptor files and generate the corresponding Kubernetes job configuration YAML file. It is called as follows:
 
 ```
-python descriptor_reader.py path_to_descriptor
+python descriptor_reader.py path_to_descriptor.toml
 ```
 
+This utility is used by the baictl CLI to run Kubernetes jobs.
