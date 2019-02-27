@@ -1,0 +1,4 @@
+[submodule "ueber-tool/drivers/aws/ci-infrastructure"]
+	path = ueber-tool/drivers/aws/ci-infrastructure
+	url = https://github.com/stsukrov/ci-infrastructure.git
+	branch = for-ueber-tool

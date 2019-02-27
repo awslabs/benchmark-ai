@@ -164,7 +164,7 @@ kube_config_arg=--kubeconfig=$kubeconfig
 kubectl="kubectl ${kube_config_arg}"
 terraform_state=$data_dir/terraform.tfstate
 terraform_state_arg=--state=$data_dir/terraform.tfstate
-terraform_dir=$(dirname $BASH_SOURCE)/terraform-cluster
+terraform_dir=$(dirname $BASH_SOURCE)/ci-infrastructure/terraform-kubernetes/cluster
 terraform_plan=$data_dir/terraform.plan
 
 terraform_dir=$(realpath $terraform_dir)
