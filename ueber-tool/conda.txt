@@ -1,6 +1,0 @@
-# platform: osx-64
-jq=1.6
-terraform=0.11.11
-coreutils=8.25
-aws-iam-authenticator=1.11.5
-kubernetes=1.13.3
