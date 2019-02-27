@@ -36,8 +36,8 @@ create_infra() {
     terraform output kubectl_config >kubeconfig
 
     #Make private key not public accessible
-    local jumper_pem=$(terraform output jumper_pem)
-    chmod 400 $jumper_pem
+    local bastion_pem=$(terraform output bastion_pem)
+    chmod 400 $bastion_pem
 
     $kubectl apply -f fluentd-daemonset.yaml
     $kubectl apply -f autoscaler-deployment.yaml
@@ -64,8 +64,8 @@ get_infra() {
             terraform output --state=$terraform_state cluster_name
             terraform output --state=$terraform_state cluster_endpoint
             ;;
-        --aws-jumper)
-            terraform output --state=$terraform_state jumper_public_ip
+        --aws-bastion-ip)
+            terraform output --state=$terraform_state bastion_public_ip
             ;;    
         esac
     done
@@ -85,15 +85,15 @@ get_benchmark() {
 
     [ -z "$benchmark_name" ] && printf "Missing required argument --name\n" && return 1
 
-    local jumper_pem=$(terraform output --state=$terraform_state jumper_pem)
-    local jumper_ip=$(terraform output --state=$terraform_state jumper_public_ip)
+    local bastion_pem=$(terraform output --state=$terraform_state bastion_pem)
+    local bastion_ip=$(terraform output --state=$terraform_state bastion_public_ip)
     local es_endpoint=$(terraform output --state=$terraform_state es_endpoint)
 
     local query_body="{\"from\" : 0, \"size\" : 1000,\"query\" : {\"term\" : { \"kubernetes.labels.job-name\":\"${benchmark_name}\" }}}"
 
     local curl_cmd="curl -X POST -s -H 'Content-Type: application/json' -d '$query_body' ${es_endpoint}/_search"
 
-    ssh -q -o StrictHostKeyChecking=no -i $data_dir/$jumper_pem ubuntu@$jumper_ip "${curl_cmd}" | jq '.hits.hits[]._source | "(\(."@timestamp") \(.log)"' -j | sort
+    ssh -q -o StrictHostKeyChecking=no -i $data_dir/$bastion_pem ubuntu@$bastion_ip "${curl_cmd}" | jq '.hits.hits[]._source | "(\(."@timestamp") \(.log)"' -j | sort
 }
 
 run_benchmark() {
