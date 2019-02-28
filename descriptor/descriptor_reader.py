@@ -3,10 +3,13 @@ import argparse
 import os
 import uuid
 
+from typing import Dict
+
 
 def main():
-    parser = argparse.ArgumentParser(description='Reads the descriptor file, creates the corresponding job config'
-                                                 'yaml file and applies it to run a job.')
+    parser = argparse.ArgumentParser(description='Reads the descriptor file and creates the '
+                                                 'corresponding job config yaml file.')
+
     parser.add_argument('descriptor',
                         help='Relative path to descriptor file')
 
@@ -35,7 +38,7 @@ def main():
         print(job_config)
 
 
-def read_descriptor(descriptor_path):
+def read_descriptor(descriptor_path: str) -> Dict[str, str]:
     """
     Reads the values from the descriptor file into a dictionary
     :param descriptor_path: path to the descriptor file
@@ -60,12 +63,12 @@ def read_descriptor(descriptor_path):
     return settings
 
 
-def fill_template(settings: dict, template: str):
+def fill_template(settings: Dict[str, str], template: str) -> str:
     """
     Fill in the job config file
     :param settings: dict with the parsed input from the descriptor file
     :param template: dict with the input from the job config template
-    :return: dict with job config
+    :return: job config string
     """
     # TODO: Verify there are K8s labels to store info such as dataset, docker_image, instance_type...
     job_id = uuid.uuid4().hex
@@ -76,11 +79,11 @@ def fill_template(settings: dict, template: str):
     return template.format(**settings)
 
 
-def get_container_args(settings: dict):
+def get_container_args(settings: Dict[str, str]) -> str:
     """
     Extracts the args for the container and formats them.
     :param settings: dict containing the parsed input from the descriptor
-    :return: dict representing the container's args
+    :return: the container's args
     """
 
     cmd = settings['benchmark_code']
@@ -89,12 +92,9 @@ def get_container_args(settings: dict):
         cmd += ' ' + settings['ml_args']
 
     if 'download_cmd' in settings:
-        cmd = [settings['download_cmd'], cmd]
+        cmd = settings['download_cmd'] + '; ' + cmd
 
-    if isinstance(cmd, str):
-        return cmd + ';'
-    else:
-        return '; '.join(cmd).strip() + ';'
+    return cmd + ';'
 
 
 if __name__ == '__main__':
