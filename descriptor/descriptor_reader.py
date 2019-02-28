@@ -46,11 +46,14 @@ def read_descriptor(descriptor_path: str) -> Dict[str, str]:
     """
     descriptor = toml.load(descriptor_path)
 
-    settings = {
-        'instance_type': descriptor['hardware']['instance_type'],
-        'docker_image': descriptor['env']['docker_image'],
-        'benchmark_code': descriptor['ml']['benchmark_code'],
-    }
+    try:
+        settings = {
+            'instance_type': descriptor['hardware']['instance_type'],
+            'docker_image': descriptor['env']['docker_image'],
+            'benchmark_code': descriptor['ml']['benchmark_code'],
+        }
+    except KeyError as e:
+        raise KeyError('Required field is missing in the descriptor file') from e
 
     if 'data' in descriptor['ml']:
         settings['dataset'] = descriptor['ml']['data']['dataset']
