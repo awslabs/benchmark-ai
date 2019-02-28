@@ -19,11 +19,12 @@ spec:
                 - benchmark-ai
             topologyKey: kubernetes.io/hostname
       containers:
-      - name: mxnetpyth
-        image: mxnet/python:1.3.1_cpu_py3
-        command: ["python3"]
-        args: ["-c", "print('hello')"]
+      - name: name
+        image: image
+        command: ["/bin/sh", "-c"]
+        args:
+          - cmd 1; cmd 2;
       nodeSelector:
-        beta.kubernetes.io/instance-type: t3.small
+        beta.kubernetes.io/instance-type: instance-type
       restartPolicy: Never
   backoffLimit: 4
