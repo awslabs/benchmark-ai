@@ -116,16 +116,21 @@ run_benchmark() {
 
 delete_benchmark() {
     local benchmark_name=""
+    local all=""
 
     for arg in "$@"; do
         case "${arg}" in
+        --all)
+            all="1"
+            ;;
         --name=*)
             benchmark_name="${arg#*=}"
             ;;
         esac
     done
 
-    [ -z "$benchmark_name" ] && printf "Missing required argument --name\n" && return 1
+    [ -n "$all" ] && benchmark_name="--all"
+    [ -z "$benchmark_name" ] && printf "Missing required argument --name or --all\n" && return 1
 
     $kubectl delete job $benchmark_name
 }
@@ -207,15 +212,6 @@ benchmark)
     delete)
         delete_benchmark $@
         ;;
-    *)
-        print_unsupported_verb $object $verb
-        ;;
-    esac
-    ;;
-
-benchmarks)
-
-    case "${verb}" in
     list)
         list_benchmarks $@
         ;;
@@ -223,7 +219,6 @@ benchmarks)
         print_unsupported_verb $object $verb
         ;;
     esac
-
     ;;
 *)
     printf "Unknown object"
