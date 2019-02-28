@@ -25,6 +25,9 @@ docker_image = "jlcont/benchmarking:270219"
 # dataset, benchmark code and parameters it takes
 [ml]
 benchmark_code = "python /home/benchmark/image_classification.py"
+# [Opt] Arguments to pass to the script in ml.benchmark_code
+# The code is called as defined in ml.benchmark_code, plus the args defined here
+args = "--model=resnet50_v2 --batch-size=32"
 
   # [Opt] Dataset
   [ml.data]
@@ -34,17 +37,6 @@ benchmark_code = "python /home/benchmark/image_classification.py"
   download_script = "python /home/benchmark/get_data.py mnist"
   # [Opt] Path where the dataset is stored in the container FS
   data_path = "/work/data/mnist/"
-
-  # [Opt] Parameters to pass to the script in ml.benchmark_code
-  # The code is called as defined in ml.benchmark_code, plus
-  # the arguments as --name=value
-  [ml.params]
-  model = "resnet50_v2"
-  # batch-size = 32
-  # epochs=50
-  # num-gpu=8
-  # Add any params you need
-  # ...
 
 # 4. Output
 [output]
