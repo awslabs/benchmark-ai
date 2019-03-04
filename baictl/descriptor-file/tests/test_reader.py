@@ -17,12 +17,7 @@ def test_wrong_descriptor(file):
         dr.read_descriptor(file)
 
 
-@pytest.mark.parametrize('settings, expected', [
-    ({'benchmark_code': 'a.py'}, 'a.py;'),
-    ({'benchmark_code': 'a.py', 'ml_args': '-f'}, 'a.py -f;'),
-    ({'benchmark_code': 'a.py', 'download_cmd': 'data.sh'}, 'data.sh; a.py;')
-])
-def test_get_container_args(settings, expected):
-    assert dr.get_container_args(settings) == expected
-
-
+def test_get_container_args():
+    assert dr.get_container_args({'benchmark_code': 'a.py'}) == 'a.py;'
+    assert dr.get_container_args({'benchmark_code': 'a.py', 'ml_args': '-f'}) == 'a.py -f;'
+    assert dr.get_container_args({'benchmark_code': 'a.py', 'download_cmd': 'data.sh'}) == 'data.sh; a.py;'
