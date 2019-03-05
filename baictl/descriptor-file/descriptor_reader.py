@@ -3,7 +3,10 @@ import argparse
 import os
 import uuid
 
-from typing import Dict
+from typing import Dict, List
+
+
+INIT_CONTAINER_TEMPLATE = 'init_container_template.yaml'
 
 
 def main():
@@ -28,8 +31,11 @@ def main():
     with open(os.path.join(current_dir, args.template), 'r') as stream:
         template = stream.read()
 
+    with open(os.path.join(current_dir, INIT_CONTAINER_TEMPLATE), 'r') as stream:
+        init_containers = stream.read()
+
     settings = read_descriptor(args.descriptor)
-    job_config = fill_template(settings, template)
+    job_config = fill_template(settings, template, init_containers)
 
     if args.f:
         with open(os.path.join(current_dir, args.f), 'w') as outfile:
@@ -55,24 +61,25 @@ def read_descriptor(descriptor_path: str) -> Dict[str, str]:
     except KeyError as e:
         raise KeyError('Required field is missing in the descriptor file') from e
 
-    if 'data' in descriptor['ml']:
-        settings['dataset'] = descriptor['ml']['data']['dataset']
-        if 'download_script' in descriptor['ml']['data']:
-            settings['download_cmd'] = descriptor['ml']['data']['download_script']
-
     if 'args' in descriptor['ml']:
         settings['ml_args'] = descriptor['ml']['args']
 
     settings['privileged'] = False if 'privileged' not in settings['env'] else settings['env']['privileged']
 
+    if 'data' in descriptor:
+        settings['dataset'] = descriptor['data']['dataset']
+        if 'sources' in descriptor['data']:
+            settings['data_sources'] = descriptor['data']['sources']
+
     return settings
 
 
-def fill_template(settings: Dict[str, str], template: str) -> str:
+def fill_template(settings: Dict[str, str], template: str, init_cont_template: str) -> str:
     """
     Fill in the job config file
     :param settings: dict with the parsed input from the descriptor file
-    :param template: dict with the input from the job config template
+    :param template: str with the job config template
+    :param init_cont_template: str with the init_container template
     :return: job config string
     """
     # TODO: Verify there are K8s labels to store info such as dataset, docker_image, instance_type...
@@ -80,6 +87,11 @@ def fill_template(settings: Dict[str, str], template: str) -> str:
     settings['job_id'] = job_id
     settings['container_name'] = job_id
     settings['container_args'] = get_container_args(settings)
+
+    if 'data_sources' in settings:
+        settings['init_containers'] = fill_init_containers(settings['data_sources'], init_cont_template)
+    else:
+        settings['init_containers'] = ''
 
     return template.format(**settings)
 
@@ -100,6 +112,28 @@ def get_container_args(settings: Dict[str, str]) -> str:
         cmd = settings['download_cmd'] + '; ' + cmd
 
     return cmd + ';'
+
+
+def fill_init_containers(data_sources: List, template) -> str:
+    """
+    Extracts the args for the data fetcher container and formats them.
+    :param data_sources: list containing, for each source, a download script
+    :param  template: str with the init_container template
+    :return: the fetcher container's args
+    """
+
+    cmd = ''
+
+    try:
+        for source in data_sources:
+            cmd += source['download'] + '; '
+            if 'action' in source:
+                cmd += source['action'] + '; '
+    except KeyError as e:
+        raise KeyError('Required field is missing in the descriptor file.'
+                       ' Each data source must have a download command.') from e
+
+    return template.format(fetcher_args=cmd.rstrip())
 
 
 if __name__ == '__main__':

@@ -26,6 +26,7 @@ spec:
           - {container_args}
         securityContext:
           privileged: {privileged}
+      {init_containers}
       nodeSelector:
         beta.kubernetes.io/instance-type: {instance_type}
       restartPolicy: Never

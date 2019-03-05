@@ -32,14 +32,30 @@ benchmark_code = "python /home/benchmark/image_classification.py"
 # The code is called as defined in ml.benchmark_code, plus the args defined here
 args = "--model=resnet50_v2 --batch-size=32"
 
-  # [Opt] Dataset
-  [ml.data]
-  # Dataset ID
-  dataset = "mnist"
-  # [Opt] Path of data download script.
-  download_script = "python /home/benchmark/get_data.py mnist"
-  # [Opt] Path where the dataset is stored in the container FS
-  data_path = "/work/data/mnist/"
+# [Opt] 4. Dataset 
+[data]
+# Dataset ID
+dataset = "mnist"
+
+# [Opt] Data sources
+# List all required data sources below. 
+# Make an entry for each with the same format as the ones below.
+[[data.sources]]
+# Data download script.
+download = "python /home/benchmark/get_data.py mnist"
+# [Opt] Use this field to specify any required preprocessing command.
+action = "unzip training_data.zip"
+# Path where the dataset is stored in the container FS
+path = "/work/data/mnist/"
+
+# Second data source
+[[data.sources]]
+# [Opt] Data download script.
+download = "python /home/benchmark/get_data.py mnist"
+# [Opt] Path where the dataset is stored in the container FS
+path = "/work/data/mnist/"
+
+# ...
 
 # 4. Output
 [output]
