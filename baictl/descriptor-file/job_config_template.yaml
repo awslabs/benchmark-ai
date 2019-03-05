@@ -24,6 +24,8 @@ spec:
         command: ["/bin/sh", "-c"]
         args:
           - {container_args}
+        securityContext:
+          privileged: {privileged}
       nodeSelector:
         beta.kubernetes.io/instance-type: {instance_type}
       restartPolicy: Never

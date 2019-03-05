@@ -63,6 +63,8 @@ def read_descriptor(descriptor_path: str) -> Dict[str, str]:
     if 'args' in descriptor['ml']:
         settings['ml_args'] = descriptor['ml']['args']
 
+    settings['privileged'] = False if 'privileged' not in settings['env'] else settings['env']['privileged']
+
     return settings
 
 
