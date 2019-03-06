@@ -7,3 +7,5 @@ dependencies:
   - terraform >=0.11
   - aws-iam-authenticator >=1.11
   - kubernetes >= 1.13
+  - jinja2 >= 2.10
+  - toml >= 0.10.0

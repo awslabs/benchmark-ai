@@ -4,6 +4,7 @@ import os
 import uuid
 
 from typing import Dict, List
+from jinja2 import Template
 
 
 INIT_CONTAINER_TEMPLATE = 'init_container_template.yaml'
@@ -29,13 +30,10 @@ def main():
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(current_dir, args.template), 'r') as stream:
-        template = stream.read()
-
-    with open(os.path.join(current_dir, INIT_CONTAINER_TEMPLATE), 'r') as stream:
-        init_containers = stream.read()
+        template = Template(stream.read())
 
     settings = read_descriptor(args.descriptor)
-    job_config = fill_template(settings, template, init_containers)
+    job_config = fill_template(settings, template)
 
     if args.f:
         with open(os.path.join(current_dir, args.f), 'w') as outfile:
@@ -74,7 +72,7 @@ def read_descriptor(descriptor_path: str) -> Dict[str, str]:
     return settings
 
 
-def fill_template(settings: Dict[str, str], template: str, init_cont_template: str) -> str:
+def fill_template(settings: Dict[str, str], template: Template) -> str:
     """
     Fill in the job config file
     :param settings: dict with the parsed input from the descriptor file
@@ -89,11 +87,9 @@ def fill_template(settings: Dict[str, str], template: str, init_cont_template: s
     settings['container_args'] = get_container_args(settings)
 
     if 'data_sources' in settings:
-        settings['init_containers'] = fill_init_containers(settings['data_sources'], init_cont_template)
-    else:
-        settings['init_containers'] = ''
+        settings['puller_args'] = get_puller_args(settings['data_sources'])
 
-    return template.format(**settings)
+    return template.render(**settings)
 
 
 def get_container_args(settings: Dict[str, str]) -> str:
@@ -108,13 +104,10 @@ def get_container_args(settings: Dict[str, str]) -> str:
     if 'ml_args' in settings:
         cmd += ' ' + settings['ml_args']
 
-    if 'download_cmd' in settings:
-        cmd = settings['download_cmd'] + '; ' + cmd
-
     return cmd + ';'
 
 
-def fill_init_containers(data_sources: List, template) -> str:
+def get_puller_args(data_sources: List) -> str:
     """
     Extracts the args for the data fetcher container and formats them.
     :param data_sources: list containing, for each source, a download script
@@ -133,7 +126,7 @@ def fill_init_containers(data_sources: List, template) -> str:
         raise KeyError('Required field is missing in the descriptor file.'
                        ' Each data source must have a download command.') from e
 
-    return template.format(fetcher_args=cmd.rstrip())
+    return cmd.rstrip()
 
 
 if __name__ == '__main__':

@@ -1,9 +1,0 @@
-# Init container info
-      initContainers:
-      - name: data-fetcher
-      # TODO: Which image makes the most sense for the data-fetcher?
-        image: python
-        command: ["/bin/sh", "-c"]
-        args: 
-          - {fetcher_args}
-      # End init container 
