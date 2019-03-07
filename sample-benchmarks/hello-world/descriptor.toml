@@ -1,0 +1,30 @@
+# BenchmarkAI meta
+spec_version = "0.1.0"
+
+# These fields don't have any impact on the job to run, they contain
+# merely informative data so the benchmark can be categorized when displayed
+# in the dashboard.
+[info]
+task_name = "Hello world"
+description = """ \
+    A hello world example of using Benchmark AI\
+    """
+
+# 1. Hardware
+[hardware]
+instance_type = "t2.small"
+
+# 2. Environment
+[env]
+# Docker hub <hub-user>/<repo-name>:<tag> 
+docker_image = "edisongustavo/bai-benchmarks-hello-world:latest"
+
+# 3. Machine learning related settings: 
+# dataset, benchmark code and parameters it takes
+[ml]
+benchmark_code = "python3 hello-world.py"
+
+# 4. Output
+[output]
+# Define which metrics will be tracked in this benchmark
+metrics = ["throughput", "time"]
