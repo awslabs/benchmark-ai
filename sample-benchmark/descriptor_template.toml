@@ -20,6 +20,9 @@ instance_type = "p3.8xlarge"
 [env]
 # Docker hub <hub-user>/<repo-name>:<tag> 
 docker_image = "jlcont/benchmarking:270219"
+# Args for the docker container
+# [Opt] Whether to run the container in privileged mode (default is false)
+privileged = false
 
 # 3. Machine learning related settings: 
 # dataset, benchmark code and parameters it takes
