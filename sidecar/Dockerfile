@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:18.04 as base
 
 # Install miniconda3
 # - obtained from: https://github.com/ContinuumIO/docker-images/blob/master/miniconda3/Dockerfile
@@ -25,11 +25,22 @@ RUN /opt/conda/bin/conda init bash
 
 # Create a conda environment to run the sidecar
 COPY ./environment.yml /tmp/benchmarkai-sidecar-environment.yml
-RUN /opt/conda/bin/conda env create -n bai-sidecar -f /tmp/benchmarkai-sidecar-environment.yml
+RUN /opt/conda/bin/conda env create -f /tmp/benchmarkai-sidecar-environment.yml -p /opt/sidecar
 
 # Get the sidecar contents into the image
 RUN mkdir /home/sidecar
-WORKDIR /home/sidecar/
 COPY . /home/sidecar
+WORKDIR /home/sidecar
+RUN /opt/sidecar/bin/python setup.py install
 
-CMD ["/opt/conda/bin/conda", "run", "-vvv", "-n", "bai-sidecar", "/home/sidecar/src/main.py"]
+########################################
+# Build the final image
+########################################
+FROM ubuntu:18.04
+
+COPY --from=base /opt/sidecar /opt/sidecar
+
+# A workdir only for convenience
+WORKDIR /opt/sidecar/bin
+
+ENTRYPOINT ["/opt/sidecar/bin/python", "-m", "benchmarkai_sidecar"]
