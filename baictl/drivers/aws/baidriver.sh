@@ -41,6 +41,8 @@ create_infra() {
 
     $kubectl apply -f fluentd-daemonset.yaml
     $kubectl apply -f autoscaler-deployment.yaml
+
+    $kubectl apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v1.11/nvidia-device-plugin.yml
 }
 
 destroy_infra() {
@@ -114,16 +116,21 @@ run_benchmark() {
 
 delete_benchmark() {
     local benchmark_name=""
+    local all=""
 
     for arg in "$@"; do
         case "${arg}" in
+        --all)
+            all="1"
+            ;;
         --name=*)
             benchmark_name="${arg#*=}"
             ;;
         esac
     done
 
-    [ -z "$benchmark_name" ] && printf "Missing required argument --name\n" && return 1
+    [ -n "$all" ] && benchmark_name="--all"
+    [ -z "$benchmark_name" ] && printf "Missing required argument --name or --all\n" && return 1
 
     $kubectl delete job $benchmark_name
 }
@@ -164,7 +171,7 @@ kube_config_arg=--kubeconfig=$kubeconfig
 kubectl="kubectl ${kube_config_arg}"
 terraform_state=$data_dir/terraform.tfstate
 terraform_state_arg=--state=$data_dir/terraform.tfstate
-terraform_dir=$(dirname $BASH_SOURCE)/ci-infrastructure/terraform-kubernetes/cluster
+terraform_dir=$(dirname $BASH_SOURCE)/cluster
 terraform_plan=$data_dir/terraform.plan
 
 terraform_dir=$(realpath $terraform_dir)
@@ -205,15 +212,6 @@ benchmark)
     delete)
         delete_benchmark $@
         ;;
-    *)
-        print_unsupported_verb $object $verb
-        ;;
-    esac
-    ;;
-
-benchmarks)
-
-    case "${verb}" in
     list)
         list_benchmarks $@
         ;;
@@ -221,7 +219,6 @@ benchmarks)
         print_unsupported_verb $object $verb
         ;;
     esac
-
     ;;
 *)
     printf "Unknown object"

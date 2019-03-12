@@ -7,5 +7,8 @@ dependencies:
   - terraform >=0.11
   - aws-iam-authenticator >=1.11
   - kubernetes >= 1.13
+  # OS X has no realpath or md5sum.
+  - coreutils >= 8.25
   - python 3.7.*
   - toml 0.9.*
+
