@@ -1,4 +1,0 @@
-[submodule "ueber-tool/drivers/aws/ci-infrastructure"]
-	path = baictl/drivers/aws/ci-infrastructure
-	url = https://github.com/stsukrov/ci-infrastructure.git
-	branch = for-ueber-tool

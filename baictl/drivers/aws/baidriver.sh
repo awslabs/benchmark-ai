@@ -6,6 +6,38 @@ print_unsupported_verb() {
     printf "Unsupported verb ${verb} for object ${object}\n"
 }
 
+_create_configmap_yaml_from_terraform_outputs() {
+    local outputs=$(terraform output -json)
+    local configmap_data=""
+    for row in $(echo "${outputs}" | jq -r 'to_entries | .[] | @base64'); do
+        # Use base64 because the output might contain a \n, which will break this whole loop
+        _jq() {
+            echo ${row} | base64 --decode | jq -r ${1}
+        }
+
+        key=$(_jq '.key')
+        value=$(_jq '.value.value')
+        sensitive=$(_jq '.value.sensitive')
+        # Avoid sensitive and values with newlines
+        if [[ ($sensitive == "false") && ("$value" != *$'\n'*) ]]; then
+            configmap_data="$configmap_data\n  $key: $value"
+        fi
+    done
+
+    # printf => To interpret the \n symbols in the variable
+    # tail => To skip the first line, which should be empty
+    configmap_data=$(printf "$configmap_data" | tail -n +2)
+
+cat << EOF
+apiVersion: v1
+data:
+$configmap_data
+kind: ConfigMap
+metadata:
+  name: outputs-infrastructure
+EOF
+}
+
 create_infra() {
     local cluster_name=""
     local region=""
@@ -43,6 +75,8 @@ create_infra() {
     $kubectl apply -f autoscaler-deployment.yaml
 
     $kubectl apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v1.11/nvidia-device-plugin.yml
+
+    _create_configmap_yaml_from_terraform_outputs | $kubectl apply -f -
 }
 
 destroy_infra() {
