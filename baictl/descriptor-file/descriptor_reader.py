@@ -4,9 +4,10 @@ import os
 import sys
 import uuid
 
-import kubernetes as k8s
 import ruamel.yaml as yaml
 
+from kubernetes import client
+from urllib.parse import urlparse
 from typing import Dict, List
 
 
@@ -37,8 +38,7 @@ class DescriptorReader:
         except KeyError as e:
             raise KeyError('Required field is missing in the descriptor file') from e
 
-        self.settings['privileged'] = False if 'privileged' not in descriptor['env'] \
-                                            else descriptor['env']['privileged']
+        self.settings['privileged'] = descriptor['env'].get("privileged", False)
 
         if 'args' in descriptor['ml']:
             self.settings['ml_args'] = descriptor['ml']['args']
@@ -87,7 +87,7 @@ class DescriptorReader:
     def _get_data_volumes(self) -> Dict:
         data_sources = self.settings['data_sources']
         # Data destination paths and the corresponding mounted vols
-        destination_paths = set([s['path'] for s in data_sources])
+        destination_paths = {[s['path'] for s in data_sources]}
         data_vols = {}
 
         for idx, dest in enumerate(destination_paths):
@@ -102,14 +102,14 @@ class DescriptorReader:
         volumes = []
 
         if 'extended_shm' in self.settings:
-            shm = k8s.client.V1Volume(name=self.SHARED_MEMORY_VOL,
-                                      empty_dir=k8s.client.V1EmptyDirVolumeSource(medium="Memory")).to_dict()
-            volumes.append(shm)
+            shm = client.V1Volume(name=self.SHARED_MEMORY_VOL,
+                                  empty_dir=client.V1EmptyDirVolumeSource(medium="Memory"))
+            volumes.append(shm.to_dict())
 
         if 'data_volumes' in self.settings:
             for _, vol in self.settings['data_volumes'].items():
-                volumes.append(k8s.client.V1Volume(name=vol['name'],
-                                                   empty_dir=k8s.client.V1EmptyDirVolumeSource())
+                volumes.append(client.V1Volume(name=vol['name'],
+                                               empty_dir=client.V1EmptyDirVolumeSource())
                                .to_dict())
 
         return remove_null_entries(volumes)
@@ -118,13 +118,13 @@ class DescriptorReader:
         vol_mounts = []
 
         if 'extended_shm' in self.settings:
-            vol_mounts.append(k8s.client.V1VolumeMount(name=self.SHARED_MEMORY_VOL,
-                                                       mount_path='/dev/shm')
+            vol_mounts.append(client.V1VolumeMount(name=self.SHARED_MEMORY_VOL,
+                                                   mount_path='/dev/shm')
                               .to_dict())
 
         for dest_path, vol in self.settings['data_volumes'].items():
-            vol_mounts.append(k8s.client.V1VolumeMount(name=vol['name'],
-                                                       mount_path=dest_path)
+            vol_mounts.append(client.V1VolumeMount(name=vol['name'],
+                                                   mount_path=dest_path)
                               .to_dict())
 
         return remove_null_entries(vol_mounts)
@@ -133,8 +133,8 @@ class DescriptorReader:
         vol_mounts = []
 
         for _, vol in self.settings['data_volumes'].items():
-            vol_mounts.append(k8s.client.V1VolumeMount(name=vol['name'],
-                                                       mount_path=vol['puller_path'])
+            vol_mounts.append(client.V1VolumeMount(name=vol['name'],
+                                                   mount_path=vol['puller_path'])
                               .to_dict())
 
         return vol_mounts
@@ -174,10 +174,10 @@ class DescriptorReader:
         # ------------------------------------------
 
         vol_mounts = self._get_puller_volume_mounts()
-        puller = k8s.client.V1Container(name='data-puller',
-                                        image=self.PULLER_IMAGE,
-                                        args=puller_args,
-                                        volume_mounts=vol_mounts).to_dict()
+        puller = client.V1Container(name='data-puller',
+                                    image=self.PULLER_IMAGE,
+                                    args=puller_args,
+                                    volume_mounts=vol_mounts).to_dict()
         return remove_null_entries(puller)
 
     def _process_uri(self, uri):
@@ -186,14 +186,12 @@ class DescriptorReader:
         :param uri: str starting with the source, such as s3://bucket/object-name
         :return: dict with the relevant information
         """
-        origin, path = uri.split('://')
-        if origin not in self.VALID_DATA_SOURCES:
+        parsed = urlparse(uri)
+        if parsed.scheme not in self.VALID_DATA_SOURCES:
             raise ValueError(f'Data source uri must start with one of the following:'
-                             f' {a+":// " for a in VALID_DATA_SOURCES}')
-        if origin == 's3':
-            bucket = path.split('/')[0]
-            s3_object = '/'.join(path.split('/')[1:])
-            return {'source': 's3', 'bucket': bucket, 'object': s3_object}
+                             f' {a+":// " for a in self.VALID_DATA_SOURCES}')
+        if parsed.scheme == 's3':
+            return {'source': parsed.scheme, 'bucket': parsed.netloc, 'object': parsed.path}
 
         # TODO: Add data sources other than S3
         else:
