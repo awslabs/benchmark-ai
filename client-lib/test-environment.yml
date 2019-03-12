@@ -1,0 +1,9 @@
+name: benchmark-ai-client-library-tests
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pytest
+  - tox
+  - pip:
+    - tox-conda

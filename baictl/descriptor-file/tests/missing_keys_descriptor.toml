@@ -1,0 +1,38 @@
+# BenchmarkAI meta
+spec_version = "0.1.0"
+
+
+[info]
+task_name = "Title"
+description = "Description"
+
+# 1. Hardware
+[hardware]
+instance_type = "p3.8xlarge"
+
+# 2. Environment
+[env]
+docker_image = "jlcont/benchmarking:270219"
+
+# 3. Machine learning related settings: 
+# dataset, benchmark code and parameters it takes
+[ml]
+# Missing required field: benchmark_code
+# benchmark_code = "python /home/benchmark/image_classification.py"
+# [Opt] Arguments to pass to the script in ml.benchmark_code
+# The code is called as defined in ml.benchmark_code, plus the args defined here
+args = "--model=resnet50_v2 --batch-size=32"
+
+  # [Opt] Dataset
+  [ml.data]
+  # Dataset ID
+  dataset = "mnist"
+  # [Opt] Path of data download script.
+  download_script = "python /home/benchmark/get_data.py mnist"
+  # [Opt] Path where the dataset is stored in the container FS
+  data_path = "/work/data/mnist/"
+
+# 4. Output
+[output]
+# Define which metrics will be tracked in this benchmark
+metrics = ["throughput", "time"]

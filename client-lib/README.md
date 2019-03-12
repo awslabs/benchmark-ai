@@ -48,6 +48,17 @@ The dictionary provided by the `metrics` parameter is in the form:
 - `metric-name` is a `string`
 - `value` is a `float`
 
+# Running tests
+
+To set up the environment to run the tests, the file `test-environment.yml` is provided. This conda environment file
+has all dependencies required to run the tests.
+
+```
+$ conda env create -f test-environment.yml
+$ conda activate benchmark-ai-client-library-tests
+$ tox
+```
+
 # Internal details
 
 ## Modes
