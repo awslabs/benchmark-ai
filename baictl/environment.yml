@@ -1,7 +1,6 @@
 name: baictl
 channels:
   - conda-forge
-  - bioconda
   - defaults
 dependencies:
   - jq >=1.6
