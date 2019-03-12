@@ -47,8 +47,8 @@ id = "mnist"
 [[data.sources]]
 # Data download URI.
 uri = "s3://mlperf-data-stsukrov/imagenet/train-480px"
-# [Opt] Use this field to specify any required preprocessing command.
-action = "unzip training_data.zip"
+# [Not yet supported] Use this field to specify a preprocessing command.
+# action = "unzip training_data.zip"
 # Path where the dataset is stored in the container FS
 path = "~/data/tf-imagenet/"
 
@@ -56,8 +56,6 @@ path = "~/data/tf-imagenet/"
 [[data.sources]]
 # Data download URI.
 uri = "s3://mlperf-data-stsukrov/imagenet/validation-480px"
-# [Opt] Use this field to specify any required preprocessing command.
-action = "unzip training_data.zip"
 # Path where the dataset is stored in the container FS
 path = "~/data/tf-imagenet/"
 
