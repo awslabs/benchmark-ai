@@ -1,0 +1,8 @@
+name: metrics-pusher
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python 3.7.*
+  - elasticsearch 6.3.*
+  - python-kubernetes 8.0.*

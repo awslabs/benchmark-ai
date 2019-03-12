@@ -23,24 +23,24 @@ RUN /opt/conda/bin/conda config --add channels conda-forge && \
 
 RUN /opt/conda/bin/conda init bash
 
-# Create a conda environment to run the sidecar
-COPY ./environment.yml /tmp/benchmarkai-sidecar-environment.yml
-RUN /opt/conda/bin/conda env create -f /tmp/benchmarkai-sidecar-environment.yml -p /opt/sidecar
+# Create a conda environment to run the metrics-pusher
+COPY ./environment.yml /tmp/benchmarkai-metrics-pusher-environment.yml
+RUN /opt/conda/bin/conda env create -f /tmp/benchmarkai-metrics-pusher-environment.yml -p /opt/metrics-pusher
 
-# Get the sidecar contents into the image
-RUN mkdir /home/sidecar
-COPY . /home/sidecar
-WORKDIR /home/sidecar
-RUN /opt/sidecar/bin/python setup.py install
+# Get the metrics-pusher contents into the image
+RUN mkdir /home/metrics-pusher
+COPY . /home/metrics-pusher
+WORKDIR /home/metrics-pusher
+RUN /opt/metrics-pusher/bin/python setup.py install
 
 ########################################
 # Build the final image
 ########################################
 FROM ubuntu:18.04
 
-COPY --from=base /opt/sidecar /opt/sidecar
+COPY --from=base /opt/metrics-pusher /opt/metrics-pusher
 
 # A workdir only for convenience
-WORKDIR /opt/sidecar/bin
+WORKDIR /opt/metrics-pusher/bin
 
-ENTRYPOINT ["/opt/sidecar/bin/python", "-m", "benchmarkai_sidecar"]
+ENTRYPOINT ["/opt/metrics-pusher/bin/python", "-m", "benchmarkai_metrics-pusher"]

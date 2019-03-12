@@ -6,13 +6,8 @@ import io
 from json import JSONDecodeError
 
 
-logger = logging.getLogger("bai-sidecar")
+logger = logging.getLogger("metrics-pusher")
 FIFO_FILEPATH = os.environ.get("BENCHMARK_AI_FIFO_FILEPATH", "/tmp/benchmark-ai-fifo")
-
-
-def _emit(metrics):
-    # TODO: elastic search
-    print("Emitting metrics: %s" % metrics)
 
 
 def _deserialize(line):
@@ -37,7 +32,7 @@ def _get_fifo(pathname):
     return io.open(pathname, "r", buffering=1)
 
 
-def listen_to_fifo_and_emit_metrics():
+def listen_to_fifo_and_emit_metrics(emit):
     with _get_fifo(FIFO_FILEPATH) as fifo:
         while True:
             logger.debug("Reading line from fifo")
@@ -45,4 +40,4 @@ def listen_to_fifo_and_emit_metrics():
             if line == "":  # The client side sent an EOF
                 break
             metrics = _deserialize(line)
-            _emit(metrics)
+            emit(metrics)
