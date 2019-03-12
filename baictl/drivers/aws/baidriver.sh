@@ -87,6 +87,7 @@ create_infra() {
     $kubectl apply -f autoscaler-deployment.yaml
 
     $kubectl apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v1.11/nvidia-device-plugin.yml
+    $kubectl apply -f $project_dir/metrics-pusher/metrics-pusher-roles.yaml
 
     _create_configmap_yaml_from_terraform_outputs | $kubectl apply -f -
 
@@ -259,6 +260,8 @@ terraform_plan=$data_dir/terraform.plan
 terraform_dir=$(realpath $terraform_dir)
 terraform_state=$(realpath $terraform_state)
 terraform_plan=$(realpath $terraform_plan)
+
+project_dir=$(realpath $(dirname $BASH_SOURCE)/../../..)
 
 case "${object}" in
 infra)
