@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{job_id}}
+  name: {job_id}
 spec:
   template:
     metadata:
@@ -19,24 +19,17 @@ spec:
                 - benchmark-ai
             topologyKey: kubernetes.io/hostname
       containers:
-      - name: {{container_name}}
-        image: {{docker_image}}
+      - name: {container_name}
+        image: {docker_image}
         command: ["/bin/sh", "-c"]
         args:
-          - {{container_args}}
+          - {container_args}
         securityContext:
-          privileged: {{privileged}}
-      {init_containers}
-      {%- if puller_args %}
-      initContainers:
-      - name: data-fetcher
-      # TODO: Which image makes the most sense for the data-fetcher?
-        image: python
-        command: ["/bin/sh", "-c"]
-        args: 
-          - {{puller_args}}
-      {%- endif %}
+          privileged: {privileged}
+        volumeMounts: <container_volume_mounts>
+      initContainers: <pod_spec_init_containers>
       nodeSelector:
-        beta.kubernetes.io/instance-type: {{instance_type}}
+        beta.kubernetes.io/instance-type: {instance_type}
       restartPolicy: Never
+      volumes: <pod_spec_volumes>
   backoffLimit: 4

@@ -20,10 +20,13 @@ def test_wrong_descriptor(file):
 def test_get_container_args():
     assert dr.get_container_args({'benchmark_code': 'a.py'}) == 'a.py;'
     assert dr.get_container_args({'benchmark_code': 'a.py', 'ml_args': '-f'}) == 'a.py -f;'
-    assert dr.get_container_args({'benchmark_code': 'a.py', 'download_cmd': 'data.sh'}) == 'data.sh; a.py;'
 
 
-def test_fill_init_containers():
-    template = "{fetcher_args}"
-    assert dr.fill_init_containers([{'download': 'a'}, {'download': 'b'}], template) == 'a; b;'
-    assert dr.fill_init_containers([{'download': 'a', 'action': 'b'}, {'download': 'c'}], template) == 'a; b; c;'
+def test_get_data_volumes():
+    data_sources = [{'uri': 's3://data/path1', 'path': '/dest1/'},
+                    {'uri': 's3://data/path2', 'path': '/dest2/'}]
+    expected = {'/dest1/': {'name': 'p0', 'puller_path': '/data/p0'},
+                '/dest2/': {'name': 'p1', 'puller_path': '/data/p1'}}
+
+    assert dr.get_data_volumes(data_sources) == expected
+

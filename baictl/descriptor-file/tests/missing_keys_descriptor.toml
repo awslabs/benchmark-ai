@@ -26,11 +26,11 @@ args = "--model=resnet50_v2 --batch-size=32"
 # [Opt] Dataset
 [data]
 # Dataset ID
-dataset = "mnist"
+id = "mnist"
 
 [[data.sources]]
 # [Opt] Path of data download script.
-download = "python /home/benchmark/get_data.py mnist"
+uri = "python /home/benchmark/get_data.py mnist"
 # [Opt] Path where the dataset is stored in the container FS
 path = "/work/data/mnist/"
 
