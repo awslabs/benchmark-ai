@@ -4,7 +4,7 @@ from benchmarkai_sidecar import listen_to_fifo_and_emit_metrics, FIFO_FILEPATH
 
 
 def main():
-    # We import only inside the `main()` method to ensure we configure everything to ensure nothing from the global
+    # We import only inside the `main()` method to ensure we configure everything so that nothing from the global
     # context runs before we configure logging
     import logging
     import os
