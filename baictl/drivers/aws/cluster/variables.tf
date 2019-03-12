@@ -6,10 +6,6 @@ variable "user_prefix_id" {
   default = "pl-01a74268"
 }
 
-variable "eks_gpu_ami" {
-  default = "ami-08d23ed2de9320c90"
-}
-
 variable "cluster_name" {
   type    = "string"
   default = "benchmark-cluster"

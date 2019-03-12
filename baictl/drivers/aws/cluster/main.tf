@@ -7,6 +7,22 @@ provider "aws" {
   region  = "${var.region}"
 }
 
+data "aws_ami" "eks-gpu-optimized" {
+  most_recent = true
+
+  filter {
+    name   = "name"
+    values = ["amazon-eks-gpu-node-1.10-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  owners = ["679593333241"] # Centos org id
+}
+
 data "aws_availability_zones" "available" {}
 
 locals {
@@ -94,7 +110,7 @@ locals {
       kubelet_extra_args   = "${local.benchmark_kubelet_args}"
     },
     {
-      ami_id               = "${var.eks_gpu_ami}"
+      ami_id               = "${data.aws_ami.eks-gpu-optimized.id}"
       instance_type        = "p3.2xlarge"
       subnets              = "${join(",", module.vpc.private_subnets)}"
       asg_desired_capacity = "0"
@@ -105,7 +121,7 @@ locals {
       kubelet_extra_args   = "${local.benchmark_kubelet_args}"
     },
     {
-      ami_id               = "${var.eks_gpu_ami}"
+      ami_id               = "${data.aws_ami.eks-gpu-optimized.id}"
       instance_type        = "p3.8xlarge"
       subnets              = "${join(",", module.vpc.private_subnets)}"
       asg_desired_capacity = "0"
@@ -116,7 +132,7 @@ locals {
       kubelet_extra_args   = "${local.benchmark_kubelet_args}"
     },
     {
-      ami_id               = "${var.eks_gpu_ami}"
+      ami_id               = "${data.aws_ami.eks-gpu-optimized.id}"
       instance_type        = "p3.16xlarge"
       subnets              = "${join(",", module.vpc.private_subnets)}"
       asg_desired_capacity = "0"

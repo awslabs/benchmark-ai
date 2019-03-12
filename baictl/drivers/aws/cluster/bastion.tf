@@ -74,8 +74,24 @@ resource "aws_security_group" "recursive" {
   }
 }
 
+data "aws_ami" "bastions_ubuntu" {
+  most_recent = true
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  owners = ["099720109477"] # Canonical
+}
+
 resource "aws_instance" "bastion" {
-  ami                         = "ami-00035f41c82244dab"
+  ami                         = "${data.aws_ami.bastions_ubuntu.id}"
   availability_zone           = "${data.aws_availability_zones.available.names[0]}"
   instance_type               = "t2.micro"
   subnet_id                   = "${module.vpc.public_subnets[0]}"
