@@ -74,7 +74,7 @@ As you probably guessed, under the hood, `baictl` is:
 - Using [terraform](https://www.terraform.io/) to create all of the AWS infrastructure:
     - an [EKS](https://aws.amazon.com/eks) cluster
     - an [Elasticsearch](https://aws.amazon.com/elasticsearch-service/) cluster
-- Adding some PODs to Kubernetes. Some of them are:
+- Adding some Pods to Kubernetes. Some of them are:
     - FluentD
     - Autoscaler
     - NVIDIA device plugin
