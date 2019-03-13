@@ -36,8 +36,8 @@ create_infra() {
     terraform output kubectl_config >kubeconfig
 
     #Make private key not public accessible
-    local bastion_pem=$(terraform output bastion_pem)
-    chmod 400 $bastion_pem
+    local bastion_pem_filename=$(terraform output bastion_pem_filename)
+    chmod 400 $bastion_pem_filename
 
     $kubectl apply -f fluentd-daemonset.yaml
     $kubectl apply -f autoscaler-deployment.yaml
@@ -87,7 +87,7 @@ get_benchmark() {
 
     [ -z "$benchmark_name" ] && printf "Missing required argument --name\n" && return 1
 
-    local bastion_pem=$(terraform output --state=$terraform_state bastion_pem)
+    local bastion_pem_filename=$(terraform output --state=$terraform_state bastion_pem_filename)
     local bastion_ip=$(terraform output --state=$terraform_state bastion_public_ip)
     local es_endpoint=$(terraform output --state=$terraform_state es_endpoint)
 
@@ -95,7 +95,7 @@ get_benchmark() {
 
     local curl_cmd="curl -X POST -s -H 'Content-Type: application/json' -d '$query_body' ${es_endpoint}/_search"
 
-    ssh -q -o StrictHostKeyChecking=no -i $data_dir/$bastion_pem ubuntu@$bastion_ip "${curl_cmd}" | jq '.hits.hits[]._source | "(\(."@timestamp") \(.log)"' -j | sort
+    ssh -q -o StrictHostKeyChecking=no -i $data_dir/$bastion_pem_filename ubuntu@$bastion_ip "${curl_cmd}" | jq '.hits.hits[]._source | "(\(."@timestamp") \(.log)"' -j | sort
 }
 
 run_benchmark() {
