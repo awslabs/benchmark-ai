@@ -11,7 +11,48 @@ from urllib.parse import urlparse
 from typing import Dict, List
 
 
-class DescriptorReader:
+class Descriptor:
+    """
+    The model class for a Descriptor.
+
+    It should validate and contain ALL data the descriptor contains.
+    """
+    def __init__(self, toml_file: str):
+        """
+        Constructor
+        :param toml_file: the path to a TOML descriptor file
+        """
+        descriptor_toml = toml.load(toml_file)
+
+        try:
+            self.instance_type = descriptor_toml['hardware']['instance_type']
+            self.docker_image = descriptor_toml['env']['docker_image']
+            self.extended_shm = descriptor_toml['env']['extended_shm']
+            self.benchmark_code = descriptor_toml['ml']['benchmark_code']
+        except KeyError as e:
+            raise KeyError('Required field is missing in the descriptor toml file') from e
+
+        self.privileged = descriptor_toml['env'].get("privileged", False)
+
+        if 'args' in descriptor_toml['ml']:
+            self.ml_args = descriptor_toml['ml']['args']
+
+        if 'data' in descriptor_toml:
+            self.dataset = descriptor_toml['data']['id']
+            if 'sources' in descriptor_toml['data']:
+                self.data_sources = descriptor_toml['data']['sources']
+
+    # TODO: Validation
+    #     self._validate()
+    #
+    #
+    # def _validate(self):
+    #     """
+    #     Validates that this descriptor is valid
+    #     """
+
+
+class BaiConfig:
 
     VALID_DATA_SOURCES = ['s3', 'http', 'https', 'ftp', 'ftps']
     MOUNT_CHMOD = '777'
@@ -21,73 +62,41 @@ class DescriptorReader:
     S3_REGION = 'eu-west-1'
     PULLER_IMAGE = 'stsukrov/s3dataprovider'
 
-    def __init__(self, descriptor_path: str):
+    def __init__(self, descriptor: Descriptor):
         """
         Reads the values from the descriptor file into a settings dictionary
-        :param descriptor_path: path to the descriptor file
+        :param descriptor: Descriptor object with the information from the TOML
         :return:
         """
-        descriptor = toml.load(descriptor_path)
-        try:
-            self.settings = {
-                'instance_type': descriptor['hardware']['instance_type'],
-                'docker_image': descriptor['env']['docker_image'],
-                'extended_shm': descriptor['env']['extended_shm'],
-                'benchmark_code': descriptor['ml']['benchmark_code'],
-            }
-        except KeyError as e:
-            raise KeyError('Required field is missing in the descriptor file') from e
+        self.descriptor = descriptor
 
-        self.settings['privileged'] = descriptor['env'].get("privileged", False)
-
-        if 'args' in descriptor['ml']:
-            self.settings['ml_args'] = descriptor['ml']['args']
-
-        if 'data' in descriptor:
-            self.settings['dataset'] = descriptor['data']['id']
-            if 'sources' in descriptor['data']:
-                self.settings['data_sources'] = descriptor['data']['sources']
-                self.settings['data_volumes'] = self._get_data_volumes()
-
-        # TODO: Verify there are K8s labels to store info such as dataset, docker_image, instance_type...
-        job_id = uuid.uuid4().hex
-        self.settings['job_id'] = job_id
-        self.settings['container_name'] = 'benchmark'
-        self.settings['container_args'] = self._get_container_args()
-
-        self.settings['templates'] = {
-            'pod_spec_volumes': self._get_pod_spec_volumes(),
-            'pod_spec_init_containers': self._get_data_puller(),
-            'container_volume_mounts': self._get_container_volume_mounts()
-        }
-
-    def fill_template(self, template: str) -> str:
-        """
-        Fill in the job config file
-        :param template: str with the job config template
-        :return: job config string
-        """
-        config_dict = yaml.load(template.format(**self.settings), Loader=yaml.RoundTripLoader)
-        self._replace_templated_fields(config_dict, self.settings['templates'])
-
-        return config_dict
+        self.job_id = uuid.uuid4().hex
+        self.container_name = 'benchmark'
+        self.container_args = self._get_container_args()
+        self.data_volumes = self._get_data_volumes()
+        self.pod_spec_volumes = self._get_pod_spec_volumes()
+        self.pod_spec_init_containers = self._get_data_puller()
+        self.container_volume_mounts = self._get_container_volume_mounts()
 
     def _get_container_args(self) -> str:
         """
         Extracts the args for the container and formats them.
         :return: the container's args
         """
-        cmd = self.settings['benchmark_code']
+        cmd = self.descriptor.benchmark_code
 
-        if 'ml_args' in self.settings:
-            cmd += ' ' + self.settings['ml_args']
+        if hasattr(self.descriptor, 'ml_args'):
+            cmd += ' ' + self.descriptor.ml_args
 
         return cmd + ';'
 
     def _get_data_volumes(self) -> Dict:
-        data_sources = self.settings['data_sources']
+        if not hasattr(self.descriptor, 'data_sources'):
+            return {}
+
+        data_sources = self.descriptor.data_sources
         # Data destination paths and the corresponding mounted vols
-        destination_paths = {[s['path'] for s in data_sources]}
+        destination_paths = set([s['path'] for s in data_sources])
         data_vols = {}
 
         for idx, dest in enumerate(destination_paths):
@@ -101,38 +110,38 @@ class DescriptorReader:
     def _get_pod_spec_volumes(self):
         volumes = []
 
-        if 'extended_shm' in self.settings:
+        if hasattr(self.descriptor, 'extended_shm'):
             shm = client.V1Volume(name=self.SHARED_MEMORY_VOL,
                                   empty_dir=client.V1EmptyDirVolumeSource(medium="Memory"))
             volumes.append(shm.to_dict())
 
-        if 'data_volumes' in self.settings:
-            for _, vol in self.settings['data_volumes'].items():
+        if self.data_volumes:
+            for _, vol in self.data_volumes.items():
                 volumes.append(client.V1Volume(name=vol['name'],
                                                empty_dir=client.V1EmptyDirVolumeSource())
                                .to_dict())
 
-        return remove_null_entries(volumes)
+        return self.remove_null_entries(volumes)
 
     def _get_container_volume_mounts(self) -> List:
         vol_mounts = []
 
-        if 'extended_shm' in self.settings:
+        if hasattr(self.descriptor, 'extended_shm'):
             vol_mounts.append(client.V1VolumeMount(name=self.SHARED_MEMORY_VOL,
                                                    mount_path='/dev/shm')
                               .to_dict())
 
-        for dest_path, vol in self.settings['data_volumes'].items():
+        for dest_path, vol in self.data_volumes.items():
             vol_mounts.append(client.V1VolumeMount(name=vol['name'],
                                                    mount_path=dest_path)
                               .to_dict())
 
-        return remove_null_entries(vol_mounts)
+        return self.remove_null_entries(vol_mounts)
 
     def _get_puller_volume_mounts(self) -> List:
         vol_mounts = []
 
-        for _, vol in self.settings['data_volumes'].items():
+        for _, vol in self.data_volumes.items():
             vol_mounts.append(client.V1VolumeMount(name=vol['name'],
                                                    mount_path=vol['puller_path'])
                               .to_dict())
@@ -146,7 +155,7 @@ class DescriptorReader:
         """
         processed_sources = []
         try:
-            for source in self.settings['data_sources']:
+            for source in self.descriptor.data_sources:
                 uri_components = self._process_uri(source['uri'])
                 processed_sources.append({**source, **uri_components})
         except KeyError as e:
@@ -168,7 +177,7 @@ class DescriptorReader:
         for s in processed_sources:
             s3_objects.append(s['object'] + ',' +
                               self.MOUNT_CHMOD + ',' +
-                              self.settings['data_volumes'][s['path']]['name'])
+                              self.data_volumes[s['path']]['name'])
 
         puller_args = [self.S3_REGION, bucket, ':'.join(s3_objects)]
         # ------------------------------------------
@@ -178,7 +187,7 @@ class DescriptorReader:
                                     image=self.PULLER_IMAGE,
                                     args=puller_args,
                                     volume_mounts=vol_mounts).to_dict()
-        return remove_null_entries(puller)
+        return self.remove_null_entries(puller)
 
     def _process_uri(self, uri):
         """
@@ -196,6 +205,31 @@ class DescriptorReader:
         # TODO: Add data sources other than S3
         else:
             print(f'{origin} not supported as a data source yet')
+
+    def remove_null_entries(self, d):
+        """
+        Remove entries with null values from the dict or list passed as parameter.
+        """
+        # This method is needed because k8s client objects.to_dict() contain many Null fields
+        if not isinstance(d, (dict, list)):
+            return d
+        if isinstance(d, list):
+            return [v for v in (self.remove_null_entries(v) for v in d) if v is not None]
+        return {k: v for k, v in ((k, self.remove_null_entries(v)) for k, v in d.items()) if v is not None}
+
+    def get_full_dict(self) -> Dict:
+        """
+        :return: dict with all attributes of the BaiConfig and its Descriptor
+        """
+        bai_config_dict = vars(self).copy()
+        bai_config_dict.pop('descriptor')
+        return {**vars(self.descriptor), **bai_config_dict}
+
+
+class ConfigTemplate:
+    def __init__(self, template_file: str):
+        with open(template_file, "r") as f:
+            self.config_template_string = f.read()
 
     def _replace_templated_fields(self, d: Dict, templates: Dict[str, Dict]):
         """
@@ -218,17 +252,18 @@ class DescriptorReader:
     def _is_templated_field(self, val) -> bool:
         return isinstance(val, str) and val.startswith('<') and val.endswith('>')
 
+    def fill(self, bai_config: BaiConfig) -> str:
+        """
+        Fill in the template with the given configuration
+        :param bai_config: BaiConfig object with the settings
+        :return: job config dict
+        """
+        settings = bai_config.get_full_dict()
 
-def remove_null_entries(d):
-    """
-    Remove entries with null values from the dict or list passed as parameter.
-    """
-    # This method is needed because k8s client objects.to_dict() contain many Null fields
-    if not isinstance(d, (dict, list)):
-        return d
-    if isinstance(d, list):
-        return [v for v in (remove_null_entries(v) for v in d) if v is not None]
-    return {k: v for k, v in ((k, remove_null_entries(v)) for k, v in d.items()) if v is not None}
+        config_dict = yaml.load(self.config_template_string.format(**settings), Loader=yaml.RoundTripLoader)
+        self._replace_templated_fields(config_dict, settings)
+
+        return config_dict
 
 
 def main():
@@ -250,11 +285,12 @@ def main():
     args = parser.parse_args()
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.join(current_dir, args.template), 'r') as stream:
-        template = stream.read()
 
-    reader = DescriptorReader(args.descriptor)
-    job_config = reader.fill_template(template)
+    job_config_template = ConfigTemplate(os.path.join(current_dir, args.template))
+    descriptor = Descriptor(args.descriptor)
+    bai_config = BaiConfig(descriptor)
+
+    job_config = job_config_template.fill(bai_config)
 
     if args.f:
         with open(os.path.join(current_dir, args.f), 'w') as outfile:
