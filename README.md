@@ -91,7 +91,7 @@ BAI provides some sample benchmarks at the `benchmark-ai/sample-benchmarks` dire
 ```
 
 By doing this you submitted a benchmark run to Benchmark AI (which is a [Kubernetes job](https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/) by the way),
-the following will be done:
+and the following will be done:
 
 - The descriptor file is read and validated.
 - BAI submits a job to Kubernetes
