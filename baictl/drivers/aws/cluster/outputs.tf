@@ -36,6 +36,6 @@ output "es_endpoint" {
   value = "${aws_elasticsearch_domain.logs.endpoint}"
 }
 
-output "bastion_pem" {
+output "bastion_pem_filename" {
   value = "${local_file.bastion_privatekey_pem.filename}"
 }
