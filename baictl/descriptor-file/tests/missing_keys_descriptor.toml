@@ -23,14 +23,16 @@ docker_image = "jlcont/benchmarking:270219"
 # The code is called as defined in ml.benchmark_code, plus the args defined here
 args = "--model=resnet50_v2 --batch-size=32"
 
-  # [Opt] Dataset
-  [ml.data]
-  # Dataset ID
-  dataset = "mnist"
-  # [Opt] Path of data download script.
-  download_script = "python /home/benchmark/get_data.py mnist"
-  # [Opt] Path where the dataset is stored in the container FS
-  data_path = "/work/data/mnist/"
+# [Opt] Dataset
+[data]
+# Dataset ID
+id = "mnist"
+
+[[data.sources]]
+# [Opt] Path of data download script.
+uri = "python /home/benchmark/get_data.py mnist"
+# [Opt] Path where the dataset is stored in the container FS
+path = "/work/data/mnist/"
 
 # 4. Output
 [output]
