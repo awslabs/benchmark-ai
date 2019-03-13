@@ -40,4 +40,5 @@ output "es_endpoint" {
 
 output "bastion_pem_filename" {
   value = "${local_file.bastion_privatekey_pem.filename}"
+  sensitive = true
 }
