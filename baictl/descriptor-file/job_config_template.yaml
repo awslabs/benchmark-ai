@@ -19,7 +19,7 @@ spec:
                 - benchmark-ai
             topologyKey: kubernetes.io/hostname
       containers:
-      - name: {container_name}
+      - name: benchmark
         image: {docker_image}
         command: ["/bin/sh", "-c"]
         args:
