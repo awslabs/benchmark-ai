@@ -96,7 +96,7 @@ and the following will be done:
 - The descriptor file is read and validated.
 - BAI submits a job to Kubernetes
 - Kubernetes allocates node(s) for you (using [Cluster Autoscaler](https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler)).
-- The benchmark runs, emitting metrics via the `emit()` method provided by the [client-lib](https://github.com/MXNetEdge/benchmark-ai/tree/master/baictl/descriptor-file).
+- The benchmark runs, emitting metrics via the `emit()` method provided by the [client-lib](https://github.com/MXNetEdge/benchmark-ai/tree/master/client-lib).
 - Logs are collected into:
     - Elasticsearch
 - Metrics are collected into:
@@ -114,7 +114,7 @@ and the following will be done:
 Write your own benchmarks!
 
 Explore the [descriptor file format](https://github.com/MXNetEdge/benchmark-ai/tree/master/baictl/descriptor-file)
-in order to run your benchmarks in Benchmark AI. Make sure to post metrics by integrating the [client library](https://github.com/MXNetEdge/benchmark-ai/tree/master/baictl/descriptor-file)
+in order to run your benchmarks in Benchmark AI. Make sure to post metrics by integrating the [client library](https://github.com/MXNetEdge/benchmark-ai/tree/master/client-lib)
 in your code.
 
 Other interesting features:
