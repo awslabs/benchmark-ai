@@ -26,7 +26,10 @@ spec:
           - {container_args}
         securityContext:
           privileged: {privileged}
+        volumeMounts: <container_volume_mounts>
+      initContainers: <pod_spec_init_containers>
       nodeSelector:
         beta.kubernetes.io/instance-type: {instance_type}
       restartPolicy: Never
+      volumes: <pod_spec_volumes>
   backoffLimit: 4

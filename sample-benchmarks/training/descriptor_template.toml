@@ -23,6 +23,9 @@ docker_image = "jlcont/benchmarking:270219"
 # Args for the docker container
 # [Opt] Whether to run the container in privileged mode (default is false)
 privileged = false
+# Whether more than 64MB shared memory is needed for containers
+# (See docker's -shm option)
+extended_shm = true
 
 # 3. Machine learning related settings: 
 # dataset, benchmark code and parameters it takes
@@ -32,14 +35,31 @@ benchmark_code = "python /home/benchmark/image_classification.py"
 # The code is called as defined in ml.benchmark_code, plus the args defined here
 args = "--model=resnet50_v2 --batch-size=32"
 
-  # [Opt] Dataset
-  [ml.data]
-  # Dataset ID
-  dataset = "mnist"
-  # [Opt] Path of data download script.
-  download_script = "python /home/benchmark/get_data.py mnist"
-  # [Opt] Path where the dataset is stored in the container FS
-  data_path = "/work/data/mnist/"
+# [Opt] 4. Dataset 
+[data]
+# Dataset ID
+id = "mnist"
+# md5 = "rddytftyfrdr75657fftrtrt11"
+
+# [Opt] Data sources
+# List all required data sources below. 
+# Make an entry for each with the same format as the ones below.
+[[data.sources]]
+# Data download URI.
+uri = "s3://mlperf-data-stsukrov/imagenet/train-480px"
+# [Not yet supported] Use this field to specify a preprocessing command.
+# action = "unzip training_data.zip"
+# Path where the dataset is stored in the container FS
+path = "~/data/tf-imagenet/"
+
+# Second data source
+[[data.sources]]
+# Data download URI.
+uri = "s3://mlperf-data-stsukrov/imagenet/validation-480px"
+# Path where the dataset is stored in the container FS
+path = "~/data/tf-imagenet/"
+
+# ...
 
 # 4. Output
 [output]
