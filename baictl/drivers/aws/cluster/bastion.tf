@@ -17,16 +17,16 @@ resource "local_file" "bastion_privatekey_pem" {
   filename = "bastion_private.pem"
 }
 
-resource "aws_security_group" "ssh-amazon-corp" {
-  name        = "ssh-amazon-corp"
-  description = "ssh-amazon-corp"
+resource "aws_security_group" "ssh-access-rules" {
+  name        = "ssh-access-rules"
+  description = "ssh-access-rules"
   vpc_id      = "${module.vpc.vpc_id}"
 
   ingress {
     from_port       = 22
     to_port         = 22
     protocol        = "tcp"
-    prefix_list_ids = ["${var.user_prefix_id}"]
+    prefix_list_ids = "${var.prefix_list_ids}"
   }
 
   egress {
@@ -37,7 +37,7 @@ resource "aws_security_group" "ssh-amazon-corp" {
   }
 
   tags {
-    "Name" = "ssh-amazon-corp"
+    "Name" = "ssh-access-rules"
   }
 }
 
@@ -95,7 +95,7 @@ resource "aws_instance" "bastion" {
   availability_zone           = "${data.aws_availability_zones.available.names[0]}"
   instance_type               = "t2.micro"
   subnet_id                   = "${module.vpc.public_subnets[0]}"
-  vpc_security_group_ids      = ["${module.eks.worker_security_group_id}", "${aws_security_group.loopback.id}", "${aws_security_group.ssh-amazon-corp.id}"]
+  vpc_security_group_ids      = ["${module.eks.worker_security_group_id}", "${aws_security_group.loopback.id}", "${aws_security_group.ssh-access-rules.id}"]
   associate_public_ip_address = true
 
   key_name = "${aws_key_pair.bastion_key.key_name}"
