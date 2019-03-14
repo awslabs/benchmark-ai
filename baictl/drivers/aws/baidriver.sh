@@ -72,8 +72,6 @@ create_infra() {
     terraform get $terraform_dir
 
     terraform plan --state=$terraform_state --out=$terraform_plan ${vars} $terraform_dir
-
-    exit 1
     terraform apply $terraform_plan
     terraform output kubectl_config >kubeconfig
 
