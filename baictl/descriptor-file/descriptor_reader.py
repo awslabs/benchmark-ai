@@ -32,11 +32,12 @@ class DescriptorReader:
             self.settings = {
                 'instance_type': descriptor['hardware']['instance_type'],
                 'docker_image': descriptor['env']['docker_image'],
-                'extended_shm': descriptor['env']['extended_shm'],
                 'benchmark_code': descriptor['ml']['benchmark_code'],
             }
         except KeyError as e:
             raise KeyError('Required field is missing in the descriptor file') from e
+
+        self.settings['extended_shm'] = descriptor['env'].get('extended_shm', False)
 
         self.settings['privileged'] = descriptor['env'].get("privileged", False)
 
@@ -67,7 +68,8 @@ class DescriptorReader:
         :param template: str with the job config template
         :return: job config string
         """
-        config_dict = yaml.load(template.format(**self.settings), Loader=yaml.RoundTripLoader)
+        formatted_yaml = template.format(**self.settings)
+        config_dict = yaml.load(formatted_yaml, Loader=yaml.RoundTripLoader)
         self._replace_templated_fields(config_dict, self.settings['templates'])
 
         return config_dict
@@ -101,10 +103,11 @@ class DescriptorReader:
     def _get_pod_spec_volumes(self):
         volumes = []
 
-        if 'extended_shm' in self.settings:
+        if self.settings.get('extended_shm', False):
             shm = client.V1Volume(name=self.SHARED_MEMORY_VOL,
                                   empty_dir=client.V1EmptyDirVolumeSource(medium="Memory"))
-            volumes.append(shm.to_dict())
+            d = shm.to_dict()
+            volumes.append(d)
 
         if 'data_volumes' in self.settings:
             for _, vol in self.settings['data_volumes'].items():
@@ -117,12 +120,12 @@ class DescriptorReader:
     def _get_container_volume_mounts(self) -> List:
         vol_mounts = []
 
-        if 'extended_shm' in self.settings:
+        if self.settings.get('extended_shm', False):
             vol_mounts.append(client.V1VolumeMount(name=self.SHARED_MEMORY_VOL,
                                                    mount_path='/dev/shm')
                               .to_dict())
 
-        for dest_path, vol in self.settings['data_volumes'].items():
+        for dest_path, vol in self.settings.get('data_volumes', {}).items():
             vol_mounts.append(client.V1VolumeMount(name=vol['name'],
                                                    mount_path=dest_path)
                               .to_dict())
@@ -146,7 +149,7 @@ class DescriptorReader:
         """
         processed_sources = []
         try:
-            for source in self.settings['data_sources']:
+            for source in self.settings.get('data_sources', []):
                 uri_components = self._process_uri(source['uri'])
                 processed_sources.append({**source, **uri_components})
         except KeyError as e:
@@ -154,6 +157,9 @@ class DescriptorReader:
                            ' Each data source must have a download uri and a destination path.') from e
         except ValueError as e:
             raise ValueError('Incorrect download URI.') from e
+
+        if len(processed_sources) == 0:
+            return []
 
         # Placeholder until the data fetcher is ready
         # ------------------------------------------
@@ -177,8 +183,8 @@ class DescriptorReader:
         puller = client.V1Container(name='data-puller',
                                     image=self.PULLER_IMAGE,
                                     args=puller_args,
-                                    volume_mounts=vol_mounts).to_dict()
-        return remove_null_entries(puller)
+                                    volume_mounts=vol_mounts)
+        return remove_null_entries(puller.to_dict())
 
     def _process_uri(self, uri):
         """
