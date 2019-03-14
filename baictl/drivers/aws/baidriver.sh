@@ -57,8 +57,8 @@ create_infra() {
 
     local vars=""
 
-    [ -n "$cluster_name" ] && vars="${vars} -var 'cluster-name=${cluster_name}'"
-    [ -n "$region" ] && vars="${vars} -var 'region=${region}'"
+    [ -n "$cluster_name" ] && vars="${vars} -var cluster_name=${cluster_name}"
+    [ -n "$region" ] && vars="${vars} -var region=${region}"
 
     terraform init $terraform_dir
     terraform get $terraform_dir
