@@ -35,10 +35,9 @@ class Descriptor:
         self.privileged = descriptor_data['env'].get('privileged', False)
         self.ml_args = descriptor_data['ml'].get('args', '')
 
-        # TODO: What if there is no data section?
-        if 'data' in descriptor_data:
-            self.dataset = descriptor_data['data']['id']
-            self.data_sources = self._process_data_sources(descriptor_data['data'].get('sources', []))
+        self.dataset = descriptor_data.get('data', {}).get('id', '')
+        descriptor_sources = descriptor_data.get('data', {}).get('sources', [])
+        self.data_sources = self._process_data_sources(descriptor_sources)
 
         self._validate()
 
@@ -57,8 +56,10 @@ class Descriptor:
         Validates that this descriptor is valid
         """
         for source in self.data_sources:
-            assert source.get('uri', ''), 'Missing data uri'
-            assert source['scheme'] in self.VALID_DATA_SOURCES, f'Invalid data uri: {source["uri"]}'
+            if not source.get('uri', ''):
+                raise ValueError('Missing data uri')
+            if source['scheme'] not in self.VALID_DATA_SOURCES:
+                raise ValueError(f'Invalid data uri: {source["uri"]}')
 
     def _process_data_sources(self, data_sources: List) -> List:
         processed_sources = []
@@ -117,7 +118,7 @@ class BaiConfig:
 
     def _get_data_volumes(self, data_sources: List) -> Dict:
         # Data destination paths and the corresponding mounted vols
-        destination_paths = set([s['path'] for s in data_sources])
+        destination_paths = {s['path'] for s in data_sources}
         data_vols = {}
 
         for idx, dest in enumerate(destination_paths):
@@ -240,7 +241,7 @@ class ConfigTemplate:
     def _is_templated_field(self, val) -> bool:
         return isinstance(val, str) and val.startswith('<') and val.endswith('>')
 
-    def dump_yaml_string(self, settings: Dict, output_stream):
+    def dump_yaml_string(self, settings: Dict):
         """
         Fill in the template with the given configuration and print the result, either to stdout
         or to a file.
@@ -251,7 +252,7 @@ class ConfigTemplate:
         config_dict = yaml.load(formatted_config, Loader=yaml.RoundTripLoader)
         self._replace_templated_fields(config_dict, settings)
 
-        yaml.dump(config_dict, output_stream, Dumper=yaml.RoundTripDumper)
+        return yaml.dump(config_dict, Dumper=yaml.RoundTripDumper)
 
 
 def main():
@@ -278,15 +279,13 @@ def main():
     descriptor = Descriptor.from_toml_file(args.descriptor)
     bai_config = BaiConfig(descriptor)
 
-    if getattr(args, "filename"):
-        output_stream = open(os.path.join(current_dir, args.filename), 'w')
+    yaml_string = job_config_template.dump_yaml_string(bai_config.get_full_dict())
+
+    if args.filename:
+        with open(os.path.join(current_dir, args.filename), 'w') as f:
+            f.write(yaml_string)
     else:
-        output_stream = sys.stdout
-
-    job_config_template.dump_yaml_string(bai_config.get_full_dict(), output_stream)
-
-    if not output_stream == sys.stdout:
-        output_stream.close()
+        print(yaml_string)
 
 
 if __name__ == '__main__':
