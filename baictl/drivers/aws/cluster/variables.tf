@@ -2,8 +2,10 @@ variable "region" {
   default = "eu-west-1"
 }
 
-variable "user_prefix_id" {
-  default = "pl-01a74268"
+variable "prefix_list_ids" {
+  type        = "list"
+
+  default = []
 }
 
 variable "cluster_name" {

@@ -41,6 +41,7 @@ EOF
 create_infra() {
     local cluster_name=""
     local region=""
+    local prefix_list_id=""
 
     for arg in "$@"; do
         case "${arg}" in
@@ -50,8 +51,14 @@ create_infra() {
         --aws-region=*)
             region="${arg#*=}"
             ;;
+        --aws-prefix-list-id=*)
+            prefix_list_id="${arg#*=}"
+            ;;
         esac
     done
+
+    #Temporary behavior
+    [ -z "$prefix_list_id" ] && printf "Missing required argument --aws-prefix-list-id\n" && return 1
 
     cd $data_dir
 
@@ -59,6 +66,7 @@ create_infra() {
 
     [ -n "$cluster_name" ] && vars="${vars} -var cluster_name=${cluster_name}"
     [ -n "$region" ] && vars="${vars} -var region=${region}"
+    [ -n "$prefix_list_id" ] && vars="${vars} -var prefix_list_ids=[\"${prefix_list_id}\"]"
 
     terraform init $terraform_dir
     terraform get $terraform_dir
