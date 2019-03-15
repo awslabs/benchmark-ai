@@ -83,7 +83,7 @@ class Descriptor:
 
         # TODO: Add data sources other than S3
         else:
-            print(f'{origin} not supported as a data source yet')
+            raise ValueError(f'{origin} not supported as a data source yet')
 
 
 class BaiConfig:
