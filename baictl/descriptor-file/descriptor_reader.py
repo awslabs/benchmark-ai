@@ -19,30 +19,38 @@ class Descriptor:
 
     VALID_DATA_SOURCES = ['s3', 'http', 'https', 'ftp', 'ftps']
 
-    def __init__(self, toml_file: str):
+    def __init__(self, descriptor_data: Dict):
         """
         Constructor
-        :param toml_file: TOML descriptor file path
+        :param data: dict contaning the data as loaded from the descriptor toml file
         """
-        descriptor_toml = toml.load(toml_file)
-
         try:
-            self.instance_type = descriptor_toml['hardware']['instance_type']
-            self.docker_image = descriptor_toml['env']['docker_image']
-            self.benchmark_code = descriptor_toml['ml']['benchmark_code']
+            self.instance_type = descriptor_data['hardware']['instance_type']
+            self.docker_image = descriptor_data['env']['docker_image']
+            self.benchmark_code = descriptor_data['ml']['benchmark_code']
         except KeyError as e:
             raise KeyError('Required field is missing in the descriptor toml file') from e
 
-        self.extended_shm = descriptor_toml['env'].get('extended_shm', False)
-        self.privileged = descriptor_toml['env'].get('privileged', False)
-        self.ml_args = descriptor_toml['ml'].get('args', '')
+        self.extended_shm = descriptor_data['env'].get('extended_shm', False)
+        self.privileged = descriptor_data['env'].get('privileged', False)
+        self.ml_args = descriptor_data['ml'].get('args', '')
 
         # TODO: What if there is no data section?
-        if 'data' in descriptor_toml:
-            self.dataset = descriptor_toml['data']['id']
-            self.data_sources = self._process_data_sources(descriptor_toml['data'].get('sources', []))
+        if 'data' in descriptor_data:
+            self.dataset = descriptor_data['data']['id']
+            self.data_sources = self._process_data_sources(descriptor_data['data'].get('sources', []))
 
         self._validate()
+
+    @classmethod
+    def from_toml_file(cls, toml_file: str):
+        """
+        Constructor from toml file path
+        :param toml_file: TOML descriptor file path
+        :return:
+        """
+        descriptor_toml = toml.load(toml_file)
+        return cls(descriptor_toml)
 
     def _validate(self):
         """
@@ -95,10 +103,10 @@ class BaiConfig:
 
         self.job_id = uuid.uuid4().hex
         self.container_args = self._get_container_args()
-        self.data_volumes = self._get_data_volumes()
+        self.data_volumes = self._get_data_volumes(descriptor.data_sources)
         self.pod_spec_volumes = self._get_pod_spec_volumes(self.data_volumes)
         self.pod_spec_init_containers = self._get_data_puller(self.data_volumes, descriptor.data_sources)
-        self.container_volume_mounts = self._get_container_volume_mounts()
+        self.container_volume_mounts = self._get_container_volume_mounts(self.data_volumes)
 
     def _get_container_args(self) -> str:
         """
@@ -107,8 +115,7 @@ class BaiConfig:
         """
         return self.descriptor.benchmark_code + ' ' + self.descriptor.ml_args + ';'
 
-    def _get_data_volumes(self) -> Dict:
-        data_sources = self.descriptor.data_sources
+    def _get_data_volumes(self, data_sources: List) -> Dict:
         # Data destination paths and the corresponding mounted vols
         destination_paths = set([s['path'] for s in data_sources])
         data_vols = {}
@@ -136,7 +143,7 @@ class BaiConfig:
 
         return self.remove_null_entries(volumes)
 
-    def _get_container_volume_mounts(self) -> List:
+    def _get_container_volume_mounts(self, data_volumes) -> List:
         vol_mounts = []
 
         if self.descriptor.extended_shm:
@@ -144,7 +151,7 @@ class BaiConfig:
                                                    mount_path='/dev/shm')
                               .to_dict())
 
-        for dest_path, vol in self.data_volumes.items():
+        for dest_path, vol in data_volumes.items():
             vol_mounts.append(client.V1VolumeMount(name=vol['name'],
                                                    mount_path=dest_path)
                               .to_dict())
@@ -268,7 +275,7 @@ def main():
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
     job_config_template = ConfigTemplate(os.path.join(current_dir, args.template))
-    descriptor = Descriptor(args.descriptor)
+    descriptor = Descriptor.from_toml_file(args.descriptor)
     bai_config = BaiConfig(descriptor)
 
     if getattr(args, "filename"):
