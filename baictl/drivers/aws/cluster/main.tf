@@ -141,10 +141,10 @@ locals {
       asg_max_size         = 3
       asg_min_size         = 0
       kubelet_extra_args   = "${local.benchmark_kubelet_args}"
-    },
+    }
   ]
 
-  worker_groups_count = "10"
+  worker_groups_count = "11"
 
   tags = {
     Environment = "test"
