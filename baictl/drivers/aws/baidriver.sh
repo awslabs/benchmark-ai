@@ -6,9 +6,42 @@ print_unsupported_verb() {
     printf "Unsupported verb ${verb} for object ${object}\n"
 }
 
+_create_configmap_yaml_from_terraform_outputs() {
+    local outputs=$(terraform output -json)
+    local configmap_data=""
+    for row in $(echo "${outputs}" | jq -r 'to_entries | .[] | @base64'); do
+        # Use base64 because the output might contain a \n, which will break this whole loop
+        _jq() {
+            echo ${row} | base64 --decode | jq -r ${1}
+        }
+
+        key=$(_jq '.key')
+        value=$(_jq '.value.value')
+        sensitive=$(_jq '.value.sensitive')
+        # Avoid sensitive and values with newlines
+        if [[ ($sensitive == "false") && ("$value" != *$'\n'*) ]]; then
+            configmap_data="$configmap_data\n  $key: $value"
+        fi
+    done
+
+    # printf => To interpret the \n symbols in the variable
+    # tail => To skip the first line, which should be empty
+    configmap_data=$(printf "$configmap_data" | tail -n +2)
+
+cat << EOF
+apiVersion: v1
+data:
+$configmap_data
+kind: ConfigMap
+metadata:
+  name: outputs-infrastructure
+EOF
+}
+
 create_infra() {
     local cluster_name=""
     local region=""
+    local prefix_list_id=""
 
     for arg in "$@"; do
         case "${arg}" in
@@ -18,15 +51,22 @@ create_infra() {
         --aws-region=*)
             region="${arg#*=}"
             ;;
+        --aws-prefix-list-id=*)
+            prefix_list_id="${arg#*=}"
+            ;;
         esac
     done
+
+    #Temporary behavior
+    [ -z "$prefix_list_id" ] && printf "Missing required argument --aws-prefix-list-id\n" && return 1
 
     cd $data_dir
 
     local vars=""
 
-    [ -n "$cluster_name" ] && vars="${vars} -var 'cluster-name=${cluster_name}'"
-    [ -n "$region" ] && vars="${vars} -var 'region=${region}'"
+    [ -n "$cluster_name" ] && vars="${vars} -var cluster_name=${cluster_name}"
+    [ -n "$region" ] && vars="${vars} -var region=${region}"
+    [ -n "$prefix_list_id" ] && vars="${vars} -var prefix_list_ids=[\"${prefix_list_id}\"]"
 
     terraform init $terraform_dir
     terraform get $terraform_dir
@@ -36,13 +76,15 @@ create_infra() {
     terraform output kubectl_config >kubeconfig
 
     #Make private key not public accessible
-    local bastion_pem=$(terraform output bastion_pem)
-    chmod 400 $bastion_pem
+    local bastion_pem_filename=$(terraform output bastion_pem_filename)
+    chmod 400 $bastion_pem_filename
 
     $kubectl apply -f fluentd-daemonset.yaml
     $kubectl apply -f autoscaler-deployment.yaml
 
     $kubectl apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v1.11/nvidia-device-plugin.yml
+
+    _create_configmap_yaml_from_terraform_outputs | $kubectl apply -f -
 }
 
 destroy_infra() {
@@ -87,7 +129,7 @@ get_benchmark() {
 
     [ -z "$benchmark_name" ] && printf "Missing required argument --name\n" && return 1
 
-    local bastion_pem=$(terraform output --state=$terraform_state bastion_pem)
+    local bastion_pem_filename=$(terraform output --state=$terraform_state bastion_pem_filename)
     local bastion_ip=$(terraform output --state=$terraform_state bastion_public_ip)
     local es_endpoint=$(terraform output --state=$terraform_state es_endpoint)
 
@@ -95,7 +137,7 @@ get_benchmark() {
 
     local curl_cmd="curl -X POST -s -H 'Content-Type: application/json' -d '$query_body' ${es_endpoint}/_search"
 
-    ssh -q -o StrictHostKeyChecking=no -i $data_dir/$bastion_pem ubuntu@$bastion_ip "${curl_cmd}" | jq '.hits.hits[]._source | "(\(."@timestamp") \(.log)"' -j | sort
+    ssh -q -o StrictHostKeyChecking=no -i $data_dir/$bastion_pem_filename ubuntu@$bastion_ip "${curl_cmd}" | jq '.hits.hits[]._source | "(\(."@timestamp") \(.log)"' -j | sort
 }
 
 run_benchmark() {

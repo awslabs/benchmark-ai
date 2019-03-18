@@ -135,7 +135,8 @@ class BaiConfig:
         if self.descriptor.extended_shm:
             shm = client.V1Volume(name=self.SHARED_MEMORY_VOL,
                                   empty_dir=client.V1EmptyDirVolumeSource(medium="Memory"))
-            volumes.append(shm.to_dict())
+            d = shm.to_dict()
+            volumes.append(d)
 
         for vol in data_volumes.values():
             volumes.append(client.V1Volume(name=vol['name'],
@@ -193,6 +194,7 @@ class BaiConfig:
                                     image=self.PULLER_IMAGE,
                                     args=puller_args,
                                     volume_mounts=vol_mounts)
+                                 
         return self.remove_null_entries(puller.to_dict())
 
     def remove_null_entries(self, d):
@@ -243,10 +245,9 @@ class ConfigTemplate:
 
     def dump_yaml_string(self, settings: Dict):
         """
-        Fill in the template with the given configuration and print the result, either to stdout
-        or to a file.
+        Fill in the template with the given configuration and return the resulting YAML string
         :param settings: dict[field_to_replace:str, value]
-        :param output_stream:
+        :return: YAML string with the filled template
         """
         formatted_config = self.config_template_string.format(**settings)
         config_dict = yaml.load(formatted_config, Loader=yaml.RoundTripLoader)
