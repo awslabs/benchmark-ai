@@ -211,6 +211,7 @@ module "vpc" {
   public_subnets     = ["172.16.48.0/20", "172.16.64.0/20", "172.16.80.0/20"]
   enable_nat_gateway = true
   single_nat_gateway = true
+  enable_s3_endpoint = true
   tags               = "${merge(local.tags, map("kubernetes.io/cluster/${var.cluster_name}", "shared"))}"
 }
 
