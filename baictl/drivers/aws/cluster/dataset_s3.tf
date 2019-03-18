@@ -49,3 +49,11 @@ resource "aws_iam_role_policy_attachment" "data_pull_policy_attachment" {
   policy_arn = "${aws_iam_policy.data-pull-policy.arn}"
   role       = "${module.eks.worker_iam_role_name}"
 }
+
+#VPC Endpoint for S3
+#https://docs.aws.amazon.com/vpc/latest/userguide/vpc-endpoints.html
+#It's a Gateway endpoint
+resource "aws_vpc_endpoint" "dataset_s3_endpoint" {
+    vpc_id       = "${module.vpc.vpc_id}"
+    service_name = "com.amazonaws.${var.region}.s3"
+}
