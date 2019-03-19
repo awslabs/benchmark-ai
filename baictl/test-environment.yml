@@ -1,0 +1,7 @@
+name: baictl
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pytest
+  - pytest-regressions
