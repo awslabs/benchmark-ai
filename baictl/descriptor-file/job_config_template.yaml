@@ -18,7 +18,7 @@ spec:
                 values:
                 - benchmark-ai
             topologyKey: kubernetes.io/hostname
-      initContainers: {{}}
+      initContainers: []
       containers:
       - name: benchmark
         image: {docker_image}
@@ -27,9 +27,9 @@ spec:
           - {container_args}
         securityContext:
           privileged: {privileged}
-        volumeMounts: {{}}
+        volumeMounts: []
       nodeSelector:
         beta.kubernetes.io/instance-type: {instance_type}
       restartPolicy: Never
-      volumes: {{}}
+      volumes: []
   backoffLimit: 4

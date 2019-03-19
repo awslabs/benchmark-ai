@@ -1,16 +1,53 @@
 import random
 
-import kubernetes
 import toml
 import argparse
 import os
 import uuid
 import yaml
+import addict
 
-from kubernetes import client
 from urllib.parse import urlparse
-from kubernetes.client import V1Container, V1PodSpec, V1VolumeMount, V1Job, V1Volume, V1StatefulSet
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
+
+
+# Using the official Kubernetes Model classes (https://github.com/kubernetes-client/python) is avoided here
+# because it presents some problems:
+#
+# 1) Custom Resource Definitions (eg.: kubeflow)
+#       => This is a BLOCKER for why it is not a good idea to use the python-client as the provider for the model
+#       classes.
+#
+# 2) When using the to_dict() of the classes, that is not a valid Kubernetes yaml since it outputs the fields as
+#   snake_case and not camelCase as expected by the Kubernetes API.
+#       => This can be fixed with a workaround, so it is just an annoying fact.
+#
+# 3) Hacky way to create the class from a YAML object.
+#        => There is no clean way to create a Kubernetes model object from a yaml file without going through the
+#        internals of the Python client API.
+#        The closest method is `create_from_yaml()`, which is analogous to `kubectl apply -f file.yaml`, which:
+#        - calls the K8S Api server with the contents of the yaml.
+#        - returns the results as a Kubernetes Model object by deserializing the response.
+#
+#        Diving into the `create_from_yaml()` method I found this `deserialize()` method, which can create the objects
+#        correctly. However it requires a JSON as input and also the type it must create:
+#
+#            def deserialize(self, response, response_type) -> response_type:
+#               return self.__deserialize(json.load(response.data), response_type)
+#
+#        The theory is that these Kubernetes Model objects were not made for being manipulated as real model objects,
+#        but only for having a "type-safe" way of interacting with the responses of the Kubernetes server.
+
+# Some types so we can use type annotations to make the code more readable.
+# While doing this doesn't give any form of static typing, it helps show intention, which is better than nothing.
+# It wouldn't be an issue if we could use the official Kubernetes Model classes, however, that's not possible due to
+# the reasons stated above.
+Container = addict.Dict
+PodSpec = addict.Dict
+VolumeMount = addict.Dict
+Job = addict.Dict
+Volume = addict.Dict
+EmptyDirVolumeSource = addict.Dict
 
 
 class Descriptor:
@@ -95,75 +132,35 @@ class KubernetesRootObjectHelper:
 
     It provides some utility methods and serialization/deserialization from YAML.
     """
-    KIND_TO_TYPE = {
-        "Job": V1Job,
-        "StatefulSet": V1StatefulSet,
-    }
-
     def __init__(self, contents: str):
         """
         :param contents: The YAML contents of a full Kubernetes object
         """
-        # HACK: This API `create_from_yaml()` requiring an ApiClient is weird, so
-        # if we need to pass around kubernetes clients, we should receive this object
-        # as a parameter.
-        # HACK: I couldn't find a clean way to create a Kubernetes model object
-        # from a yaml file without going through the internals of the Python API.
-        # The closest method I could find is `create_from_yaml()`, which is analogous
-        # to `kubectl apply -f file.yaml`, which:
-        # - calls the K8S Api Server with the contents of the yaml.
-        # - returns the results as a Kubernetes Model object by deserializing the response.
-        #
-        # Diving into the `create_from_yaml()` method I found this `deserialize()`
-        # method, which can create the objects correctly. However it requires a JSON
-        # as input and also the type it must create.
-        #
-        # Maybe these Kubernetes Model objects were not made for being manipulated
-        # as real model objects, but only for reading them from the responses of
-        # interacting with the Kubernetes server.
-        #
-        # Does Kubernetes really make you use YAML all the time? Sad panda...
-        #
-        # TODO: Find a library that models Kubernetes Model objects in a better way.
-        k8s_client = kubernetes.client.ApiClient()
-        from collections import namedtuple
-        import json
-        T = namedtuple("TypeThatContainsADataField", ("data",))
-        yaml_data = yaml.load(contents)
-        kind = yaml_data["kind"]
-        try:
-            root_type = KubernetesRootObjectHelper.KIND_TO_TYPE[kind]
-        except KeyError:
-            raise ValueError("The value '{}' for the `kind` field is not supported".format(kind))
-        json_string = json.dumps(yaml_data)
-
-        self._root: Union[V1Job, V1StatefulSet] = k8s_client.deserialize(T(data=json_string), root_type)
+        yaml_data = yaml.safe_load(contents)
+        self._root = addict.Dict(yaml_data)
 
         # Validation
-        assert isinstance(self._root, root_type), \
-            "An instance of a different type than expected was created. " \
-            "Expected {}, but got {}".format(root_type, type(self._root))
-        if self._root.spec is None:
-            raise ValueError(f"Spec of {kind} not found at yaml definition of the Kubernetes object")
-        if self.get_pod_spec() is None:
+        if not self._root.spec:
+            raise ValueError("Spec of root object not found at yaml definition of the Kubernetes object")
+        if not self.get_pod_spec():
             raise ValueError("Pod not found at yaml definition of the Kubernetes object")
         containers = self.get_pod_spec().containers
-        if containers is None or len(containers) == 0:
+        if not containers:
             raise ValueError("A Pod must have at least 1 container on its definition")
 
         # Create empty fields if required
-        if self.get_pod_spec().init_containers is None:
-            self.get_pod_spec().init_containers = []
-        if self.get_pod_spec().volumes is None:
+        if not self.get_pod_spec().initContainers:
+            self.get_pod_spec().initContainers = []
+        if not self.get_pod_spec().volumes:
             self.get_pod_spec().volumes = []
         for container in self.get_pod_spec().containers:
-            if container.volume_mounts is None:
-                container.volume_mounts = []
+            if not container.volumeMounts:
+                container.volumeMounts = []
 
-    def get_pod_spec(self) -> V1PodSpec:
+    def get_pod_spec(self) -> PodSpec:
         return self._root.spec.template.spec
 
-    def find_container(self, container_name: str) -> V1Container:
+    def find_container(self, container_name: str) -> Container:
         """
         :param container_name: The name of the container
         :return: The container object
@@ -267,12 +264,12 @@ class BaiConfig:
         data_volumes = self._get_data_volumes(self.descriptor.data_sources)
 
         benchmark_container = self.root.find_container("benchmark")
-        benchmark_container.volume_mounts.extend(self._get_container_volume_mounts(data_volumes))
+        benchmark_container.volumeMounts.extend(self._get_container_volume_mounts(data_volumes))
 
         pod_spec = self.root.get_pod_spec()
         data_puller = self._get_data_puller(data_volumes, self.descriptor.data_sources)
         if data_puller is not None:
-            pod_spec.init_containers.append(data_puller)
+            pod_spec.initContainers.append(data_puller)
         pod_spec.volumes.extend(self._get_pod_spec_volumes(data_volumes))
 
     def dump_yaml_string(self):
@@ -298,35 +295,34 @@ class BaiConfig:
 
         return data_vols
 
-    def _get_pod_spec_volumes(self, data_volumes) -> List[V1Volume]:
+    def _get_pod_spec_volumes(self, data_volumes) -> List[Volume]:
         volumes = []
 
         if self.descriptor.extended_shm:
-            shm = client.V1Volume(name=self.SHARED_MEMORY_VOL,
-                                  empty_dir=client.V1EmptyDirVolumeSource(medium="Memory"))
+            shm = Volume(name=self.SHARED_MEMORY_VOL,
+                         emptyDir=EmptyDirVolumeSource(medium="Memory"))
             d = shm.to_dict()
             volumes.append(d)
 
         for vol in data_volumes.values():
-            volumes.append(client.V1Volume(name=vol['name'],
-                                           empty_dir=client.V1EmptyDirVolumeSource()))
+            volumes.append(Volume(name=vol['name'],
+                                  emptyDir=EmptyDirVolumeSource()))
 
         return volumes
 
-    def _get_container_volume_mounts(self, data_volumes) -> List[V1VolumeMount]:
+    def _get_container_volume_mounts(self, data_volumes) -> List[VolumeMount]:
         vol_mounts = []
 
         if self.descriptor.extended_shm:
-            vol_mounts.append(client.V1VolumeMount(name=self.SHARED_MEMORY_VOL,
-                                                   mount_path='/dev/shm'))
+            vol_mounts.append(VolumeMount(name=self.SHARED_MEMORY_VOL,
+                                          mountPath='/dev/shm'))
 
         for dest_path, vol in data_volumes.items():
-            vol_mounts.append(V1VolumeMount(name=vol['name'],
-                                            mount_path=dest_path))
-
+            vol_mounts.append(VolumeMount(name=vol['name'],
+                                          mountPath=dest_path))
         return vol_mounts
 
-    def _get_data_puller(self, data_volumes, data_sources) -> Optional[V1Container]:
+    def _get_data_puller(self, data_volumes, data_sources) -> Optional[Container]:
         """
         Extracts the args for the data puller container and formats them.
 
@@ -347,27 +343,28 @@ class BaiConfig:
         # ------------------------------------------
 
         vol_mounts = self._get_puller_volume_mounts(data_volumes)
-        puller = V1Container(name='data-puller',
-                             image=self.PULLER_IMAGE,
-                             args=puller_args,
-                             volume_mounts=vol_mounts)
+        puller = Container(name='data-puller',
+                           image=self.PULLER_IMAGE,
+                           args=puller_args,
+                           volumeMounts=vol_mounts)
         return puller
 
-    def _get_puller_volume_mounts(self, data_volumes) -> List[V1VolumeMount]:
+    def _get_puller_volume_mounts(self, data_volumes) -> List[VolumeMount]:
         vol_mounts = []
 
         for vol in data_volumes.values():
-            vol_mounts.append(V1VolumeMount(name=vol['name'],
-                                            mount_path=vol['puller_path']))
+            vol_mounts.append(VolumeMount(name=vol['name'],
+                                          mountPath=vol['puller_path']))
 
         return vol_mounts
 
 
-def create_bai_config(descriptor: Descriptor, extra_bai_config_args: Dict=None):
+def create_bai_config(descriptor: Descriptor, extra_bai_config_args=None) -> BaiConfig:
     """
     Builds a BaiConfig object
-    :param descriptor:
-    :param extra_bai_config_args: An optional field to
+
+    :param descriptor: The descriptor.
+    :param extra_bai_config_args: An optional Dict which will be forwarded to the `BaiConfig` object created.
     :return:
     """
     if extra_bai_config_args is None:

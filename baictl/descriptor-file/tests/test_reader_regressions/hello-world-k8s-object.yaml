@@ -1,24 +1,24 @@
-api_version: batch/v1
+apiVersion: batch/v1
 kind: Job
 metadata:
   name: cd613e30d8f14adf91b7584a2265b1f5
 spec:
-  backoff_limit: 4
+  backoffLimit: 4
   template:
     metadata:
       labels:
         app: benchmark-ai
     spec:
       affinity:
-        pod_anti_affinity:
-          required_during_scheduling_ignored_during_execution:
-          - label_selector:
-              match_expressions:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
               - key: app
                 operator: In
                 values:
                 - benchmark-ai
-            topology_key: kubernetes.io/hostname
+            topologyKey: kubernetes.io/hostname
       containers:
       - args:
         - python3 hello-world.py ;
@@ -27,11 +27,11 @@ spec:
         - -c
         image: edisongustavo/bai-benchmarks-hello-world:latest
         name: benchmark
-        security_context:
+        securityContext:
           privileged: false
-        volume_mounts: []
-      init_containers: []
-      node_selector:
+        volumeMounts: []
+      initContainers: []
+      nodeSelector:
         beta.kubernetes.io/instance-type: t2.small
-      restart_policy: Never
+      restartPolicy: Never
       volumes: []

@@ -58,7 +58,7 @@ def test_find_container_that_is_not_present(k8s_job):
 
 def test_get_pod_spec(k8s_job):
     pod_spec = k8s_job.get_pod_spec()
-    assert pod_spec.restart_policy == "Never"
+    assert pod_spec.restartPolicy == "Never"
 
 
 def test_build_job_without_pod():
@@ -99,7 +99,7 @@ def test_build_job_without_spec():
             metadata:
               name: job-id
         """))
-    assert e.match("Spec of Job not found at yaml definition of the Kubernetes object")
+    assert e.match("Spec of root object not found at yaml definition of the Kubernetes object")
 
 
 def test_adds_placeholder_fields():
@@ -125,5 +125,5 @@ def test_adds_placeholder_fields():
                 image: my-docker-image
     """))
     assert k8s_job.get_pod_spec().volumes == []
-    assert k8s_job.get_pod_spec().init_containers == []
-    assert k8s_job.find_container("benchmark").volume_mounts == []
+    assert k8s_job.get_pod_spec().initContainers == []
+    assert k8s_job.find_container("benchmark").volumeMounts == []
