@@ -301,13 +301,13 @@ class BaiConfig:
         if self.descriptor.extended_shm:
             shm = Volume(name=self.SHARED_MEMORY_VOL,
                          emptyDir=EmptyDirVolumeSource(medium="Memory"))
+
             d = shm.to_dict()
             volumes.append(d)
 
         for vol in data_volumes.values():
             volumes.append(Volume(name=vol['name'],
                                   emptyDir=EmptyDirVolumeSource()))
-
         return volumes
 
     def _get_container_volume_mounts(self, data_volumes) -> List[VolumeMount]:
