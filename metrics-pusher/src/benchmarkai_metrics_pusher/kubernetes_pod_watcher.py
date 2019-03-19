@@ -8,7 +8,8 @@ from kubernetes.client import V1Pod, V1ContainerState, V1ContainerStateTerminate
 
 
 def start_kubernetes_pod_watcher(pod_name: str, pod_namespace: str):
-    # HACK: While Kubernetes doesn't provide support for sidecar containers, then we simulate it with
+    # HACK: While Kubernetes doesn't provide first class support for sidecar containers in Jobs,
+    # (see: https://github.com/kubernetes/kubernetes/issues/25908), then we simulate it with
     # our own thread that watches the benchmark container. It is not perfect, but it's good enough
     thread = Thread(
         target=watch_kubernetes_pod,
