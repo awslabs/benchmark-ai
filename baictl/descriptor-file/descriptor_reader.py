@@ -1,10 +1,12 @@
 import random
+
 import toml
 import argparse
 import os
 import uuid
 import addict
 import shlex
+
 import ruamel.yaml as yaml
 
 from urllib.parse import urlparse
@@ -48,6 +50,7 @@ VolumeMount = addict.Dict
 Job = addict.Dict
 Volume = addict.Dict
 EmptyDirVolumeSource = addict.Dict
+HostPath = addict.Dict
 
 
 class Descriptor:
@@ -69,8 +72,13 @@ class Descriptor:
         except KeyError as e:
             raise KeyError('Required field is missing in the descriptor toml file') from e
 
-        self.single_node = True
-        self.extended_shm = descriptor_data['env'].get('extended_shm', True)
+        self.distributed = 'distributed' in descriptor_data['hardware']
+        distributed_data = descriptor_data['hardware'].get('distributed', {})
+        self.num_instances = distributed_data.get('num_instances', 0)
+        self.gpus_per_instance = distributed_data.get('gpus_per_instance', 0)
+        self.distributed_strategy = distributed_data.get('strategy', '')
+
+        self.extended_shm = descriptor_data['env'].get('extended_shm', False)
         self.privileged = descriptor_data['env'].get('privileged', False)
         self.benchmark_code = descriptor_data['ml'].get('benchmark_code', None)
         self.ml_args = descriptor_data['ml'].get('args', None)
@@ -100,6 +108,8 @@ class Descriptor:
                 raise ValueError('Missing data uri')
             if source['scheme'] not in self.VALID_DATA_SOURCES:
                 raise ValueError(f'Invalid data uri: {source["uri"]}')
+
+        # TODO: Validate the chosen instance type has enough GPUs
 
     def _process_data_sources(self, data_sources: List) -> List:
         processed_sources = []
@@ -270,9 +280,37 @@ class BaiConfig:
 
         pod_spec = self.root.get_pod_spec()
         data_puller = self._get_data_puller(data_volumes, self.descriptor.data_sources)
+
         if data_puller is not None:
             pod_spec.initContainers.append(data_puller)
         pod_spec.volumes.extend(self._get_pod_spec_volumes(data_volumes))
+
+        if self.descriptor.extended_shm:
+            self.add_extended_shm()
+
+    def add_extended_shm(self):
+        pod_spec_volumes = self.root.get_pod_spec().volumes
+        container_volume_mounts = self.root.find_container("benchmark").volumeMounts
+
+        shm_vol = Volume(name=self.SHARED_MEMORY_VOL,
+                         emptyDir=EmptyDirVolumeSource(medium="Memory"))
+        pod_spec_volumes.append(shm_vol)
+
+        shm_vol_mount = VolumeMount(name=self.SHARED_MEMORY_VOL,
+                                    mountPath='/dev/shm')
+        container_volume_mounts.append(shm_vol_mount)
+
+    def add_and_mount_volume(self, name: str, ):
+        pod_spec_volumes = self.root.get_pod_spec().volumes
+        container_volume_mounts = self.root.find_container("benchmark").volumeMounts
+
+        shm_vol = Volume(name=self.SHARED_MEMORY_VOL,
+                         emptyDir=EmptyDirVolumeSource(medium="Memory"))
+        pod_spec_volumes.append(shm_vol)
+
+        shm_vol_mount = VolumeMount(name=self.SHARED_MEMORY_VOL,
+                                    mountPath='/dev/shm')
+        container_volume_mounts.append(shm_vol_mount)
 
     def dump_yaml_string(self):
         return self.root.to_yaml()
@@ -319,24 +357,16 @@ class BaiConfig:
     def _get_pod_spec_volumes(self, data_volumes) -> List[Volume]:
         volumes = []
 
-        if self.descriptor.extended_shm:
-            shm = Volume(name=self.SHARED_MEMORY_VOL,
-                         emptyDir=EmptyDirVolumeSource(medium="Memory"))
-
-            d = shm.to_dict()
-            volumes.append(d)
-
         for vol in data_volumes.values():
             volumes.append(Volume(name=vol['name'],
-                                  emptyDir=EmptyDirVolumeSource()))
+                                  hostPath=HostPath(path=f'/{vol[name]}',
+                                                    type='DirectoryOrCreate')))
+                                  # empty_dir=EmptyDirVolumeSource()))
+
         return volumes
 
     def _get_container_volume_mounts(self, data_volumes) -> List[VolumeMount]:
         vol_mounts = []
-
-        if self.descriptor.extended_shm:
-            vol_mounts.append(VolumeMount(name=self.SHARED_MEMORY_VOL,
-                                          mountPath='/dev/shm'))
 
         for dest_path, vol in data_volumes.items():
             vol_mounts.append(VolumeMount(name=vol['name'],
@@ -392,13 +422,19 @@ def create_bai_config(descriptor: Descriptor, extra_bai_config_args=None) -> Bai
         extra_bai_config_args = {}
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    if descriptor.single_node:
-        with open(os.path.join(current_dir, "job_config_template.yaml"), "r") as f:
+    if not descriptor.distributed:
+        with open(os.path.join(current_dir, "templates", "job_single_node.yaml"), "r") as f:
             contents = f.read()
         config_template = ConfigTemplate(contents)
         bai_config = BaiConfig(descriptor, config_template, **extra_bai_config_args)
         return bai_config
 
+    elif descriptor.distributed_strategy == 'horovod':
+        with open(os.path.join(current_dir, "templates", "mpi_job_horovod.yaml"), "r") as f:
+            contents = f.read()
+        config_template = ConfigTemplate(contents)
+        bai_config = BaiConfig(descriptor, config_template, **extra_bai_config_args)
+        # return bai_config
     # TODO: Improve this error message
     raise ValueError("Unsupported configuration at descriptor")
 

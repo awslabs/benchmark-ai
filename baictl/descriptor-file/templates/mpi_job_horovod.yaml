@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: entrypoint-{job_id}
+  namespace: default
+  benchmark: {job_id}
+data:
+  entrypoint.sh: |-
+    #!/bin/bash
+
+    #MPI is weird. It shortens the names to the last domain
+
+    cp $OMPI_MCA_orte_default_hostfile /root/hosts
+    {container_args}
+---
+
+# This file shows how to run multi-node training benchmarks using an MPIJob,
+# letting the operator decide on how best to allocate GPUs.
+#
+# In this mode, the operator assumes all nodes have the same number of GPUs.
+# If `gpus` is bigger than the number of GPUs per node, then only whole nodes
+# can be allocated.
+#
+# For example, if each node has 8 GPUs, the valid `gpus` values are:
+# 1, 2, 4, 8, 16, 24, 32, ...or any multiple of 8.
+#
+# If you need more flexibility in allocating GPUs, you can use the alternative
+# mode to specify `replicas` and GPU resource limit explicitly.
+apiVersion: kubeflow.org/v1alpha1
+kind: MPIJob
+metadata:
+  name: {job_id}
+spec:
+  replicas: {num_instances}
+  template:
+    spec:
+      initContainers: []
+      containers:
+      - image: {docker_image}
+        name: tensorflow-benchmarks
+        command: 
+        - /bin/entrypoint.sh
+        volumeMounts: []
+        # - mountPath: /home/ubuntu/data/tf-imagenet
+        #   name: p1
+        # - name: entrypoint
+        #   mountPath: /bin/entrypoint.sh
+        #   readOnly: true
+        #   subPath: entrypoint.sh
+        # - mountPath: /dev/shm
+        #   name: dshm
+        resources:
+          limits:
+            nvidia.com/gpu: {gpus_per_instance}
+        securityContext:
+          privileged: {privileged}
+      volumes: []
+      # - name: p1
+      #   hostPath:
+      #     path: /mldata
+      #     type: DirectoryOrCreate
+      # - name: entrypoint
+      #   configMap:
+      #     defaultMode: 0700
+      #     name: entrypoint
+      # - name: dshm
+      #   emptyDir:
+      #     medium: Memory
+      nodeSelector:
+        beta.kubernetes.io/instance-type: {instance_type}

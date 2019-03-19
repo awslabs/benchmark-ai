@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {job_id}
+spec:
+  template:
+    metadata:
+      labels:
+        app: benchmark-ai
+    spec:
+      serviceAccountName: metrics-pusher
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - benchmark-ai
+            topologyKey: kubernetes.io/hostname
+      initContainers: []
+      containers:
+      - name: benchmark
+        image: {docker_image}
+        command: []
+        args: []
+        securityContext:
+          privileged: {privileged}
+        volumeMounts: []
+      nodeSelector:
+        beta.kubernetes.io/instance-type: {instance_type}
+      restartPolicy: Never
+      volumes: []
+  backoffLimit: 4
