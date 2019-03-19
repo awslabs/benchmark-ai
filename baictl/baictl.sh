@@ -47,7 +47,13 @@ fi
 
 target="${target:=aws}"
 
-backend=$(dirname $BASH_SOURCE)/drivers/$target/baidriver.sh
+if [ -L $BASH_SOURCE ] ; then
+    dir=$(dirname "$(readlink -n $BASH_SOURCE)")
+else
+    dir=$(dirname $BASH_SOURCE)
+fi
+
+backend=$dir/drivers/$target/baidriver.sh
 
 if [ -f $backend ]; then
    ${backend} "$@" || print_usage_and_exit
