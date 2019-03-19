@@ -1,5 +1,4 @@
 import random
-
 import toml
 import argparse
 import os
