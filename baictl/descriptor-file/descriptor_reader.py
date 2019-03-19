@@ -1,3 +1,5 @@
+import random
+
 import kubernetes
 import toml
 import argparse
@@ -238,18 +240,25 @@ class BaiConfig:
     S3_REGION = 'eu-west-1'
     PULLER_IMAGE = 'stsukrov/s3dataprovider'
 
-    def __init__(self, descriptor: Descriptor, config_template: ConfigTemplate):
+    def __init__(self, descriptor: Descriptor, config_template: ConfigTemplate, *, random_object=None):
         """
         Reads the values from the descriptor file into a settings dictionary
         :param descriptor: Descriptor object with the information from the TOML
-        :return:
+        :param config_template: The YAML template
+        :param random_object: An instance of random.Random [optional].
+                              This field exists mostly to facilitate testing so that predictable random data is
+                              generated.
         """
         self.descriptor = descriptor
+
+        if random_object is None:
+            random_object = random.Random()
 
         config_template.feed(vars(self.descriptor))
         config_template.feed(
             {"container_args": self._get_container_args(),
-             "job_id": uuid.uuid4().hex}
+             # random_object.getrandbits(128) is equivalent to os.urandom(16), since 16 * 8 = 128
+             "job_id": uuid.UUID(int=random_object.getrandbits(128), version=4).hex}
         )
         self.root = config_template.build_root()
         self.add_volumes()
@@ -354,18 +363,22 @@ class BaiConfig:
         return vol_mounts
 
 
-def create_bai_config(descriptor: Descriptor):
+def create_bai_config(descriptor: Descriptor, extra_bai_config_args: Dict=None):
     """
     Builds a BaiConfig object
     :param descriptor:
+    :param extra_bai_config_args: An optional field to
     :return:
     """
+    if extra_bai_config_args is None:
+        extra_bai_config_args = {}
+
     current_dir = os.path.dirname(os.path.abspath(__file__))
     if descriptor.single_node:
         with open(os.path.join(current_dir, "job_config_template.yaml"), "r") as f:
             contents = f.read()
         config_template = ConfigTemplate(contents)
-        bai_config = BaiConfig(descriptor, config_template)
+        bai_config = BaiConfig(descriptor, config_template, **extra_bai_config_args)
         return bai_config
 
     # TODO: Improve this error message
