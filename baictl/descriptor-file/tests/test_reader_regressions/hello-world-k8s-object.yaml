@@ -29,9 +29,47 @@ spec:
         - python3 hello-world.py ;
         securityContext:
           privileged: false
-        volumeMounts: []
+        env:
+        - name: BENCHMARK_AI
+          value: fifo
+        - name: BENCHMARK_AI_FIFO_FILEPATH
+          value: /tmp/benchmark-ai/fifo
+        - name: BENCHMARK_AI_FIFO_MAX_WAIT_TIME
+          value: '60'
+        volumeMounts:
+        - mountPath: /tmp/benchmark-ai
+          name: benchmark-ai
+      - name: sidecar
+        image: edisongustavo/bai-sidecar:0.1-RC7
+        env:
+        - name: BENCHMARK_AI_FIFO_FILEPATH
+          value: /tmp/benchmark-ai/fifo
+        - name: JOB_ID
+          value: cd613e30d8f14adf91b7584a2265b1f5
+        - name: BACKEND
+          value: elasticsearch
+        - name: BACKEND_ARG_HOSTNAME
+          valueFrom:
+            configMapKeyRef:
+              name: outputs-infrastructure
+              key: es_endpoint
+        - name: BACKEND_ARG_PORT
+          value: '443'
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        volumeMounts:
+        - mountPath: /tmp/benchmark-ai
+          name: benchmark-ai
       nodeSelector:
         beta.kubernetes.io/instance-type: t2.small
       restartPolicy: Never
-      volumes: []
+      volumes:
+      - name: benchmark-ai
+        emptyDir: {}
   backoffLimit: 4
