@@ -31,7 +31,10 @@ class ElasticsearchBackend:
         doc = {
             "job-id": self.job_id,
             "timestamp": timestamp,
-            "metrics": metrics
+            "metrics": metrics,
+            "tracing": {
+                "service": "metrics-pusher",
+            }
         }
         r = self.es.index(index="job-metrics", doc_type="metric", body=json.dumps(doc))
         logger.debug("Response: %r", r)
