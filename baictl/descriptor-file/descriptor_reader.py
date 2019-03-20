@@ -3,8 +3,9 @@ import toml
 import argparse
 import os
 import uuid
-import ruamel.yaml as yaml
 import addict
+import shlex
+import ruamel.yaml as yaml
 
 from urllib.parse import urlparse
 from typing import Dict, List, Optional
@@ -65,14 +66,14 @@ class Descriptor:
         try:
             self.instance_type = descriptor_data['hardware']['instance_type']
             self.docker_image = descriptor_data['env']['docker_image']
-            self.benchmark_code = descriptor_data['ml']['benchmark_code']
         except KeyError as e:
             raise KeyError('Required field is missing in the descriptor toml file') from e
 
         self.single_node = True
         self.extended_shm = descriptor_data['env'].get('extended_shm', False)
         self.privileged = descriptor_data['env'].get('privileged', False)
-        self.ml_args = descriptor_data['ml'].get('args', '')
+        self.benchmark_code = descriptor_data['ml'].get('benchmark_code', None)
+        self.ml_args = descriptor_data['ml'].get('args', None)
 
         self.dataset = descriptor_data.get('data', {}).get('id', '')
         descriptor_sources = descriptor_data.get('data', {}).get('sources', [])
@@ -122,7 +123,7 @@ class Descriptor:
 
         # TODO: Add data sources other than S3
         else:
-            raise ValueError(f'{origin} not supported as a data source yet')
+            raise ValueError(f'{parsed.scheme} not supported as a data source yet')
 
 
 class KubernetesRootObjectHelper:
@@ -253,11 +254,12 @@ class BaiConfig:
 
         config_template.feed(vars(self.descriptor))
         config_template.feed(
-            {"container_args": self._get_container_args(),
+            {
              # random_object.getrandbits(128) is equivalent to os.urandom(16), since 16 * 8 = 128
              "job_id": uuid.UUID(int=random_object.getrandbits(128), version=4).hex}
         )
         self.root = config_template.build_root()
+        self.add_container_cmd()
         self.add_volumes()
 
     def add_volumes(self):
@@ -275,12 +277,31 @@ class BaiConfig:
     def dump_yaml_string(self):
         return self.root.to_yaml()
 
-    def _get_container_args(self) -> str:
+    def add_container_cmd(self):
         """
-        Extracts the args for the container and formats them.
+        Extracts the command and args for the container and formats them.
         :return: the container's args
         """
-        return self.descriptor.benchmark_code + ' ' + self.descriptor.ml_args + ';'
+        benchmark_container = self.root.find_container('benchmark')
+
+        def split_args(command: str) -> List[str]:
+            if not command:
+                return []
+            return shlex.split(command)
+
+        if self.descriptor.benchmark_code:
+            cmd = split_args(self.descriptor.benchmark_code)
+            args = split_args(self.descriptor.ml_args)
+            benchmark_container.command = cmd + args
+            del benchmark_container.args
+
+        elif self.descriptor.ml_args:
+            benchmark_container.args = split_args(self.descriptor.ml_args)
+            del benchmark_container.command
+
+        else:
+            del benchmark_container.command
+            del benchmark_container.args
 
     def _get_data_volumes(self, data_sources: List) -> Dict:
         # Data destination paths and the corresponding mounted vols

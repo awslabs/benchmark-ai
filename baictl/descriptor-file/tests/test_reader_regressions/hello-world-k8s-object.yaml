@@ -23,10 +23,8 @@ spec:
       - name: benchmark
         image: edisongustavo/bai-benchmarks-hello-world:latest
         command:
-        - /bin/sh
-        - -c
-        args:
-        - python3 hello-world.py ;
+        - python3
+        - hello-world.py
         securityContext:
           privileged: false
         volumeMounts: []

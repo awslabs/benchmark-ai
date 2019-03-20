@@ -32,10 +32,10 @@ spec:
       - name: benchmark
         image: jlcont/benchmarking:270219
         command:
-        - /bin/sh
-        - -c
-        args:
-        - python /home/benchmark/image_classification.py --model=resnet50_v2 --batch-size=32;
+        - python
+        - /home/benchmark/image_classification.py
+        - --model=resnet50_v2
+        - --batch-size=32
         securityContext:
           privileged: false
         volumeMounts:
