@@ -28,7 +28,7 @@ _create_configmap_yaml_from_terraform_outputs() {
     # tail => To skip the first line, which should be empty
     configmap_data=$(printf "$configmap_data" | tail -n +2)
 
-cat << EOF
+    cat << EOF
 apiVersion: v1
 data:
 $configmap_data
@@ -42,6 +42,7 @@ create_infra() {
     local cluster_name=""
     local region=""
     local prefix_list_id=""
+    local no_validate=false
 
     for arg in "$@"; do
         case "${arg}" in
@@ -53,6 +54,9 @@ create_infra() {
             ;;
         --aws-prefix-list-id=*)
             prefix_list_id="${arg#*=}"
+            ;;
+        --no-validate)
+            no_validate=true
             ;;
         esac
     done
@@ -85,6 +89,41 @@ create_infra() {
     $kubectl apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v1.11/nvidia-device-plugin.yml
 
     _create_configmap_yaml_from_terraform_outputs | $kubectl apply -f -
+
+    _install_kubeflow_mpi_operator
+
+    [ "$no_validate" == true ] || validate_infra $@
+}
+
+_install_kubeflow_mpi_operator() {
+    if [ ! -d "kubeflow-mpi" ]; then
+        mkdir kubeflow-mpi
+        cd kubeflow-mpi
+        git init
+        git remote add origin -f https://github.com/kubeflow/mpi-operator.git
+        git config core.sparsecheckout true
+        echo "deploy/*" >>.git/info/sparse-checkout
+        git pull --depth=1 origin master
+        cd ..
+    fi
+    $kubectl apply -f kubeflow-mpi/deploy/
+}
+
+_validate_mpijob_installed() {
+    printf "Validating MPIJob CRD..."
+    local kind=$($kubectl get crd mpijobs.kubeflow.org --output=json 2>/dev/null | jq .kind --raw-output)
+    if [ "$kind" == "CustomResourceDefinition" ]; then
+        printf "PASSED\n"
+    else
+        printf "FAILED\n"
+        return 1
+    fi
+}
+
+validate_infra() {
+    printf "Validating infra\n"
+
+    _validate_mpijob_installed || return 1
 }
 
 destroy_infra() {
@@ -110,7 +149,7 @@ get_infra() {
             ;;
         --aws-bastion-ip)
             terraform output --state=$terraform_state bastion_public_ip
-            ;;    
+            ;;
         esac
     done
     printf "\n----------\n"
@@ -232,6 +271,9 @@ infra)
         ;;
     get)
         get_infra $@
+        ;;
+    validate)
+        validate_infra $@
         ;;
     *)
         print_unsupported_verb $object $verb
