@@ -3,7 +3,6 @@ kind: Job
 metadata:
   name: cd613e30d8f14adf91b7584a2265b1f5
 spec:
-  backoffLimit: 4
   template:
     metadata:
       labels:
@@ -19,19 +18,20 @@ spec:
                 values:
                 - benchmark-ai
             topologyKey: kubernetes.io/hostname
+      initContainers: []
       containers:
-      - args:
-        - python3 hello-world.py ;
+      - name: benchmark
+        image: edisongustavo/bai-benchmarks-hello-world:latest
         command:
         - /bin/sh
         - -c
-        image: edisongustavo/bai-benchmarks-hello-world:latest
-        name: benchmark
+        args:
+        - python3 hello-world.py ;
         securityContext:
           privileged: false
         volumeMounts: []
-      initContainers: []
       nodeSelector:
         beta.kubernetes.io/instance-type: t2.small
       restartPolicy: Never
       volumes: []
+  backoffLimit: 4
