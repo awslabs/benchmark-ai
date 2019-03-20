@@ -12,13 +12,13 @@ instance_type = "p3.8xlarge"
 
 # 2. Environment
 [env]
-docker_image = "jlcont/benchmarking:270219"
+# Missing required field
+# docker_image = "jlcont/benchmarking:270219"
 
 # 3. Machine learning related settings: 
 # dataset, benchmark code and parameters it takes
 [ml]
-# Missing required field: benchmark_code
-# benchmark_code = "python /home/benchmark/image_classification.py"
+benchmark_code = "python /home/benchmark/image_classification.py"
 # [Opt] Arguments to pass to the script in ml.benchmark_code
 # The code is called as defined in ml.benchmark_code, plus the args defined here
 args = "--model=resnet50_v2 --batch-size=32"
@@ -30,7 +30,7 @@ id = "mnist"
 
 [[data.sources]]
 # [Opt] Path of data download script.
-uri = "python /home/benchmark/get_data.py mnist"
+uri = "s3://home/benchmark/get_data.py mnist"
 # [Opt] Path where the dataset is stored in the container FS
 path = "/work/data/mnist/"
 

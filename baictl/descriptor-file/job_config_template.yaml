@@ -23,9 +23,8 @@ spec:
       containers:
       - name: benchmark
         image: {docker_image}
-        command: ["/bin/sh", "-c"]
-        args:
-          - {container_args}
+        command: []
+        args: []
         securityContext:
           privileged: {privileged}
         env:
