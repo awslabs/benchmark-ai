@@ -4,7 +4,7 @@ import toml
 import argparse
 import os
 import uuid
-import yaml
+import ruamel.yaml as yaml
 import addict
 
 from urllib.parse import urlparse
@@ -131,12 +131,15 @@ class KubernetesRootObjectHelper:
     A wrapper for the top-level Kubernetes object.
 
     It provides some utility methods and serialization/deserialization from YAML.
+
+    The yaml file is loaded/dumped using RoundTripLoader and RoundTripDumper to preserve the order of fields.
+    While it doesn't break anything, it keeps the generated yaml closer to the input template.
     """
     def __init__(self, contents: str):
         """
         :param contents: The YAML contents of a full Kubernetes object
         """
-        yaml_data = yaml.safe_load(contents)
+        yaml_data = yaml.load(contents, Loader=yaml.RoundTripLoader)
         self._root = addict.Dict(yaml_data)
 
         # Validation
@@ -182,9 +185,7 @@ class KubernetesRootObjectHelper:
         :return: the yaml string
         """
         root_as_dict = self.to_dict()
-        # Don't use self.root.to_str() because it uses pretty printing under the hood.
-        # Using the yaml module gives better guarantees.
-        return yaml.dump(root_as_dict)
+        return yaml.dump(root_as_dict, Dumper=yaml.RoundTripDumper)
 
     def to_dict(self):
         def remove_null_entries(d):
