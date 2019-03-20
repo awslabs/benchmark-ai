@@ -28,7 +28,7 @@ _create_configmap_yaml_from_terraform_outputs() {
     # tail => To skip the first line, which should be empty
     configmap_data=$(printf "$configmap_data" | tail -n +2)
 
-    cat << EOF
+cat << EOF
 apiVersion: v1
 data:
 $configmap_data
