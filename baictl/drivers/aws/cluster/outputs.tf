@@ -42,3 +42,9 @@ output "bastion_pem_filename" {
   value = "${local_file.bastion_privatekey_pem.filename}"
   sensitive = true
 }
+
+output "data_pull_s3" {
+  description = "S3 bucket for data fetcher"
+  value = "s3://${aws_s3_bucket.data-pull.id}"
+}
+
