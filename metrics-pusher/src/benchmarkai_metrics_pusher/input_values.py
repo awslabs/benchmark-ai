@@ -14,7 +14,7 @@ class InputValue:
 
 
 def get_input(argv) -> InputValue:
-    parser = configargparse.ArgumentParser(auto_env_var_prefix="", prog="benchmarkai_metrics_pusher")
+    parser = configargparse.ArgumentParser(auto_env_var_prefix="", prog="bai-metrics-pusher")
     parser.add_argument("--backend", default="stdout", choices=list(BACKENDS.keys()))
     parser.add_argument("--pod-name")
     parser.add_argument("--pod-namespace")

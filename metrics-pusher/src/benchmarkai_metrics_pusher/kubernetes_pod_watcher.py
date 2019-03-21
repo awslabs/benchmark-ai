@@ -1,10 +1,13 @@
+import logging
 import os
-from threading import Thread
-
 import time
 import signal
 from kubernetes import client, config
 from kubernetes.client import V1Pod, V1ContainerState, V1ContainerStateTerminated
+from threading import Thread
+
+
+logger = logging.getLogger(__name__)
 
 
 def start_kubernetes_pod_watcher(pod_name: str, pod_namespace: str):
@@ -31,6 +34,7 @@ def watch_kubernetes_pod(pod_name: str, namespace: str):
                                     for container_status in v1pod.status.container_statuses}
         state: V1ContainerState = container_status_mapping["benchmark"].state
         terminated: V1ContainerStateTerminated = state.terminated
+        logger.debug("Container state: %s", state)
 
         if terminated:
             os.kill(os.getpid(), signal.SIGTERM)
