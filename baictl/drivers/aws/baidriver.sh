@@ -85,8 +85,23 @@ create_infra() {
     $kubectl apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v1.11/nvidia-device-plugin.yml
 
     _create_configmap_yaml_from_terraform_outputs | $kubectl apply -f -
+
+    _install_kubeflow_mpi_operator
 }
 
+_install_kubeflow_mpi_operator() {
+    if [ ! -d "kubeflow-mpi" ]; then
+        mkdir kubeflow-mpi
+        cd kubeflow-mpi
+        git init
+        git remote add origin -f https://github.com/kubeflow/mpi-operator.git
+        git config --local core.sparsecheckout true
+        echo "deploy/*" >>.git/info/sparse-checkout
+        git pull --depth=1 origin master
+        cd ..
+    fi
+    $kubectl apply -f kubeflow-mpi/deploy/
+}
 destroy_infra() {
     cd $data_dir
 
@@ -110,7 +125,7 @@ get_infra() {
             ;;
         --aws-bastion-ip)
             terraform output --state=$terraform_state bastion_public_ip
-            ;;    
+            ;;
         esac
     done
     printf "\n----------\n"

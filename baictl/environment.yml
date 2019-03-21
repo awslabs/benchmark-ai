@@ -13,3 +13,5 @@ dependencies:
   - python 3.7.*
   - toml 0.9.*
   - addict 2.2.*
+  #TODO: Replace with a normal way to install https://github.com/MXNetEdge/benchmark-ai/issues/62
+  - git >= 2.19
