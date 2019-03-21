@@ -1,8 +1,9 @@
+import io
 import os
 import stat
 import logging
 import json
-import io
+from typing import Dict, Callable
 from json import JSONDecodeError
 
 
@@ -32,7 +33,7 @@ def _get_fifo(pathname):
     return io.open(pathname, "r", buffering=1)
 
 
-def listen_to_fifo_and_emit_metrics(emit):
+def listen_to_fifo_and_emit_metrics(emit: Callable[[Dict], None]):
     with _get_fifo(FIFO_FILEPATH) as fifo:
         while True:
             logger.debug("Reading line from fifo")

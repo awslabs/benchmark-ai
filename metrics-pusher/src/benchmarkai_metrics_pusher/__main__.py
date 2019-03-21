@@ -24,35 +24,29 @@ def main(argv=None):
 
     logger.info("Starting app")
 
-    import argparse
-    parser = argparse.ArgumentParser(prog="benchmarkai_metrics_pusher")
-    parser.add_argument("job-id")
-
-    from benchmarkai_metrics_pusher.elasticsearch_backend import ElasticsearchBackend
-    from benchmarkai_metrics_pusher.logging_backend import LoggingBackend
-    backends = {
-        "stdout": LoggingBackend,
-        "elasticsearch": ElasticsearchBackend,
-    }
-    parser.add_argument("--backend", default="stdout", choices=list(backends.keys()))
-    args = parser.parse_args(argv)
-
-    # Get the backend args
-    backend_args = {}
-    for key, value in os.environ.items():
-        if key.startswith("BACKEND_ARG_"):
-            argname = key.lstrip("BACKEND_ARG_")
-            backend_args[argname] = value
-    backend = backends[args.backend](getattr(args, "job-id"), **backend_args)
+    from benchmarkai_metrics_pusher.input_values import get_input
+    metrics_pusher_input = get_input(argv)
 
     # Start the loop
+    start_loop(logger, metrics_pusher_input)
 
+
+def start_loop(logger, metrics_pusher_input):
+    """
+    :type metrics_pusher_input: benchmarkai_metrics_pusher.input_values.InputValue
+    :param logger:
+    :return:
+    """
     from benchmarkai_metrics_pusher import listen_to_fifo_and_emit_metrics
     from benchmarkai_metrics_pusher.kubernetes_pod_watcher import start_kubernetes_pod_watcher
+    from benchmarkai_metrics_pusher.backends import create_backend
     import signal
+
+    backend = create_backend(metrics_pusher_input.backend, **metrics_pusher_input.backend_args)
 
     class SigtermReceived(Exception):
         pass
+
     try:
         def stop_loop(signum, frame):
             # An exception is being used as flow control here. The reason is because when opening a FIFO it blocks
@@ -69,8 +63,11 @@ def main(argv=None):
             # - post to backend
             # - watch the state of the Kubernetes POD
             raise SigtermReceived()
+
         signal.signal(signal.SIGTERM, stop_loop)
-        start_kubernetes_pod_watcher(os.environ["POD_NAME"], os.environ["POD_NAMESPACE"])
+
+        if metrics_pusher_input.pod_name and metrics_pusher_input.pod_namespace:
+            start_kubernetes_pod_watcher(metrics_pusher_input.pod_name, metrics_pusher_input.pod_namespace)
 
         listen_to_fifo_and_emit_metrics(backend)
     except SigtermReceived:
