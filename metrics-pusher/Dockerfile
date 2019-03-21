@@ -43,4 +43,4 @@ COPY --from=base /opt/metrics-pusher /opt/metrics-pusher
 # A workdir only for convenience
 WORKDIR /opt/metrics-pusher/bin
 
-ENTRYPOINT ["/opt/metrics-pusher/bin/python", "-m", "benchmarkai_metrics-pusher"]
+ENTRYPOINT ["/opt/metrics-pusher/bin/bai-metrics-pusher"]

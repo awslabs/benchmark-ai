@@ -14,6 +14,6 @@ setup(
     packages=find_packages("src"),
     include_package_data=True,
     entry_points={
-        "console_scripts": ["benchmarkai_metrics_pusher = benchmarkai_metrics_pusher.__main__:main"]
+        "console_scripts": ["bai-metrics-pusher = benchmarkai_metrics_pusher.__main__:main"]
     }
 )
