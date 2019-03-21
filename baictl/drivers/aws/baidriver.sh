@@ -42,6 +42,7 @@ create_infra() {
     local cluster_name=""
     local region=""
     local prefix_list_id=""
+    local validate=true
 
     for arg in "$@"; do
         case "${arg}" in
@@ -53,6 +54,9 @@ create_infra() {
             ;;
         --aws-prefix-list-id=*)
             prefix_list_id="${arg#*=}"
+            ;;
+        --no-validate)
+            validate=false
             ;;
         esac
     done
@@ -87,6 +91,8 @@ create_infra() {
     _create_configmap_yaml_from_terraform_outputs | $kubectl apply -f -
 
     _install_kubeflow_mpi_operator
+
+    [ "$validate" == false ] || validate_infra $@
 }
 
 _install_kubeflow_mpi_operator() {
@@ -129,6 +135,25 @@ get_infra() {
         esac
     done
     printf "\n----------\n"
+}
+
+__validate_mpi_job(){
+    printf "MPI Job is present"
+    local kind=$($kubectl get crd mpijobs.kubeflow.org --output=json 2>/dev/null | jq .kind --raw-output)
+    [ "$kind" == "CustomResourceDefinition" ] || return 1
+}
+
+validate_infra(){
+    local all_ok=true
+    for rule in __validate_mpi_job; do
+        local result=true
+        eval $rule || result=false
+
+        printf "..."
+
+        [ "$result" == false ] && printf "FAILED\n" && all_ok=false || printf "PASSED\n"  
+    done
+    [ "$all_ok" == true ] || return 1
 }
 
 get_benchmark() {
@@ -247,6 +272,9 @@ infra)
         ;;
     get)
         get_infra $@
+        ;;
+    validate)
+        validate_infra $@
         ;;
     *)
         print_unsupported_verb $object $verb
