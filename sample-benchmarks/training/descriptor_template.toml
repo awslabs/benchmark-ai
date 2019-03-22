@@ -23,7 +23,7 @@ docker_image = "jlcont/benchmarking:270219"
 # Args for the docker container
 # [Opt] Whether to run the container in privileged mode (default is false)
 privileged = false
-# [Opt - default is false] Whether more than 64MB shared memory is needed for containers
+# [Opt - default is true] Whether more than 64MB shared memory is needed for containers
 # (See docker's -shm option)
 extended_shm = true
 
