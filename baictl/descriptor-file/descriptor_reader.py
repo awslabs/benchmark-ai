@@ -70,7 +70,7 @@ class Descriptor:
             raise KeyError('Required field is missing in the descriptor toml file') from e
 
         self.single_node = True
-        self.extended_shm = descriptor_data['env'].get('extended_shm', False)
+        self.extended_shm = descriptor_data['env'].get('extended_shm', True)
         self.privileged = descriptor_data['env'].get('privileged', False)
         self.benchmark_code = descriptor_data['ml'].get('benchmark_code', None)
         self.ml_args = descriptor_data['ml'].get('args', None)
