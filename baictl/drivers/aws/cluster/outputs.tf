@@ -45,6 +45,6 @@ output "bastion_pem_filename" {
 
 output "data_pull_s3" {
   description = "S3 bucket for data fetcher"
-  value = "s3://${aws_s3_bucket.data-pull.id}"
+  value = "${aws_s3_bucket.data-pull.id}"
 }
 
