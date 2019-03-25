@@ -40,7 +40,7 @@ conda activate baictl
 ./baictl.sh --help
 ``` 
 
-If you want baictl.sh to be available as baictl in termianl do the following:
+If you want baictl.sh to be available as baictl in terminal do the following:
 
 ```
 cd && mkdir -p work && cd work
