@@ -174,11 +174,28 @@ get_benchmark() {
     local bastion_ip=$(terraform output --state=$terraform_state bastion_public_ip)
     local es_endpoint=$(terraform output --state=$terraform_state es_endpoint)
 
-    local query_body="{\"from\" : 0, \"size\" : 1000,\"query\" : {\"term\" : { \"kubernetes.labels.job-name\":\"${benchmark_name}\" }}}"
+    local page_size=10000
+    local current_page_filename=$(mktemp /tmp/bai-current-page.XXXXXX.json)
+    local results_filename=$(mktemp /tmp/bai-results.XXXXXX.json)
 
-    local curl_cmd="curl -X POST -s -H 'Content-Type: application/json' -d '$query_body' ${es_endpoint}/_search"
+    local query_body="{\"size\" : $page_size,\"query\" : {\"term\" : { \"kubernetes.labels.job-name\":\"${benchmark_name}\" }}}"
+    local curl_cmd="curl -X POST -s -H 'Content-Type: application/json' -d '$query_body' ${es_endpoint}/_search?scroll=1m"
+    ssh -q -o StrictHostKeyChecking=no -i $data_dir/$bastion_pem_filename ubuntu@$bastion_ip "${curl_cmd}" > $current_page_filename
+    local scroll_id=$(cat $current_page_filename | jq '._scroll_id')
 
-    ssh -q -o StrictHostKeyChecking=no -i $data_dir/$bastion_pem_filename ubuntu@$bastion_ip "${curl_cmd}" | jq '.hits.hits[]._source | "(\(."@timestamp") \(.log)"' -j | sort
+    while true; do
+        local current_page_size=$(cat $current_page_filename | jq '.hits.hits | length')
+        if [[ ${current_page_size} == 0 ]];  then
+            break
+        fi
+        cat $current_page_filename | jq '.hits.hits[]._source | "(\(."@timestamp") \(.log)"' -j >> $results_filename
+
+        local query_body="{\"scroll\" : \"1m\", \"scroll_id\" : $scroll_id}"
+        local curl_cmd="curl -X POST -s -H 'Content-Type: application/json' -d '$query_body' ${es_endpoint}/_search/scroll"
+        ssh -q -o StrictHostKeyChecking=no -i $data_dir/$bastion_pem_filename ubuntu@$bastion_ip "${curl_cmd}" > $current_page_filename
+    done
+    # TODO: Let Elasticsearch do the sorting by timestamp
+    cat $results_filename | sort
 }
 
 run_benchmark() {
