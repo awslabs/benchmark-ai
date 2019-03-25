@@ -165,7 +165,7 @@ get_benchmark() {
         --name=*)
             benchmark_name="${arg#*=}"
             ;;
-        --es-page-size=*)
+        --aws-es-page-size=*)
             page_size="${arg#*=}"
             ;;
         esac
