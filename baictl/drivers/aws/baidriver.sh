@@ -198,6 +198,8 @@ get_benchmark() {
     }
 
     local current_page_filename=$(mktemp /tmp/bai-current-page.XXXXXX.json)
+    # See the "trap" trick: https://stackoverflow.com/questions/687014/removing-created-temp-files-in-unexpected-bash-exit
+    trap "{ rm -f $current_page_filename; }" EXIT
 
     # Use the "scroll" api from Elasticsearch to do pagination
     # see: https://www.elastic.co/guide/en/elasticsearch/reference/6.4/search-request-scroll.html
