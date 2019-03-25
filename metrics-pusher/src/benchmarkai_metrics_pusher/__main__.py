@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
-from benchmarkai_sidecar import listen_to_fifo_and_emit_metrics, FIFO_FILEPATH
 
-
-def main():
+def main(argv=None):
     # We import only inside the `main()` method to ensure we configure everything so that nothing from the global
     # context runs before we configure logging
     import logging
@@ -21,14 +19,18 @@ def main():
         level=os.environ.get("LOGGING_LEVEL", "INFO").upper(),
     )
 
-    # For easier local testing we remove the file, it is harmless either way
-    if os.path.exists(FIFO_FILEPATH):
-        os.unlink(FIFO_FILEPATH)
-    listen_to_fifo_and_emit_metrics()
     # Start the app
-    logger = logging.getLogger("bai-sidecar")
+    logger = logging.getLogger("metrics-pusher")
 
     logger.info("Starting app")
+
+    from benchmarkai_metrics_pusher.input_values import get_input
+    metrics_pusher_input = get_input(argv)
+    logger.info("Input is %s", metrics_pusher_input)
+
+    # Start the loop
+    from benchmarkai_metrics_pusher.loop import start_loop
+    start_loop(metrics_pusher_input)
 
 
 if __name__ == "__main__":

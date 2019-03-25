@@ -10,7 +10,7 @@ all_args="$@"
 verb=$1
 object=$2
 
-if ! [[ $verb =~ ^(create|destroy|get|list|run|schedule|delete)$ ]]
+if ! [[ $verb =~ ^(create|destroy|get|list|run|schedule|delete|validate)$ ]]
     then print_usage_and_exit
 fi
 

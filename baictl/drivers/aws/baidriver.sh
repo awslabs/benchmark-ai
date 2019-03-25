@@ -42,6 +42,7 @@ create_infra() {
     local cluster_name=""
     local region=""
     local prefix_list_id=""
+    local validate=true
 
     for arg in "$@"; do
         case "${arg}" in
@@ -53,6 +54,9 @@ create_infra() {
             ;;
         --aws-prefix-list-id=*)
             prefix_list_id="${arg#*=}"
+            ;;
+        --no-validate)
+            validate=false
             ;;
         esac
     done
@@ -83,10 +87,28 @@ create_infra() {
     $kubectl apply -f autoscaler-deployment.yaml
 
     $kubectl apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v1.11/nvidia-device-plugin.yml
+    $kubectl apply -f $project_dir/metrics-pusher/metrics-pusher-roles.yaml
 
     _create_configmap_yaml_from_terraform_outputs | $kubectl apply -f -
+
+    _install_kubeflow_mpi_operator
+
+    [ "$validate" == false ] || validate_infra $@
 }
 
+_install_kubeflow_mpi_operator() {
+    if [ ! -d "kubeflow-mpi" ]; then
+        mkdir kubeflow-mpi
+        cd kubeflow-mpi
+        git init
+        git remote add origin -f https://github.com/kubeflow/mpi-operator.git
+        git config --local core.sparsecheckout true
+        echo "deploy/*" >>.git/info/sparse-checkout
+        git pull --depth=1 origin master
+        cd ..
+    fi
+    $kubectl apply -f kubeflow-mpi/deploy/
+}
 destroy_infra() {
     cd $data_dir
 
@@ -110,10 +132,29 @@ get_infra() {
             ;;
         --aws-bastion-ip)
             terraform output --state=$terraform_state bastion_public_ip
-            ;;    
+            ;;
         esac
     done
     printf "\n----------\n"
+}
+
+__validate_mpi_job(){
+    printf "MPI Job is present"
+    local kind=$($kubectl get crd mpijobs.kubeflow.org --output=json 2>/dev/null | jq .kind --raw-output)
+    [ "$kind" == "CustomResourceDefinition" ] || return 1
+}
+
+validate_infra(){
+    local all_ok=true
+    for rule in __validate_mpi_job; do
+        local result=true
+        eval $rule || result=false
+
+        printf "..."
+
+        [ "$result" == false ] && printf "FAILED\n" && all_ok=false || printf "PASSED\n"  
+    done
+    [ "$all_ok" == true ] || return 1
 }
 
 get_benchmark() {
@@ -220,6 +261,8 @@ terraform_dir=$(realpath $terraform_dir)
 terraform_state=$(realpath $terraform_state)
 terraform_plan=$(realpath $terraform_plan)
 
+project_dir=$(realpath $(dirname $BASH_SOURCE)/../../..)
+
 case "${object}" in
 infra)
 
@@ -232,6 +275,9 @@ infra)
         ;;
     get)
         get_infra $@
+        ;;
+    validate)
+        validate_infra $@
         ;;
     *)
         print_unsupported_verb $object $verb

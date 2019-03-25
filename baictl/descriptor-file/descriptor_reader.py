@@ -1,14 +1,53 @@
+import random
 import toml
 import argparse
 import os
-import sys
 import uuid
-
+import addict
+import shlex
 import ruamel.yaml as yaml
 
-from kubernetes import client
 from urllib.parse import urlparse
-from typing import Dict, List
+from typing import Dict, List, Optional
+
+
+# Using the official Kubernetes Model classes (https://github.com/kubernetes-client/python) is avoided here
+# because it presents some problems:
+#
+# 1) Custom Resource Definitions (eg.: kubeflow)
+#       => This is a BLOCKER for why it is not a good idea to use the python-client as the provider for the model
+#       classes.
+#
+# 2) When using the to_dict() of the classes, that is not a valid Kubernetes yaml since it outputs the fields as
+#   snake_case and not camelCase as expected by the Kubernetes API.
+#       => This can be fixed with a workaround, so it is just an annoying fact.
+#
+# 3) Hacky way to create the class from a YAML object.
+#        => There is no clean way to create a Kubernetes model object from a yaml file without going through the
+#        internals of the Python client API.
+#        The closest method is `create_from_yaml()`, which is analogous to `kubectl apply -f file.yaml`, which:
+#        - calls the K8S Api server with the contents of the yaml.
+#        - returns the results as a Kubernetes Model object by deserializing the response.
+#
+#        Diving into the `create_from_yaml()` method I found this `deserialize()` method, which can create the objects
+#        correctly. However it requires a JSON as input and also the type it must create:
+#
+#            def deserialize(self, response, response_type) -> response_type:
+#               return self.__deserialize(json.load(response.data), response_type)
+#
+#        The theory is that these Kubernetes Model objects were not made for being manipulated as real model objects,
+#        but only for having a "type-safe" way of interacting with the responses of the Kubernetes server.
+
+# Some types so we can use type annotations to make the code more readable.
+# While doing this doesn't give any form of static typing, it helps show intention, which is better than nothing.
+# It wouldn't be an issue if we could use the official Kubernetes Model classes, however, that's not possible due to
+# the reasons stated above.
+Container = addict.Dict
+PodSpec = addict.Dict
+VolumeMount = addict.Dict
+Job = addict.Dict
+Volume = addict.Dict
+EmptyDirVolumeSource = addict.Dict
 
 
 class Descriptor:
@@ -27,13 +66,14 @@ class Descriptor:
         try:
             self.instance_type = descriptor_data['hardware']['instance_type']
             self.docker_image = descriptor_data['env']['docker_image']
-            self.benchmark_code = descriptor_data['ml']['benchmark_code']
         except KeyError as e:
             raise KeyError('Required field is missing in the descriptor toml file') from e
 
+        self.single_node = True
         self.extended_shm = descriptor_data['env'].get('extended_shm', False)
         self.privileged = descriptor_data['env'].get('privileged', False)
-        self.ml_args = descriptor_data['ml'].get('args', '')
+        self.benchmark_code = descriptor_data['ml'].get('benchmark_code', None)
+        self.ml_args = descriptor_data['ml'].get('args', None)
 
         self.dataset = descriptor_data.get('data', {}).get('id', '')
         descriptor_sources = descriptor_data.get('data', {}).get('sources', [])
@@ -49,7 +89,7 @@ class Descriptor:
         :return:
         """
         descriptor_toml = toml.load(toml_file)
-        return cls(descriptor_toml)
+        return Descriptor(descriptor_toml)
 
     def _validate(self):
         """
@@ -83,10 +123,114 @@ class Descriptor:
 
         # TODO: Add data sources other than S3
         else:
-            raise ValueError(f'{origin} not supported as a data source yet')
+            raise ValueError(f'{parsed.scheme} not supported as a data source yet')
+
+
+class KubernetesRootObjectHelper:
+    """
+    A wrapper for the top-level Kubernetes object.
+
+    It provides some utility methods and serialization/deserialization from YAML.
+
+    The yaml file is loaded/dumped using RoundTripLoader and RoundTripDumper to preserve the order of fields.
+    While it doesn't break anything, it keeps the generated yaml closer to the input template.
+    """
+    def __init__(self, contents: str):
+        """
+        :param contents: The YAML contents of a full Kubernetes object
+        """
+        yaml_data = yaml.load(contents, Loader=yaml.RoundTripLoader)
+        self._root = addict.Dict(yaml_data)
+
+        # Validation
+        if not self._root.spec:
+            raise ValueError("Spec of root object not found at yaml definition of the Kubernetes object")
+        if not self.get_pod_spec():
+            raise ValueError("Pod not found at yaml definition of the Kubernetes object")
+        containers = self.get_pod_spec().containers
+        if not containers:
+            raise ValueError("A Pod must have at least 1 container on its definition")
+
+        # Create empty fields if required
+        if not self.get_pod_spec().initContainers:
+            self.get_pod_spec().initContainers = []
+        if not self.get_pod_spec().volumes:
+            self.get_pod_spec().volumes = []
+        for container in self.get_pod_spec().containers:
+            if not container.volumeMounts:
+                container.volumeMounts = []
+
+    def get_pod_spec(self) -> PodSpec:
+        return self._root.spec.template.spec
+
+    def find_container(self, container_name: str) -> Container:
+        """
+        :param container_name: The name of the container
+        :return: The container object
+        :raises: ValueError if the container could not be found
+        """
+        containers = self.get_pod_spec().containers
+        for container in containers:
+            if container.name == container_name:
+                return container
+        raise ValueError("Container {} not found. Available containers are: {}".format(
+            container_name,
+            [c.name for c in containers]
+        ))
+
+    def to_yaml(self) -> str:
+        """
+        Serializes this object to a YAML string
+
+        :return: the yaml string
+        """
+        root_as_dict = self.to_dict()
+        return yaml.dump(root_as_dict, Dumper=yaml.RoundTripDumper)
+
+    def to_dict(self):
+        def remove_null_entries(d):
+            """
+            Remove entries with null values from the dict or list passed as parameter.
+            """
+            # This method is needed because k8s client objects.to_dict() contain many Null fields
+            if not isinstance(d, (dict, list)):
+                return d
+            if isinstance(d, list):
+                return [v for v in (remove_null_entries(v) for v in d) if v is not None]
+            return {k: v for k, v in ((k, remove_null_entries(v)) for k, v in d.items()) if v is not None}
+
+        root_as_dict = self._root.to_dict()
+        return remove_null_entries(root_as_dict)
+
+
+class ConfigTemplate:
+    """
+    A wrapper for the yaml template file.
+
+    This class adds support to being able to use str.format() fields in the contents
+    of the yaml. The values of these fields are provided through the `feed()` method.
+    """
+
+    def __init__(self, yaml_template_contents: str):
+        self._yaml_template_contents = yaml_template_contents
+        self._variables = {}
+
+    def feed(self, variables: Dict[str, str]):
+        self._variables.update(variables)
+
+    def build_root(self) -> KubernetesRootObjectHelper:
+        """
+        :return:
+        """
+        contents = self._yaml_template_contents.format(**self._variables)
+        return KubernetesRootObjectHelper(contents)
 
 
 class BaiConfig:
+    """
+    Adds the logic required from BAI into the Kubernetes root object that represents
+    launching a benchmark.
+    """
     MOUNT_CHMOD = '777'
     SHARED_MEMORY_VOL = 'dshm'
 
@@ -94,27 +238,70 @@ class BaiConfig:
     S3_REGION = 'eu-west-1'
     PULLER_IMAGE = 'stsukrov/s3dataprovider'
 
-    def __init__(self, descriptor: Descriptor):
+    def __init__(self, descriptor: Descriptor, config_template: ConfigTemplate, *, random_object=None):
         """
         Reads the values from the descriptor file into a settings dictionary
         :param descriptor: Descriptor object with the information from the TOML
-        :return:
+        :param config_template: The YAML template
+        :param random_object: An instance of random.Random [optional].
+                              This field exists mostly to facilitate testing so that predictable random data is
+                              generated.
         """
         self.descriptor = descriptor
 
-        self.job_id = uuid.uuid4().hex
-        self.container_args = self._get_container_args()
-        self.data_volumes = self._get_data_volumes(descriptor.data_sources)
-        self.pod_spec_volumes = self._get_pod_spec_volumes(self.data_volumes)
-        self.pod_spec_init_containers = self._get_data_puller(self.data_volumes, descriptor.data_sources)
-        self.container_volume_mounts = self._get_container_volume_mounts(self.data_volumes)
+        if random_object is None:
+            random_object = random.Random()
 
-    def _get_container_args(self) -> str:
+        config_template.feed(vars(self.descriptor))
+        config_template.feed(
+            {
+             # random_object.getrandbits(128) is equivalent to os.urandom(16), since 16 * 8 = 128
+             "job_id": uuid.UUID(int=random_object.getrandbits(128), version=4).hex}
+        )
+        self.root = config_template.build_root()
+        self.add_container_cmd()
+        self.add_volumes()
+
+    def add_volumes(self):
+        data_volumes = self._get_data_volumes(self.descriptor.data_sources)
+
+        benchmark_container = self.root.find_container("benchmark")
+        benchmark_container.volumeMounts.extend(self._get_container_volume_mounts(data_volumes))
+
+        pod_spec = self.root.get_pod_spec()
+        data_puller = self._get_data_puller(data_volumes, self.descriptor.data_sources)
+        if data_puller is not None:
+            pod_spec.initContainers.append(data_puller)
+        pod_spec.volumes.extend(self._get_pod_spec_volumes(data_volumes))
+
+    def dump_yaml_string(self):
+        return self.root.to_yaml()
+
+    def add_container_cmd(self):
         """
-        Extracts the args for the container and formats them.
+        Extracts the command and args for the container and formats them.
         :return: the container's args
         """
-        return self.descriptor.benchmark_code + ' ' + self.descriptor.ml_args + ';'
+        benchmark_container = self.root.find_container('benchmark')
+
+        def split_args(command: str) -> List[str]:
+            if not command:
+                return []
+            return shlex.split(command)
+
+        if self.descriptor.benchmark_code:
+            cmd = split_args(self.descriptor.benchmark_code)
+            args = split_args(self.descriptor.ml_args)
+            benchmark_container.command = cmd + args
+            del benchmark_container.args
+
+        elif self.descriptor.ml_args:
+            benchmark_container.args = split_args(self.descriptor.ml_args)
+            del benchmark_container.command
+
+        else:
+            del benchmark_container.command
+            del benchmark_container.args
 
     def _get_data_volumes(self, data_sources: List) -> Dict:
         # Data destination paths and the corresponding mounted vols
@@ -129,54 +316,41 @@ class BaiConfig:
 
         return data_vols
 
-    def _get_pod_spec_volumes(self, data_volumes):
+    def _get_pod_spec_volumes(self, data_volumes) -> List[Volume]:
         volumes = []
 
         if self.descriptor.extended_shm:
-            shm = client.V1Volume(name=self.SHARED_MEMORY_VOL,
-                                  empty_dir=client.V1EmptyDirVolumeSource(medium="Memory"))
+            shm = Volume(name=self.SHARED_MEMORY_VOL,
+                         emptyDir=EmptyDirVolumeSource(medium="Memory"))
+
             d = shm.to_dict()
             volumes.append(d)
 
         for vol in data_volumes.values():
-            volumes.append(client.V1Volume(name=vol['name'],
-                                           empty_dir=client.V1EmptyDirVolumeSource())
-                           .to_dict())
+            volumes.append(Volume(name=vol['name'],
+                                  emptyDir=EmptyDirVolumeSource()))
+        return volumes
 
-        return self.remove_null_entries(volumes)
-
-    def _get_container_volume_mounts(self, data_volumes) -> List:
+    def _get_container_volume_mounts(self, data_volumes) -> List[VolumeMount]:
         vol_mounts = []
 
         if self.descriptor.extended_shm:
-            vol_mounts.append(client.V1VolumeMount(name=self.SHARED_MEMORY_VOL,
-                                                   mount_path='/dev/shm')
-                              .to_dict())
+            vol_mounts.append(VolumeMount(name=self.SHARED_MEMORY_VOL,
+                                          mountPath='/dev/shm'))
 
         for dest_path, vol in data_volumes.items():
-            vol_mounts.append(client.V1VolumeMount(name=vol['name'],
-                                                   mount_path=dest_path)
-                              .to_dict())
-
-        return self.remove_null_entries(vol_mounts)
-
-    def _get_puller_volume_mounts(self, data_volumes) -> List:
-        vol_mounts = []
-
-        for vol in data_volumes.values():
-            vol_mounts.append(client.V1VolumeMount(name=vol['name'],
-                                                   mount_path=vol['puller_path'])
-                              .to_dict())
-
+            vol_mounts.append(VolumeMount(name=vol['name'],
+                                          mountPath=dest_path))
         return vol_mounts
 
-    def _get_data_puller(self, data_volumes, data_sources):
+    def _get_data_puller(self, data_volumes, data_sources) -> Optional[Container]:
         """
         Extracts the args for the data puller container and formats them.
-        :return: dict with the puller object
+
+        :return: The puller container object
         """
         if not data_sources:
-            return {}
+            return None
 
         # Placeholder until the data fetcher is ready
         # ------------------------------------------
@@ -190,70 +364,43 @@ class BaiConfig:
         # ------------------------------------------
 
         vol_mounts = self._get_puller_volume_mounts(data_volumes)
-        puller = client.V1Container(name='data-puller',
-                                    image=self.PULLER_IMAGE,
-                                    args=puller_args,
-                                    volume_mounts=vol_mounts)
-                                 
-        return self.remove_null_entries(puller.to_dict())
+        puller = Container(name='data-puller',
+                           image=self.PULLER_IMAGE,
+                           args=puller_args,
+                           volumeMounts=vol_mounts)
+        return puller
 
-    def remove_null_entries(self, d):
-        """
-        Remove entries with null values from the dict or list passed as parameter.
-        """
-        # This method is needed because k8s client objects.to_dict() contain many Null fields
-        if not isinstance(d, (dict, list)):
-            return d
-        if isinstance(d, list):
-            return [v for v in (self.remove_null_entries(v) for v in d) if v is not None]
-        return {k: v for k, v in ((k, self.remove_null_entries(v)) for k, v in d.items()) if v is not None}
+    def _get_puller_volume_mounts(self, data_volumes) -> List[VolumeMount]:
+        vol_mounts = []
 
-    def get_full_dict(self) -> Dict:
-        """
-        :return: dict with all attributes of the BaiConfig and its Descriptor
-        """
-        bai_config_dict = vars(self).copy()
-        bai_config_dict.pop('descriptor')
-        return {**vars(self.descriptor), **bai_config_dict}
+        for vol in data_volumes.values():
+            vol_mounts.append(VolumeMount(name=vol['name'],
+                                          mountPath=vol['puller_path']))
+
+        return vol_mounts
 
 
-class ConfigTemplate:
-    def __init__(self, template_file: str):
-        with open(template_file, "r") as f:
-            self.config_template_string = f.read()
+def create_bai_config(descriptor: Descriptor, extra_bai_config_args=None) -> BaiConfig:
+    """
+    Builds a BaiConfig object
 
-    def _replace_templated_fields(self, d: Dict, templates: Dict[str, Dict]):
-        """
-        Iterates through the dict passed as parameter and replaces all templated fields with
-        the corresponding values.
-        :param d: dictionary containing values which need replacement
-        :param templates: dict[str, dict] which holds the replacement values
-        """
-        if hasattr(d, 'items'):
-            for k, v in d.copy().items():
-                if self._is_templated_field(v):
-                    field_name = v[1:-1]  # Remove < >
-                    d[k] = templates[field_name]
-                if isinstance(v, dict):
-                    self._replace_templated_fields(v, templates)
-                elif isinstance(v, list):
-                    for elem in v:
-                        self._replace_templated_fields(elem, templates)
+    :param descriptor: The descriptor.
+    :param extra_bai_config_args: An optional Dict which will be forwarded to the `BaiConfig` object created.
+    :return:
+    """
+    if extra_bai_config_args is None:
+        extra_bai_config_args = {}
 
-    def _is_templated_field(self, val) -> bool:
-        return isinstance(val, str) and val.startswith('<') and val.endswith('>')
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    if descriptor.single_node:
+        with open(os.path.join(current_dir, "job_config_template.yaml"), "r") as f:
+            contents = f.read()
+        config_template = ConfigTemplate(contents)
+        bai_config = BaiConfig(descriptor, config_template, **extra_bai_config_args)
+        return bai_config
 
-    def dump_yaml_string(self, settings: Dict):
-        """
-        Fill in the template with the given configuration and return the resulting YAML string
-        :param settings: dict[field_to_replace:str, value]
-        :return: YAML string with the filled template
-        """
-        formatted_config = self.config_template_string.format(**settings)
-        config_dict = yaml.load(formatted_config, Loader=yaml.RoundTripLoader)
-        self._replace_templated_fields(config_dict, settings)
-
-        return yaml.dump(config_dict, Dumper=yaml.RoundTripDumper)
+    # TODO: Improve this error message
+    raise ValueError("Unsupported configuration at descriptor")
 
 
 def main():
@@ -263,10 +410,6 @@ def main():
     parser.add_argument('descriptor',
                         help='Relative path to descriptor file')
 
-    parser.add_argument('--template',
-                        help='Path to job config template file',
-                        default='job_config_template.yaml')
-
     parser.add_argument('-f', '--filename', metavar='filename', nargs='?',
                         help='Output to file. If not specified, output to stdout',
                         default=None,
@@ -274,15 +417,12 @@ def main():
 
     args = parser.parse_args()
 
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-
-    job_config_template = ConfigTemplate(os.path.join(current_dir, args.template))
     descriptor = Descriptor.from_toml_file(args.descriptor)
-    bai_config = BaiConfig(descriptor)
-
-    yaml_string = job_config_template.dump_yaml_string(bai_config.get_full_dict())
+    bai_config = create_bai_config(descriptor)
+    yaml_string = bai_config.dump_yaml_string()
 
     if args.filename:
+        current_dir = os.path.dirname(os.path.abspath(__file__))
         with open(os.path.join(current_dir, args.filename), 'w') as f:
             f.write(yaml_string)
     else:
