@@ -40,6 +40,21 @@ conda activate baictl
 ./baictl.sh --help
 ``` 
 
+If you want baictl.sh to be available as baictl in terminal do the following:
+
+```
+cd && mkdir -p work && cd work
+git clone git@github.com:MXNetEdge/benchmark-ai.git
+
+# choose or create a path on $PATH to put the link
+cd && mkdir -p bin
+echo 'export PATH=~/bin:$PATH' >> ~/.bashrc
+ln -s ~/work/benchmark-ai/baictl/baictl.sh baictl
+
+# install completion
+echo 'source ~/work/benchmark-ai/baictl/baictl-complete.sh' >> ~/.bashrc
+```
+
 ## Step 1 - Create the infrastructure
 
 You will now create the whole BAI infrastructure in your AWS account using the default region (eu-west-1):
