@@ -46,19 +46,19 @@ provider "tls" {
 data "aws_availability_zones" "available" {}
 
 locals {
-  benchmark_kubelet_args   = "--node-labels=node.type=bechmark-worker"
-  autoscaler_kubelet_args  = "--node-labels=node.type=autoscaler"
-  datafetcher_kubelet_args = "--node-labels=node.type=datafetcher"
+  bai_worker_kubelet_args   = "--node-labels=node.type=bai-worker"
+  k8s_services_kubelet_args  = "--node-labels=node.type=k8s-services"
+  bai_services_kubelet_args = "--node-labels=node.type=bai-services"
 
   worker_groups = [
     {
       instance_type        = "t2.small"
       subnets              = "${join(",", module.vpc.private_subnets)}"
-      asg_desired_capacity = 1
-      asg_max_size         = 1
+      asg_desired_capacity = 2
+      asg_max_size         = 10
       asg_min_size         = 1
-      name                 = "autoscaler.t2.small_group"
-      kubelet_extra_args   = "${local.autoscaler_kubelet_args}"
+      name                 = "k8s-services_t2.small"
+      kubelet_extra_args   = "${local.k8s_services_kubelet_args}"
     },
     {
       instance_type        = "m5d.4xlarge"
@@ -66,63 +66,65 @@ locals {
       asg_desired_capacity = 1
       asg_max_size         = 4
       asg_min_size         = 1
-      name                 = "data-fetcher.m5d.4xlarge_group"
-      kubelet_extra_args   = "${local.datafetcher_kubelet_args}"
+      name                 = "bai-services.m5d.4xlarge"
+      kubelet_extra_args   = "${local.bai_services_kubelet_args}"
     },
+
+    # bai-worker ASGs
     {
       instance_type        = "t3.small"
       subnets              = "${join(",", module.vpc.private_subnets)}"
-      name                 = "t3.small_group"
+      name                 = "bai-worker.t3.small"
     },
     {
       instance_type        = "c5.large"
       subnets              = "${join(",", module.vpc.private_subnets)}"
-      name                 = "c5.large_group"
+      name                 = "bai-worker.c5.large"
     },
     {
       instance_type        = "c5.2xlarge"
       subnets              = "${join(",", module.vpc.private_subnets)}"
-      name                 = "c5.2xlarge"
+      name                 = "bai-worker.c5.2xlarge"
     },
     {
       instance_type        = "c5.4xlarge"
       subnets              = "${join(",", module.vpc.private_subnets)}"
-      name                 = "c5.4xlarge"
+      name                 = "bai-worker.c5.4xlarge"
     },
     {
       instance_type        = "c5.9xlarge"
       subnets              = "${join(",", module.vpc.private_subnets)}"
-      name                 = "c5.9xlarge"
+      name                 = "bai-worker.c5.9xlarge"
     },
     {
       instance_type        = "c5.18xlarge"
       subnets              = "${join(",", module.vpc.private_subnets)}"
-      name                 = "c5.18xlarge"
+      name                 = "bai-worker.c5.18xlarge"
     },
     {
       ami_id               = "${coalesce(var.eks_gpu_ami_id, data.aws_ami.eks-gpu-optimized.id)}"
       instance_type        = "p3.2xlarge"
       subnets              = "${join(",", module.vpc.private_subnets)}"
-      name                 = "p3.2xlarge_group"
+      name                 = "bai-worker.p3.2xlarge"
     },
     {
       ami_id               = "${coalesce(var.eks_gpu_ami_id, data.aws_ami.eks-gpu-optimized.id)}"
       instance_type        = "p3.8xlarge"
       subnets              = "${join(",", module.vpc.private_subnets)}"
-      name                 = "p3.8xlarge_group"
+      name                 = "bai-worker.p3.8xlarge"
     },
     {
       ami_id               = "${coalesce(var.eks_gpu_ami_id, data.aws_ami.eks-gpu-optimized.id)}"
       instance_type        = "p3.16xlarge"
       subnets              = "${join(",", module.vpc.private_subnets)}"
-      name                 = "p3.16xlarge_group"
+      name                 = "bai-worker.p3.16xlarge"
     }
   ]
 
   worker_groups_count = "11"
 
   workers_group_defaults = {
-    kubelet_extra_args   = "${local.benchmark_kubelet_args}"
+    kubelet_extra_args   = "${local.bai_worker_kubelet_args}"
     ami_id = "${coalesce(var.eks_cpu_ami_id, data.aws_ami.eks-cpu-optimized.id)}"
     key_name = "${aws_key_pair.worker_key.key_name}"
     asg_min_size         = 0
