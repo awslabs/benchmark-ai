@@ -19,7 +19,8 @@ spec:
                 values:
                 - benchmark-ai
             topologyKey: kubernetes.io/hostname
-      initContainers: []
+      initContainers:
+      - name: data-puller
       containers:
       - name: benchmark
         image: {docker_image}

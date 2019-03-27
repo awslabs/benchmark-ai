@@ -1,5 +1,6 @@
 import random
 
+import logging
 import toml
 import argparse
 import os
@@ -11,7 +12,6 @@ import ruamel.yaml as yaml
 
 from urllib.parse import urlparse
 from typing import Dict, List, Optional
-
 
 # Using the official Kubernetes Model classes (https://github.com/kubernetes-client/python) is avoided here
 # because it presents some problems:
@@ -74,8 +74,8 @@ class Descriptor:
 
         self.distributed = 'distributed' in descriptor_data['hardware']
         distributed_data = descriptor_data['hardware'].get('distributed', {})
-        self.num_instances = distributed_data.get('num_instances', 0)
-        self.gpus_per_instance = distributed_data.get('gpus_per_instance', 0)
+        self.num_instances = distributed_data.get('num_instances', 1)
+        self.gpus_per_instance = distributed_data.get('gpus_per_instance', 1)
         self.distributed_strategy = distributed_data.get('strategy', '')
 
         self.extended_shm = descriptor_data['env'].get('extended_shm', False)
@@ -109,6 +109,12 @@ class Descriptor:
             if source['scheme'] not in self.VALID_DATA_SOURCES:
                 raise ValueError(f'Invalid data uri: {source["uri"]}')
 
+        if self.distributed:
+            if self.num_instances <= 1:
+                logging.warning(f'Specified a distributed strategy but using {self.num_instances} nodes')
+            if self.distributed_strategy not in self.VALID_STRATEGIES:
+                raise ValueError(f'Invalid distributed strategy: {self.distributed_strategy}')
+
         # TODO: Validate the chosen instance type has enough GPUs
 
     def _process_data_sources(self, data_sources: List) -> List:
@@ -136,57 +142,18 @@ class Descriptor:
             raise ValueError(f'{parsed.scheme} not supported as a data source yet')
 
 
-class KubernetesRootObjectHelper:
+class KubernetesHelper:
     """
     A wrapper for the top-level Kubernetes object.
 
-    It provides some utility methods and serialization/deserialization from YAML.
+    It provides serialization/deserialization from YAML. Utility methods are provided by extensions of this class.
 
     The yaml file is loaded/dumped using RoundTripLoader and RoundTripDumper to preserve the order of fields.
     While it doesn't break anything, it keeps the generated yaml closer to the input template.
     """
     def __init__(self, contents: str):
-        """
-        :param contents: The YAML contents of a full Kubernetes object
-        """
         yaml_data = yaml.load(contents, Loader=yaml.RoundTripLoader)
         self._root = addict.Dict(yaml_data)
-
-        # Validation
-        if not self._root.spec:
-            raise ValueError("Spec of root object not found at yaml definition of the Kubernetes object")
-        if not self.get_pod_spec():
-            raise ValueError("Pod not found at yaml definition of the Kubernetes object")
-        containers = self.get_pod_spec().containers
-        if not containers:
-            raise ValueError("A Pod must have at least 1 container on its definition")
-
-        # Create empty fields if required
-        if not self.get_pod_spec().initContainers:
-            self.get_pod_spec().initContainers = []
-        if not self.get_pod_spec().volumes:
-            self.get_pod_spec().volumes = []
-        for container in self.get_pod_spec().containers:
-            if not container.volumeMounts:
-                container.volumeMounts = []
-
-    def get_pod_spec(self) -> PodSpec:
-        return self._root.spec.template.spec
-
-    def find_container(self, container_name: str) -> Container:
-        """
-        :param container_name: The name of the container
-        :return: The container object
-        :raises: ValueError if the container could not be found
-        """
-        containers = self.get_pod_spec().containers
-        for container in containers:
-            if container.name == container_name:
-                return container
-        raise ValueError("Container {} not found. Available containers are: {}".format(
-            container_name,
-            [c.name for c in containers]
-        ))
 
     def to_yaml(self) -> str:
         """
@@ -213,6 +180,57 @@ class KubernetesRootObjectHelper:
         return remove_null_entries(root_as_dict)
 
 
+class KubernetesRootObjectHelper(KubernetesHelper):
+    """
+    Extension of the KubernetesHelper to handle root objects such as Jobs or MPIJobs.
+
+    It provides some utility methods to make it easier to work with them.
+    """
+    def __init__(self, contents: str):
+        """
+        :param contents: The YAML contents of a full Kubernetes object
+        """
+        super().__init__(contents)
+
+        # Validation
+        if not self._root.spec:
+            raise ValueError("Spec of root object not found at yaml definition of the Kubernetes object")
+        if not self.get_pod_spec():
+            raise ValueError("Pod not found at yaml definition of the Kubernetes object")
+        containers = self.get_pod_spec().containers
+        if not containers:
+            raise ValueError("A Pod must have at least 1 container on its definition")
+
+        # Create empty fields if required
+        if not self.get_pod_spec().initContainers:
+            self.get_pod_spec().initContainers = []
+        if not self.get_pod_spec().volumes:
+            self.get_pod_spec().volumes = []
+        for container in self.get_pod_spec().containers:
+            if not container.volumeMounts:
+                container.volumeMounts = []
+
+    def get_pod_spec(self) -> PodSpec:
+        return self._root.spec.template.spec
+
+    def find_container(self, container_name: str) -> Container:
+        """
+        Finds a given container (can be an initContainer)
+        :param container_name: The name of the container
+        :return: The container object
+        :raises: ValueError if the container could not be found
+        """
+        containers = self.get_pod_spec().containers
+        initContainers = self.get_pod_spec().initContainers
+        for container in containers + initContainers:
+            if container.name == container_name:
+                return container
+        raise ValueError("Container {} not found. Available containers are: {}".format(
+            container_name,
+            [c.name for c in containers]
+        ))
+
+
 class ConfigTemplate:
     """
     A wrapper for the yaml template file.
@@ -228,12 +246,23 @@ class ConfigTemplate:
     def feed(self, variables: Dict[str, str]):
         self._variables.update(variables)
 
+    def get_contents(self):
+        return self._yaml_template_contents.format(**self._variables)
+
+    def get_docs(self) -> List:
+        # YAML docs are separated by '---'
+        return self.get_contents().split('---')
+
     def build_root(self) -> KubernetesRootObjectHelper:
         """
+        Builds the Kubernetes root object
         :return:
         """
-        contents = self._yaml_template_contents.format(**self._variables)
-        return KubernetesRootObjectHelper(contents)
+        # We expect all documents to be ConfigMaps except for the last one
+        return KubernetesRootObjectHelper(self.get_docs()[-1])
+
+    def build_config_maps(self) -> List[KubernetesHelper]:
+        return [KubernetesHelper(doc) for doc in self.get_docs()[:-1]]
 
 
 class BaiConfig:
@@ -269,20 +298,20 @@ class BaiConfig:
              "job_id": uuid.UUID(int=random_object.getrandbits(128), version=4).hex}
         )
         self.root = config_template.build_root()
+
         self.add_container_cmd()
+        self.config_maps = config_template.build_config_maps()
         self.add_volumes()
 
     def add_volumes(self):
         data_volumes = self._get_data_volumes(self.descriptor.data_sources)
 
         benchmark_container = self.root.find_container("benchmark")
-        benchmark_container.volumeMounts.extend(self._get_container_volume_mounts(data_volumes))
-
         pod_spec = self.root.get_pod_spec()
-        data_puller = self._get_data_puller(data_volumes, self.descriptor.data_sources)
 
-        if data_puller is not None:
-            pod_spec.initContainers.append(data_puller)
+        self._update_data_puller(data_volumes, self.descriptor.data_sources)
+
+        benchmark_container.volumeMounts.extend(self._get_container_volume_mounts(data_volumes))
         pod_spec.volumes.extend(self._get_pod_spec_volumes(data_volumes))
 
         if self.descriptor.extended_shm:
@@ -300,20 +329,13 @@ class BaiConfig:
                                     mountPath='/dev/shm')
         container_volume_mounts.append(shm_vol_mount)
 
-    def add_and_mount_volume(self, name: str, ):
-        pod_spec_volumes = self.root.get_pod_spec().volumes
-        container_volume_mounts = self.root.find_container("benchmark").volumeMounts
-
-        shm_vol = Volume(name=self.SHARED_MEMORY_VOL,
-                         emptyDir=EmptyDirVolumeSource(medium="Memory"))
-        pod_spec_volumes.append(shm_vol)
-
-        shm_vol_mount = VolumeMount(name=self.SHARED_MEMORY_VOL,
-                                    mountPath='/dev/shm')
-        container_volume_mounts.append(shm_vol_mount)
-
     def dump_yaml_string(self):
-        return self.root.to_yaml()
+        root_yaml = self.root.to_yaml()
+        if self.config_maps:
+            # Get the yaml for each of the docs and concatenate them again
+            config_map_yamls = [m.to_yaml() for m in self.config_maps]
+            return '\n---\n'.join(config_map_yamls + [root_yaml])
+        return root_yaml
 
     def add_container_cmd(self):
         """
@@ -342,6 +364,11 @@ class BaiConfig:
             del benchmark_container.args
 
     def _get_data_volumes(self, data_sources: List) -> Dict:
+        """
+        Processes the input data sources to get a dict with the required data volumes
+        :param data_sources:
+        :return:
+        """
         # Data destination paths and the corresponding mounted vols
         destination_paths = {s['path'] for s in data_sources}
         data_vols = {}
@@ -359,9 +386,8 @@ class BaiConfig:
 
         for vol in data_volumes.values():
             volumes.append(Volume(name=vol['name'],
-                                  hostPath=HostPath(path=f'/{vol[name]}',
+                                  hostPath=HostPath(path=f'/{vol["name"]}',
                                                     type='DirectoryOrCreate')))
-                                  # empty_dir=EmptyDirVolumeSource()))
 
         return volumes
 
@@ -373,12 +399,13 @@ class BaiConfig:
                                           mountPath=dest_path))
         return vol_mounts
 
-    def _get_data_puller(self, data_volumes, data_sources) -> Optional[Container]:
+    def _update_data_puller(self, data_volumes, data_sources):
         """
         Extracts the args for the data puller container and formats them.
 
         :return: The puller container object
         """
+        data_puller = self.root.find_container("data-puller")
         if not data_sources:
             return None
 
@@ -394,11 +421,14 @@ class BaiConfig:
         # ------------------------------------------
 
         vol_mounts = self._get_puller_volume_mounts(data_volumes)
-        puller = Container(name='data-puller',
-                           image=self.PULLER_IMAGE,
-                           args=puller_args,
-                           volumeMounts=vol_mounts)
-        return puller
+        data_puller.image = self.PULLER_IMAGE
+        data_puller.args = puller_args
+        if not data_puller.volumeMounts:
+            data_puller.volumeMounts = vol_mounts
+        else:
+            data_puller.volumeMounts.extend(vol_mounts)
+
+        return data_puller
 
     def _get_puller_volume_mounts(self, data_volumes) -> List[VolumeMount]:
         vol_mounts = []
@@ -418,25 +448,25 @@ def create_bai_config(descriptor: Descriptor, extra_bai_config_args=None) -> Bai
     :param extra_bai_config_args: An optional Dict which will be forwarded to the `BaiConfig` object created.
     :return:
     """
+    template_files = {
+        'single_node': "job_single_node.yaml",
+        'horovod': "mpi_job_horovod.yaml",
+    }
+
     if extra_bai_config_args is None:
         extra_bai_config_args = {}
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    if not descriptor.distributed:
-        with open(os.path.join(current_dir, "templates", "job_single_node.yaml"), "r") as f:
-            contents = f.read()
-        config_template = ConfigTemplate(contents)
-        bai_config = BaiConfig(descriptor, config_template, **extra_bai_config_args)
-        return bai_config
+    strategy = descriptor.distributed_strategy or 'single_node'
 
-    elif descriptor.distributed_strategy == 'horovod':
-        with open(os.path.join(current_dir, "templates", "mpi_job_horovod.yaml"), "r") as f:
-            contents = f.read()
-        config_template = ConfigTemplate(contents)
-        bai_config = BaiConfig(descriptor, config_template, **extra_bai_config_args)
-        # return bai_config
-    # TODO: Improve this error message
-    raise ValueError("Unsupported configuration at descriptor")
+    with open(os.path.join(current_dir, "templates", template_files[strategy]), "r") as f:
+        contents = f.read()
+    config_template = ConfigTemplate(contents)
+    bai_config = BaiConfig(descriptor, config_template, **extra_bai_config_args)
+    return bai_config
+
+    # # TODO: Improve this error message
+    # raise ValueError("Unsupported configuration at descriptor")
 
 
 def main():
