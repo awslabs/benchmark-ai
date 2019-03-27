@@ -60,6 +60,7 @@ class Descriptor:
     """
 
     VALID_DATA_SOURCES = ['s3', 'http', 'https', 'ftp', 'ftps']
+    VALID_STRATEGIES = ['horovod']
 
     def __init__(self, descriptor_data: Dict):
         """
@@ -80,8 +81,8 @@ class Descriptor:
 
         self.extended_shm = descriptor_data['env'].get('extended_shm', False)
         self.privileged = descriptor_data['env'].get('privileged', False)
-        self.benchmark_code = descriptor_data['ml'].get('benchmark_code', None)
-        self.ml_args = descriptor_data['ml'].get('args', None)
+        self.benchmark_code = descriptor_data['ml'].get('benchmark_code', '')
+        self.ml_args = descriptor_data['ml'].get('args', '')
 
         self.dataset = descriptor_data.get('data', {}).get('id', '')
         descriptor_sources = descriptor_data.get('data', {}).get('sources', [])
@@ -135,7 +136,7 @@ class Descriptor:
         parsed = urlparse(uri)
 
         if parsed.scheme == 's3':
-            return {'scheme': parsed.scheme, 'bucket': parsed.netloc, 'object': parsed.path}
+            return {'scheme': parsed.scheme, 'bucket': parsed.netloc, 'object': parsed.path[1:]}
 
         # TODO: Add data sources other than S3
         else:
@@ -154,6 +155,9 @@ class KubernetesHelper:
     def __init__(self, contents: str):
         yaml_data = yaml.load(contents, Loader=yaml.RoundTripLoader)
         self._root = addict.Dict(yaml_data)
+
+    def get_metadata(self):
+        return self._root.metadata
 
     def to_yaml(self) -> str:
         """
@@ -299,7 +303,6 @@ class BaiConfig:
         )
         self.root = config_template.build_root()
 
-        self.add_container_cmd()
         self.config_maps = config_template.build_config_maps()
         self.add_volumes()
 
@@ -337,10 +340,10 @@ class BaiConfig:
             return '\n---\n'.join(config_map_yamls + [root_yaml])
         return root_yaml
 
-    def add_container_cmd(self):
+    def add_benchmark_cmd_to_container(self):
         """
-        Extracts the command and args for the container and formats them.
-        :return: the container's args
+        Extracts the command and args for the benchmark container, formats them and inserts them.
+        The command is split into args and passed to the container as a list.
         """
         benchmark_container = self.root.find_container('benchmark')
 
@@ -353,15 +356,36 @@ class BaiConfig:
             cmd = split_args(self.descriptor.benchmark_code)
             args = split_args(self.descriptor.ml_args)
             benchmark_container.command = cmd + args
-            del benchmark_container.args
+            benchmark_container.pop('args', None)
 
         elif self.descriptor.ml_args:
             benchmark_container.args = split_args(self.descriptor.ml_args)
-            del benchmark_container.command
+            benchmark_container.pop('command', None)
 
         else:
-            del benchmark_container.command
-            del benchmark_container.args
+            benchmark_container.pop('command', None)
+            benchmark_container.pop('args', None)
+
+    def add_benchmark_cmd_to_config_map(self):
+        """
+        Adds the benchmark code and args to the entrypoint configmap.
+        """
+        def find_config_map(name) -> KubernetesHelper:
+            for cm in self.config_maps:
+                if cm.get_metadata().name.startswith(name):
+                    return cm
+
+        if self.descriptor.benchmark_code:
+            benchmark_cmd = self.descriptor.benchmark_code + self.descriptor.ml_args
+            # Using yaml.PreservedScalarString so multiline strings are printed properly
+            benchmark_cmd = yaml.scalarstring.PreservedScalarString(benchmark_cmd)
+
+            entrypoint_config_map = find_config_map('entrypoint')
+            entrypoint_config_map._root.data.entrypoint = benchmark_cmd
+
+        # If no benchmark_code is specified, we don't need to use the configmap as entrypoint
+        else:
+            self.add_benchmark_cmd_to_container()
 
     def _get_data_volumes(self, data_sources: List) -> Dict:
         """
@@ -405,9 +429,10 @@ class BaiConfig:
 
         :return: The puller container object
         """
-        data_puller = self.root.find_container("data-puller")
         if not data_sources:
-            return None
+            return
+
+        data_puller = self.root.find_container("data-puller")
 
         # Placeholder until the data fetcher is ready
         # ------------------------------------------
@@ -427,8 +452,6 @@ class BaiConfig:
             data_puller.volumeMounts = vol_mounts
         else:
             data_puller.volumeMounts.extend(vol_mounts)
-
-        return data_puller
 
     def _get_puller_volume_mounts(self, data_volumes) -> List[VolumeMount]:
         vol_mounts = []
@@ -463,6 +486,12 @@ def create_bai_config(descriptor: Descriptor, extra_bai_config_args=None) -> Bai
         contents = f.read()
     config_template = ConfigTemplate(contents)
     bai_config = BaiConfig(descriptor, config_template, **extra_bai_config_args)
+
+    if strategy == 'single_node':
+        bai_config.add_benchmark_cmd_to_container()
+    elif strategy == 'horovod':
+        bai_config.add_benchmark_cmd_to_config_map()
+
     return bai_config
 
     # # TODO: Improve this error message
