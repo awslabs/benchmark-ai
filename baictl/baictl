@@ -53,7 +53,7 @@ else
     dir=$(dirname $BASH_SOURCE)
 fi
 
-backend=$dir/drivers/$target/baidriver.sh
+backend=$dir/drivers/$target/baidriver
 
 if [ -f $backend ]; then
    ${backend} "$@" || print_usage_and_exit
