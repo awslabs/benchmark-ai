@@ -79,10 +79,6 @@ create_infra() {
     terraform apply $terraform_plan
     terraform output kubectl_config >kubeconfig
 
-    #Make private key not public accessible
-    local bastion_pem_filename=$(terraform output bastion_pem_filename)
-    chmod 400 $bastion_pem_filename
-
     $kubectl apply -f fluentd-daemonset.yaml
     $kubectl apply -f autoscaler-deployment.yaml
 
