@@ -165,20 +165,73 @@ get_benchmark() {
         --name=*)
             benchmark_name="${arg#*=}"
             ;;
+        --aws-es-page-size=*)
+            page_size="${arg#*=}"
+            ;;
         esac
     done
 
     [ -z "$benchmark_name" ] && printf "Missing required argument --name\n" && return 1
+    [ -z "$page_size" ] && page_size=10000
 
-    local bastion_pem_filename=$(terraform output --state=$terraform_state bastion_pem_filename)
-    local bastion_ip=$(terraform output --state=$terraform_state bastion_public_ip)
-    local es_endpoint=$(terraform output --state=$terraform_state es_endpoint)
+    bastion_pem_filename=$(terraform output --state=$terraform_state bastion_pem_filename)
+    bastion_ip=$(terraform output --state=$terraform_state bastion_public_ip)
+    es_endpoint=$(terraform output --state=$terraform_state es_endpoint)
 
-    local query_body="{\"from\" : 0, \"size\" : 1000,\"query\" : {\"term\" : { \"kubernetes.labels.job-name\":\"${benchmark_name}\" }}}"
+    _call_elasticsearch() {
+        local url=${1}
+        local query_body=${2}
+        local curl_cmd="curl -X POST -s -H 'Content-Type: application/json' -d '$query_body' ${es_endpoint}/${url}"
+        local result=$(ssh -q -o StrictHostKeyChecking=no -i ${data_dir}/${bastion_pem_filename} ubuntu@${bastion_ip} "${curl_cmd}")
+        local status=$(echo $result | jq '.status')
+        if [[ "$status" -ne "null" ]]; then
+            echo "==========================================================================================" >&2
+            echo "Error calling elasticsearch on '${url}'. Got status '${status}'" >&2
+            echo "Body of query is:" >&2
+            echo ${query_body} >&2
+            echo "See output for details:" >&2
+            echo $result | jq >&2
+            echo "==========================================================================================" >&2
+            exit 1
+        fi
+        echo $result
+    }
 
-    local curl_cmd="curl -X POST -s -H 'Content-Type: application/json' -d '$query_body' ${es_endpoint}/_search"
+    local current_page_filename=$(mktemp /tmp/bai-current-page.XXXXXX.json)
+    # See the "trap" trick: https://stackoverflow.com/questions/687014/removing-created-temp-files-in-unexpected-bash-exit
+    trap "{ rm -f $current_page_filename; }" EXIT
 
-    ssh -q -o StrictHostKeyChecking=no -i $data_dir/$bastion_pem_filename ubuntu@$bastion_ip "${curl_cmd}" | jq '.hits.hits[]._source | "(\(."@timestamp") \(.log)"' -j | sort
+    # Use the "scroll" api from Elasticsearch to do pagination
+    # see: https://www.elastic.co/guide/en/elasticsearch/reference/6.4/search-request-scroll.html
+    local search_query=$(cat <<-END
+        {
+            "size" : $page_size,
+            "query" : {
+                "term" : { "kubernetes.labels.job-name":"$benchmark_name" }
+            },
+            "sort": [
+                {"@timestamp": {"order": "asc"}}
+            ]
+        }
+END
+)
+    _call_elasticsearch "_search?scroll=1m" "${search_query}" > $current_page_filename
+
+    local scroll_id=$(cat $current_page_filename | jq '._scroll_id')
+
+    while true; do
+        local current_page_size=$(cat $current_page_filename | jq '.hits.hits | length')
+        if [[ ${current_page_size} == 0 ]];  then
+            break
+        fi
+
+        # Print the logs
+        cat $current_page_filename | jq '.hits.hits[]._source | "(\(."@timestamp") \(.log)"' -j
+
+        # Fetch next page
+        local next_page_query="{\"scroll\" : \"1m\", \"scroll_id\" : $scroll_id}"
+        _call_elasticsearch "_search/scroll" "${next_page_query}" > $current_page_filename
+    done
 }
 
 run_benchmark() {
