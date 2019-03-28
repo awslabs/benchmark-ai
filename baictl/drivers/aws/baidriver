@@ -110,9 +110,19 @@ _install_kubeflow_mpi_operator() {
     $kubectl apply -f kubeflow-mpi/deploy/
 }
 destroy_infra() {
+     for arg in "$@"; do
+        case "${arg}" in
+        --aws-region=*)
+            region="${arg#*=}"
+            ;;
+        esac
+    done
+
     cd $data_dir
 
-    terraform destroy --state=$terraform_state -auto-approve $terraform_dir
+    [ -n "$region" ] && vars="${vars} -var region=${region}"
+
+    terraform destroy --state=$terraform_state -auto-approve ${vars} $terraform_dir
 }
 
 get_infra() {
