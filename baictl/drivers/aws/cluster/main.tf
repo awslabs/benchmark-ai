@@ -201,6 +201,20 @@ resource "aws_security_group" "all_worker_mgmt" {
   }
 }
 
+data "template_file" "ssh_config" {
+  template = "${file("${path.module}/template/ssh-config.tpl")}"
+
+  vars = {
+    es_endpoint = "${aws_elasticsearch_domain.logs.endpoint}"
+    bastion_public_ip = "${aws_instance.bastion.public_ip}"
+    bastion_private_key_filename = "${path.cwd}/${local_file.bastion_privatekey_pem.filename}"
+  }
+}
+resource "local_file" "ssh_config" {
+  content  = "${data.template_file.ssh_config.rendered}"
+  filename = "ssh-config"
+}
+
 module "vpc" {
   source             = "terraform-aws-modules/vpc/aws"
   version            = "1.14.0"
