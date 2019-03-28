@@ -23,6 +23,10 @@ data "aws_ami" "eks-gpu-optimized" {
   owners = ["679593333241"] # Centos org id
 }
 
+provider "tls" {
+  version = ">= 1.2.0"
+}
+
 data "aws_availability_zones" "available" {}
 
 locals {
@@ -146,6 +150,10 @@ locals {
 
   worker_groups_count = "11"
 
+  workers_group_defaults = {
+    key_name = "${aws_key_pair.worker_key.key_name}"
+  }
+
   tags = {
     Environment = "test"
     GithubRepo  = "ci-infrastructure"
@@ -208,6 +216,16 @@ data "template_file" "ssh_config" {
     es_endpoint = "${aws_elasticsearch_domain.logs.endpoint}"
     bastion_public_ip = "${aws_instance.bastion.public_ip}"
     bastion_private_key_filename = "${path.cwd}/${local_file.bastion_privatekey_pem.filename}"
+    worker_private_key_filename = "${path.cwd}/${local_file.worker_privatekey_pem.filename}"
+    host_wildcard = "${join(".",
+                         slice(
+                           split(".",
+                             element(split("/", module.vpc.vpc_cidr_block), 0)
+                           ),
+                           0, 2
+                         )
+                       )
+                      }.*"
   }
 }
 resource "local_file" "ssh_config" {
@@ -229,6 +247,27 @@ module "vpc" {
   tags               = "${merge(local.tags, map("kubernetes.io/cluster/${var.cluster_name}", "shared"))}"
 }
 
+# Create a private key for each instance that will be a Kubernetes node so we can at least ssh into the box for
+# troubleshooting.
+resource "tls_private_key" "worker_private_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "aws_key_pair" "worker_key" {
+  key_name   = "worker_key"
+  public_key = "${tls_private_key.worker_private_key.public_key_openssh}"
+}
+
+resource "local_file" "worker_privatekey_pem" {
+  content  = "${tls_private_key.worker_private_key.private_key_pem}"
+  filename = "worker_private.pem"
+  provisioner "local-exec" {
+    # HACK while Terraform does not have a proper way to set file permissions: https://github.com/terraform-providers/terraform-provider-local/issues/19
+    command = "chmod 400 ${local_file.worker_privatekey_pem.filename}"
+  }
+}
+
 module "eks" {
   source                               = "terraform-aws-modules/eks/aws"
   cluster_name                         = "${var.cluster_name}"
@@ -237,6 +276,7 @@ module "eks" {
   vpc_id                               = "${module.vpc.vpc_id}"
   worker_groups                        = "${local.worker_groups}"
   worker_group_count                   = "${local.worker_groups_count}"
+  workers_group_defaults               = "${local.workers_group_defaults}"
   worker_additional_security_group_ids = ["${aws_security_group.all_worker_mgmt.id}"]
   map_roles                            = "${var.map_roles}"
   map_roles_count                      = "${var.map_roles_count}"
