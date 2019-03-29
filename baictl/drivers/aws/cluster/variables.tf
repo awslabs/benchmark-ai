@@ -51,3 +51,24 @@ variable "map_users_count" {
   type        = "string"
   default     = 0
 }
+
+variable "k8s_version" {
+  description = "Version of Kubernetes"
+  default = "1.11"
+}
+
+variable "eks_ami_version" {
+  description = "Version of the AMI used by the worker nodes. See https://github.com/awslabs/amazon-eks-ami"
+  default = "v20190327"
+}
+
+variable "eks_cpu_ami_id" {
+  description = "AMI id to launch workers that need CPU"
+  # TODO: This value should be empty, but EKS broke the CPU version of v20190327 - https://github.com/awslabs/amazon-eks-ami/issues/233
+  default = "ami-0eeeef929db40543c"
+}
+
+variable "eks_gpu_ami_id" {
+  description = "AMI id to launch workers that need GPU"
+  default = ""
+}
