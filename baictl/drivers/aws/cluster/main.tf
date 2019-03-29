@@ -7,12 +7,12 @@ provider "aws" {
   region  = "${var.region}"
 }
 
-data "aws_ami" "eks-gpu-optimized" {
+data "aws_ami" "eks-cpu-optimized" {
   most_recent = true
 
   filter {
     name   = "name"
-    values = ["amazon-eks-gpu-node-1.10-*"]
+    values = ["amazon-eks-node-${var.k8s_version}-${var.eks_ami_version}"]
   }
 
   filter {
@@ -20,7 +20,23 @@ data "aws_ami" "eks-gpu-optimized" {
     values = ["hvm"]
   }
 
-  owners = ["679593333241"] # Centos org id
+  owners = ["602401143452"] # Amazon org id
+}
+
+data "aws_ami" "eks-gpu-optimized" {
+  most_recent = true
+
+  filter {
+    name   = "name"
+    values = ["amazon-eks-gpu-node-${var.k8s_version}-${var.eks_ami_version}"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  owners = ["602401143452"] # Amazon org id
 }
 
 provider "tls" {
@@ -56,102 +72,63 @@ locals {
     {
       instance_type        = "t3.small"
       subnets              = "${join(",", module.vpc.private_subnets)}"
-      asg_desired_capacity = "0"
       name                 = "t3.small_group"
-      autoscaling_enabled  = true
-      asg_max_size         = 3
-      asg_min_size         = 0
-      kubelet_extra_args   = "${local.benchmark_kubelet_args}"
     },
     {
       instance_type        = "c5.large"
       subnets              = "${join(",", module.vpc.private_subnets)}"
-      asg_desired_capacity = "0"
       name                 = "c5.large_group"
-      autoscaling_enabled  = true
-      asg_max_size         = 3
-      asg_min_size         = 0
-      kubelet_extra_args   = "${local.benchmark_kubelet_args}"
     },
     {
       instance_type        = "c5.2xlarge"
       subnets              = "${join(",", module.vpc.private_subnets)}"
-      asg_desired_capacity = "0"
       name                 = "c5.2xlarge"
-      autoscaling_enabled  = true
-      asg_max_size         = 3
-      asg_min_size         = 0
-      kubelet_extra_args   = "${local.benchmark_kubelet_args}"
     },
     {
       instance_type        = "c5.4xlarge"
       subnets              = "${join(",", module.vpc.private_subnets)}"
-      asg_desired_capacity = "0"
       name                 = "c5.4xlarge"
-      autoscaling_enabled  = true
-      asg_max_size         = 3
-      asg_min_size         = 0
-      kubelet_extra_args   = "${local.benchmark_kubelet_args}"
     },
     {
       instance_type        = "c5.9xlarge"
       subnets              = "${join(",", module.vpc.private_subnets)}"
-      asg_desired_capacity = "0"
       name                 = "c5.9xlarge"
-      autoscaling_enabled  = true
-      asg_max_size         = 3
-      asg_min_size         = 0
-      kubelet_extra_args   = "${local.benchmark_kubelet_args}"
     },
     {
       instance_type        = "c5.18xlarge"
       subnets              = "${join(",", module.vpc.private_subnets)}"
-      asg_desired_capacity = "0"
       name                 = "c5.18xlarge"
-      autoscaling_enabled  = true
-      asg_max_size         = 3
-      asg_min_size         = 0
-      kubelet_extra_args   = "${local.benchmark_kubelet_args}"
     },
     {
-      ami_id               = "${data.aws_ami.eks-gpu-optimized.id}"
+      ami_id               = "${coalesce(var.eks_gpu_ami_id, data.aws_ami.eks-gpu-optimized.id)}"
       instance_type        = "p3.2xlarge"
       subnets              = "${join(",", module.vpc.private_subnets)}"
-      asg_desired_capacity = "0"
       name                 = "p3.2xlarge_group"
-      autoscaling_enabled  = true
-      asg_max_size         = 3
-      asg_min_size         = 0
-      kubelet_extra_args   = "${local.benchmark_kubelet_args}"
     },
     {
-      ami_id               = "${data.aws_ami.eks-gpu-optimized.id}"
+      ami_id               = "${coalesce(var.eks_gpu_ami_id, data.aws_ami.eks-gpu-optimized.id)}"
       instance_type        = "p3.8xlarge"
       subnets              = "${join(",", module.vpc.private_subnets)}"
-      asg_desired_capacity = "0"
       name                 = "p3.8xlarge_group"
-      autoscaling_enabled  = true
-      asg_max_size         = 3
-      asg_min_size         = 0
-      kubelet_extra_args   = "${local.benchmark_kubelet_args}"
     },
     {
-      ami_id               = "${data.aws_ami.eks-gpu-optimized.id}"
+      ami_id               = "${coalesce(var.eks_gpu_ami_id, data.aws_ami.eks-gpu-optimized.id)}"
       instance_type        = "p3.16xlarge"
       subnets              = "${join(",", module.vpc.private_subnets)}"
-      asg_desired_capacity = "0"
       name                 = "p3.16xlarge_group"
-      autoscaling_enabled  = true
-      asg_max_size         = 3
-      asg_min_size         = 0
-      kubelet_extra_args   = "${local.benchmark_kubelet_args}"
     }
   ]
 
   worker_groups_count = "11"
 
   workers_group_defaults = {
+    kubelet_extra_args   = "${local.benchmark_kubelet_args}"
+    ami_id = "${coalesce(var.eks_cpu_ami_id, data.aws_ami.eks-cpu-optimized.id)}"
     key_name = "${aws_key_pair.worker_key.key_name}"
+    asg_min_size         = 0
+    asg_desired_capacity = 0
+    asg_max_size         = 3
+    autoscaling_enabled  = true
   }
 
   tags = {
