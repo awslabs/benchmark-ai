@@ -57,7 +57,7 @@ locals {
       asg_desired_capacity = 2
       asg_max_size         = 10
       asg_min_size         = 1
-      name                 = "k8s-services_t2.small"
+      name                 = "k8s-services"
       kubelet_extra_args   = "${local.k8s_services_kubelet_args}"
     },
     {
@@ -66,11 +66,16 @@ locals {
       asg_desired_capacity = 1
       asg_max_size         = 4
       asg_min_size         = 1
-      name                 = "bai-services.m5d.4xlarge"
+      name                 = "bai-services"
       kubelet_extra_args   = "${local.bai_services_kubelet_args}"
     },
 
     # bai-worker ASGs
+    {
+      instance_type        = "t2.small"
+      subnets              = "${join(",", module.vpc.private_subnets)}"
+      name                 = "bai-worker.t2.small"
+    },
     {
       instance_type        = "t3.small"
       subnets              = "${join(",", module.vpc.private_subnets)}"
@@ -121,7 +126,31 @@ locals {
     }
   ]
 
-  worker_groups_count = "11"
+  worker_groups_count = "12"
+
+  worker_group_tags = {
+    k8s-services = [
+      {
+        key = "k8s.io/cluster-autoscaler/node-template/label/node.type"
+        value = "k8s-services"
+        propagate_at_launch = true
+      }
+    ]
+    bai-services = [
+      {
+        key = "k8s.io/cluster-autoscaler/node-template/label/node.type"
+        value = "bai-services"
+        propagate_at_launch = true
+      }
+    ]
+    default = [
+      {
+        key = "k8s.io/cluster-autoscaler/node-template/label/node.type"
+        value = "bai-worker"
+        propagate_at_launch = true
+      }
+    ]
+  }
 
   workers_group_defaults = {
     kubelet_extra_args   = "${local.bai_worker_kubelet_args}"
@@ -256,6 +285,7 @@ module "eks" {
   vpc_id                               = "${module.vpc.vpc_id}"
   worker_groups                        = "${local.worker_groups}"
   worker_group_count                   = "${local.worker_groups_count}"
+  worker_group_tags                    = "${local.worker_group_tags}"
   workers_group_defaults               = "${local.workers_group_defaults}"
   worker_additional_security_group_ids = ["${aws_security_group.all_worker_mgmt.id}"]
   map_roles                            = "${var.map_roles}"
