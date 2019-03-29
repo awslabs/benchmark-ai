@@ -150,3 +150,5 @@ spec:
         - name: ssl-certs
           hostPath:
             path: '/etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt'
+      nodeSelector:
+        node.type: k8s-services

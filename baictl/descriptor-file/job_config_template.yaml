@@ -68,6 +68,7 @@ spec:
 
       nodeSelector:
         beta.kubernetes.io/instance-type: {instance_type}
+        node.type: bai-worker
       restartPolicy: Never
       volumes:
         - name: benchmark-ai
