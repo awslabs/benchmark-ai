@@ -21,6 +21,9 @@ locals {
     GithubOrg   = "MXNetEdge"
     Workspace   = "${terraform.workspace}"
   }
+  vpc_cidr_block = "172.16.0.0/16"
+  bits = 4
+  maximum_subnets = "${256 / pow(2, local.bits)}"
 }
 
 resource "aws_security_group" "worker_group_mgmt_one" {
@@ -34,7 +37,7 @@ resource "aws_security_group" "worker_group_mgmt_one" {
     protocol  = "tcp"
 
     cidr_blocks = [
-      "172.16.0.0/16",
+      "${local.vpc_cidr_block}",
     ]
   }
 }
@@ -99,10 +102,17 @@ module "vpc" {
   source             = "terraform-aws-modules/vpc/aws"
   version            = "1.14.0"
   name               = "test-vpc"
-  cidr               = "172.16.0.0/16"
   azs                = ["${data.aws_availability_zones.available.names[0]}", "${data.aws_availability_zones.available.names[1]}", "${data.aws_availability_zones.available.names[2]}"]
   private_subnets    = ["172.16.0.0/20", "172.16.16.0/20", "172.16.32.0/20"]
-  public_subnets     = ["172.16.48.0/20", "172.16.64.0/20", "172.16.80.0/20"]
+  cidr               = "${local.vpc_cidr_block}"
+  # The number of public subnets is fixed because we don't launch worker nodes on them. It's going to host only the
+  # BAI services.
+  # Also, these subnets are at the end of the CIDR block so that they don't conflict with the expanding private subnets.
+  # This logic breaks when number of azs in a region is larger than 12.
+  public_subnets     = ["${cidrsubnet(local.vpc_cidr_block, local.bits, local.maximum_subnets - 3)}",
+                        "${cidrsubnet(local.vpc_cidr_block, local.bits, local.maximum_subnets - 2)}",
+                        "${cidrsubnet(local.vpc_cidr_block, local.bits, local.maximum_subnets - 1)}"]
+
   enable_nat_gateway = true
   single_nat_gateway = true
   enable_s3_endpoint = true
