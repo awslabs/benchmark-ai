@@ -12,7 +12,7 @@ data "aws_ami" "eks-cpu-optimized" {
 
   filter {
     name   = "name"
-    values = ["amazon-eks-node-${var.k8s_version}-${var.eks_ami_version}"]
+    values = ["amazon-eks-node-${var.k8s_version}-${var.eks_cpu_ami_version}"]
   }
 
   filter {
@@ -28,7 +28,7 @@ data "aws_ami" "eks-gpu-optimized" {
 
   filter {
     name   = "name"
-    values = ["amazon-eks-gpu-node-${var.k8s_version}-${var.eks_ami_version}"]
+    values = ["amazon-eks-gpu-node-${var.k8s_version}-${var.eks_gpu_ami_version}"]
   }
 
   filter {
