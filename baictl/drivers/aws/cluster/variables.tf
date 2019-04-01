@@ -57,18 +57,25 @@ variable "k8s_version" {
   default = "1.11"
 }
 
-variable "eks_ami_version" {
+##########################################################################################
+# AMIs
+##########################################################################################
+variable "eks_cpu_ami_version" {
+  description = "Version of the AMI used by the worker nodes. See https://github.com/awslabs/amazon-eks-ami"
+  default = "v20190329"
+}
+
+variable "eks_gpu_ami_version" {
   description = "Version of the AMI used by the worker nodes. See https://github.com/awslabs/amazon-eks-ami"
   default = "v20190327"
 }
 
 variable "eks_cpu_ami_id" {
-  description = "AMI id to launch workers that need CPU"
-  # TODO: This value should be empty, but EKS broke the CPU version of v20190327 - https://github.com/awslabs/amazon-eks-ami/issues/233
-  default = "ami-0eeeef929db40543c"
+  description = "AMI id to launch workers that need CPU. Overrides the version specified by `eks_cpu_ami_version`."
+  default = "" # Empty because this must be a choice of the BAI administrator, wether he wants to override the AMI.
 }
 
 variable "eks_gpu_ami_id" {
-  description = "AMI id to launch workers that need GPU"
-  default = ""
+  description = "AMI id to launch workers that need GPU. Overrides the version specified by `eks_gpu_ami_version`."
+  default = "" # Empty because this must be a choice of the BAI administrator, wether he wants to override the AMI.
 }
