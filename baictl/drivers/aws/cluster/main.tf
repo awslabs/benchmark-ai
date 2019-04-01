@@ -20,7 +20,7 @@ data "aws_ami" "eks-cpu-optimized" {
     values = ["hvm"]
   }
 
-  owners = ["602401143452"] # Amazon org id
+  owners = ["602401143452"] # AWS EKS account
 }
 
 data "aws_ami" "eks-gpu-optimized" {
@@ -36,7 +36,7 @@ data "aws_ami" "eks-gpu-optimized" {
     values = ["hvm"]
   }
 
-  owners = ["602401143452"] # Amazon org id
+  owners = ["602401143452"] # AWS EKS account
 }
 
 provider "tls" {
