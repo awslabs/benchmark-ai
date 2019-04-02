@@ -25,9 +25,9 @@ output "region" {
   value       = "${var.region}"
 }
 
-output "cluster_name" {
+output "eks_cluster_name" {
   description = "AWS EKS cluster name."
-  value       = "${var.cluster_name}"
+  value       = "${var.eks_cluster_name}"
 }
 
 output "bastion_public_ip" {
@@ -48,3 +48,37 @@ output "data_pull_s3" {
   value = "${aws_s3_bucket.data-pull.id}"
 }
 
+output "default_security_group_id" {
+    description = "List of public Elastic IPs created for AWS NAT Gateway"
+    value       = ["${module.vpc.default_security_group_id}"]
+}
+
+output "private_subnets" {
+    description = "List of IDs of private subnets"
+    value       = ["${module.vpc.private_subnets}"]
+}
+
+output "msk_bootstrap_brokers" {
+  description = "A list of brokers that a client application can use to bootstrap."
+  value = "${aws_msk_cluster.benchmark-msk-cluster.bootstrap_brokers}"
+}
+
+output "msk_zookeeper_connect" {
+  description = "Connection string for Zookeeper."
+  value = "${aws_msk_cluster.benchmark-msk-cluster.zookeeper_connect}"
+}
+
+output "msk_encrypt_rest_key" {
+  description = "The AWS KMS key used for data encryption."
+  value = "${aws_msk_cluster.benchmark-msk-cluster.encrypt_rest_key}"
+}
+
+output "msk_status" {
+  description = "The status of the cluster. The possible states are CREATING, ACTIVE, and FAILED."
+  value = "${aws_msk_cluster.benchmark-msk-cluster.zookeeper_connect}"
+}
+
+output "msk_arn" {
+  description = "The Amazon Resource Name (ARN) of the cluster."
+  value = "${aws_msk_cluster.benchmark-msk-cluster.arn}"
+}

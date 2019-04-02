@@ -121,5 +121,16 @@ module "vpc" {
   # The specific kubernetes.io/cluster/* resource tags below are required
   # for EKS and Kubernetes to discover and manage networking resources
   # https://www.terraform.io/docs/providers/aws/guides/eks-getting-started.html#base-vpc-networking
-  tags               = "${merge(local.tags, map("kubernetes.io/cluster/${var.cluster_name}", "shared"))}"
+  tags               = "${merge(local.tags, map("kubernetes.io/cluster/${var.eks_cluster_name}", "shared"))}"
+}
+
+resource "aws_msk_cluster" "benchmark-msk-cluster" {
+  depends_on             = ["module.vpc"]
+  name                   = "${var.msk_cluster_name}"
+  broker_count           = "${var.msk_broker_count}"
+  broker_instance_type   = "${var.msk_broker_instance_type}"
+  broker_security_groups = ["${list(module.vpc.default_security_group_id)}"]
+  broker_volume_size     = "${var.msk_broker_volume_size}"
+  client_subnets         = ["${module.vpc.private_subnets}"]
+  kafka_version          = "${var.msk_kafka_version}"
 }

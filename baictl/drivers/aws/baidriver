@@ -72,6 +72,21 @@ create_infra() {
     [ -n "$region" ] && vars="${vars} -var region=${region}"
     [ -n "$prefix_list_id" ] && vars="${vars} -var prefix_list_ids=[\"${prefix_list_id}\"]"
 
+    # Get Kafka AWS binary and put it in terraform plugins directory
+    local plugin_name="terraform-provider-aws_v2.4.0"
+
+    if test -e ~/.terraform.d/plugins/${plugin_name} ; then
+        : 
+    else
+        if aws s3 cp s3://benchmark-ai/darwin_amd64/${plugin_name} ; then
+            mkdir -p ~/.terraform.d/plugins && mv ${plugin_name} ~/.terraform.d/plugins
+        else
+            CANONICAL_ID=`aws s3api list-buckets --output text  | grep ^OWNER | awk '{print $3}'`
+            printf "Please add your account ID: $CANONICAL_ID RW permissions to mxnet-edge-bln S3 bucket benchmark-ai"
+            return 1
+        fi
+    fi
+
     terraform init $terraform_dir
     terraform get $terraform_dir
 

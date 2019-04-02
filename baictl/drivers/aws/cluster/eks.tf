@@ -173,7 +173,7 @@ resource "local_file" "worker_privatekey_pem" {
 
 module "eks" {
   source                               = "terraform-aws-modules/eks/aws"
-  cluster_name                         = "${var.cluster_name}"
+  cluster_name                         = "${var.eks_cluster_name}"
   subnets                              = ["${module.vpc.private_subnets}"]
   tags                                 = "${local.tags}"
   vpc_id                               = "${module.vpc.vpc_id}"

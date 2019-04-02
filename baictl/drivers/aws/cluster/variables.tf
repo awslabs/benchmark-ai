@@ -8,9 +8,9 @@ variable "prefix_list_ids" {
   default = []
 }
 
-variable "cluster_name" {
+variable "eks_cluster_name" {
   type    = "string"
-  default = "benchmark-cluster"
+  default = "benchmark-eks-cluster"
 }
 
 variable "map_accounts" {
@@ -78,4 +78,28 @@ variable "eks_cpu_ami_id" {
 variable "eks_gpu_ami_id" {
   description = "AMI id to launch workers that need GPU. Overrides the version specified by `eks_gpu_ami_version`."
   default = "" # Empty because this must be a choice of the BAI administrator, wether he wants to override the AMI.
+}
+variable "msk_cluster_name" {
+  type    = "string"
+  default = "benchmark-msk-cluster"
+}
+
+variable "msk_broker_count" {
+  type    = "string"
+  default = 3
+}
+
+variable "msk_broker_instance_type" {
+  type    = "string"
+  default = "kafka.m5.large"
+}
+
+variable "msk_broker_volume_size" {
+  type    = "string"
+  default = "1000"
+}
+
+variable "msk_kafka_version" {
+  type    = "string"
+  default = "2.1.0"
 }
