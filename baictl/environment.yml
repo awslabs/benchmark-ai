@@ -15,3 +15,4 @@ dependencies:
   - addict 2.2.*
   #TODO: Replace with a normal way to install https://github.com/MXNetEdge/benchmark-ai/issues/62
   - git >= 2.19
+  - awscli >= 1.16

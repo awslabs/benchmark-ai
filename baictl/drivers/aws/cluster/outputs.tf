@@ -27,7 +27,7 @@ output "region" {
 
 output "cluster_name" {
   description = "AWS EKS cluster name."
-  value       = "${var.cluster_name}"
+  value       = "${var.cluster_name}-eks"
 }
 
 output "bastion_public_ip" {
@@ -48,3 +48,22 @@ output "data_pull_s3" {
   value = "${aws_s3_bucket.data-pull.id}"
 }
 
+output "default_security_group_id" {
+    description = "List of public Elastic IPs created for AWS NAT Gateway"
+    value       = ["${module.vpc.default_security_group_id}"]
+}
+
+output "private_subnets" {
+    description = "List of IDs of private subnets"
+    value       = ["${module.vpc.private_subnets}"]
+}
+
+output "msk_bootstrap_brokers" {
+  description = "A list of brokers that a client application can use to bootstrap."
+  value = "${aws_msk_cluster.benchmark-msk-cluster.bootstrap_brokers}"
+}
+
+output "msk_zookeeper_connect" {
+  description = "Connection string for Zookeeper."
+  value = "${aws_msk_cluster.benchmark-msk-cluster.zookeeper_connect}"
+}
