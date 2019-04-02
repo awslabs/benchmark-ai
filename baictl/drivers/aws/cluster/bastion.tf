@@ -101,6 +101,20 @@ resource "aws_instance" "bastion" {
   key_name = "${aws_key_pair.bastion_key.key_name}"
 
   tags {
-    "Name" = "EC2 bastion to access ES"
+    "Name" = "BenchmarkAI Bastion"
+  }
+
+  provisioner "remote-exec" {
+    connection {
+      type = "ssh"
+      user = "ubuntu"
+      private_key = "${tls_private_key.bastion_private_key.private_key_pem}"
+    }
+
+    inline = [
+      # HACK: Snap takes longer than SSH to init
+      "tail -f /var/log/syslog | grep -q 'Startup finished'",
+      "sudo snap install --beta kafka",
+    ]
   }
 }
