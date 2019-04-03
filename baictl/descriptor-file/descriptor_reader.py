@@ -7,11 +7,13 @@ import os
 import uuid
 import addict
 import shlex
+import itertools
+import csv
 
 import ruamel.yaml as yaml
 
 from urllib.parse import urlparse
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 # Using the official Kubernetes Model classes (https://github.com/kubernetes-client/python) is avoided here
 # because it presents some problems:
@@ -51,6 +53,7 @@ Job = addict.Dict
 Volume = addict.Dict
 EmptyDirVolumeSource = addict.Dict
 HostPath = addict.Dict
+ConfigMap = addict.Dict
 
 
 class Descriptor:
@@ -60,7 +63,7 @@ class Descriptor:
     """
 
     VALID_DATA_SOURCES = ['s3', 'http', 'https', 'ftp', 'ftps']
-    VALID_STRATEGIES = ['horovod']
+    VALID_STRATEGIES = ['single_node', 'horovod']
 
     def __init__(self, descriptor_data: Dict):
         """
@@ -69,15 +72,15 @@ class Descriptor:
         """
         try:
             self.instance_type = descriptor_data['hardware']['instance_type']
+            self.strategy = descriptor_data['hardware']['strategy']
             self.docker_image = descriptor_data['env']['docker_image']
         except KeyError as e:
-            raise KeyError('Required field is missing in the descriptor toml file') from e
+            raise KeyError(f'Required field is missing in the descriptor toml file: {e.args[0]}') from e
 
         self.distributed = 'distributed' in descriptor_data['hardware']
         distributed_data = descriptor_data['hardware'].get('distributed', {})
         self.num_instances = distributed_data.get('num_instances', 1)
-        self.gpus_per_instance = distributed_data.get('gpus_per_instance', 1)
-        self.distributed_strategy = distributed_data.get('strategy', '')
+        self.gpus_per_instance = self.get_instance_gpus(self.instance_type)
 
         self.extended_shm = descriptor_data['env'].get('extended_shm', False)
         self.privileged = descriptor_data['env'].get('privileged', False)
@@ -108,15 +111,13 @@ class Descriptor:
             if not source.get('uri', ''):
                 raise ValueError('Missing data uri')
             if source['scheme'] not in self.VALID_DATA_SOURCES:
-                raise ValueError(f'Invalid data uri: {source["uri"]}')
+                raise ValueError(f'Invalid data uri: {source["uri"]} (must be one of {self.VALID_DATA_SOURCES})')
 
         if self.distributed:
             if self.num_instances <= 1:
                 logging.warning(f'Specified a distributed strategy but using {self.num_instances} nodes')
-            if self.distributed_strategy not in self.VALID_STRATEGIES:
-                raise ValueError(f'Invalid distributed strategy: {self.distributed_strategy}')
-
-        # TODO: Validate the chosen instance type has enough GPUs
+            if self.strategy not in self.VALID_STRATEGIES:
+                raise ValueError(f'Invalid strategy: {self.strategy} (must be one of {self.VALID_STRATEGIES})')
 
     def _process_data_sources(self, data_sources: List) -> List:
         processed_sources = []
@@ -142,68 +143,41 @@ class Descriptor:
         else:
             raise ValueError(f'{parsed.scheme} not supported as a data source yet')
 
+    def get_instance_gpus(self, instance_type: str) -> int:
+        with open('util/ec2_instance_info.csv', mode='r') as infile:
+            reader = csv.reader(infile)
+            gpus_per_instance = {rows[0]: rows[1] for rows in reader}
 
-class KubernetesHelper:
+        if instance_type in gpus_per_instance:
+            return gpus_per_instance[instance_type]
+        else:
+            raise ValueError(f'Invalid instance type: {instance_type}')
+
+
+class KubernetesRootObjectHelper:
     """
     A wrapper for the top-level Kubernetes object.
 
-    It provides serialization/deserialization from YAML. Utility methods are provided by extensions of this class.
+    It provides serialization/deserialization from YAML and utility methods to make its usage easier.
 
     The yaml file is loaded/dumped using RoundTripLoader and RoundTripDumper to preserve the order of fields.
     While it doesn't break anything, it keeps the generated yaml closer to the input template.
     """
     def __init__(self, contents: str):
-        yaml_data = yaml.load(contents, Loader=yaml.RoundTripLoader)
-        self._root = addict.Dict(yaml_data)
-
-    def get_metadata(self):
-        return self._root.metadata
-
-    def to_yaml(self) -> str:
         """
-        Serializes this object to a YAML string
-
-        :return: the yaml string
+        :param contents: The parsed YAML contents of a full Kubernetes object, as a Dict
         """
-        root_as_dict = self.to_dict()
-        return yaml.dump(root_as_dict, Dumper=yaml.RoundTripDumper)
+        docs = yaml.load_all(contents, Loader=yaml.RoundTripLoader)
+        self.config_maps = []
 
-    def to_dict(self):
-        def remove_null_entries(d):
-            """
-            Remove entries with null values from the dict or list passed as parameter.
-            """
-            # This method is needed because k8s client objects.to_dict() contain many Null fields
-            if not isinstance(d, (dict, list)):
-                return d
-            if isinstance(d, list):
-                return [v for v in (remove_null_entries(v) for v in d) if v is not None]
-            return {k: v for k, v in ((k, remove_null_entries(v)) for k, v in d.items()) if v is not None}
+        # TODO: Improve generalization here
+        for d in docs:
+            if d['kind'] == 'ConfigMap':
+                self.config_maps.append(addict.Dict(d))
+            elif d['kind'] in ['Job', 'MPIJob']:
+                self._root = addict.Dict(d)
 
-        root_as_dict = self._root.to_dict()
-        return remove_null_entries(root_as_dict)
-
-
-class KubernetesRootObjectHelper(KubernetesHelper):
-    """
-    Extension of the KubernetesHelper to handle root objects such as Jobs or MPIJobs.
-
-    It provides some utility methods to make it easier to work with them.
-    """
-    def __init__(self, contents: str):
-        """
-        :param contents: The YAML contents of a full Kubernetes object
-        """
-        super().__init__(contents)
-
-        # Validation
-        if not self._root.spec:
-            raise ValueError("Spec of root object not found at yaml definition of the Kubernetes object")
-        if not self.get_pod_spec():
-            raise ValueError("Pod not found at yaml definition of the Kubernetes object")
-        containers = self.get_pod_spec().containers
-        if not containers:
-            raise ValueError("A Pod must have at least 1 container on its definition")
+        self._validate()
 
         # Create empty fields if required
         if not self.get_pod_spec().initContainers:
@@ -213,6 +187,14 @@ class KubernetesRootObjectHelper(KubernetesHelper):
         for container in self.get_pod_spec().containers:
             if not container.volumeMounts:
                 container.volumeMounts = []
+
+    def _validate(self):
+        if not self._root.spec:
+            raise ValueError("Spec of root object not found at yaml definition of the Kubernetes object")
+        if not self.get_pod_spec():
+            raise ValueError("Pod not found at yaml definition of the Kubernetes object")
+        if not self.get_pod_spec().containers:
+            raise ValueError("A Pod must have at least 1 container on its definition")
 
     def get_pod_spec(self) -> PodSpec:
         return self._root.spec.template.spec
@@ -225,14 +207,33 @@ class KubernetesRootObjectHelper(KubernetesHelper):
         :raises: ValueError if the container could not be found
         """
         containers = self.get_pod_spec().containers
-        initContainers = self.get_pod_spec().initContainers
-        for container in containers + initContainers:
+        init_containers = self.get_pod_spec().initContainers
+        for container in itertools.chain(containers, init_containers):
             if container.name == container_name:
                 return container
         raise ValueError("Container {} not found. Available containers are: {}".format(
             container_name,
             [c.name for c in containers]
         ))
+
+    def find_config_map(self, name) -> ConfigMap:
+        for cm in self.config_maps:
+            if cm.metadata.name.startswith(name):
+                return cm
+        raise ValueError("ConfigMap {} not found. Available ones are: {}".format(
+            name,
+            [cm.metadata.name for cm in self.config_maps]
+        ))
+
+    def to_yaml(self) -> str:
+        """
+        Serializes this object to a YAML string
+
+        :return: the yaml string
+        """
+        root_as_dict = self._root.to_dict()
+        config_maps_as_dicts = [cm.to_dict() for cm in self.config_maps]
+        return yaml.dump_all(itertools.chain(config_maps_as_dicts, [root_as_dict]), Dumper=yaml.RoundTripDumper)
 
 
 class ConfigTemplate:
@@ -253,20 +254,8 @@ class ConfigTemplate:
     def get_contents(self):
         return self._yaml_template_contents.format(**self._variables)
 
-    def get_docs(self) -> List:
-        # YAML docs are separated by '---'
-        return self.get_contents().split('---')
-
-    def build_root(self) -> KubernetesRootObjectHelper:
-        """
-        Builds the Kubernetes root object
-        :return:
-        """
-        # We expect all documents to be ConfigMaps except for the last one
-        return KubernetesRootObjectHelper(self.get_docs()[-1])
-
-    def build_config_maps(self) -> List[KubernetesHelper]:
-        return [KubernetesHelper(doc) for doc in self.get_docs()[:-1]]
+    def build(self):
+        return KubernetesRootObjectHelper(self.get_contents())
 
 
 class BaiConfig:
@@ -295,15 +284,12 @@ class BaiConfig:
         if random_object is None:
             random_object = random.Random()
 
-        config_template.feed(vars(self.descriptor))
-        config_template.feed(
-            {
-             # random_object.getrandbits(128) is equivalent to os.urandom(16), since 16 * 8 = 128
-             "job_id": uuid.UUID(int=random_object.getrandbits(128), version=4).hex}
-        )
-        self.root = config_template.build_root()
+        # random_object.getrandbits(128) is equivalent to os.urandom(16), since 16 * 8 = 128
+        self.job_id = uuid.UUID(int=random_object.getrandbits(128), version=4).hex
 
-        self.config_maps = config_template.build_config_maps()
+        config_template.feed(vars(self.descriptor))
+        config_template.feed({"job_id": self.job_id})
+        self.root = config_template.build()
         self.add_volumes()
 
     def add_volumes(self):
@@ -333,17 +319,14 @@ class BaiConfig:
         container_volume_mounts.append(shm_vol_mount)
 
     def dump_yaml_string(self):
-        root_yaml = self.root.to_yaml()
-        if self.config_maps:
-            # Get the yaml for each of the docs and concatenate them again
-            config_map_yamls = [m.to_yaml() for m in self.config_maps]
-            return '\n---\n'.join(config_map_yamls + [root_yaml])
-        return root_yaml
+        return self.root.to_yaml()
 
     def add_benchmark_cmd_to_container(self):
         """
-        Extracts the command and args for the benchmark container, formats them and inserts them.
+        Extracts the command and args for the benchmark container, formats and inserts them.
         The command is split into args and passed to the container as a list.
+        If a benchmark command was specified, command and args are inserted in the container's command field.
+        If only args are provided, they are inserted in the container's args field.
         """
         benchmark_container = self.root.find_container('benchmark')
 
@@ -370,18 +353,13 @@ class BaiConfig:
         """
         Adds the benchmark code and args to the entrypoint configmap.
         """
-        def find_config_map(name) -> KubernetesHelper:
-            for cm in self.config_maps:
-                if cm.get_metadata().name.startswith(name):
-                    return cm
-
         if self.descriptor.benchmark_code:
             benchmark_cmd = self.descriptor.benchmark_code + self.descriptor.ml_args
             # Using yaml.PreservedScalarString so multiline strings are printed properly
             benchmark_cmd = yaml.scalarstring.PreservedScalarString(benchmark_cmd)
 
-            entrypoint_config_map = find_config_map('entrypoint')
-            entrypoint_config_map._root.data.entrypoint = benchmark_cmd
+            entrypoint_config_map = self.root.find_config_map(f'entrypoint-{self.job_id}')
+            entrypoint_config_map.data.entrypoint = benchmark_cmd
 
         # If no benchmark_code is specified, we don't need to use the configmap as entrypoint
         else:
@@ -412,7 +390,6 @@ class BaiConfig:
             volumes.append(Volume(name=vol['name'],
                                   hostPath=HostPath(path=f'/{vol["name"]}',
                                                     type='DirectoryOrCreate')))
-
         return volumes
 
     def _get_container_volume_mounts(self, data_volumes) -> List[VolumeMount]:
@@ -425,7 +402,7 @@ class BaiConfig:
 
     def _update_data_puller(self, data_volumes, data_sources):
         """
-        Extracts the args for the data puller container and formats them.
+        Completes the data puller container and formats them.
 
         :return: The puller container object
         """
@@ -480,16 +457,15 @@ def create_bai_config(descriptor: Descriptor, extra_bai_config_args=None) -> Bai
         extra_bai_config_args = {}
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    strategy = descriptor.distributed_strategy or 'single_node'
 
-    with open(os.path.join(current_dir, "templates", template_files[strategy]), "r") as f:
+    with open(os.path.join(current_dir, "templates", template_files[descriptor.strategy]), "r") as f:
         contents = f.read()
     config_template = ConfigTemplate(contents)
     bai_config = BaiConfig(descriptor, config_template, **extra_bai_config_args)
 
-    if strategy == 'single_node':
+    if descriptor.strategy == 'single_node':
         bai_config.add_benchmark_cmd_to_container()
-    elif strategy == 'horovod':
+    elif descriptor.strategy == 'horovod':
         bai_config.add_benchmark_cmd_to_config_map()
 
     return bai_config

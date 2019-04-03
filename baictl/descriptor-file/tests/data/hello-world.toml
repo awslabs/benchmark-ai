@@ -13,6 +13,7 @@ description = """ \
 # 1. Hardware
 [hardware]
 instance_type = "t2.small"
+strategy = "single_node"
 
 # 2. Environment
 [env]

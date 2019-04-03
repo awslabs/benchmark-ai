@@ -1,24 +1,3 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: entrypoint-cd613e30d8f14adf91b7584a2265b1f5
-  namespace: default
-  labels:
-    benchmark: cd613e30d8f14adf91b7584a2265b1f5
-data:
-  entrypoint: |
-    #!/bin/bash \\
-    echo 'Horovod test descriptor' \\
-    ./deep-learning-models/models/resnet/tensorflow/train.sh 3
-  init_entrypoint.sh: |-
-    #!/bin/bash
-    if [ "$ROLE" == "worker" ]; then
-      /opt/behance/download-s3-files "$@"
-    else
-      echo "Not a worker - no data necessary"
-    fi  
-
----
 apiVersion: kubeflow.org/v1alpha1
 kind: MPIJob
 metadata:
@@ -49,7 +28,7 @@ spec:
         args:
         - eu-west-1
         - mlperf-data-mxnet-berlin
-        - /imagenet/train-480px,777,p0:/imagenet/validation-480px,777,p0
+        - imagenet/train-480px,777,p0:imagenet/validation-480px,777,p0
       containers:
       - image: user/repo:tag
         name: benchmark
@@ -60,6 +39,8 @@ spec:
           mountPath: /bin/entrypoint.sh
           readOnly: true
           subPath: entrypoint.sh
+        - name: benchmark-ai
+          mountPath: /tmp/benchmark-ai
         - name: p0
           mountPath: ~/data/tf-imagenet/
         - name: dshm
@@ -67,11 +48,45 @@ spec:
         resources:
           limits:
             nvidia.com/gpu: 4
+        env:
+        - name: BENCHMARK_AI
+          value: fifo
+        - name: BENCHMARK_AI_FIFO_FILEPATH
+          value: /tmp/benchmark-ai/fifo
+        - name: BENCHMARK_AI_FIFO_MAX_WAIT_TIME
+          value: '60'
+      - name: sidecar
+        image: edisongustavo/benchmarkai-metrics-pusher:0.1
+        env:
+        - name: BENCHMARK_AI_FIFO_FILEPATH
+          value: /tmp/benchmark-ai/fifo
+        - name: BACKEND
+          value: elasticsearch
+        - name: BACKEND_ARG_JOB_ID
+          value: cd613e30d8f14adf91b7584a2265b1f5
+        - name: BACKEND_ARG_HOSTNAME
+          valueFrom:
+            configMapKeyRef:
+              name: outputs-infrastructure
+              key: es_endpoint
+        - name: BACKEND_ARG_PORT
+          value: '443'
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        volumeMounts:
+        - mountPath: /tmp/benchmark-ai
+          name: benchmark-ai
       volumes:
       - name: entrypoint
         configMap:
           defaultMode: 0700
-          name: entrypoint
+          name: entrypoint-cd613e30d8f14adf91b7584a2265b1f5
       - name: p0
         hostPath:
           path: /p0
@@ -81,3 +96,24 @@ spec:
           medium: Memory
       nodeSelector:
         beta.kubernetes.io/instance-type: p3.8xlarge
+        node.type: bai-worker
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: entrypoint-cd613e30d8f14adf91b7584a2265b1f5
+  namespace: default
+  labels:
+    benchmark: cd613e30d8f14adf91b7584a2265b1f5
+data:
+  entrypoint: |
+    #!/bin/bash \\
+    echo 'Horovod test descriptor' \\
+    ./deep-learning-models/models/resnet/tensorflow/train.sh 3
+  init_entrypoint.sh: |-
+    #!/bin/bash
+    if [ "$ROLE" == "worker" ]; then
+      /opt/behance/download-s3-files "$@"
+    else
+      echo "Not a worker - no data necessary"
+    fi  
