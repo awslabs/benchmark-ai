@@ -36,7 +36,7 @@ new instances.
 
 In order for the CA to be able to list the ASGs, IAM Permissions are given to the nodes.
 
-Both of these requirements (tags and IAM permissions) is handled by the official [Terraform EKS module](https://github.com/terraform-aws-modules/terraform-aws-eks),
+Both of these requirements (tags and IAM permissions) are handled by the official [Terraform EKS module](https://github.com/terraform-aws-modules/terraform-aws-eks),
 no action needs to be done on our side.
 
 ## The `node.type` label
@@ -86,7 +86,7 @@ nodeSelector:
 
 Then CA is able to choose the correct ASG to launch new nodes.
 
-These are the mechanisms used in BAI to restrict which nodes a Pod can run:
+These are the mechanisms used in BAI to restrict which nodes a Pod can run on:
 
 | Restriction mechanism | Label                                    | How does the Kubelet add this label? |
 |:----------------------|:-----------------------------------------|:-------------------------------------|
@@ -115,4 +115,4 @@ Kubernetes has this nice feature [PDB](https://kubernetes.io/docs/concepts/workl
 which CA has support to, so it doesn't take down a Node that is running at the moment.
 
 TODO: Study if this is necessary or helps in BAI's scenario. My guess is that BAI doesn't need this feature because
-      it has this nice property worker nodes being either **full** or **empty**.
+      it has this nice property of worker nodes being either **full** or **empty**.
