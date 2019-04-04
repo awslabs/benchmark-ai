@@ -403,14 +403,15 @@ class BaiConfig:
 
     def _update_data_puller(self, data_volumes, data_sources):
         """
-        Completes the data puller container and formats them.
+        Completes the data puller by adding the required arguments and volume mounts.
 
-        :return: The puller container object
+        If no data sources are found, the data puller is deleted.
         """
-        if not data_sources:
-            return
-
         data_puller = self.root.find_container("data-puller")
+
+        if not data_sources:
+            self.root.get_pod_spec().initContainers.remove(data_puller)
+            return
 
         # Placeholder until the data fetcher is ready
         # ------------------------------------------
