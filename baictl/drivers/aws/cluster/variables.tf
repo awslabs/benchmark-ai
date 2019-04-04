@@ -57,6 +57,32 @@ variable "k8s_version" {
   default = "1.12"
 }
 
+variable "benchmark_workers_instance_types" {
+  description = "The instance types that the EKS cluster can launch workers."
+  type = "list"
+  default = [
+    # Be mindful to the number of instance types that need to be supported because number of ASGs created is:
+    #
+    #     Number of availability zones * Number of instance types (this list)
+    #
+    # Given that the default limit is 200 ASG per region, this number can skyrocket easily.
+    "t3.small",
+    "c5.large",
+    "c5.2xlarge",
+    "c5.4xlarge",
+    "c5.9xlarge",
+    "c5.18xlarge",
+    "p3.2xlarge",
+    "p3.8xlarge",
+    "p3.16xlarge"
+  ]
+}
+
+variable "gpu_instance_type_prefixes" {
+  type = "list"
+  default = ["p3", "p3dn", "p2", "g3", "g3s"]
+}
+
 ##########################################################################################
 # AMIs
 ##########################################################################################

@@ -5,10 +5,10 @@ locals {
   k8s_services_kubelet_args  = "--node-labels=node.type=k8s-services"
   bai_services_kubelet_args = "--node-labels=node.type=bai-services"
 
-  worker_groups = [
+  other_worker_groups = [
     {
       instance_type        = "t2.small"
-      subnets              = "${join(",", module.vpc.private_subnets)}"
+      subnets              = "${join(",", slice(module.vpc.private_subnets, 0, 3))}"
       asg_desired_capacity = 2
       asg_max_size         = 10
       asg_min_size         = 1
@@ -17,71 +17,35 @@ locals {
     },
     {
       instance_type        = "m5d.4xlarge"
-      subnets              = "${join(",", module.vpc.private_subnets)}"
+      subnets              = "${join(",", slice(module.vpc.private_subnets, 0, 3))}"
       asg_desired_capacity = 1
       asg_max_size         = 4
       asg_min_size         = 1
       name                 = "bai-services"
       kubelet_extra_args   = "${local.bai_services_kubelet_args}"
     },
-
-    # bai-worker ASGs
-    {
-      instance_type        = "t2.small"
-      subnets              = "${join(",", module.vpc.private_subnets)}"
-      name                 = "bai-worker.t2.small"
-    },
-    {
-      instance_type        = "t3.small"
-      subnets              = "${join(",", module.vpc.private_subnets)}"
-      name                 = "bai-worker.t3.small"
-    },
-    {
-      instance_type        = "c5.large"
-      subnets              = "${join(",", module.vpc.private_subnets)}"
-      name                 = "bai-worker.c5.large"
-    },
-    {
-      instance_type        = "c5.2xlarge"
-      subnets              = "${join(",", module.vpc.private_subnets)}"
-      name                 = "bai-worker.c5.2xlarge"
-    },
-    {
-      instance_type        = "c5.4xlarge"
-      subnets              = "${join(",", module.vpc.private_subnets)}"
-      name                 = "bai-worker.c5.4xlarge"
-    },
-    {
-      instance_type        = "c5.9xlarge"
-      subnets              = "${join(",", module.vpc.private_subnets)}"
-      name                 = "bai-worker.c5.9xlarge"
-    },
-    {
-      instance_type        = "c5.18xlarge"
-      subnets              = "${join(",", module.vpc.private_subnets)}"
-      name                 = "bai-worker.c5.18xlarge"
-    },
-    {
-      ami_id               = "${coalesce(var.eks_gpu_ami_id, data.aws_ami.eks-gpu-optimized.id)}"
-      instance_type        = "p3.2xlarge"
-      subnets              = "${join(",", module.vpc.private_subnets)}"
-      name                 = "bai-worker.p3.2xlarge"
-    },
-    {
-      ami_id               = "${coalesce(var.eks_gpu_ami_id, data.aws_ami.eks-gpu-optimized.id)}"
-      instance_type        = "p3.8xlarge"
-      subnets              = "${join(",", module.vpc.private_subnets)}"
-      name                 = "bai-worker.p3.8xlarge"
-    },
-    {
-      ami_id               = "${coalesce(var.eks_gpu_ami_id, data.aws_ami.eks-gpu-optimized.id)}"
-      instance_type        = "p3.16xlarge"
-      subnets              = "${join(",", module.vpc.private_subnets)}"
-      name                 = "bai-worker.p3.16xlarge"
-    }
   ]
+  # HACK: Terraform versions < 0.12 don't know how to count local lists: https://github.com/hashicorp/terraform/issues/16712
+  other_groups_count = 2
 
-  worker_groups_count = "12"
+  bai_worker_group_instance_types = "${var.benchmark_workers_instance_types}"
+  worker_group_subnets = ["${module.vpc.private_subnets}"]
+  # HACK: Terraform doesn't know how to count...
+  #
+  # Which means that this code: `length(module.subnets.private_subnet_ids)` would give the error:
+  #
+  #     value of count cannot be computed
+  #
+  # The very detailed explanation on why this happens can be seen here: https://github.com/hashicorp/terraform/issues/12570#issuecomment-366324566
+  #
+  # The workaround applied is to calculate with values that don't depend on the outputs of the `subnets` module.
+  # Given we know that `data.aws_availability_zones` is what we're feeding the `subnets` module then we use it to get
+  # the size requested.
+  bai_worker_group_subnets_count = "${local.private_subnet_count}"
+  bai_worker_groups_count = "${local.bai_worker_group_subnets_count * length(local.bai_worker_group_instance_types)}"
+
+  worker_groups = "${concat(local.other_worker_groups, data.null_data_source.bai_worker_groups.*.outputs)}"
+  worker_groups_count = "${local.other_groups_count + local.bai_worker_groups_count}"
 
   worker_group_tags = {
     k8s-services = [
@@ -108,13 +72,44 @@ locals {
   }
 
   workers_group_defaults = {
-    kubelet_extra_args   = "${local.bai_worker_kubelet_args}"
-    ami_id               = "${coalesce(var.eks_cpu_ami_id, data.aws_ami.eks-cpu-optimized.id)}"
+    ami_id               = "${lookup(local.ami_ids, "cpu")}"
     key_name             = "${aws_key_pair.worker_key.key_name}"
+    autoscaling_enabled  = true
+  }
+
+  ami_ids = {
+    cpu = "${coalesce(var.eks_cpu_ami_id, data.aws_ami.eks-cpu-optimized.id)}"
+    gpu = "${coalesce(var.eks_gpu_ami_id, data.aws_ami.eks-gpu-optimized.id)}"
+  }
+}
+
+# The "bai-worker" ASGs.
+#
+# Assumes that "bai_worker_groups_count = bai_worker_group_instance_types * bai_worker_group_subnets_count" and uses
+# basic arithmetic to create each value.
+# See the technique explained here: https://serverfault.com/questions/833810/terraform-use-nested-loops-with-count
+data "null_data_source" "bai_worker_groups" {
+  count = "${local.bai_worker_groups_count}"
+  inputs = {
+    name = "bai-worker-${element(data.aws_availability_zones.available.names,
+                                 count.index % local.bai_worker_group_subnets_count)}-${element(local.bai_worker_group_instance_types,
+                                                                                                count.index / local.bai_worker_group_subnets_count)}"
+    instance_type = "${element(local.bai_worker_group_instance_types,
+                               count.index / local.bai_worker_group_subnets_count)}"
+    subnets = "${element(local.worker_group_subnets,
+                         count.index % local.bai_worker_group_subnets_count)}"
+    ami_id               = "${contains(var.gpu_instance_type_prefixes,
+                                       element(split(".",
+                                                     element(local.bai_worker_group_instance_types,
+                                                             count.index / local.bai_worker_group_subnets_count))
+                                               , 0)
+                                       )
+                              ? lookup(local.ami_ids, "gpu")
+                              : lookup(local.ami_ids, "cpu")}"
+    kubelet_extra_args   = "${local.bai_worker_kubelet_args}"
     asg_min_size         = 0
     asg_desired_capacity = 0
     asg_max_size         = 3
-    autoscaling_enabled  = true
   }
 }
 
