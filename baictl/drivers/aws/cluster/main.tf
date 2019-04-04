@@ -46,6 +46,8 @@ provider "tls" {
 data "aws_availability_zones" "available" {}
 
 locals {
+  # Check the section "The node.type label" at https://github.com/MXNetEdge/benchmark-ai/blob/master/docs/autoscaler-aws.md
+  # for an explanation on each type of node.
   bai_worker_kubelet_args   = "--node-labels=node.type=bai-worker"
   k8s_services_kubelet_args  = "--node-labels=node.type=k8s-services"
   bai_services_kubelet_args = "--node-labels=node.type=bai-services"
