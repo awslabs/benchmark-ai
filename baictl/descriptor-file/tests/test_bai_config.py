@@ -16,6 +16,7 @@ def descriptor():
         description = 'Description'
         [hardware]
         instance_type = 'p3.8xlarge'
+        strategy = 'single_node'
         [env]
         docker_image = 'jlcont/benchmarking:270219'
         privileged = false

@@ -5,22 +5,25 @@ spec_version = "0.1.0"
 # merely informative data so the benchmark can be categorized when displayed
 # in the dashboard.
 [info]
-task_name = "Title"
+task_name = "Example Horovod benchmark"
 description = """ \
-    Description of the job. Users might want to include details \
-    such as whether it's inference or training, particular aspects \
-    of their model, etc.\
+    An example benchmark using Horovod as distributed training strategy. \
     """
 
 # 1. Hardware
 [hardware]
 instance_type = "p3.8xlarge"
-strategy = "single_node"
+strategy = "horovod"
+
+# [Opt]
+[hardware.distributed]
+num_instances = 2
+gpus_per_instance = 4
 
 # 2. Environment
 [env]
 # Docker hub <hub-user>/<repo-name>:<tag> 
-docker_image = "jlcont/benchmarking:270219"
+docker_image = "user/repo:tag"
 # Args for the docker container
 # [Opt] Whether to run the container in privileged mode (default is false)
 privileged = false
@@ -31,29 +34,30 @@ extended_shm = true
 # 3. Machine learning related settings: 
 # dataset, benchmark code and parameters it takes
 [ml]
-benchmark_code = "python /home/benchmark/image_classification.py"
-# [Opt] Arguments to pass to the script in ml.benchmark_code
-# The code is called as defined in ml.benchmark_code, plus the args defined here
-args = "--model=resnet50_v2 --batch-size=32"
+benchmark_code = '''
+#!/bin/bash \\
+echo 'Horovod test descriptor' \\
+./deep-learning-models/models/resnet/tensorflow/train.sh 3
+'''
 
 # [Opt] 4. Dataset 
 [data]
 # Dataset ID
-id = "mnist"
-# md5 = "rddytftyfrdr75657fftrtrt11"
+id = "imagenet"
 
 # [Opt] Data sources
 # List all required data sources below. 
 # Make an entry for each with the same format as the ones below.
 [[data.sources]]
 # Data download URI.
-uri = "s3://mlperf-data-stsukrov/imagenet/train-480px"
+uri = "s3://mlperf-data-mxnet-berlin/imagenet/train-480px"
 # Path where the dataset is stored in the container FS
 path = "~/data/tf-imagenet/"
 
 # Second data source
 [[data.sources]]
 # Data download URI.
-uri = "s3://mlperf-data-stsukrov/imagenet/validation-480px"
+uri = "s3://mlperf-data-mxnet-berlin/imagenet/validation-480px"
 # Path where the dataset is stored in the container FS
 path = "~/data/tf-imagenet/"
+

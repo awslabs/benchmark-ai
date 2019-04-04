@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: cd613e30d8f14adf91b7584a2265b1f5
+  name: {job_id}
 spec:
   template:
     metadata:
@@ -28,38 +28,37 @@ spec:
               fieldPath: metadata.labels['mpi_role_type']
       containers:
       - name: benchmark
-        image: edisongustavo/bai-benchmarks-hello-world:latest
-        command:
-        - python3
-        - hello-world.py
+        image: {docker_image}
+        command: []
+        args: []
         securityContext:
-          privileged: false
+          privileged: {privileged}
         env:
         - name: BENCHMARK_AI
-          value: fifo
+          value: "fifo"
         - name: BENCHMARK_AI_FIFO_FILEPATH
-          value: /tmp/benchmark-ai/fifo
+          value: "/tmp/benchmark-ai/fifo"
         - name: BENCHMARK_AI_FIFO_MAX_WAIT_TIME
-          value: '60'
+          value: "60"
         volumeMounts:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
       - name: sidecar
-        image: edisongustavo/benchmarkai-metrics-pusher:0.1
+        image: "edisongustavo/benchmarkai-metrics-pusher:0.1"
         env:
         - name: BENCHMARK_AI_FIFO_FILEPATH
           value: /tmp/benchmark-ai/fifo
         - name: BACKEND
           value: elasticsearch
         - name: BACKEND_ARG_JOB_ID
-          value: cd613e30d8f14adf91b7584a2265b1f5
+          value: {job_id}
         - name: BACKEND_ARG_HOSTNAME
           valueFrom:
             configMapKeyRef:
               name: outputs-infrastructure
               key: es_endpoint
         - name: BACKEND_ARG_PORT
-          value: '443'
+          value: "443"
         - name: POD_NAME
           valueFrom:
             fieldRef:
@@ -72,10 +71,10 @@ spec:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
       nodeSelector:
-        beta.kubernetes.io/instance-type: t2.small
+        beta.kubernetes.io/instance-type: {instance_type}
         node.type: bai-worker
       restartPolicy: Never
       volumes:
       - name: benchmark-ai
-        emptyDir: {}
+        emptyDir: {{}}
   backoffLimit: 4

@@ -10,6 +10,7 @@ from descriptor_reader import Descriptor, create_bai_config
 @pytest.mark.parametrize("filename", [
     "hello-world.toml",
     "training.toml",
+    "horovod.toml",
 ])
 def test_regressions(filename, shared_datadir, file_regression: FileRegressionFixture):
     random_object = random.Random()
