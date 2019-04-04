@@ -21,6 +21,11 @@ spec:
             topologyKey: kubernetes.io/hostname
       initContainers:
       - name: data-puller
+        env:
+        - name: ROLE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['mpi_role_type']
         image: stsukrov/s3dataprovider
         args:
         - eu-west-1
@@ -85,6 +90,8 @@ spec:
         node.type: bai-worker
       restartPolicy: Never
       volumes:
+      - name: benchmark-ai
+        emptyDir: {}
       - name: p0
         hostPath:
           path: /p0

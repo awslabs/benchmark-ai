@@ -94,6 +94,8 @@ spec:
         configMap:
           defaultMode: 0700
           name: entrypoint-{job_id}
+      - name: benchmark-ai
+        emptyDir: {{}}
       nodeSelector:
         beta.kubernetes.io/instance-type: {instance_type}
         node.type: bai-worker

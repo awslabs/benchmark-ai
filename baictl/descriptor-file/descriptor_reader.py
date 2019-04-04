@@ -113,11 +113,12 @@ class Descriptor:
             if source['scheme'] not in self.VALID_DATA_SOURCES:
                 raise ValueError(f'Invalid data uri: {source["uri"]} (must be one of {self.VALID_DATA_SOURCES})')
 
+        if self.strategy not in self.VALID_STRATEGIES:
+            raise ValueError(f'Invalid strategy: {self.strategy} (must be one of {self.VALID_STRATEGIES})')
+
         if self.distributed:
             if self.num_instances <= 1:
                 logging.warning(f'Specified a distributed strategy but using {self.num_instances} nodes')
-            if self.strategy not in self.VALID_STRATEGIES:
-                raise ValueError(f'Invalid strategy: {self.strategy} (must be one of {self.VALID_STRATEGIES})')
 
     def _process_data_sources(self, data_sources: List) -> List:
         processed_sources = []
@@ -218,7 +219,7 @@ class KubernetesRootObjectHelper:
 
     def find_config_map(self, name) -> ConfigMap:
         for cm in self.config_maps:
-            if cm.metadata.name.startswith(name):
+            if cm.metadata.name == name:
                 return cm
         raise ValueError("ConfigMap {} not found. Available ones are: {}".format(
             name,
@@ -251,11 +252,9 @@ class ConfigTemplate:
     def feed(self, variables: Dict[str, str]):
         self._variables.update(variables)
 
-    def get_contents(self):
-        return self._yaml_template_contents.format(**self._variables)
-
     def build(self):
-        return KubernetesRootObjectHelper(self.get_contents())
+        contents = self._yaml_template_contents.format(**self._variables)
+        return KubernetesRootObjectHelper(contents)
 
 
 class BaiConfig:
@@ -467,11 +466,10 @@ def create_bai_config(descriptor: Descriptor, extra_bai_config_args=None) -> Bai
         bai_config.add_benchmark_cmd_to_container()
     elif descriptor.strategy == 'horovod':
         bai_config.add_benchmark_cmd_to_config_map()
+    else:
+        raise ValueError("Unsupported configuration at descriptor")
 
     return bai_config
-
-    # # TODO: Improve this error message
-    # raise ValueError("Unsupported configuration at descriptor")
 
 
 def main():

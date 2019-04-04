@@ -21,6 +21,11 @@ spec:
             topologyKey: kubernetes.io/hostname
       initContainers:
       - name: data-puller
+        env:
+        - name: ROLE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['mpi_role_type']
       containers:
       - name: benchmark
         image: edisongustavo/bai-benchmarks-hello-world:latest
@@ -70,5 +75,7 @@ spec:
         beta.kubernetes.io/instance-type: t2.small
         node.type: bai-worker
       restartPolicy: Never
-      volumes: []
+      volumes:
+      - name: benchmark-ai
+        emptyDir: {}
   backoffLimit: 4

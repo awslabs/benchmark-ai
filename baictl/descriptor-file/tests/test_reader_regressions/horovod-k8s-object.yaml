@@ -1,3 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: entrypoint-cd613e30d8f14adf91b7584a2265b1f5
+  namespace: default
+  labels:
+    benchmark: cd613e30d8f14adf91b7584a2265b1f5
+data:
+  entrypoint: |
+    #!/bin/bash \\
+    echo 'Horovod test descriptor' \\
+    ./deep-learning-models/models/resnet/tensorflow/train.sh 3
+  init_entrypoint.sh: |-
+    #!/bin/bash
+    if [ "$ROLE" == "worker" ]; then
+      /opt/behance/download-s3-files "$@"
+    else
+      echo "Not a worker - no data necessary"
+    fi  
+---
 apiVersion: kubeflow.org/v1alpha1
 kind: MPIJob
 metadata:
@@ -87,6 +107,8 @@ spec:
         configMap:
           defaultMode: 0700
           name: entrypoint-cd613e30d8f14adf91b7584a2265b1f5
+      - name: benchmark-ai
+        emptyDir: {}
       - name: p0
         hostPath:
           path: /p0
@@ -97,23 +119,3 @@ spec:
       nodeSelector:
         beta.kubernetes.io/instance-type: p3.8xlarge
         node.type: bai-worker
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: entrypoint-cd613e30d8f14adf91b7584a2265b1f5
-  namespace: default
-  labels:
-    benchmark: cd613e30d8f14adf91b7584a2265b1f5
-data:
-  entrypoint: |
-    #!/bin/bash \\
-    echo 'Horovod test descriptor' \\
-    ./deep-learning-models/models/resnet/tensorflow/train.sh 3
-  init_entrypoint.sh: |-
-    #!/bin/bash
-    if [ "$ROLE" == "worker" ]; then
-      /opt/behance/download-s3-files "$@"
-    else
-      echo "Not a worker - no data necessary"
-    fi  
