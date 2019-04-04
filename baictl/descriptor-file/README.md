@@ -6,6 +6,7 @@ The file is divided in sections: info, hardware, env, ml, data and output. See t
 
 ## Example descriptor
 
+The following example shows what the descriptor file for a horovod-based benchmark looks like.
 
 ```toml
 # BenchmarkAI meta
@@ -23,13 +24,12 @@ description = """ \
 # 1. Hardware
 [hardware]
 instance_type = "p3.8xlarge"
+strategy = "horovod"
 
 # [Opt] Section for distributed (multi node) mode
 [hardware.distributed]
 # [Upcoming] Strategy to follow
-strategy = "horovod"
 num_instances = 3
-gpus_per_instance = 8
 
 # 2. Environment
 [env]
@@ -38,7 +38,7 @@ docker_image = "user/repo:tag"
 # Args for the docker container
 # [Opt] Whether to run the container in privileged mode (default is false)
 privileged = false
-# [Opt - default is true] Whether more than 64MB shared memory is needed for containers
+# [Opt] Whether more than 64MB shared memory is needed for containers (default is true)
 # (See docker's -shm option)
 extended_shm = true
 
@@ -71,32 +71,38 @@ path = "~/data/tf-imagenet/"
 uri = "s3://bucket/imagenet/validation"
 # Path where the dataset is stored in the container FS
 path = "~/data/tf-imagenet/"
-
-# 4. Output
-[output]
-# Define which metrics will be tracked in this benchmark
-metrics = ["throughput", "time"]
 ```
 
-#### info
-The fields in this section don't have any impact on the job to run, they contain merely informative data about the benchmark job.
 
-#### hardware
-Users can choose which kind of EC2 instance they want their code to run on. 
+## Fields
 
-#### env
-Environment is defined by passing the Docker Hub user/repo:tag of the docker image containing the benchmark code.
+| Section                | Field          | Description                                                                                                                                            | Values                                                      | Required/Optional |
+|------------------------|----------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------|-------------------|
+| -                      | spec_version   | Version of the descriptor specification                                                                                                                | Semantically versioned                                      | Required          |
+| info                   | task_name      | Name of the benchmark job                                                                                                                              | String                                                      | Required          |
+| info                   | description    | Description (informative field)                                                                                                                        | String                                                      | Required          |
+| hardware               | instance_type  | Type of EC2 instance where the job is to run                                                                                                           | EC2 instance [API name](https://ec2instances.info)          | Required          |
+| hardware               | strategy       | Whether to run on single node or distributed. In the latter case, a distributed strategy, such as horovod or mxnet_parameter_server, must be specified | One of ['single_node', 'horovod', 'mxnet_parameter_server'] | Required          |
+| hardware > distributed | num_instances  | Number of nodes to use for distributed training                                                                                                        | Int                                                         | Optional          |
+| env                    | docker_image   | Docker image which runs the benchmark (it must contain the benchmark code)                                                                             | Docker image as user/repo:tag                               | Required          |
+| env                    | privileged     | Whether to run the container in privileged mode                                                                                                        | boolean (default: false)                                    | Optional          |
+| env                    | extended_shm   | Whether more than 64MB shared memory is needed for containers                                                                                          | boolean (default: true)                                     | Optional          |
+| ml                     | benchmark_code | Command to run the benchmark code                                                                                                                      | String                                                      | Optional          |
+| ml                     | args           | Additional arguments for the benchmark scripts                                                                                                         | String                                                      | Optional          |
+| data                   | id             | Dataset name                                                                                                                                           | String ('imagenet', 'cifar10', etc.)                        | Required          |
+| data                   | sources        | List with all required data sources (see below for the fields required for each source)                                                                | List of data.sources                                        | Optional          |
+| data > sources         | uri            | Uri of the dataset to be downloaded. We plan to support 's3', 'http', 'https', 'ftp' and 'ftps'                                                        | Uri, such as 's3://bucket/imagenet/'                        | Optional          |
+| data > sources         | path           | Destination path where this data will be mounted in the container FS                                                                                   | String                                                      | Optional          |
 
-#### ml
-This section is for machine-learning related settings: code to run, dataset to use and parameters to pass in.
+Notes on the sections:
 
-#### data
-This section must specify the ID of the dataset used, along with a list of the data sources to be downloaded.
-
-For any required data source, users can provide a download URI and a destination path where the resulting data should be located in the container filesystem for the benchmark script to use it.
-
-#### output
-Section for users to declare the metrics they will be tracking with this benchmark.
+* **Info**: The fields in this section don't have any impact on the job to run, they contain merely informative data about the benchmark job.
+* **Hardware**: Users must specify a strategy to run their benchmark, be it single_node or one of the distributed alternatives, such as horovod.
+* **Env**: Environment is defined by passing the identifier (user/repo:tag) of the docker image containing the benchmark code.
+* **Ml**: Users can specify the command to run on their docker image (benchmark_code) or the args to be passed to the container's entrypoint. If both are specified, the args are concatenated with the command.
+* **Data**: This section must specify the ID of the dataset used, along with a list of the data sources to be downloaded.
+For any required data source, users can provide a download URI and a destination path where the resulting data will be mounted in the container filesystem for the benchmark script to use it.
+* (Upcoming) **Output**: Section for users to declare the metrics they will be tracking with this benchmark, along with the alarming information: thresholds (can be dynamic, such as 2-sigma) and who should be notified when they are triggered.
 
 
 ## Descriptor reader
