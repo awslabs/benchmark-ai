@@ -145,7 +145,9 @@ class Descriptor:
             raise ValueError(f'{parsed.scheme} not supported as a data source yet')
 
     def get_instance_gpus(self, instance_type: str) -> int:
-        with open('util/ec2_instance_info.csv', mode='r') as infile:
+        file_dir = os.path.dirname(os.path.abspath(__file__))
+
+        with open(os.path.join(file_dir, 'util', 'ec2_instance_info.csv'), mode='r') as infile:
             reader = csv.reader(infile)
             gpus_per_instance = {rows[0]: rows[1] for rows in reader}
 
