@@ -54,6 +54,46 @@ is added through an extra Kubelet parameter, specified in Terraform: `--node-lab
 Each Deployment/Job/MPIJob should then use the correct `node.type`.
 
 
+## Restrict scheduling on specific availability zones
+
+A [gotcha](https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler/cloudprovider/aws#common-notes-and-gotchas)
+from cluster-autoscaler's AWS FAQ is particularly interesting:
+
+> Cluster autoscaler does not support Auto Scaling Groups which span multiple Availability Zones; instead you should use
+an Auto Scaling Group for each Availability Zone and enable the --balance-similar-node-groups feature. If you do use a
+single Auto Scaling Group that spans multiple Availability Zones you will find that AWS unexpectedly terminates nodes
+without them being drained because of the rebalancing feature. 
+
+This talks about the "rebalancing" feature of ASG, which means that if we want to restrict the availability zone that
+a Pod will run then we need to create 1 ASG per subnet. Given that it is also desired to control the instance type of
+the nodes, then the amount of ASGs in total will be:
+
+```
+Number of availability zones used * Number of instance types 
+```
+
+Reasons to restrict the availability zone where Pods will run:
+1. An availability zone might not have the specified instance type (eg.: P3 instances are not available in all AZs). The 
+   error message is:
+   ```
+   The requested instance type is not supported in the requested availability zone
+   ```
+2. An availability zone might be running low on the amount of the specified instance type (eg.: low number of P3
+   instances available).
+   The [InsufficientInstanceCapacity error](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/troubleshooting-launch.html#troubleshooting-launch-capacity)
+   message is:
+    ```
+    We currently do not have sufficient m4.4xlarge capacity in the Availability Zone you requested (ap-northeast-1d).
+    Our system will be working on provisioning additional capacity. You can currently get m4.4xlarge capacity by not
+    specifying an Availability Zone in your request or choosing ap-northeast-1c, ap-northeast-1a.`).
+    ```
+3. Minimize inter-az communication for distributed benchmarks: Lower latency and less cost.
+
+Given that we want to maximize all of the above points, it makes sense to use **ALL** availability zones in the region
+that BAI is being created. This might lead to another problem where the number of ASGs increase to a very high number
+and reach the [limit](https://docs.aws.amazon.com/general/latest/gr/aws_service_limits.html) of maximum 200 ASGs per
+region, so a limit increase request might be required if not careful. 
+
 # Scaling up (adding new nodes)
 
 Every 10 seconds CA looks for Pods that failed to be scheduled (ie: it is **reactive**). When it notices a Pod failed to be
