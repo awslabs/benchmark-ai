@@ -26,6 +26,17 @@ spec:
   replicas: {num_instances}
   template:
     spec:
+      serviceAccountName: metrics-pusher
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - benchmark-ai
+            topologyKey: kubernetes.io/hostname
       initContainers:
       - name: data-puller
         command: 
