@@ -118,7 +118,7 @@ module "vpc" {
   enable_nat_gateway = true
   single_nat_gateway = true
   enable_s3_endpoint = true
-  # The usage of the specific kubernetes.io/cluster/* resource tags below are required
+  # The specific kubernetes.io/cluster/* resource tags below are required
   # for EKS and Kubernetes to discover and manage networking resources
   # https://www.terraform.io/docs/providers/aws/guides/eks-getting-started.html#base-vpc-networking
   tags               = "${merge(local.tags, map("kubernetes.io/cluster/${var.cluster_name}", "shared"))}"
