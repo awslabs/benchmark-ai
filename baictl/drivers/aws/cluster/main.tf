@@ -103,7 +103,9 @@ module "vpc" {
   version            = "1.14.0"
   name               = "test-vpc"
   azs                = ["${data.aws_availability_zones.available.names[0]}", "${data.aws_availability_zones.available.names[1]}", "${data.aws_availability_zones.available.names[2]}"]
-  private_subnets    = ["172.16.0.0/20", "172.16.16.0/20", "172.16.32.0/20"]
+  private_subnets    = ["${cidrsubnet(local.vpc_cidr_block, local.bits, 0)}",
+                        "${cidrsubnet(local.vpc_cidr_block, local.bits, 1)}",
+                        "${cidrsubnet(local.vpc_cidr_block, local.bits, 2)}"]
   cidr               = "${local.vpc_cidr_block}"
   # The number of public subnets is fixed because we don't launch worker nodes on them. It's going to host only the
   # BAI services.
