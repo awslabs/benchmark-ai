@@ -1,15 +1,14 @@
-from kafka import KafkaConsumer
-import kazoo.client
-import json
 import hashlib
-import kubernetes
-import string
-import random
-
-import pycurl
-import logging
-
+import json
 import os
+import random
+import string
+
+import kazoo.client
+import kubernetes
+import pycurl
+from kafka import KafkaConsumer
+
 
 def estimate_content_length(url):
     c = pycurl.Curl()
@@ -18,8 +17,10 @@ def estimate_content_length(url):
     c.perform()
     return c.getinfo(c.CONTENT_LENGTH_DOWNLOAD)
 
+
 def id_generator(size=8, chars=string.ascii_lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
+
 
 KUBECONFIG = os.environ.get("KUBECONFIG")
 
@@ -27,6 +28,9 @@ kubernetes.config.load_kube_config(KUBECONFIG)
 
 configuration = kubernetes.client.Configuration()
 api_instance = kubernetes.client.BatchV1Api(kubernetes.client.ApiClient(configuration))
+
+FETCHER_JOB_IMAGE = os.environ.get("FETCHER_JOB_IMAGE")
+
 
 def start_download(task):
     download_job = kubernetes.client.V1Job(api_version="batch/v1", kind="Job")
@@ -37,10 +41,11 @@ def start_download(task):
     template = kubernetes.client.V1PodTemplate()
     template.template = kubernetes.client.V1PodTemplateSpec()
 
-    job_args=[task.src, task.dst]
+    job_args = [task.src, task.dst]
 
-    container = kubernetes.client.V1Container(name="downloader", image="stsukrov/datafetcher",args=job_args)
-    template.template.spec = kubernetes.client.V1PodSpec(containers=[container], restart_policy='Never', node_selector={"node.type":"bai-services"})
+    container = kubernetes.client.V1Container(name="downloader", image=FETCHER_JOB_IMAGE, args=job_args)
+    template.template.spec = kubernetes.client.V1PodSpec(containers=[container], restart_policy='Never',
+                                                         node_selector={"node.type": "bai-services"})
     # And finally we can create our V1JobSpec!
     download_job.spec = kubernetes.client.V1JobSpec(ttl_seconds_after_finished=600, template=template.template)
 
@@ -48,14 +53,14 @@ def start_download(task):
     print(resp)
 
 
-def md5(src):
+def md5sum(src):
     md5hash = hashlib.md5()
     md5hash.update(src.encode('utf-8'))
     return md5hash.hexdigest()
 
 
 def url_to_key(src):
-    return "/datasets/" + md5(src)
+    return "/datasets/" + md5sum(src)
 
 
 ZOOKEPER_ENSEBLE_HOSTS = os.environ.get("ZOOKEPER_ENSEBLE_HOSTS")
@@ -75,8 +80,10 @@ class DownloadTask:
 zk = kazoo.client.KazooClient(hosts=ZOOKEPER_ENSEBLE_HOSTS)
 zk.start()
 
+
 def dict_to_task(task):
     return DownloadTask(task["src"], task["dst"], task.get("md5", ""))
+
 
 def extract_tasks(msg):
     return list(map(dict_to_task, msg.value))
@@ -103,7 +110,6 @@ def execute(task, callback):
 
 
 def execute_all(tasks, callback):
-
     cb = lambda: callback()
     for tsk in tasks:
         execute(tsk, cb)

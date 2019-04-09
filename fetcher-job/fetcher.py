@@ -1,27 +1,22 @@
-import kazoo.client
-import json
-import hashlib
-import string
-import random
-import boto3
-
-import pycurl
-import logging
-import os
-
-import kazoo.client
-
 import argparse
+import os
+import tempfile
 from urllib.parse import urlparse
 
-import tempfile
+import boto3
+import kazoo.client
+import kazoo.client
+import pycurl
+
 
 class UploadProgress:
     def __init__(self):
         self.progress = 0
-    def increment(self, bytes):
-        self.progress += bytes
+
+    def increment(self, package_size):
+        self.progress += package_size
         print(f"{self.progress} bytes uploaded so far")
+
 
 def s3_to_s3_deep(src_bucket, src_key, dst_bucket, dst_key):
     s3 = boto3.resource('s3')
@@ -36,13 +31,12 @@ def s3_to_s3_deep(src_bucket, src_key, dst_bucket, dst_key):
         new_obj = new_bucket.Object(new_key)
         new_obj.copy(old_source)
 
+
 def s3_to_s3(args):
     dst = urlparse(args.dst)
 
     dst_bucket = dst.netloc
     dst_key = dst.path[1:]
-
-
 
     src = urlparse(args.src)
     src_bucket = src.netloc
@@ -69,18 +63,20 @@ def http_to_s3(args):
         curl.perform()
 
         fp.seek(0)
-        boto3.client('s3').upload_fileobj(fp, bucket, key )
+        boto3.client('s3').upload_fileobj(fp, bucket, key)
+
 
 STATE_RUNNING = "RUNNING".encode('utf-8')
 STATE_DONE = "DONE".encode('utf-8')
 STATE_FAILED = "FAILED".encode('utf-8')
 
-#Current version doesn't stream - we create temporary files.
+
+# Current version doesn't stream - we create temporary files.
 def fetch(args):
     src_scheme = urlparse(args.src)
-    if(src_scheme.scheme == "http" or src_scheme.scheme == "https"):
+    if src_scheme.scheme == "http" or src_scheme.scheme == "https":
         http_to_s3(args)
-    elif (src_scheme.scheme == "s3"):
+    elif src_scheme.scheme == "s3":
         s3_to_s3(args)
 
     if args.zoo_node:
@@ -88,6 +84,7 @@ def fetch(args):
         zk.start()
         zk.set(args.zoo_node, STATE_DONE)
         zk.stop()
+
 
 def main():
     parser = argparse.ArgumentParser(description='Downloads the dataset from http/ftp/s3 to internal s3')
@@ -104,6 +101,7 @@ def main():
     args = parser.parse_args()
 
     fetch(args)
+
 
 if __name__ == '__main__':
     main()
