@@ -82,7 +82,7 @@ class Descriptor:
         self.num_instances = distributed_data.get('num_instances', 1)
         self.gpus_per_instance = self.get_instance_gpus(self.instance_type)
 
-        self.extended_shm = descriptor_data['env'].get('extended_shm', False)
+        self.extended_shm = descriptor_data['env'].get('extended_shm', True)
         self.privileged = descriptor_data['env'].get('privileged', False)
         self.benchmark_code = descriptor_data['ml'].get('benchmark_code', '')
         self.ml_args = descriptor_data['ml'].get('args', '')
