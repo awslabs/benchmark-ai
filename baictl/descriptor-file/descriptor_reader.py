@@ -216,7 +216,27 @@ class KubernetesRootObjectHelper:
                 return container
         raise ValueError("Container {} not found. Available containers are: {}".format(
             container_name,
-            [c.name for c in containers]
+            [c.name for c in itertools.chain(containers, init_containers)]
+        ))
+
+    def remove_container(self, container_name: str):
+        """
+        Removes a given container (can be an initContainer)
+        :param container_name: The name of the container
+        :raises: ValueError if the container could not be found
+        """
+        containers = self.get_pod_spec().containers
+        init_containers = self.get_pod_spec().initContainers
+
+        for container_list in [containers, init_containers]:
+            for container in container_list:
+                if container.name == container_name:
+                    container_list.remove(container)
+                    return
+
+        raise ValueError("Container {} not found. Available containers are: {}".format(
+            container_name,
+            [c.name for c in itertools.chain(containers, init_containers)]
         ))
 
     def find_config_map(self, name) -> ConfigMap:
@@ -403,11 +423,13 @@ class BaiConfig:
 
     def _update_data_puller(self, data_volumes, data_sources):
         """
-        Completes the data puller container and formats them.
+        Completes the data puller by adding the required arguments and volume mounts.
 
-        :return: The puller container object
+        If no data sources are found, the data puller is deleted.
         """
+
         if not data_sources:
+            self.root.remove_container("data-puller")
             return
 
         data_puller = self.root.find_container("data-puller")

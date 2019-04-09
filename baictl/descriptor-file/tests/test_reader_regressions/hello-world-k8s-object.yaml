@@ -19,13 +19,7 @@ spec:
                 values:
                 - benchmark-ai
             topologyKey: kubernetes.io/hostname
-      initContainers:
-      - name: data-puller
-        env:
-        - name: ROLE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.labels['mpi_role_type']
+      initContainers: []
       containers:
       - name: benchmark
         image: edisongustavo/bai-benchmarks-hello-world:latest
