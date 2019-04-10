@@ -2,7 +2,7 @@ import textwrap
 
 import pytest
 
-from descriptor_reader import KubernetesRootObjectHelper
+from transpiler.kubernetes_spec_logic import KubernetesRootObjectHelper
 
 
 @pytest.fixture

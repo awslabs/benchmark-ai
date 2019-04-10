@@ -253,7 +253,8 @@ run_benchmark() {
 
     [ -z "$descriptor" ] && printf "Missing required argument --descriptor\n" && return 1
 
-    python3 $(dirname $BASH_SOURCE)/../../descriptor-file/descriptor_reader.py $(pwd)/$descriptor | $kubectl apply -f -
+    PYTHONPATH=$(dirname $BASH_SOURCE)/../../descriptor-file/src
+    python3 $(dirname $BASH_SOURCE)/../../descriptor-file/src/transpiler/__main__.py $(pwd)/$descriptor | $kubectl apply -f -
 }
 
 delete_benchmark() {
