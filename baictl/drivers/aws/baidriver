@@ -76,10 +76,12 @@ create_infra() {
     local plugin_name="terraform-provider-aws_v2.4.0"
 
     if test -e ~/.terraform.d/plugins/${plugin_name} ; then
-        : 
+        :
     else
-        if aws s3 cp s3://benchmark-ai/darwin_amd64/${plugin_name} ; then
-            mkdir -p ~/.terraform.d/plugins && mv ${plugin_name} ~/.terraform.d/plugins
+        printf 'Downloading MSK terraform binary...\n'
+        mkdir -p ~/.terraform.d/plugins
+        if aws s3 cp s3://benchmark-ai/darwin_amd64/${plugin_name} ~/.terraform.d/plugins; then
+            : 
         else
             CANONICAL_ID=`aws s3api list-buckets --output text  | grep ^OWNER | awk '{print $3}'`
             printf "Please add your account ID: $CANONICAL_ID RW permissions to mxnet-edge-bln S3 bucket benchmark-ai"
@@ -87,6 +89,7 @@ create_infra() {
         fi
     fi
 
+    exit 
     terraform init $terraform_dir
     terraform get $terraform_dir
 
