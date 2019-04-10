@@ -84,6 +84,7 @@ create_infra() {
 
     $kubectl apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v1.11/nvidia-device-plugin.yml
     $kubectl apply -f $project_dir/metrics-pusher/metrics-pusher-roles.yaml
+    $kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended/kubernetes-dashboard.yaml
 
     _create_configmap_yaml_from_terraform_outputs | $kubectl apply -f -
 
@@ -158,7 +159,7 @@ validate_infra(){
 
         printf "..."
 
-        [ "$result" == false ] && printf "FAILED\n" && all_ok=false || printf "PASSED\n"  
+        [ "$result" == false ] && printf "FAILED\n" && all_ok=false || printf "PASSED\n"
     done
     [ "$all_ok" == true ] || return 1
 }
@@ -286,6 +287,10 @@ schedule_benchmark() {
     printf "Not yet implemented\n"
 }
 
+show_dashboard() {
+    ${kubectl} proxy
+}
+
 verb=$1
 object=$2
 
@@ -368,6 +373,20 @@ benchmark)
         ;;
     esac
     ;;
+
+dashboard)
+
+    case "${verb}" in
+	show)
+	    show_dashboard $@
+	    ;;
+
+	*)
+        print_unsupported_verb $object $verb
+        ;;
+    esac
+    ;;
+
 *)
     printf "Unknown object"
     ;;
