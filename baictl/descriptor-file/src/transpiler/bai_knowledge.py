@@ -58,7 +58,7 @@ class BaiConfig:
         if self.descriptor.extended_shm:
             self.add_extended_shm()
 
-    def add_extended_shm(self):
+    def _add_extended_shm(self):
         pod_spec_volumes = self.root.get_pod_spec().volumes
         container_volume_mounts = self.root.find_container("benchmark").volumeMounts
 
