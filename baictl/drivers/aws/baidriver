@@ -78,7 +78,7 @@ create_infra() {
     if test -e ~/.terraform.d/plugins/${plugin_name} ; then
         :
     else
-        printf 'Downloading MSK terraform binary...\n'
+        printf 'Downloading MSK-aware aws terraform plugin binary...\n'
         mkdir -p ~/.terraform.d/plugins
         if aws s3 cp s3://benchmark-ai/darwin_amd64/${plugin_name} ~/.terraform.d/plugins; then
             : 
