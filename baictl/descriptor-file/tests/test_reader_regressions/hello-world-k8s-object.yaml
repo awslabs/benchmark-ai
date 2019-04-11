@@ -38,6 +38,8 @@ spec:
         volumeMounts:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
+        - name: dshm
+          mountPath: /dev/shm
       - name: sidecar
         image: edisongustavo/benchmarkai-metrics-pusher:0.1
         env:
@@ -72,4 +74,7 @@ spec:
       volumes:
       - name: benchmark-ai
         emptyDir: {}
+      - name: dshm
+        emptyDir:
+          medium: Memory
   backoffLimit: 4
