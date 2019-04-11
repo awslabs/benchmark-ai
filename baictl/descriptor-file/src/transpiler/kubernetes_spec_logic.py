@@ -68,6 +68,8 @@ class KubernetesRootObjectHelper:
                 self.config_maps.append(addict.Dict(d))
             elif d['kind'] in ['Job', 'MPIJob']:
                 self._root = addict.Dict(d)
+            else:
+                raise ValueError("Kubernetes yaml object is of an unsupported kind type: {}".format(d['kind']))
 
         self._validate()
 
