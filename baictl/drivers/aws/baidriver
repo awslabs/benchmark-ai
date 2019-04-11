@@ -286,7 +286,8 @@ schedule_benchmark() {
     printf "Not yet implemented\n"
 }
 
-show_dashboard() {
+show_k8s_dashboard() {
+    echo "The Kubernetes dashboard will be available in http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/"
     ${kubectl} proxy
 }
 
@@ -373,11 +374,11 @@ benchmark)
     esac
     ;;
 
-dashboard)
+k8s-dashboard)
 
     case "${verb}" in
 	show)
-	    show_dashboard $@
+	    show_k8s_dashboard $@
 	    ;;
 
 	*)
