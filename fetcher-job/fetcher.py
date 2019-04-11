@@ -1,12 +1,12 @@
 import argparse
 import os
+import pycurl
 import tempfile
 from urllib.parse import urlparse
 
 import boto3
 import kazoo.client
 import kazoo.client
-import pycurl
 
 
 class UploadProgress:
@@ -45,11 +45,17 @@ def s3_to_s3(args):
     s3_to_s3_deep(src_bucket, src_key, dst_bucket, dst_key)
 
 
+def progress(download_t, download_d, upload_t, upload_d):
+    print(f"{download_t} out of {download_t}")
+
 def http_to_s3(args):
+    print("http to s3")
     dst = urlparse(args.dst)
 
     bucket = dst.netloc
     key = dst.path[1:]
+
+    print(f"bucket {bucket} key {key}")
 
     with tempfile.TemporaryFile("r+b") as fp:
         curl = pycurl.Curl()
@@ -60,10 +66,15 @@ def http_to_s3(args):
         curl.setopt(pycurl.TIMEOUT, 300)
         curl.setopt(pycurl.NOSIGNAL, 1)
         curl.setopt(pycurl.WRITEDATA, fp)
+
+        print("Start download")
         curl.perform()
+        print("End download")
 
         fp.seek(0)
+        print("Start upload")
         boto3.client('s3').upload_fileobj(fp, bucket, key)
+        print("End upload")
 
 
 STATE_RUNNING = "RUNNING".encode('utf-8')
@@ -73,16 +84,18 @@ STATE_FAILED = "FAILED".encode('utf-8')
 
 # Current version doesn't stream - we create temporary files.
 def fetch(args):
+    print(f"Fetch job = {args}\n")
+
     src_scheme = urlparse(args.src)
     if src_scheme.scheme == "http" or src_scheme.scheme == "https":
         http_to_s3(args)
     elif src_scheme.scheme == "s3":
         s3_to_s3(args)
 
-    if args.zoo_node:
-        zk = kazoo.client.KazooClient(hosts=os.environ.get("ZOOKEPER_ENSEBLE_HOSTS"))
+    if args.zk_node_path:
+        zk = kazoo.client.KazooClient(hosts=os.environ.get("ZOOKEEPER_ENSEMBLE_HOSTS"))
         zk.start()
-        zk.set(args.zoo_node, STATE_DONE)
+        zk.set(args.zk_node_path, STATE_DONE)
         zk.stop()
 
 
@@ -90,13 +103,13 @@ def main():
     parser = argparse.ArgumentParser(description='Downloads the dataset from http/ftp/s3 to internal s3')
 
     parser.add_argument('--src', metavar='src',
-                        help='Source')
+                        help='Source', default=None)
     parser.add_argument('--dst', metavar='dst',
-                        help='Destination')
+                        help='Destination', default=None)
     parser.add_argument('--md5', metavar='md5',
-                        help='MD5 hash')
-    parser.add_argument('--zoo-node', metavar='zoo_node',
-                        help='Zookeeper node to update')
+                        help='MD5 hash', default=None)
+    parser.add_argument('--zk-node-path', metavar='zk_node',
+                        help='Zookeeper node to update', default=None)
 
     args = parser.parse_args()
 
