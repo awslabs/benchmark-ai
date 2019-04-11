@@ -110,3 +110,4 @@ spec:
       nodeSelector:
         beta.kubernetes.io/instance-type: {instance_type}
         node.type: bai-worker
+        failure-domain.beta.kubernetes.io/zone: {availability_zone}
