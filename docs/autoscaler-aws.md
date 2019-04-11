@@ -116,3 +116,36 @@ which CA has support to, so it doesn't take down a Node that is running at the m
 
 TODO: Study if this is necessary or helps in BAI's scenario. My guess is that BAI doesn't need this feature because
       it has this nice property of worker nodes being either **full** or **empty**.
+
+# Gotchas
+
+## cluster-autoscaler version and Kubernetes version
+
+**If BAI is running Kubernetes > 1.12, then delete this section**
+
+As stated in the [document](https://github.com/MXNetEdge/benchmark-ai/blob/master/docs/upgrading-kubernetes-version.md)
+describing what to consider when upgrading Kubernetes, the version of cluster-autoscaler is dependant on the
+Kubernetes version.
+
+Currently BAI is [running version 1.12](https://github.com/MXNetEdge/benchmark-ai/blob/master/baictl/drivers/aws/cluster/variables.tf#L57)
+(check the `k8s_version` terraform variable).
+
+The version of CA that supports Kubernetes 1.12 is `1.12.X` and these versions have problem when dealing with more than
+50 ASGs (this [commit](https://github.com/kubernetes/autoscaler/commit/e29bddc48331d396818065d0eccc8b1f3d9dd562) fixes
+it). This commit is not present as of 11/Apr/2019 in the `1.12.X` versions:
+
+```bash
+$ git tag --contains e29bddc48331d396818065d0eccc8b1f3d9dd562
+cluster-autoscaler-1.13.0
+cluster-autoscaler-1.13.0-alpha.1
+cluster-autoscaler-1.13.0-rc.2
+cluster-autoscaler-1.13.1
+cluster-autoscaler-1.13.2
+cluster-autoscaler-1.14.0
+cluster-autoscaler-1.14.0-beta.1
+cluster-autoscaler-1.14.0-beta.2
+```
+
+So it was opted to use a newer version, although it is not using the supported K8S version.
+
+If the cluster-autoscaler Pod behaves unexpectedly, then this might be the root cause.
