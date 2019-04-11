@@ -7,9 +7,11 @@ from fetcher_dispatcher.utils import id_generator
 
 KUBECONFIG = os.environ.get("KUBECONFIG")
 FETCHER_JOB_IMAGE = os.environ.get("FETCHER_JOB_IMAGE")
+ZOOKEEPER_ENSEMBLE_HOSTS = os.environ.get("ZOOKEEPER_ENSEMBLE_HOSTS", "localhost:2181")
+FETCHER_ZOOKEEPER_ENSEMBLE_HOSTS = os.environ.get("FETCHER_ZOOKEEPER_ENSEMBLE_HOSTS", ZOOKEEPER_ENSEMBLE_HOSTS)
 
 
-def dispatch_fetcher(task: DataSet):
+def dispatch_fetcher(task: DataSet, zk_node_path: str):
     if KUBECONFIG:
         kubernetes.config.load_kube_config(KUBECONFIG)
     else:
@@ -26,9 +28,11 @@ def dispatch_fetcher(task: DataSet):
     template = kubernetes.client.V1PodTemplate()
     template.template = kubernetes.client.V1PodTemplateSpec()
 
-    job_args = [task.src, task.dst]
+    job_args = ["--src", task.src, "--dst", task.dst, "--zk-node-path", zk_node_path]
 
-    container = kubernetes.client.V1Container(name="downloader", image=FETCHER_JOB_IMAGE, args=job_args)
+    env_list = [kubernetes.client.V1EnvVar(name="ZOOKEEPER_ENSEMBLE_HOSTS", value=FETCHER_ZOOKEEPER_ENSEMBLE_HOSTS)]
+
+    container = kubernetes.client.V1Container(name="downloader", image=FETCHER_JOB_IMAGE, args=job_args, env=env_list)
     template.template.spec = kubernetes.client.V1PodSpec(containers=[container], restart_policy='Never',
                                                          node_selector={"node.type": "bai-services"})
     # And finally we can create our V1JobSpec!

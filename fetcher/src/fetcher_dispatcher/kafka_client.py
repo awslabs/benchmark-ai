@@ -1,4 +1,3 @@
-import json
 import os
 
 import kafka
@@ -18,6 +17,6 @@ def kafka_consumer(topic: str):
 
 def kafka_producer():
     def json_serializer(m):
-        return json.dumps(m).encode(DEFAULT_ENCODING)
+        return m.to_json().encode(DEFAULT_ENCODING)
 
     return kafka.KafkaProducer(bootstrap_servers=BOOTSTRAP_SERVERS, value_serializer=json_serializer)
