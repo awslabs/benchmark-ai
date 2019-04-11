@@ -174,7 +174,16 @@ resource "local_file" "worker_privatekey_pem" {
 module "eks" {
   source                               = "terraform-aws-modules/eks/aws"
   cluster_name                         = "${var.cluster_name}"
-  subnets                              = ["${module.vpc.private_subnets}"]
+  # EKS is given a fixed number of subnets.
+  #
+  # EKS allows to launch worker nodes in subnets that were not specified when
+  # creating the EKS cluster as long as all of these subnets have connectivity
+  # among themselves (including the "extra").
+  #
+  # The number of worker subnets is dynamic according to the number of AZs available in
+  # the region. So, if EKS is given a fixed amount of subnets, when a new AZ is created,
+  # then the EKS cluster does not have to be recreated.
+  subnets                              = ["${module.vpc.private_subnets[0]}", "${module.vpc.private_subnets[1]}", "${module.vpc.private_subnets[2]}"]
   cluster_version                      = "${var.k8s_version}"
   tags                                 = "${local.tags}"
   vpc_id                               = "${module.vpc.vpc_id}"
