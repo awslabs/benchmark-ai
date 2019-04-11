@@ -83,7 +83,7 @@ create_infra() {
         if aws s3 cp s3://benchmark-ai/darwin_amd64/${plugin_name} ~/.terraform.d/plugins; then
             : 
         else
-            CANONICAL_ID=`aws s3api list-buckets --output text  | grep ^OWNER | awk '{print $3}'`
+            CANONICAL_ID=$(aws s3api list-buckets --output json | jq -r '.Owner.ID')
             printf "Please add your account ID: $CANONICAL_ID RW permissions to mxnet-edge-bln S3 bucket benchmark-ai"
             return 1
         fi

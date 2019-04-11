@@ -67,18 +67,3 @@ output "msk_zookeeper_connect" {
   description = "Connection string for Zookeeper."
   value = "${aws_msk_cluster.benchmark-msk-cluster.zookeeper_connect}"
 }
-
-output "msk_encrypt_rest_key" {
-  description = "The AWS KMS key used for data encryption."
-  value = "${aws_msk_cluster.benchmark-msk-cluster.encrypt_rest_key}"
-}
-
-output "msk_status" {
-  description = "The status of the cluster. The possible states are CREATING, ACTIVE, and FAILED."
-  value = "${aws_msk_cluster.benchmark-msk-cluster.zookeeper_connect}"
-}
-
-output "msk_arn" {
-  description = "The Amazon Resource Name (ARN) of the cluster."
-  value = "${aws_msk_cluster.benchmark-msk-cluster.arn}"
-}
