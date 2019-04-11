@@ -4,7 +4,8 @@ import random
 import pytest
 from pytest_regressions.file_regression import FileRegressionFixture
 
-from descriptor_reader import Descriptor, create_bai_config
+from transpiler.descriptor import Descriptor
+from transpiler.bai_knowledge import create_bai_config
 
 
 @pytest.mark.parametrize("filename", [

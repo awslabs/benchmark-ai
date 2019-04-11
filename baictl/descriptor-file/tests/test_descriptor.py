@@ -1,6 +1,6 @@
 import pytest
 
-from descriptor_reader import Descriptor
+from transpiler.descriptor import Descriptor
 
 
 @pytest.mark.parametrize('filename', [

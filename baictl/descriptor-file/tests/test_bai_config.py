@@ -2,9 +2,9 @@ import textwrap
 import toml
 
 import pytest
-import descriptor_reader as dr
 
-from descriptor_reader import Descriptor, BaiConfig
+from transpiler.descriptor import Descriptor
+from transpiler.bai_knowledge import BaiConfig, create_bai_config
 
 
 @pytest.fixture
@@ -39,7 +39,7 @@ def test_add_container_cmd(descriptor):
     descriptor.benchmark_code = 'cmd'
     descriptor.ml_args = 'arg1 arg2'
 
-    baiconfig = dr.create_bai_config(descriptor)
+    baiconfig = create_bai_config(descriptor)
     container = baiconfig.root.find_container('benchmark')
     assert container.command == ['cmd', 'arg1', 'arg2']
     assert 'args' not in container
@@ -49,7 +49,7 @@ def test_add_container_no_cmd(descriptor):
     descriptor.benchmark_code = ''
     descriptor.ml_args = 'arg1 arg2=abc'
 
-    baiconfig = dr.create_bai_config(descriptor)
+    baiconfig = create_bai_config(descriptor)
     container = baiconfig.root.find_container('benchmark')
     assert 'command' not in container
     assert container.args == ['arg1', 'arg2=abc']
