@@ -113,6 +113,17 @@ data "null_data_source" "bai_worker_groups" {
   }
 }
 
+resource "null_resource" "bai-worker-nodes-cluster-autoscaler-az-tag" {
+  count = "${local.bai_worker_groups_count}"
+  provisioner "local-exec" {
+    command = "aws --region ${var.region} autoscaling create-or-update-tags --tags ResourceId=${element(module.eks.workers_asg_names, count.index + local.other_groups_count)},ResourceType=auto-scaling-group,PropagateAtLaunch=true,Key=k8s.io/cluster-autoscaler/node-template/label/failure-domain.beta.kubernetes.io/zone,Value=${element(data.aws_availability_zones.available.names, count.index % local.bai_worker_group_subnets_count)}"
+  }
+
+  triggers {
+    workers_asg_names = "${element(module.eks.workers_asg_names, count.index + local.other_groups_count)}"
+  }
+}
+
 data "aws_ami" "eks-cpu-optimized" {
   most_recent = true
 
