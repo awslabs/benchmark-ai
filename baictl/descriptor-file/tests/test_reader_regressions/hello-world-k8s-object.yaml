@@ -70,6 +70,7 @@ spec:
       nodeSelector:
         beta.kubernetes.io/instance-type: t2.small
         node.type: bai-worker
+        failure-domain.beta.kubernetes.io/zone: us-east-1a
       restartPolicy: Never
       volumes:
       - name: benchmark-ai

@@ -3,11 +3,20 @@ import random
 import shlex
 import uuid
 from typing import List, Dict
-
 from ruamel import yaml
-
+from dataclasses import dataclass
 from transpiler.descriptor import Descriptor
 from transpiler.kubernetes_spec_logic import ConfigTemplate, VolumeMount, HostPath, Volume, EmptyDirVolumeSource
+
+
+@dataclass
+class EnvironmentInfo:
+    """
+    Holds information on the environment that BAI is running.
+
+    It is meant to aid in making decisions on how to run the benchmarks.
+    """
+    availability_zones: List[str]
 
 
 class BaiConfig:
@@ -22,7 +31,14 @@ class BaiConfig:
     S3_REGION = 'eu-west-1'
     PULLER_IMAGE = 'stsukrov/s3dataprovider'
 
-    def __init__(self, descriptor: Descriptor, config_template: ConfigTemplate, *, random_object=None):
+    def __init__(
+            self,
+            descriptor: Descriptor,
+            config_template: ConfigTemplate,
+            *,
+            environment_info: EnvironmentInfo,
+            random_object: random.Random = None
+    ):
         """
         Reads the values from the transpiler file into a settings dictionary
         :param descriptor: Descriptor object with the information from the TOML
@@ -39,8 +55,14 @@ class BaiConfig:
         # random_object.getrandbits(128) is equivalent to os.urandom(16), since 16 * 8 = 128
         self.job_id = uuid.UUID(int=random_object.getrandbits(128), version=4).hex
 
+        # Using a random AZ is good enough for now
+        availability_zone = random_object.choice(environment_info.availability_zones)
+
         config_template.feed(vars(self.descriptor))
-        config_template.feed({"job_id": self.job_id})
+        config_template.feed({
+            "job_id": self.job_id,
+            "availability_zone": availability_zone,
+        })
         self.root = config_template.build()
         self.add_volumes()
 
@@ -198,10 +220,11 @@ class BaiConfig:
         return vol_mounts
 
 
-def create_bai_config(descriptor: Descriptor, extra_bai_config_args=None) -> BaiConfig:
+def create_bai_config(descriptor: Descriptor, environment_info: EnvironmentInfo, extra_bai_config_args=None) -> BaiConfig:
     """
     Builds a BaiConfig object
 
+    :param availability_zones: The availability
     :param descriptor: The transpiler.
     :param extra_bai_config_args: An optional Dict which will be forwarded to the `BaiConfig` object created.
     :return:
@@ -220,7 +243,7 @@ def create_bai_config(descriptor: Descriptor, extra_bai_config_args=None) -> Bai
     with open(os.path.join(templates_dir, template_files[descriptor.strategy]), "r") as f:
         contents = f.read()
     config_template = ConfigTemplate(contents)
-    bai_config = BaiConfig(descriptor, config_template, **extra_bai_config_args)
+    bai_config = BaiConfig(descriptor, config_template, environment_info=environment_info, **extra_bai_config_args)
 
     if descriptor.strategy == 'single_node':
         bai_config.add_benchmark_cmd_to_container()
