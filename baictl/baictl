@@ -14,15 +14,15 @@ if ! [[ $verb =~ ^(create|destroy|get|list|run|schedule|delete|validate|show)$ ]
     then print_usage_and_exit
 fi
 
-if ! [[ $object =~ ^(infra|benchmarks?|dashboard)$ ]]
+if ! [[ $object =~ ^(infra|benchmarks?|k8s-dashboard)$ ]]
     then print_usage_and_exit
 fi
 
 verbose=""
 just_help=""
-data_dir=./bai  
+data_dir=./bai
 
-for arg in "$@" 
+for arg in "$@"
 do
     case "${arg}" in
     --target=*)
