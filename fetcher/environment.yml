@@ -1,11 +1,16 @@
 name: fetcher
 channels:
-  - anaconda
   - conda-forge
   - defaults
 dependencies:
+  - python 3.7.*
   - kazoo >=2.5
   - kafka-python >= 1.4.4
   - boto3 >= 1.9.130
   - python-kubernetes >= 9.0
   - pycurl >= 7.43.0.2
+  - pip:
+      - dataclasses-json
+      - pytest
+      - mock
+      - pytest-mock
