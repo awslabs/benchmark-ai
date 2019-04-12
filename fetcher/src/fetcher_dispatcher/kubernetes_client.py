@@ -2,7 +2,7 @@ import os
 
 import kubernetes
 
-from events.data_set import DataSet
+from bai_common.events import DataSet
 from fetcher_dispatcher.utils import id_generator
 
 KUBECONFIG = os.environ.get("KUBECONFIG")

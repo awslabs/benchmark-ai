@@ -3,7 +3,7 @@ import mock
 import pytest
 from kazoo.client import KazooClient
 
-from events.data_set import DataSet
+from bai_common.events import DataSet
 from fetcher_dispatcher.data_set_manager import DataSetManager, DataSetDispatcher
 from fetcher_dispatcher.fetch_state import FetchState
 

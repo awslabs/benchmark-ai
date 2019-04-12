@@ -2,7 +2,7 @@ import os
 
 import kafka
 
-from events.benchmark_event import BenchmarkEvent
+from bai_common.events import BenchmarkEvent
 
 DEFAULT_ENCODING = os.environ.get("DEFAULT_ENCODING", "utf-8")
 BOOTSTRAP_SERVERS = os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092").split(',')

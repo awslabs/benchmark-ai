@@ -5,7 +5,7 @@ from kazoo.client import KazooClient
 from kazoo.exceptions import NodeExistsError
 from typing import Callable
 
-from events.data_set import DataSet
+from bai_common.events import DataSet
 from fetcher_dispatcher.fetch_state import FetchState
 from fetcher_dispatcher.kubernetes_client import dispatch_fetcher
 from fetcher_dispatcher.utils import md5sum

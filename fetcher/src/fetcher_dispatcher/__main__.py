@@ -2,7 +2,7 @@ import os
 
 from typing import List, Callable
 
-from events.data_set import DataSet
+from bai_common.events import DataSet
 from fetcher_dispatcher.data_set_manager import DataSetManager
 from fetcher_dispatcher.data_set_pull import get_dataset_dst
 from fetcher_dispatcher.kafka_client import kafka_consumer
