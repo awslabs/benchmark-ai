@@ -89,7 +89,6 @@ create_infra() {
         fi
     fi
 
-    exit 
     terraform init $terraform_dir
     terraform get $terraform_dir
 
