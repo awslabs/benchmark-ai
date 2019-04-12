@@ -2,10 +2,13 @@ FROM continuumio/miniconda3
 
 WORKDIR /data/fetcher-job
 
+#Stable files
 COPY environment.yml /data/fetcher-job/
-COPY fetcher.py /data/fetcher-job/
 
 RUN conda env create -f environment.yml
+
+#Source to be changed frequently
+COPY fetcher.py /data/fetcher-job/
 
 ENTRYPOINT [ "/opt/conda/envs/fetcher-job/bin/python3", "fetcher.py" ]
 

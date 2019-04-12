@@ -1,0 +1,10 @@
+name: fetcher
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pip 19.0.3
+  - pip:
+      - pytest
+      - mock
+      - pytest-mock

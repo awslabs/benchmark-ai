@@ -9,8 +9,6 @@ dependencies:
   - boto3 >= 1.9.130
   - python-kubernetes >= 9.0
   - pycurl >= 7.43.0.2
+  - pip 19.0.3
   - pip:
       - dataclasses-json
-      - pytest
-      - mock
-      - pytest-mock
