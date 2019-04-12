@@ -1,6 +1,5 @@
 name: fetcher-job
 channels:
-  - anaconda
   - conda-forge
   - defaults
 dependencies:
