@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from dataclasses_json import dataclass_json
+from typing import List
 
 from events.benchmark_payload import BenchmarkPayload
 from events.visited_service import VisitedService
@@ -16,5 +17,5 @@ class BenchmarkEvent:
     client_user: str
     authenticated: bool
     date: int
-    visited: [VisitedService]
+    visited: List[VisitedService]
     payload: BenchmarkPayload
