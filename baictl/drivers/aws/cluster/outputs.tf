@@ -25,9 +25,9 @@ output "region" {
   value       = "${var.region}"
 }
 
-output "eks_cluster_name" {
+output "cluster_name" {
   description = "AWS EKS cluster name."
-  value       = "${var.eks_cluster_name}"
+  value       = "${var.cluster_name}-eks"
 }
 
 output "bastion_public_ip" {

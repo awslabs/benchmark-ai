@@ -8,9 +8,9 @@ variable "prefix_list_ids" {
   default = []
 }
 
-variable "eks_cluster_name" {
+variable "cluster_name" {
   type    = "string"
-  default = "benchmark-eks-cluster"
+  default = "benchmark-cluster"
 }
 
 variable "map_accounts" {
@@ -78,10 +78,6 @@ variable "eks_cpu_ami_id" {
 variable "eks_gpu_ami_id" {
   description = "AMI id to launch workers that need GPU. Overrides the version specified by `eks_gpu_ami_version`."
   default = "" # Empty because this must be a choice of the BAI administrator, wether he wants to override the AMI.
-}
-variable "msk_cluster_name" {
-  type    = "string"
-  default = "benchmark-msk-cluster"
 }
 
 variable "msk_broker_count" {
