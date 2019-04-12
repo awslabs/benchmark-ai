@@ -5,15 +5,15 @@ from typing import List, Callable
 from bai_common.events import DataSet
 from fetcher_dispatcher.data_set_manager import DataSetManager
 from fetcher_dispatcher.data_set_pull import get_dataset_dst
-from fetcher_dispatcher.kafka_client import kafka_consumer
-from fetcher_dispatcher.kafka_client import kafka_producer
+from fetcher_dispatcher.kafka_client import create_kafka_consumer
+from fetcher_dispatcher.kafka_client import create_kafka_producer
 
 
 def main():
     data_set_mgr = DataSetManager()
     data_set_mgr.start()
 
-    producer = kafka_producer()
+    producer = create_kafka_producer()
 
     def extract_data_sets(msg) -> List[DataSet]:
         return msg.value.payload.data_sets
@@ -35,7 +35,8 @@ def main():
         for tsk in tasks:
             execute(tsk, on_done)
 
-    BENCHMARK_TOPIC = os.environ.get("BENCHMARK_TOPIC", "benchmark_control")
+    consumer_topic = os.environ.get("CONSUMER_TOPIC", "benchmark_control")
+    producer_topic = os.environ.get("PRODUCER_TOPIC", consumer_topic)
 
     def handle_msg(msg):
         tasks = extract_data_sets(msg)
@@ -44,10 +45,13 @@ def main():
         if not tasks:
             return
 
-        cb = lambda: producer.send(BENCHMARK_TOPIC, value=msg.value)
-        execute_all(tasks, cb)
+        def on_all_done():
+            producer.send(producer_topic, value=msg.value)
 
-    for msg in kafka_consumer(BENCHMARK_TOPIC):
+        execute_all(tasks, on_all_done)
+
+    consumer = create_kafka_consumer(consumer_topic)
+    for msg in consumer:
         handle_msg(msg)
 
 
