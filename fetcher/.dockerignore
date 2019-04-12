@@ -1,8 +1,0 @@
-Dockerfile
-tst/
-build/
-dist/
-.pytest_cache/
-**/*.egg-info/
-tst-environment.yml
-.idea
