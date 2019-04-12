@@ -9,15 +9,6 @@ import kazoo.client
 import kazoo.client
 
 
-class UploadProgress:
-    def __init__(self):
-        self.progress = 0
-
-    def increment(self, package_size):
-        self.progress += package_size
-        print(f"{self.progress} bytes uploaded so far")
-
-
 def s3_to_s3_deep(src_bucket, src_key, dst_bucket, dst_key):
     s3 = boto3.resource('s3')
     old_bucket = s3.Bucket(src_bucket)
@@ -32,15 +23,15 @@ def s3_to_s3_deep(src_bucket, src_key, dst_bucket, dst_key):
         new_obj.copy(old_source)
 
 
-def s3_to_s3(args):
-    dst = urlparse(args.dst)
+def s3_to_s3(src: str, dst: str):
+    dst_url = urlparse(dst)
 
-    dst_bucket = dst.netloc
-    dst_key = dst.path[1:]
+    dst_bucket = dst_url.netloc
+    dst_key = dst_url.path[1:]
 
-    src = urlparse(args.src)
-    src_bucket = src.netloc
-    src_key = src.path[1:]
+    src_url = urlparse(src)
+    src_bucket = src_url.netloc
+    src_key = src_url.path[1:]
 
     s3_to_s3_deep(src_bucket, src_key, dst_bucket, dst_key)
 
@@ -49,18 +40,19 @@ def progress(download_t, download_d, upload_t, upload_d):
     print(f"{download_d} out of {download_t}")
 
 
-def http_to_s3(args):
+def http_to_s3(src: str, dst: str):
     print("http to s3")
-    dst = urlparse(args.dst)
 
-    bucket = dst.netloc
-    key = dst.path[1:]
+    dst_url = urlparse(dst)
+
+    bucket = dst_url.netloc
+    key = dst_url.path[1:]
 
     print(f"bucket {bucket} key {key}")
 
     with tempfile.TemporaryFile("r+b") as fp:
         curl = pycurl.Curl()
-        curl.setopt(pycurl.URL, args.src)
+        curl.setopt(pycurl.URL, src)
         curl.setopt(pycurl.FOLLOWLOCATION, 1)
         curl.setopt(pycurl.MAXREDIRS, 5)
         curl.setopt(pycurl.CONNECTTIMEOUT, 30)
@@ -91,15 +83,19 @@ def fetch(args):
 
     src_scheme = urlparse(args.src)
     if src_scheme.scheme == "http" or src_scheme.scheme == "https":
-        http_to_s3(args)
+        http_to_s3(args.src, args.dst)
     elif src_scheme.scheme == "s3":
-        s3_to_s3(args)
+        s3_to_s3(args.src, args.dst)
 
     if args.zk_node_path:
-        zk = kazoo.client.KazooClient(hosts=os.environ.get("ZOOKEEPER_ENSEMBLE_HOSTS"))
-        zk.start()
-        zk.set(args.zk_node_path, STATE_DONE)
-        zk.stop()
+        update_zk_node(args.zk_node_path)
+
+
+def update_zk_node(zk_node_path):
+    zk = kazoo.client.KazooClient(hosts=os.environ.get("ZOOKEEPER_ENSEMBLE_HOSTS"))
+    zk.start()
+    zk.set(zk_node_path, STATE_DONE)
+    zk.stop()
 
 
 def main():
