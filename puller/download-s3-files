@@ -1,0 +1,72 @@
+#!/bin/bash
+
+REGION=$1
+declare -a REGIONS=(
+    "ap-northeast-1"
+    "ap-southeast-1"
+    "ap-southeast-2"
+    "cn-north-1"
+    "eu-west-1"
+    "sa-east-1"
+    "us-east-1"
+    "us-gov-west-1"
+    "us-west-1"
+    "us-west-2"
+    "eu-central-1"
+)
+
+declare -a HELP=("--help" "-h" "help")
+if [[ " ${HELP[*]} " == *" $REGION "* ]]; then
+    echo "Usage: $0 <REGION> <S3Bucket> <FILE1>:<FILE2>:..."
+    echo "  <Files> format: <S3Path>[,Permissions][,DOWNLOADPATH]"
+    exit 0
+fi
+
+if [[ " ${REGIONS[*]} " != *" $REGION "* ]]; then
+    echo "'${REGION}' not a recognized region!"
+    echo "Must be one of: [ ${REGIONS[@]} ]"
+    exit 1
+fi
+
+BUCKET=$2
+
+USR_FILES=$3
+FILES=(${USR_FILES//:/ })
+
+#Ugly HACK to check if should be a dir.
+#Brittle and unstable - yes, failes for filenames with PRE
+is_prefix(){
+    local S3FILE=$1
+    pre=$(aws s3 ls --region ${REGION} s3://${BUCKET}/${S3FILE} | grep " PRE ")
+    [ -n "${pre}" ] || return 1
+}
+
+for file in "${FILES[@]}"; do
+    PIECES=(${file//,/ })
+
+    S3FILE=${PIECES[0]}
+    PERMS=${PIECES[1]}
+    TARGET=${PIECES[2]}
+
+    echo "${file}"
+
+    if [ "${S3FILE}" == "" ]; then
+        echo " ---> No S3 file given for target ${file}, skipping"
+        continue
+    fi
+
+    if [ "${TARGET}" == "" ]; then
+        TARGET="/data/${S3FILE}"
+        echo " ---> No download path for ${file}, assuming ${TARGET}"
+    fi
+
+    CMD="aws s3 cp --region ${REGION} s3://${BUCKET}/${S3FILE} ${TARGET}"
+    is_prefix "$S3FILE" && CMD="aws s3 sync --region ${REGION} s3://${BUCKET}/${S3FILE} ${TARGET}"
+    echo " ---> Executing: ${CMD}"
+    eval $CMD
+
+    if [ "${PERMS}" != "" ]; then
+        echo " ---> Updating permissions ${TARGET}[${PERMS}]" 
+        chmod ${PERMS} ${TARGET}
+    fi
+done
