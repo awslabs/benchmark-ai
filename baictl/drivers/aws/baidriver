@@ -255,7 +255,8 @@ run_benchmark() {
     [ -z "$descriptor" ] && printf "Missing required argument --descriptor\n" && return 1
 
     export PYTHONPATH=$(dirname $BASH_SOURCE)/../../descriptor-file/src
-    python3 $(dirname $BASH_SOURCE)/../../descriptor-file/src/transpiler/__main__.py $(pwd)/$descriptor | $kubectl apply -f -
+    local azs=$(terraform output -json --state=$terraform_state availability_zones | jq -r '.value | join(" ")')
+    python3 $(dirname $BASH_SOURCE)/../../descriptor-file/src/transpiler/__main__.py $(pwd)/$descriptor --availability-zones $azs | $kubectl apply -f -
 }
 
 delete_benchmark() {
