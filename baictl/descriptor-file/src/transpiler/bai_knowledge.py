@@ -66,6 +66,9 @@ class BaiConfig:
         self.root = config_template.build()
         self.add_volumes()
 
+        if descriptor.scheduling != 'single_run':
+            self.root.to_cronjob(descriptor.scheduling)
+
     def add_volumes(self):
         data_volumes = self._get_data_volumes(self.descriptor.data_sources)
 

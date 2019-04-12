@@ -127,3 +127,14 @@ def test_adds_placeholder_fields():
     assert k8s_job.get_pod_spec().volumes == []
     assert k8s_job.get_pod_spec().initContainers == []
     assert k8s_job.find_container("benchmark").volumeMounts == []
+
+
+def test_job_to_cronjob(k8s_job):
+    schedule = '@hourly'
+    k8s_job.to_cronjob(schedule)
+    # TODO: Take this values from the config file
+    assert k8s_job._root.apiVersion == 'batch/v1beta1'
+    assert k8s_job._root.kind == 'CronJob'
+    assert k8s_job._root.spec.schedule == schedule
+    assert 'jobTemplate' in k8s_job._root.spec
+    assert 'template' not in k8s_job._root.spec

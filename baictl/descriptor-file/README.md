@@ -1,6 +1,7 @@
 # Descriptor file
 
-A descriptor file defines a benchmark job. This directory contains a template descriptor including explanatory comments on all fields. The descriptor is written in [TOML](https://github.com/toml-lang/toml).
+A descriptor file defines a benchmark job. This directory contains a template descriptor including explanatory comments
+ on all fields. The descriptor is written in [TOML 0.4.0](https://github.com/toml-lang/toml/blob/master/versions/en/toml-v0.4.0.md).
 
 The file is divided in sections: info, hardware, env, ml, data and output. See the example descriptor below for reference.
 
@@ -12,14 +13,13 @@ The following example shows what the descriptor file for a horovod-based benchma
 # BenchmarkAI meta
 spec_version = "0.1.0"
 
-# These fields don't have any impact on the job to run, they contain
-# merely informative data so the benchmark can be categorized when displayed
-# in the dashboard.
+# 0. Job details
 [info]
 task_name = "Example benchmark"
 description = """ \
     Full job description.\
     """
+scheduling = 'single_run'
 
 # 1. Hardware
 [hardware]
@@ -81,6 +81,7 @@ path = "~/data/tf-imagenet/"
 | -                      | spec_version   | Version of the descriptor specification                                                                                                                | Semantically versioned                                      | Required          |
 | info                   | task_name      | Name of the benchmark job                                                                                                                              | String                                                      | Required          |
 | info                   | description    | Description (informative field)                                                                                                                        | String                                                      | Required          |
+| info                   | scheduling     | Job scheduling: whether to run it a single time or periodically and when    | [Cron expression](https://kubernetes.io/docs/tasks/job/automated-tasks-with-cron-jobs/#schedule) to schedule a job, 'single_run' to run it right away (default)| Optional |
 | hardware               | instance_type  | Type of EC2 instance where the job is to run                                                                                                           | EC2 instance [API name](https://ec2instances.info)          | Required          |
 | hardware               | strategy       | Whether to run on single node or distributed. In the latter case, a distributed strategy, such as horovod or mxnet_parameter_server, must be specified | One of ['single_node', 'horovod', 'mxnet_parameter_server'] | Required          |
 | hardware > distributed | num_instances  | Number of nodes to use for distributed training                                                                                                        | Int                                                         | Optional          |
@@ -96,7 +97,7 @@ path = "~/data/tf-imagenet/"
 
 Notes on the sections:
 
-* **Info**: The fields in this section don't have any impact on the job to run, they contain merely informative data about the benchmark job.
+* **Info**: The scheduling field lets users specify when the job is supposed to run. This is done using cron expressions, such as `0 * * * *` or `@daily`, for example.
 * **Hardware**: Users must specify a strategy to run their benchmark, be it single_node or one of the distributed alternatives, such as horovod.
 * **Env**: Environment is defined by passing the identifier (user/repo:tag) of the docker image containing the benchmark code.
 * **Ml**: Users can specify the command to run on their docker image (benchmark_code) or the args to be passed to the container's entrypoint. If both are specified, the args are concatenated with the command.

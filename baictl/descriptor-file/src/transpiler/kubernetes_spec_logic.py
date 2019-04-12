@@ -139,6 +139,20 @@ class KubernetesRootObjectHelper:
             [cm.metadata.name for cm in self.config_maps]
         ))
 
+    def to_cronjob(self, scheduling: str):
+        """
+        Turns a Job YAML spec into a CronJob one.
+        :param scheduling: cron expression indicating when the job is supposed to run
+        """
+        if self._root.kind == 'Job':
+            # TODO: move this values to config file when PR112 is merged
+            self._root.apiVersion = 'batch/v1beta1'
+            self._root.kind = 'CronJob'
+            self._root.spec.schedule = scheduling
+            self._root.spec.jobTemplate = self._root.spec.pop('template')
+        else:
+            raise ValueError(f"Error converting to CronJob. Root is of kind {self._root.kind} (expected 'Job')")
+
     def to_yaml(self) -> str:
         """
         Serializes this object to a YAML string
