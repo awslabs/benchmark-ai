@@ -27,7 +27,7 @@ output "region" {
 
 output "cluster_name" {
   description = "AWS EKS cluster name."
-  value       = "${var.cluster_name}-eks"
+  value       = "${module.eks.cluster_name}"
 }
 
 output "bastion_public_ip" {
