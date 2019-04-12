@@ -74,13 +74,14 @@ create_infra() {
 
     # Get Kafka AWS binary and put it in terraform plugins directory
     local plugin_name="terraform-provider-aws_v2.4.0"
+    local kernel=$(uname | awk '{print tolower($0)}')
 
     if test -e ~/.terraform.d/plugins/${plugin_name} ; then
         :
     else
         printf 'Downloading MSK-aware aws terraform plugin binary...\n'
         mkdir -p ~/.terraform.d/plugins
-        if aws s3 cp s3://benchmark-ai/darwin_amd64/${plugin_name} ~/.terraform.d/plugins; then
+        if aws s3 cp s3://benchmark-ai/${kernel}/${plugin_name} ~/.terraform.d/plugins; then
             : 
         else
             CANONICAL_ID=$(aws s3api list-buckets --output json | jq --raw-output  '.Owner.ID')
