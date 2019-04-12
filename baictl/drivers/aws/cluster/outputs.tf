@@ -25,6 +25,11 @@ output "region" {
   value       = "${var.region}"
 }
 
+output "availability_zones" {
+  description = "AWS availability zones."
+  value       = "${data.aws_availability_zones.available.names}"
+}
+
 output "cluster_name" {
   description = "AWS EKS cluster name."
   value       = "${var.cluster_name}"

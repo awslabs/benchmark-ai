@@ -1,7 +1,7 @@
 import argparse
 import os
 
-from transpiler.bai_knowledge import create_bai_config
+from transpiler.bai_knowledge import create_bai_config, EnvironmentInfo
 from transpiler.descriptor import Descriptor
 
 
@@ -17,10 +17,17 @@ def main():
                         default=None,
                         const='job_config.yaml')
 
+    parser.add_argument('--availability-zones', nargs='+',
+                        help='All the availability zones which the benchmark can run',
+                        required=True)
+
     args = parser.parse_args()
 
     descriptor = Descriptor.from_toml_file(args.descriptor)
-    bai_config = create_bai_config(descriptor)
+    environment_info = EnvironmentInfo(
+        availability_zones=args.availability_zones
+    )
+    bai_config = create_bai_config(descriptor, environment_info=environment_info)
     yaml_string = bai_config.dump_yaml_string()
 
     if args.filename:
