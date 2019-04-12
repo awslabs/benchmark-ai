@@ -2,8 +2,8 @@ from dataclasses import dataclass
 
 from dataclasses_json import dataclass_json
 
-from fetcher_dispatcher.events.benchmark_payload import BenchmarkPayload
-from fetcher_dispatcher.events.visited_service import VisitedService
+from events.benchmark_payload import BenchmarkPayload
+from events.visited_service import VisitedService
 
 
 @dataclass_json
