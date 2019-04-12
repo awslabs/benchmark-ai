@@ -82,10 +82,10 @@ create_infra() {
         printf 'Downloading MSK-aware aws terraform plugin binary...\n'
         mkdir -p ~/.terraform.d/plugins
         if aws s3 cp s3://benchmark-ai/${kernel}/${plugin_name} ~/.terraform.d/plugins; then
-            : 
+            chmod +x ~/.terraform.d/plugins/${plugin_name}
         else
             CANONICAL_ID=$(aws s3api list-buckets --output json | jq --raw-output  '.Owner.ID')
-            printf "Please add your account ID: $CANONICAL_ID RW permissions to mxnet-edge-bln S3 bucket benchmark-ai"
+            printf "Please add your account ID: $CANONICAL_ID RW permissions to mxnet-edge-bln S3 bucket benchmark-ai\n"
             return 1
         fi
     fi
