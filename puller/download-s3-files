@@ -30,11 +30,11 @@ fi
 
 BUCKET=$2
 
-USR_FILES=$3
-FILES=(${USR_FILES//:/ })
+USER_FILES=$3
+FILES=(${USER_FILES//:/ })
 
 #Ugly HACK to check if should be a dir.
-#Brittle and unstable - yes, failes for filenames with PRE
+#Brittle and unstable - yes, fails for filenames with PRE
 is_prefix(){
     local S3FILE=$1
     pre=$(aws s3 ls --region ${REGION} s3://${BUCKET}/${S3FILE} | grep " PRE ")

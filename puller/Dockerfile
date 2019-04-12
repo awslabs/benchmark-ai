@@ -12,7 +12,7 @@ RUN apk update && \
 
 RUN pip install awscli
 
-ADD download-s3-files /opt/puller/download-s3-files
+COPY download-s3-files /opt/puller/download-s3-files
 
 ENTRYPOINT ["/bin/bash", "/opt/puller/download-s3-files"]
 CMD []
