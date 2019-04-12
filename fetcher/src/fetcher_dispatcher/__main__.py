@@ -15,7 +15,7 @@ def main():
 
     producer = kafka_producer()
 
-    def extract_data_sets(msg) -> [DataSet]:
+    def extract_data_sets(msg) -> List[DataSet]:
         return msg.value.payload.data_sets
 
     def execute(task: DataSet, callback) -> None:
