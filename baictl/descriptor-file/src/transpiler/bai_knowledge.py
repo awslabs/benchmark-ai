@@ -2,6 +2,8 @@ import os
 import random
 import shlex
 import uuid
+import configparser
+
 from typing import List, Dict
 from ruamel import yaml
 from dataclasses import dataclass
@@ -24,12 +26,6 @@ class BaiConfig:
     Adds the logic required from BAI into the Kubernetes root object that represents
     launching a benchmark.
     """
-    MOUNT_CHMOD = '777'
-    SHARED_MEMORY_VOL = 'dshm'
-
-    # TODO: Figure out how to coordinate fetcher and puller
-    S3_REGION = 'eu-west-1'
-    PULLER_IMAGE = 'stsukrov/s3dataprovider'
 
     def __init__(
             self,
@@ -48,6 +44,10 @@ class BaiConfig:
                               generated.
         """
         self.descriptor = descriptor
+
+        self.config = configparser.ConfigParser()
+        file_dir = os.path.dirname(os.path.abspath(__file__))
+        self.config.read(os.path.join(file_dir, 'config.ini'))
 
         if random_object is None:
             random_object = random.Random()
@@ -87,11 +87,11 @@ class BaiConfig:
         pod_spec_volumes = self.root.get_pod_spec().volumes
         container_volume_mounts = self.root.find_container("benchmark").volumeMounts
 
-        shm_vol = Volume(name=self.SHARED_MEMORY_VOL,
+        shm_vol = Volume(name=self.config['general']['SHARED_MEMORY_VOL'],
                          emptyDir=EmptyDirVolumeSource(medium="Memory"))
         pod_spec_volumes.append(shm_vol)
 
-        shm_vol_mount = VolumeMount(name=self.SHARED_MEMORY_VOL,
+        shm_vol_mount = VolumeMount(name=self.config['general']['SHARED_MEMORY_VOL'],
                                     mountPath='/dev/shm')
         container_volume_mounts.append(shm_vol_mount)
 
@@ -199,14 +199,14 @@ class BaiConfig:
         s3_objects = []
         for s in data_sources:
             s3_objects.append(s['object'] + ',' +
-                              self.MOUNT_CHMOD + ',' +
+                              self.config['data-puller']['MOUNT_CHMOD'] + ',' +
                               data_volumes[s['path']]['name'])
 
-        puller_args = [self.S3_REGION, data_sources[0]['bucket'], ':'.join(s3_objects)]
+        puller_args = [self.config['data-puller']['S3_REGION'], data_sources[0]['bucket'], ':'.join(s3_objects)]
         # ------------------------------------------
 
         vol_mounts = self._get_puller_volume_mounts(data_volumes)
-        data_puller.image = self.PULLER_IMAGE
+        data_puller.image = self.config['data-puller']['DOCKER_IMAGE']
         data_puller.args = puller_args
         if not data_puller.volumeMounts:
             data_puller.volumeMounts = vol_mounts
