@@ -187,4 +187,3 @@ class ConfigTemplate:
     def build(self):
         contents = self._yaml_template_contents.format(**self._variables)
         return KubernetesRootObjectHelper(contents)
-
