@@ -105,13 +105,13 @@ def fetch(args):
 def main():
     parser = argparse.ArgumentParser(description='Downloads the dataset from http/ftp/s3 to internal s3')
 
-    parser.add_argument('--src', metavar='src',
+    parser.add_argument('--src', required=True,
                         help='Source', default=None)
-    parser.add_argument('--dst', metavar='dst',
+    parser.add_argument('--dst', metavar='dst', required=True,
                         help='Destination', default=None)
-    parser.add_argument('--md5', metavar='md5',
+    parser.add_argument('--md5',
                         help='MD5 hash', default=None)
-    parser.add_argument('--zk-node-path', metavar='zk_node',
+    parser.add_argument('--zk-node-path',
                         help='Zookeeper node to update', default=None)
 
     args = parser.parse_args()
