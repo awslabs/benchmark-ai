@@ -1,9 +1,9 @@
-import argparse
 import os
 import pycurl
 import tempfile
 from urllib.parse import urlparse
 
+import argparse
 import boto3
 import kazoo.client
 import kazoo.client
@@ -46,7 +46,8 @@ def s3_to_s3(args):
 
 
 def progress(download_t, download_d, upload_t, upload_d):
-    print(f"{download_t} out of {download_t}")
+    print(f"{download_d} out of {download_t}")
+
 
 def http_to_s3(args):
     print("http to s3")
@@ -65,6 +66,8 @@ def http_to_s3(args):
         curl.setopt(pycurl.CONNECTTIMEOUT, 30)
         curl.setopt(pycurl.TIMEOUT, 300)
         curl.setopt(pycurl.NOSIGNAL, 1)
+        curl.setopt(pycurl.NOPROGRESS, 0)
+        curl.setopt(pycurl.PROGRESSFUNCTION, progress)
         curl.setopt(pycurl.WRITEDATA, fp)
 
         print("Start download")
