@@ -53,6 +53,6 @@ def run_msg_loop(args):
 
         execute_all(tasks, on_all_done)
 
-    consumer = create_kafka_consumer(args.bootstrap_servers, args.consumer_topic)
+    consumer = create_kafka_consumer(args.bootstrap_servers, args.consumer_group_id, args.consumer_topic)
     for msg in consumer:
         handle_msg(msg)
