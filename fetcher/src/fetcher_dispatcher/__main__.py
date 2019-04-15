@@ -1,7 +1,3 @@
-def init_logging(logging_level):
-    pass
-
-
 def main(argv=None):
     from fetcher_dispatcher.args import get_args
     from fetcher_dispatcher.loop import run_msg_loop
