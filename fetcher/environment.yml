@@ -12,3 +12,4 @@ dependencies:
   - pip
   - pip:
       - dataclasses-json
+      - ConfigArgParse

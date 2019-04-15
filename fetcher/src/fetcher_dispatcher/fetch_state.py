@@ -1,4 +1,7 @@
+from fetcher_dispatcher.utils import DEFAULT_ENCODING
+
+
 class FetchState:
-    STATE_RUNNING = "RUNNING".encode("utf-8")
-    STATE_DONE = "DONE".encode("utf-8")
-    STATE_FAILED = "FAILED".encode("utf-8")
+    STATE_RUNNING = "RUNNING".encode(DEFAULT_ENCODING)
+    STATE_DONE = "DONE".encode(DEFAULT_ENCODING)
+    STATE_FAILED = "FAILED".encode(DEFAULT_ENCODING)

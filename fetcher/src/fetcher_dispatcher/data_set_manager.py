@@ -1,5 +1,4 @@
 # Zookeeper based fetch synchronizer
-import os
 
 from kazoo.client import KazooClient
 from kazoo.exceptions import NodeExistsError
@@ -7,10 +6,7 @@ from typing import Callable
 
 from bai_common.events import DataSet
 from fetcher_dispatcher.fetch_state import FetchState
-from fetcher_dispatcher.kubernetes_client import dispatch_fetcher
 from fetcher_dispatcher.utils import md5sum
-
-ZOOKEEPER_ENSEMBLE_HOSTS = os.environ.get("ZOOKEEPER_ENSEMBLE_HOSTS", "localhost:2181")
 
 DataSetDispatcher = Callable[[DataSet, str], None]
 NodePathSource = Callable[[DataSet], str]
@@ -22,10 +18,10 @@ class DataSetManager:
     def __get_node_path(data_set: DataSet) -> str:
         return f"/data_sets/{md5sum(data_set.src)}"
 
-    def __init__(self, zk: KazooClient = None, data_set_dispatcher: DataSetDispatcher = None,
+    def __init__(self, zk: KazooClient, data_set_dispatcher: DataSetDispatcher,
                  get_node_path: NodePathSource = None):
-        self._zk = zk or KazooClient(hosts=ZOOKEEPER_ENSEMBLE_HOSTS)
-        self._data_set_dispatcher = data_set_dispatcher or dispatch_fetcher
+        self._zk = zk
+        self._data_set_dispatcher = data_set_dispatcher
         self._get_node_path = get_node_path or DataSetManager.__get_node_path
 
     def start(self) -> None:
