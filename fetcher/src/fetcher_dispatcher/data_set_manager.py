@@ -1,4 +1,5 @@
 # Zookeeper based fetch synchronizer
+import logging
 
 from kazoo.client import KazooClient
 from kazoo.exceptions import NodeExistsError
@@ -11,6 +12,8 @@ from fetcher_dispatcher.utils import md5sum
 DataSetDispatcher = Callable[[DataSet, str], None]
 NodePathSource = Callable[[DataSet], str]
 DataSetOnDone = Callable[[DataSet], None]
+
+logger = logging.getLogger(__name__)
 
 
 class DataSetManager:
@@ -25,18 +28,23 @@ class DataSetManager:
         self._get_node_path = get_node_path or DataSetManager.__get_node_path
 
     def start(self) -> None:
+        logger.info("Start")
         self._zk.start()
 
     def fetch(self, data_set: DataSet, on_done) -> None:
+        logger.info("Fetch request %s", data_set)
 
         zk_node_path = self._get_node_path(data_set)
+        logger.debug("zk_node_path=%s", zk_node_path)
 
         try:
             self._zk.create(zk_node_path, FetchState.STATE_RUNNING, makepath=True)
 
+            logger.debug("Node lock %s acquired", zk_node_path)
+
             self._data_set_dispatcher(data_set, zk_node_path)
         except NodeExistsError:
-            pass
+            logger.debug("Node %s already exists", zk_node_path)
 
         self.__handle_node_state(zk_node_path, on_done, data_set)
 
@@ -54,4 +62,5 @@ class DataSetManager:
             on_done(data_set)
 
     def stop(self) -> None:
+        logger.info("Stop")
         self._zk.stop()

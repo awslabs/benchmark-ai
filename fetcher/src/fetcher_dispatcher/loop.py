@@ -1,3 +1,5 @@
+import logging
+
 from kazoo.client import KazooClient
 from typing import List, Callable
 
@@ -6,6 +8,8 @@ from fetcher_dispatcher.data_set_manager import DataSetManager
 from fetcher_dispatcher.data_set_pull import get_dataset_dst
 from fetcher_dispatcher.kafka_client import create_kafka_producer, create_kafka_consumer
 from fetcher_dispatcher.kubernetes_client import KubernetesDispatcher
+
+logger = logging.getLogger(__name__)
 
 
 def create_data_set_manager(zookeeper_ensemble_hosts: str, kubeconfig: str, fetcher_job_image: str):
@@ -21,7 +25,18 @@ def run_msg_loop(args):
 
     producer = create_kafka_producer(args.bootstrap_servers)
 
+    def safe_handle_msg(msg):
+        try:
+            handle_msg(msg)
+        except:
+            logger.exception("Failed to handle message: %s", msg)
+
     def handle_msg(msg):
+        if not msg.value:
+            logger.debug("Ignoring empty message")
+            return
+        logger.debug("Got event %s", msg)
+
         def extract_data_sets(msg) -> List[DataSet]:
             return msg.value.payload.data_sets
 
@@ -55,4 +70,4 @@ def run_msg_loop(args):
 
     consumer = create_kafka_consumer(args.bootstrap_servers, args.consumer_group_id, args.consumer_topic)
     for msg in consumer:
-        handle_msg(msg)
+        safe_handle_msg(msg)
