@@ -11,8 +11,8 @@ def get_args(argv):
         return customAction
 
     parser = configargparse.ArgumentParser(auto_env_var_prefix="", prog="fetcher-dispatcher")
-    parser.add_argument("--consumer-topic", env_var='CONSUMER_TOPIC')
-    parser.add_argument("--producer-topic", env_var='PRODUCER_TOPIC')
+    parser.add_argument("--consumer-topic", env_var='CONSUMER_TOPIC', required=True)
+    parser.add_argument("--producer-topic", env_var='PRODUCER_TOPIC', required=True)
     parser.add_argument("--bootstrap-servers", env_var="KAFKA_BOOTSTRAP_SERVERS", default="localhost:9092",
                         action=create_split_action(','))
     parser.add_argument("--zookeeper-ensemble-hosts", env_var="ZOOKEEPER_ENSEMBLE_HOSTS",
