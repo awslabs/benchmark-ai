@@ -22,4 +22,6 @@ def get_args(argv):
     parser.add_argument("--fetcher-job-image", env_var="FETCHER_JOB_IMAGE")
     parser.add_argument("--consumer-group-id", env_var="CONSUMER_GROUP_IP")
 
+    parser.add_argument("--logging-level", env_var="LOGGING_LEVEL", default="INFO")
+
     return parser.parse_args(argv)
