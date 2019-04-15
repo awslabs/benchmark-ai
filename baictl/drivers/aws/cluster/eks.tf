@@ -179,7 +179,7 @@ resource "local_file" "worker_privatekey_pem" {
 
 module "eks" {
   source                               = "terraform-aws-modules/eks/aws"
-  cluster_name                         = "${var.cluster_name}-eks"
+  cluster_name                         = "${var.cluster_name_prefix}-eks"
   # EKS is given a fixed number of subnets.
   #
   # EKS allows to launch worker nodes in subnets that were not specified when

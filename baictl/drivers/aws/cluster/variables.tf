@@ -8,7 +8,7 @@ variable "prefix_list_ids" {
   default = []
 }
 
-variable "cluster_name" {
+variable "cluster_name_prefix" {
   type    = "string"
   default = "benchmark-cluster"
 }

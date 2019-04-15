@@ -30,9 +30,9 @@ output "availability_zones" {
   value       = "${data.aws_availability_zones.available.names}"
 }
 
-output "cluster_name" {
+output "eks_cluster_name" {
   description = "AWS EKS cluster name."
-  value       = "${module.eks.cluster_name}"
+  value       = "${var.cluster_name_prefix}-eks"
 }
 
 output "bastion_public_ip" {

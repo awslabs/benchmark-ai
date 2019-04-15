@@ -28,7 +28,7 @@ CA is setup in "Auto-Discovery" mode. When it starts up it will autodiscover the
 setup is done with this flag on the [CA yaml](https://github.com/MXNetEdge/benchmark-ai/blob/master/baictl/drivers/aws/cluster/template/cluster-autoscaler-autodiscover.tpl.yaml):
 
 ```
---node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,kubernetes.io/cluster/${cluster_name}-eks
+--node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,kubernetes.io/cluster/${cluster_name}
 ```
 
 The discovery of ASGs by the CA is done constantly (every few seconds), so it knows which ASGs can be used to spin up
