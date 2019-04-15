@@ -224,7 +224,7 @@ def create_bai_config(descriptor: Descriptor, environment_info: EnvironmentInfo,
     """
     Builds a BaiConfig object
 
-    :param availability_zones: The availability
+    :param environment_info: Information on the environment that BAI is running on.
     :param descriptor: The transpiler.
     :param extra_bai_config_args: An optional Dict which will be forwarded to the `BaiConfig` object created.
     :return:
