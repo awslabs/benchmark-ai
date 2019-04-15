@@ -109,7 +109,7 @@ data "null_data_source" "bai_worker_groups" {
     kubelet_extra_args   = "${local.bai_worker_kubelet_args}"
     asg_min_size         = 0
     asg_desired_capacity = 0
-    asg_max_size         = 3
+    asg_max_size         = 10000
   }
 }
 
