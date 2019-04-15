@@ -67,14 +67,17 @@ variable "benchmark_workers_instance_types" {
     #
     # Given that the default limit is 200 ASG per region, this number can skyrocket easily.
     "t3.small",
-    "c5.large",
+    "c4.large",
+    "c4.xlarge",
+    "c4.8xlarge",
     "c5.2xlarge",
-    "c5.4xlarge",
-    "c5.9xlarge",
     "c5.18xlarge",
+    "p2.xlarge",
+    "p2.8xlarge",
+    "p2.16xlarge",
     "p3.2xlarge",
     "p3.8xlarge",
-    "p3.16xlarge"
+    "p3.16xlarge",
   ]
 }
 
