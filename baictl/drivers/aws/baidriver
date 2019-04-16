@@ -87,7 +87,7 @@ create_infra() {
 
     _create_configmap_yaml_from_terraform_outputs | $kubectl apply -f -
 
-    _install_kubeflow_operators
+    _install_kubeflow_operators || return 1
 
     [ "$validate" == false ] || validate_infra $@
 }
@@ -113,23 +113,21 @@ _install_kubeflow_operators() {
 
             __create_kubeflow_namespace | kubectl apply -f -
 
-            ks registry add kubeflow https://github.com/kubeflow/kubeflow/tree/v0.4.1/kubeflow
-            ks env add kubeflow --namespace "$kubeflow_namespace"
-
-            ks pkg install kubeflow/mpi-job
-            ks pkg install kubeflow/mxnet-job
-
-            ks generate mpi-operator mpi-operator
-            ks generate mxnet-operator mxnet-operator
-
-
+            ks registry add kubeflow https://github.com/kubeflow/kubeflow/tree/v0.4.1/kubeflow && \
+            ks env add kubeflow --namespace "$kubeflow_namespace" && \
+            ks pkg install kubeflow/mpi-job && \
+            ks pkg install kubeflow/mxnet-job && \
+            ks generate mpi-operator mpi-operator && \
+            ks generate mxnet-operator mxnet-operator || \
+            return 1
         )
     fi
     
     (
         cd kubeflow-ks-app/ks_app || return 1
-        ks apply kubeflow --component mpi-operator
-        ks apply kubeflow --component mxnet-operator
+        ks apply kubeflow --component mpi-operator && \
+        ks apply kubeflow --component mxnet-operator || \
+        return 1
     )
 }
 destroy_infra() {
