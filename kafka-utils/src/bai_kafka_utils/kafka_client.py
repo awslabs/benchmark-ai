@@ -3,7 +3,7 @@ import logging
 import kafka
 from typing import List
 
-from bai_common.events import BenchmarkEvent
+from bai_kafka_utils.events import BenchmarkEvent
 from fetcher_dispatcher.utils import DEFAULT_ENCODING
 
 logger = logging.getLogger(__name__)

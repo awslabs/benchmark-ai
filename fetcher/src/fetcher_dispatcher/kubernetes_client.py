@@ -2,7 +2,7 @@ import logging
 
 import kubernetes
 
-from bai_common.events import DataSet
+from bai_kafka_utils.events import DataSet
 from fetcher_dispatcher.utils import id_generator
 
 logger = logging.getLogger(__name__)

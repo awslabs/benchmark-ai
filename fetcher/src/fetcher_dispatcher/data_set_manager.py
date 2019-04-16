@@ -5,7 +5,7 @@ from kazoo.client import KazooClient
 from kazoo.exceptions import NodeExistsError
 from typing import Callable
 
-from bai_common.events import DataSet
+from bai_kafka_utils.events import DataSet
 from fetcher_dispatcher.fetch_state import FetchState
 from fetcher_dispatcher.utils import md5sum
 
