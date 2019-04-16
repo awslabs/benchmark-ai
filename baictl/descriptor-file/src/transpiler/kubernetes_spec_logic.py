@@ -91,7 +91,12 @@ class KubernetesRootObjectHelper:
             raise ValueError("A Pod must have at least 1 container on its definition")
 
     def get_pod_spec(self) -> PodSpec:
-        return self._root.spec.template.spec
+        if self._root.spec.template:
+            return self._root.spec.template.spec
+        elif self._root.spec.jobTemplate:
+            return self._root.spec.jobTemplate.spec
+        else:
+            raise KeyError(f'Cannot find pod spec. root object is {self._root}')
 
     def find_container(self, container_name: str) -> Container:
         """

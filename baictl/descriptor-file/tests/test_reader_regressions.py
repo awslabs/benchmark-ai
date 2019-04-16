@@ -12,6 +12,7 @@ from transpiler.bai_knowledge import create_bai_config
     "hello-world.toml",
     "training.toml",
     "horovod.toml",
+    "cronjob.toml",
 ])
 def test_regressions(filename, shared_datadir, file_regression: FileRegressionFixture, bai_environment_info):
     random_object = random.Random()
