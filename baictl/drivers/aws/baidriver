@@ -198,7 +198,7 @@ __validate_mxnet_job(){
 
 __validate_zookeeper_pods(){
     printf "ZooKeeper is ready"
-    $kubectl wait --for=condition=ready pod --selector=app=zookeeper --timeout=60s > /dev/null || return 1
+    $kubectl wait --for=condition=ready pod --selector=app=zookeeper --timeout=300s > /dev/null || return 1
 }
 
 validate_infra(){
