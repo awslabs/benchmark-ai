@@ -88,23 +88,48 @@ create_infra() {
 
     _create_configmap_yaml_from_terraform_outputs | $kubectl apply -f -
 
-    _install_kubeflow_mpi_operator
+    _install_kubeflow_operators || return 1
 
     [ "$validate" == false ] || validate_infra $@
 }
 
-_install_kubeflow_mpi_operator() {
-    if [ ! -d "kubeflow-mpi" ]; then
-        mkdir kubeflow-mpi
-        cd kubeflow-mpi
-        git init
-        git remote add origin -f https://github.com/kubeflow/mpi-operator.git
-        git config --local core.sparsecheckout true
-        echo "deploy/*" >>.git/info/sparse-checkout
-        git pull --depth=1 origin master
-        cd ..
+__create_kubeflow_namespace(){
+    cat << EOF
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kubeflow
+EOF
+}
+
+_install_kubeflow_operators() {
+    if [ ! -d "kubeflow-ks-app" ]; then
+        (
+            mkdir kubeflow-ks-app
+            cd kubeflow-ks-app || return 1
+
+            ks init ks_app
+
+            cd ks_app || return 1
+
+            __create_kubeflow_namespace | kubectl apply -f -
+
+            ks registry add kubeflow https://github.com/kubeflow/kubeflow/tree/v0.4.1/kubeflow && \
+            ks env add kubeflow --namespace "$kubeflow_namespace" && \
+            ks pkg install kubeflow/mpi-job && \
+            ks pkg install kubeflow/mxnet-job && \
+            ks generate mpi-operator mpi-operator && \
+            ks generate mxnet-operator mxnet-operator || \
+            return 1
+        )
     fi
-    $kubectl apply -f kubeflow-mpi/deploy/
+    
+    (
+        cd kubeflow-ks-app/ks_app || return 1
+        ks apply kubeflow --component mpi-operator && \
+        ks apply kubeflow --component mxnet-operator || \
+        return 1
+    )
 }
 destroy_infra() {
      for arg in "$@"; do
@@ -145,17 +170,31 @@ get_infra() {
     printf "\n----------\n"
 }
 
+__validate_crd(){
+    local type=$1
+    local namespace=$2
+
+    local kind
+    kind=$($kubectl get crd "${type}" --namespace "${namespace}" --output=json | jq .kind --raw-output)
+    [ "$kind" == "CustomResourceDefinition" ] || return 1
+}
+
 __validate_mpi_job(){
     printf "MPI Job is present"
-    local kind=$($kubectl get crd mpijobs.kubeflow.org --output=json 2>/dev/null | jq .kind --raw-output)
-    [ "$kind" == "CustomResourceDefinition" ] || return 1
+    __validate_crd mpijobs.kubeflow.org "$kubeflow_namespace"
+}
+
+__validate_mxnet_job(){
+    printf "MXNET Job is present"
+    __validate_crd mxjobs.kubeflow.org "$kubeflow_namespace"
 }
 
 validate_infra(){
     local all_ok=true
-    for rule in __validate_mpi_job; do
+    local rules=(__validate_mpi_job __validate_mxnet_job)
+    for rule in "${rules[@]}"; do
         local result=true
-        eval $rule || result=false
+        eval "$rule" || result=false
 
         printf "..."
 
@@ -329,6 +368,8 @@ terraform_state=$(realpath $terraform_state)
 terraform_plan=$(realpath $terraform_plan)
 
 project_dir=$(realpath $(dirname $BASH_SOURCE)/../../..)
+
+readonly kubeflow_namespace=kubeflow
 
 case "${object}" in
 infra)
