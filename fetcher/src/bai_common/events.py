@@ -8,8 +8,8 @@ from typing import Dict, List, Optional
 @dataclass
 class DataSet:
     src: str
-    md5: str = None
-    dst: str = None
+    md5: Optional[str] = None
+    dst: Optional[str] = None
 
 
 @dataclass_json
