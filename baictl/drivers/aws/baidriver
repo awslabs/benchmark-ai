@@ -174,7 +174,7 @@ __validate_crd(){
     local namespace=$2
 
     local kind
-    kind=$($kubectl get crd "${type}" --namespace "${namespace}" --output=json 2>/dev/null | jq .kind --raw-output)
+    kind=$($kubectl get crd "${type}" --namespace "${namespace}" --output=json | jq .kind --raw-output)
     [ "$kind" == "CustomResourceDefinition" ] || return 1
 }
 
