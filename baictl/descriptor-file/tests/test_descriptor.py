@@ -10,3 +10,14 @@ from transpiler.descriptor import Descriptor
 def test_wrong_descriptor(datadir, filename):
     with pytest.raises(KeyError):
         Descriptor.from_toml_file(str(datadir/filename))
+
+
+@pytest.mark.parametrize('scheduling', [
+    '0 0 0 0',
+    '* * ? * *',
+    'single'
+])
+def test_invalid_scheduling(descriptor, scheduling):
+    descriptor.scheduling = scheduling
+    with pytest.raises(ValueError) as e:
+        descriptor._validate()

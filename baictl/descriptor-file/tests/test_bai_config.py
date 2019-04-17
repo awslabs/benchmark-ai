@@ -1,38 +1,4 @@
-import textwrap
-import toml
-
-import pytest
-
-from transpiler.descriptor import Descriptor
-from transpiler.bai_knowledge import BaiConfig, create_bai_config
-
-
-@pytest.fixture
-def descriptor():
-    return Descriptor(toml.loads(textwrap.dedent("""\
-        spec_version = '0.1.0'
-        [info]
-        task_name = 'Title'
-        description = 'Description'
-        [hardware]
-        instance_type = 'p3.8xlarge'
-        strategy = 'single_node'
-        [env]
-        docker_image = 'jlcont/benchmarking:270219'
-        privileged = false
-        extended_shm = true
-        [ml]
-        benchmark_code = 'python /home/benchmark/image_classification.py'
-        args = '--model=resnet50_v2 --batch-size=32'
-        [data]
-        id = 'mnist'
-        [[data.sources]]
-        uri = 's3://mlperf-data-stsukrov/imagenet/train-480px'
-        path = '~/data/tf-imagenet/'
-        [[data.sources]]
-        uri = 's3://mlperf-data-stsukrov/imagenet/validation-480px'
-        path = '~/data/tf-imagenet/'
-    """)))
+from transpiler.bai_knowledge import create_bai_config
 
 
 def test_add_container_cmd(descriptor, bai_environment_info):

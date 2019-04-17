@@ -3,6 +3,7 @@ import logging
 import os
 from typing import Dict, List
 from urllib.parse import urlparse
+from crontab import CronSlices
 
 import toml
 
@@ -28,6 +29,8 @@ class Descriptor:
         except KeyError as e:
             raise KeyError(f'Required field is missing in the transpiler toml file: {e.args[0]}') from e
 
+        self.scheduling = descriptor_data['info'].get('scheduling', 'single_run')
+
         self.distributed = 'distributed' in descriptor_data['hardware']
         distributed_data = descriptor_data['hardware'].get('distributed', {})
         self.num_instances = distributed_data.get('num_instances', 1)
@@ -41,7 +44,6 @@ class Descriptor:
         self.dataset = descriptor_data.get('data', {}).get('id', '')
         descriptor_sources = descriptor_data.get('data', {}).get('sources', [])
         self.data_sources = self._process_data_sources(descriptor_sources)
-
         self._validate()
 
     @classmethod
@@ -70,6 +72,11 @@ class Descriptor:
         if self.distributed:
             if self.num_instances <= 1:
                 logging.warning(f'Specified a distributed strategy but using {self.num_instances} nodes')
+
+        if self.scheduling != 'single_run':
+            if not CronSlices.is_valid(self.scheduling):
+                raise ValueError(f'Invalid cron expression in scheduling field: {self.scheduling}. '
+                                 f'Please use Kubernetes cron job syntax or "single_run" for non-periodic runs')
 
     def _process_data_sources(self, data_sources: List) -> List:
         processed_sources = []

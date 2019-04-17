@@ -91,7 +91,12 @@ class KubernetesRootObjectHelper:
             raise ValueError("A Pod must have at least 1 container on its definition")
 
     def get_pod_spec(self) -> PodSpec:
-        return self._root.spec.template.spec
+        if self._root.spec.template:
+            return self._root.spec.template.spec
+        elif self._root.spec.jobTemplate:
+            return self._root.spec.jobTemplate.spec
+        else:
+            raise KeyError(f'Cannot find pod spec. root object is {self._root}')
 
     def find_container(self, container_name: str) -> Container:
         """
@@ -138,6 +143,20 @@ class KubernetesRootObjectHelper:
             name,
             [cm.metadata.name for cm in self.config_maps]
         ))
+
+    def to_cronjob(self, scheduling: str):
+        """
+        Turns a Job YAML spec into a CronJob one.
+        :param scheduling: cron expression indicating when the job is supposed to run
+        """
+        if self._root.kind == 'Job':
+            # TODO: move this values to config file when PR112 is merged
+            self._root.apiVersion = 'batch/v1beta1'
+            self._root.kind = 'CronJob'
+            self._root.spec.schedule = scheduling
+            self._root.spec.jobTemplate = self._root.spec.pop('template')
+        else:
+            raise ValueError(f"Error converting to CronJob. Root is of kind {self._root.kind} (expected 'Job')")
 
     def to_yaml(self) -> str:
         """
