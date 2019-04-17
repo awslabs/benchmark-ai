@@ -4,6 +4,11 @@ variable "projects" {
     "client-lib",
     "metrics-pusher",
     "fetcher",
+    "fetcher-job",
+    "baictl",
+    "kafka-utils",
+    "puller",
+    "reports",
   ]
 }
 
