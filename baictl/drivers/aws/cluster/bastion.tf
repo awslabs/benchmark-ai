@@ -13,7 +13,7 @@ resource "local_file" "bastion_privatekey_pem" {
   filename = "bastion_private.pem"
   provisioner "local-exec" {
     # HACK while Terraform does not have a proper way to set file permissions: https://github.com/terraform-providers/terraform-provider-local/issues/19
-    command = "chmod 600 ${local_file.bastion_privatekey_pem.filename}"
+    command = "chmod 400 ${local_file.bastion_privatekey_pem.filename}"
   }
 }
 
@@ -104,15 +104,15 @@ resource "aws_instance" "bastion" {
     "Name" = "BenchmarkAI Bastion"
   }
 
-  # provisioner "remote-exec" {
-  #   connection {
-  #     user = "ubuntu"
-  #     # HACK: looking for a better way to do this
-  #     private_key = "${path.root}/../../../bai/${local_file.bastion_privatekey_pem.filename}"
-  #   }
+  provisioner "remote-exec" {
+    connection {
+      user = "ubuntu"
+      # HACK: looking for a better way to do this
+      private_key = "${local_file.bastion_privatekey_pem.filename}"
+    }
 
-  #   inline = [
-  #     "sudo snap install kafka",
-  #   ]
-  # }
+    inline = [
+      "sudo snap install kafka",
+    ]
+  }
 }
