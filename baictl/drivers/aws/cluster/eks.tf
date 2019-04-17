@@ -26,7 +26,6 @@ locals {
       name                 = "bai-services-cheap"
       kubelet_extra_args   = "${local.bai_services_cheap_kubelet_args}"
     },
-    ,
     {
       instance_type        = "m5d.4xlarge"
       subnets              = "${join(",", slice(module.vpc.private_subnets, 0, 3))}"
@@ -36,7 +35,6 @@ locals {
       name                 = "bai-services-compute"
       kubelet_extra_args   = "${local.bai_services_compute_kubelet_args}"
     },
-    ,
     {
       instance_type        = "m5d.4xlarge"
       subnets              = "${join(",", slice(module.vpc.private_subnets, 0, 3))}"
@@ -45,7 +43,7 @@ locals {
       asg_min_size         = 0
       name                 = "bai-services-network"
       kubelet_extra_args   = "${local.bai_services_network_kubelet_args}"
-    },
+    }
   ]
   # HACK: Terraform versions < 0.12 don't know how to count local lists: https://github.com/hashicorp/terraform/issues/16712
   other_groups_count = 4
