@@ -6,10 +6,10 @@ metadata:
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: pod-status
+  name: fetcher-dispatcher
   namespace: default
 rules:
-- apiGroups: [""]
+- apiGroups: ["","batch"]
   resources: ["jobs"]
   verbs: ["create"]
 ---
@@ -23,5 +23,5 @@ subjects:
   namespace: default
 roleRef:
   kind: Role
-  name: pod-status
-  apiGroup: ""
+  name: fetcher-dispatcher
+  apiGroup: rbac.authorization.k8s.io

@@ -59,6 +59,7 @@ class DataSetManager:
 
         node_data = self._zk.get(zk_node_path, _on_zk_changed)
         if node_data[0] == FetchState.STATE_DONE:
+            logger.info("Notify the completion %s", data_set)
             on_done(data_set)
 
     def stop(self) -> None:

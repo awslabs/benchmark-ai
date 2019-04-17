@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: fetcher-service
+  name: fetcher-dispatcher
   labels:
     app: benchmark-ai
 spec:
@@ -18,14 +18,14 @@ spec:
   selector:
     matchLabels:
       app: benchmark-ai # has to match .spec.template.metadata.labels
-  serviceName: "fetcher-service"
+  serviceName: "fetcher-dispatcher"
   replicas: 1 # by default is 1
   template:
     metadata:
       labels:
         app: benchmark-ai
     spec:
-      serviceAccountName: fetcher-service
+      serviceAccountName: fetcher-dispatcher
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -38,14 +38,28 @@ spec:
               topologyKey: kubernetes.io/hostname
       containers:
         - name: fetcher-dispatcher
-          image: stsukrov/fetch-dispatcher
+          image: stsukrov/fetcher-dispatcher
           env:
+            - name: FETCHER_JOB_IMAGE
+              value: stsukrov/datafetcher
             - name: S3_DATASET_BUCKET
-              value: "data-pull-67d14b5c3246ba74"
+              valueFrom:
+                configMapKeyRef:
+                  name: outputs-infrastructure
+                  key: data_pull_s3
             - name: ZOOKEEPER_ENSEMBLE_HOSTS
-              value: 172.16.40.10:2181
+              valueFrom:
+                configMapKeyRef:
+                  name: zookeeper
+                  key: connect
             - name: KAFKA_BOOTSTRAP_SERVERS
               value: "172.16.41.67:9092,172.16.26.27:9092,172.16.14.47:9092"
+            - name: CONSUMER_TOPIC
+              value: benchmark_control
+            - name: PRODUCER_TOPIC
+              value: benchmark_control
+            - name: LOGGING_LEVEL
+              value: INFO
       nodeSelector:
-        node.type: bai-services
+        node.type: bai-services-cheap
       restartPolicy: Always
