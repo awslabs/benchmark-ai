@@ -108,6 +108,22 @@ create_infra() {
 
     _install_kubeflow_mpi_operator
 
+    local msk_zookeeper_connect=$(terraform output --state=$terraform_state msk_zookeeper_connect)
+    local bastion_pem_filename=$(terraform output --state=$terraform_state bastion_pem_filename)
+    local bastion_public_ip=$(terraform output --state=$terraform_state bastion_public_ip)
+    
+    # BUG: Would do this in a provisioner but remote-exec does not read the pem file correctly
+    printf "Installing Kafka...\n"
+    NEXT_WAIT_TIME=5
+    until ssh -i ${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "sudo snap install kafka" || [ $NEXT_WAIT_TIME -eq 20 ]; do
+        sleep $(( NEXT_WAIT_TIME + 5 ))
+    done
+
+    printf "Creating Kafka Topics...\n"
+    ssh -i ${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "/snap/bin/kafka.topics --create --zookeeper $msk_zookeeper_connect --replication-factor 3 --partitions 1 --topic BAI_APP_BFF"
+    ssh -i ${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "/snap/bin/kafka.topics --create --zookeeper $msk_zookeeper_connect --replication-factor 3 --partitions 1 --topic BAI_APP_FETCHER"
+    ssh -i ${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "/snap/bin/kafka.topics --create --zookeeper $msk_zookeeper_connect --replication-factor 3 --partitions 1 --topic BAI_APP_EXECUTOR"
+
     [ "$validate" == false ] || validate_infra $@
 }
 
