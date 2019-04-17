@@ -108,26 +108,26 @@ _install_kubeflow_operators() {
             mkdir kubeflow-ks-app
             cd kubeflow-ks-app || return 1
 
-            ks init ks_app
+            $ks init ks_app
 
             cd ks_app || return 1
 
             __create_kubeflow_namespace | kubectl apply -f -
 
-            ks registry add kubeflow https://github.com/kubeflow/kubeflow/tree/v0.4.1/kubeflow && \
-            ks env add kubeflow --namespace "$kubeflow_namespace" && \
-            ks pkg install kubeflow/mpi-job && \
-            ks pkg install kubeflow/mxnet-job && \
-            ks generate mpi-operator mpi-operator && \
-            ks generate mxnet-operator mxnet-operator || \
+            $ks registry add kubeflow https://github.com/kubeflow/kubeflow/tree/v0.4.1/kubeflow && \
+            $ks env add kubeflow --namespace "$kubeflow_namespace" && \
+            $ks pkg install kubeflow/mpi-job && \
+            $ks pkg install kubeflow/mxnet-job && \
+            $ks generate mpi-operator mpi-operator && \
+            $ks generate mxnet-operator mxnet-operator || \
             return 1
         )
     fi
     
     (
         cd kubeflow-ks-app/ks_app || return 1
-        ks apply kubeflow --component mpi-operator && \
-        ks apply kubeflow --component mxnet-operator || \
+        $ks apply kubeflow --component mpi-operator && \
+        $ks apply kubeflow --component mxnet-operator || \
         return 1
     )
 }
@@ -358,6 +358,7 @@ done
 kubeconfig=$(realpath $data_dir/kubeconfig)
 kube_config_arg=--kubeconfig=$kubeconfig
 kubectl="kubectl ${kube_config_arg}"
+ks="ks ${kube_config_arg}"
 terraform_state=$data_dir/terraform.tfstate
 terraform_state_arg=--state=$data_dir/terraform.tfstate
 terraform_dir=$(dirname $BASH_SOURCE)/cluster
