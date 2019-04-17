@@ -1,0 +1,41 @@
+version: 0.2
+
+#env:
+  #variables:
+     # key: "value"
+     # key: "value"
+  #parameter-store:
+     # key: "value"
+     # key: "value"
+
+phases:
+  #install:
+    #commands:
+      # - command
+      # - command
+#  pre_build:
+#    commands:
+#      -
+  build:
+    commands:
+      - cd metrics-pusher
+      - conda env create -f environment.yml -n metrics-pusher
+      - conda env update -f test-environment.yml -n metrics-pusher
+      - conda run -n metrics-pusher python setup.py install
+      - conda run -n metrics-pusher pytest -v tests
+      # - command
+      # - command
+  #post_build:
+    #commands:
+      # - command
+      # - command
+#artifacts:
+  #files:
+    # - location
+    # - location
+  #name: $(date +%Y-%m-%d)
+  #discard-paths: yes
+  #base-directory: location
+#cache:
+  #paths:
+    # - paths
