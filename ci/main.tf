@@ -36,6 +36,9 @@ resource "aws_s3_bucket" "terraform-state-storage-s3" {
 provider "aws" {
   version = ">= 2.4.0"
   region  = "${var.region}"
+  allowed_account_ids = [
+    563267192464  # bai-gamma@amazon.com
+  ]
 }
 
 # Configure the GitHub Provider
