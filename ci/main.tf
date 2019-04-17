@@ -1,5 +1,36 @@
 terraform {
   required_version = ">= 0.11.8"
+
+  backend "s3" {
+    bucket = "bai-terraform-remote-state"
+    key    = "ci/terraform.tfstate"
+    region = "us-east-1"
+  }
+}
+
+data "terraform_remote_state" "network" {
+  backend = "s3"
+  config = {
+    bucket = "bai-terraform-remote-state"
+    key    = "ci-state-${var.region}/terraform.tfstate"
+    region = "${var.region}"
+  }
+}
+
+resource "aws_s3_bucket" "terraform-state-storage-s3" {
+  bucket = "bai-terraform-remote-state"
+
+  versioning {
+    enabled = true
+  }
+
+  lifecycle {
+    prevent_destroy = true
+  }
+
+  tags {
+    Name = "S3 Remote Terraform State Store"
+  }
 }
 
 provider "aws" {
