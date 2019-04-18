@@ -1,2 +1,3 @@
 def test_imports():
-    pass
+    from fetcher_dispatcher.loop import run_msg_loop
+    assert run_msg_loop

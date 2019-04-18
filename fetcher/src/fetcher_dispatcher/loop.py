@@ -3,10 +3,11 @@ import logging
 from kazoo.client import KazooClient
 from typing import List, Callable
 
-from bai_common.events import DataSet
+from bai_kafka_utils.events import DataSet
+from bai_kafka_utils.kafka_client import create_kafka_producer, create_kafka_consumer
 from fetcher_dispatcher.data_set_manager import DataSetManager
 from fetcher_dispatcher.data_set_pull import get_dataset_dst
-from fetcher_dispatcher.kafka_client import create_kafka_producer, create_kafka_consumer
+
 from fetcher_dispatcher.kubernetes_client import KubernetesDispatcher
 
 logger = logging.getLogger(__name__)
