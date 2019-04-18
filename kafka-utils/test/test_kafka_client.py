@@ -1,10 +1,7 @@
-from unittest.mock import ANY
-
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, ANY
 
 import bai_kafka_utils
-from bai_kafka_utils.kafka_client import create_kafka_consumer
-from bai_kafka_utils.kafka_client import create_kafka_producer
+from bai_kafka_utils.kafka_client import create_kafka_consumer, create_kafka_producer
 from bai_kafka_utils.utils import DEFAULT_ENCODING
 
 BOOTSTRAP_SERVERS = ["kafka_node"]
