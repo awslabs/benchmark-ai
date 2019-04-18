@@ -1,6 +1,6 @@
 import pytest
 
-from bai_common.events import DataSet
+from bai_kafka_utils.events import DataSet
 
 
 # Rather a boundary test for DataSet optional

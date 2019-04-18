@@ -4,7 +4,7 @@ import kafka
 from typing import List
 
 from bai_kafka_utils.events import BenchmarkEvent
-from fetcher_dispatcher.utils import DEFAULT_ENCODING
+from bai_kafka_utils.utils import DEFAULT_ENCODING
 
 logger = logging.getLogger(__name__)
 

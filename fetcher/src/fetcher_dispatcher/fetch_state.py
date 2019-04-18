@@ -1,4 +1,4 @@
-from fetcher_dispatcher.utils import DEFAULT_ENCODING
+from bai_kafka_utils.utils import DEFAULT_ENCODING
 
 
 class FetchState:
