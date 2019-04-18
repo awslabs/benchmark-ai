@@ -9,10 +9,11 @@ logger = logging.getLogger(__name__)
 
 
 class KubernetesDispatcher:
-    def __init__(self, kubeconfig: str, job_image: str, zk_ensemble: str):
+    def __init__(self, kubeconfig: str, job_image: str, zk_ensemble: str, node_selector: dict):
         self.kubeconfig = kubeconfig
         self.job_image = job_image
         self.zk_ensemble = zk_ensemble
+        self.node_selector = node_selector
 
         logger.info("Initializing with KUBECONFIG=%s", kubeconfig)
 
@@ -40,7 +41,7 @@ class KubernetesDispatcher:
 
         container = kubernetes.client.V1Container(name="downloader", image=self.job_image, args=job_args, env=env_list)
         template.template.spec = kubernetes.client.V1PodSpec(containers=[container], restart_policy='Never',
-                                                             node_selector={"node.type": "bai-services"})
+                                                             node_selector=self.node_selector)
         # And finally we can create our V1JobSpec!
         download_job.spec = kubernetes.client.V1JobSpec(ttl_seconds_after_finished=600, template=template.template)
 
