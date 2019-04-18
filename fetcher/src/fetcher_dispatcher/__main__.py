@@ -1,7 +1,7 @@
 import logging
 
 from configargparse import ArgParser
-from fetcher_dispatcher.fetcher_dispatcher import FetcherEventHandler
+from fetcher_dispatcher.fetcher_dispatcher import FetcherEventHandler, FetcherCleanupHandler
 from bai_kafka_utils.kafka_service import create_kafka_service_parser, KafkaService
 from fetcher_dispatcher.fetcher_dispatcher import create_data_set_manager
 
@@ -46,7 +46,7 @@ def get_args(args):
     return parser.parse_args(args)
 
 
-def create_fetcher_dispatcher(args):
+def create_fetcher_dispatcher(args) -> KafkaService:
     data_set_mgr = create_data_set_manager(args.zookeeper_ensemble_hosts,
                                            args.kubeconfig,
                                            args.fetcher_job_image)
@@ -54,7 +54,8 @@ def create_fetcher_dispatcher(args):
 
     callbacks = [
         FetcherEventHandler(data_set_mgr,
-                            args.s3_data_set_bucket)
+                            args.s3_data_set_bucket),
+        FetcherCleanupHandler(data_set_mgr)
     ]
 
     return KafkaService(args, callbacks)

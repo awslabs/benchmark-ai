@@ -15,16 +15,26 @@ class DataSet:
 @dataclass_json
 @dataclass
 class BenchmarkDoc:
+    contents: Dict[str, str]
     doc: str
     md5: str
-    data: Dict
+
+
+@dataclass_json
+@dataclass
+class BenchmarkJob:
+    id: str
+    status: str
+    k8s_yaml: str
+    output: Optional[str] = None
 
 
 @dataclass_json
 @dataclass
 class BenchmarkPayload:
     toml: BenchmarkDoc
-    data_sets: Optional[List[DataSet]]
+    data_sets: Optional[List[DataSet]] = None
+    job: Optional[BenchmarkJob] = None
 
 
 @dataclass_json

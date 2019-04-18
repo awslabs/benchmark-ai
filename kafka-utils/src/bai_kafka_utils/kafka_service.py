@@ -5,7 +5,7 @@ import time
 import uuid
 
 from configargparse import ArgParser
-
+from signal import signal, SIGTERM
 from bai_kafka_utils.kafka_client import create_kafka_consumer, create_kafka_producer
 from bai_kafka_utils.events import BenchmarkEvent, VisitedService
 
@@ -49,12 +49,12 @@ def create_kafka_service_parser(program_name: str) -> ArgParser:
 
 
 class KafkaServiceCallback(metaclass=abc.ABCMeta):
-    # @abc.abstractmethod
-    # def before_loop(self):
-    #     pass
-
     @abc.abstractmethod
     def handle_event(self, event: BenchmarkEvent):
+        pass
+
+    @abc.abstractmethod
+    def cleanup(self):
         pass
 
 
@@ -68,22 +68,25 @@ class KafkaService:
                                                args.consumer_group_id,
                                                args.consumer_topic)
         self.callbacks = callbacks
+        signal(SIGTERM, self.cleanup_and_exit())
 
-    def safe_handle_msg(self, msg):
+    def safe_handle_msg(self, msg, callback: KafkaServiceCallback) -> BenchmarkEvent:
         try:
-            self.handle_msg(msg.value)
+            return self.handle_event(msg.value, callback)
         except:
             logger.exception("Failed to handle message: %s", msg)
 
-    def handle_msg(self, event: BenchmarkEvent):
+    def handle_event(self, event: BenchmarkEvent, callback: KafkaServiceCallback) -> BenchmarkEvent:
         """
-        Base method for reading a message from Kafka
+        Utility method for handling a benchmark event.
+        Does the logging and calls the callback funtion to handle the event
         :param event: event contained in the benchmark
+        :param callback: implementation of KafkaServiceCallBack to handle the event
         """
         if not event:
-            logger.debug("Ignoring empty message")
-            return
+            raise ValueError("Empty message received (no event found)")
         logger.debug("Got event %s", event)
+        return callback.handle_event(event)
 
     def send_event(self, event: BenchmarkEvent):
         """
@@ -105,14 +108,15 @@ class KafkaService:
                             value=event)
 
     def run_loop(self):
-        # for callback in self.callbacks:
-        #     callback.before_loop()
-
         while True:
             # KafkaConsumer.poll() might return more than one message
             messages = self._consumer.poll()
             for msg in messages:
-                event = msg.value
                 for callback in self.callbacks:
-                    output = callback.handle_event(event)
+                    output = self.safe_handle_msg(msg, callback)
                     self.send_event(output)
+
+    def cleanup_and_exit(self):
+        for callback in self.callbacks:
+            callback.cleanup()
+        exit(0)
