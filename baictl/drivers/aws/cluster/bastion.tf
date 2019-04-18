@@ -112,7 +112,9 @@ resource "aws_instance" "bastion" {
     }
 
     inline = [
-      "sudo snap install kafka",
+      # Sleep gives time for AWS initialization to complete
+      "sleep 60",
+      "sudo snap install --beta kafka",
     ]
   }
 }
