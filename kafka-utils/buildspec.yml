@@ -1,41 +1,9 @@
 version: 0.2
 
-#env:
-  #variables:
-     # key: "value"
-     # key: "value"
-  #parameter-store:
-     # key: "value"
-     # key: "value"
-
 phases:
-  #install:
-    #commands:
-      # - command
-      # - command
-#  pre_build:
-#    commands:
-#      -
   build:
     commands:
-      - cd fetcher
-      - conda env create -f environment.yml -n fetcher
-      - conda env update -f test-environment.yml -n fetcher
-      - conda run -n fetcher python setup.py install
-      - conda run -n fetcher pytest -v tests
-      # - command
-      # - command
-  #post_build:
-    #commands:
-      # - command
-      # - command
-#artifacts:
-  #files:
-    # - location
-    # - location
-  #name: $(date +%Y-%m-%d)
-  #discard-paths: yes
-  #base-directory: location
-#cache:
-  #paths:
-    # - paths
+      - cd kafka-utils
+      - conda env create -f test-environment.yml -n kafka-utils-test
+      - conda run -n kafka-utils-test python setup.py install
+      - conda run -n kafka-utils-test pytest -v tests
