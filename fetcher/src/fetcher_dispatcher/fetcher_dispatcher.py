@@ -16,25 +16,10 @@ def create_data_set_manager(zookeeper_ensemble_hosts: str, kubeconfig: str, fetc
     return DataSetManager(zk_client, job_dispatcher)
 
 
-# class FetcherSetupHandler(KafkaServiceCallback):
-#     def __init__(self, zookeeper_ensemble_hosts, kubeconfig, fetcher_job_image):
-#         self.data_set_mgr = create_data_set_manager(zookeeper_ensemble_hosts,
-#                                                     kubeconfig,
-#                                                     fetcher_job_image)
-#
-#     def before_loop(self):
-#         self.data_set_mgr.start()
-#
-#     def handle_event(self, event: BenchmarkEvent):
-#         pass
-
 class FetcherEventHandler(KafkaServiceCallback):
     def __init__(self, data_set_mgr: DataSetManager, s3_data_set_bucket: str):
         self.data_set_mgr = data_set_mgr
         self.s3_data_set_bucket = s3_data_set_bucket
-
-    # def before_loop(self):
-    #     pass
 
     def handle_event(self, event: BenchmarkEvent):
         def extract_data_sets(event) -> List[DataSet]:
@@ -67,3 +52,17 @@ class FetcherEventHandler(KafkaServiceCallback):
             return event
 
         execute_all(tasks, on_all_done)
+
+    def cleanup(self):
+        pass
+
+
+class FetcherCleanupHandler(KafkaServiceCallback):
+    def __init__(self, data_set_mgr: DataSetManager):
+        self.data_set_mgr = data_set_mgr
+
+    def handle_event(self, event: BenchmarkEvent):
+        pass
+
+    def cleanup(self):
+        self.data_set_mgr.stop()
