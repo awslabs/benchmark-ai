@@ -1,7 +1,7 @@
 version: 0.2
 
 phases:
-  build:
+  build:  
     commands:
       - cd fetcher-job
       - docker build ./ -t temp
