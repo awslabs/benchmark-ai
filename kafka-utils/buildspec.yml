@@ -10,4 +10,4 @@ phases:
       - pwd
       - ls
       - ls ./test/test*.py
-      - conda run -n kafka-utils-test pytest -v ./tests/
+      - conda run -n kafka-utils-test pytest -v 
