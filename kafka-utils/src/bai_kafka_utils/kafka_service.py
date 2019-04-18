@@ -1,0 +1,118 @@
+import argparse
+import logging
+import abc
+import time
+import uuid
+
+from configargparse import ArgParser
+
+from bai_kafka_utils.kafka_client import create_kafka_consumer, create_kafka_producer
+from bai_kafka_utils.events import BenchmarkEvent, VisitedService
+
+from typing import List
+
+logger = logging.getLogger(__name__)
+
+
+def create_kafka_service_parser(program_name: str) -> ArgParser:
+    def create_split_action(delimiter: str):
+        class customAction(argparse.Action):
+            def __call__(self, parser, args, values, option_string=None):
+                setattr(args, self.dest, values.split(delimiter))
+
+        return customAction
+
+    parser = ArgParser(auto_env_var_prefix="",
+                                           prog=program_name)
+
+    parser.add_argument("--consumer-topic",
+                        env_var='CONSUMER_TOPIC',
+                        required=True)
+
+    parser.add_argument("--producer-topic",
+                        env_var='PRODUCER_TOPIC',
+                        required=True)
+
+    parser.add_argument("--bootstrap-servers",
+                        env_var="KAFKA_BOOTSTRAP_SERVERS",
+                        default="localhost:9092",
+                        action=create_split_action(','))
+
+    parser.add_argument("--consumer-group-id",
+                        env_var="CONSUMER_GROUP_ID")
+
+    parser.add_argument("--logging-level",
+                        env_var="LOGGING_LEVEL",
+                        default="INFO")
+
+    return parser
+
+
+class KafkaServiceCallback(metaclass=abc.ABCMeta):
+    # @abc.abstractmethod
+    # def before_loop(self):
+    #     pass
+
+    @abc.abstractmethod
+    def handle_event(self, event: BenchmarkEvent):
+        pass
+
+
+class KafkaService:
+    def __init__(self, args, callbacks: List[KafkaServiceCallback]):
+        self.args = args
+
+        self._producer_topic = args.producer_topic
+        self._producer = create_kafka_producer(args.bootstrap_servers)
+        self._consumer = create_kafka_consumer(args.bootstrap_servers,
+                                               args.consumer_group_id,
+                                               args.consumer_topic)
+        self.callbacks = callbacks
+
+    def safe_handle_msg(self, msg):
+        try:
+            self.handle_msg(msg.value)
+        except:
+            logger.exception("Failed to handle message: %s", msg)
+
+    def handle_msg(self, event: BenchmarkEvent):
+        """
+        Base method for reading a message from Kafka
+        :param event: event contained in the benchmark
+        """
+        if not event:
+            logger.debug("Ignoring empty message")
+            return
+        logger.debug("Got event %s", event)
+
+    def send_event(self, event: BenchmarkEvent):
+        """
+        Base method for sending a event to Kafka.
+        Adds this service to the visited field in the event and calls the KafkaProducer.
+        :param event: value of the message to send
+        """
+        def add_self_to_visited(event):
+            entry = VisitedService(self.args.name,
+                                   int(time.time() * 1000),
+                                   self.args.version)
+            event.visited.append(entry)
+
+        # Message ID is unique per message
+        event.message_id = str(uuid.uuid4())
+        add_self_to_visited(event)
+
+        self._producer.send(self._producer_topic,
+                            value=event)
+
+    def run_loop(self):
+        # for callback in self.callbacks:
+        #     callback.before_loop()
+
+        while True:
+            # KafkaConsumer.poll() might return more than one message
+            messages = self._consumer.poll()
+            for msg in messages:
+                event = msg.value
+                for callback in self.callbacks:
+                    output = callback.handle_event(event)
+                    self.send_event(output)
