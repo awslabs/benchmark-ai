@@ -32,7 +32,7 @@ output "availability_zones" {
 
 output "eks_cluster_name" {
   description = "AWS EKS cluster name."
-  value       = "${var.cluster_name_prefix}-eks"
+  value       = "${module.eks.cluster_id}"
 }
 
 output "bastion_public_ip" {
