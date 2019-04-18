@@ -19,8 +19,10 @@ phases:
   build:
     commands:
       - cd fetcher
+      - conda install -c conda-forge -n base conda==4.6.13
       - conda env create -f environment.yml -n fetcher
       - conda env update -f test-environment.yml -n fetcher
+      - conda run -n fetcher pip install -r requirements.txt
       - conda run -n fetcher python setup.py install
       - conda run -n fetcher pytest -v tests
       # - command
