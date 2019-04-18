@@ -53,11 +53,6 @@ output "data_pull_s3" {
   value = "${aws_s3_bucket.data-pull.id}"
 }
 
-output "default_security_group_id" {
-    description = "List of public Elastic IPs created for AWS NAT Gateway"
-    value       = ["${module.vpc.default_security_group_id}"]
-}
-
 output "private_subnets" {
     description = "List of IDs of private subnets"
     value       = ["${module.vpc.private_subnets}"]
