@@ -1,4 +1,4 @@
-from fetcher_dispatcher.utils import md5sum
+from bai_kafka_utils.utils import md5sum
 
 
 def get_dataset_dst(src: str, s3_bucket: str):

@@ -7,7 +7,7 @@ from typing import Callable
 
 from bai_kafka_utils.events import DataSet
 from fetcher_dispatcher.fetch_state import FetchState
-from fetcher_dispatcher.utils import md5sum
+from bai_kafka_utils.utils import md5sum
 
 DataSetDispatcher = Callable[[DataSet, str], None]
 NodePathSource = Callable[[DataSet], str]

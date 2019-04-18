@@ -1,0 +1,11 @@
+name: kafka-utils-test
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - kafka-python 1.4.*
+  - pip
+  - pip:
+      - pytest
+      - pytest-mock
+      - dataclasses-json

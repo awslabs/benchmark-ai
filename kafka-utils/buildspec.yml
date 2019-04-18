@@ -1,0 +1,10 @@
+version: 0.2
+
+phases:
+  build:
+    commands:
+      - cd kafka-utils
+      - conda install -c conda-forge -n base conda==4.6.13
+      - conda env create -f test-environment.yml -n kafka-utils-test
+      - conda run -n kafka-utils-test python setup.py install
+      - conda run -n kafka-utils-test pytest -v
