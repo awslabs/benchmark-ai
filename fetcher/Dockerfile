@@ -12,6 +12,7 @@ COPY src /data/fetcher/src
 
 ENTRYPOINT [ "/bin/bash", "-c" ]
 
+RUN [ "/opt/fetcher/bin/pip", "install", "-r", "requirements.txt" ]
 RUN [ "/opt/fetcher/bin/python3", "setup.py", "install" ]
 
 CMD [ "/opt/fetcher/bin/fetcher_dispatcher" ]
