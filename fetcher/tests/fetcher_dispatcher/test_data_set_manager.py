@@ -1,5 +1,6 @@
+from unittest import mock
+
 import kazoo
-import mock
 import pytest
 from kazoo.client import KazooClient
 

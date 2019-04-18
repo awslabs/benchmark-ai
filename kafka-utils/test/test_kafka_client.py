@@ -1,6 +1,6 @@
 from unittest.mock import ANY
 
-from mock import patch, MagicMock
+from unittest.mock import patch, MagicMock
 
 import bai_kafka_utils
 from bai_kafka_utils.kafka_client import create_kafka_consumer

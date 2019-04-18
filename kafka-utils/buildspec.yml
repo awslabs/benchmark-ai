@@ -4,6 +4,7 @@ phases:
   build:
     commands:
       - cd kafka-utils
+      - conda install -n base conda==4.6.12
       - conda env create -f test-environment.yml -n kafka-utils-test
       - conda run -n kafka-utils-test python setup.py install
-      - conda run -n kafka-utils-test pytest -v tests
+      - conda run -n kafka-utils-test pytest -v tests/
