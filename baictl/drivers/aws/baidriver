@@ -112,10 +112,9 @@ create_infra() {
     local bastion_pem_filename=$(terraform output --state=$terraform_state bastion_pem_filename)
     local bastion_public_ip=$(terraform output --state=$terraform_state bastion_public_ip)
     
-    # BUG: Would do this in a provisioner but remote-exec does not read the pem file correctly
-    printf "Installing Kafka...\n"
+    printf "Waiting for Bastion ssh...\n"
     NEXT_WAIT_TIME=5
-    until ssh -i ${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "sudo snap install kafka" || [ $NEXT_WAIT_TIME -eq 20 ]; do
+    until ssh -i ${bastion_pem_filename} ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "echo Connected!" || [ $NEXT_WAIT_TIME -eq 20 ]; do
         sleep $(( NEXT_WAIT_TIME + 5 ))
     done
 

@@ -104,15 +104,15 @@ resource "aws_instance" "bastion" {
     "Name" = "BenchmarkAI Bastion"
   }
 
-  # BUG: Failed to read key "bastion_private.pem": no key found
-  # provisioner "remote-exec" {
-  #   connection {
-  #     user = "ubuntu"
-  #     private_key = "${local_file.bastion_privatekey_pem.filename}"
-  #   }
+  provisioner "remote-exec" {
+    connection {
+      type = "ssh"
+      user = "ubuntu"
+      private_key = "${tls_private_key.bastion_private_key.private_key_pem}"
+    }
 
-  #   inline = [
-  #     "sudo snap install kafka",
-  #   ]
-  # }
+    inline = [
+      "sudo snap install kafka",
+    ]
+  }
 }
