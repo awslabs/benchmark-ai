@@ -30,9 +30,9 @@ output "availability_zones" {
   value       = "${data.aws_availability_zones.available.names}"
 }
 
-output "cluster_name" {
+output "eks_cluster_name" {
   description = "AWS EKS cluster name."
-  value       = "${var.cluster_name}"
+  value       = "${module.eks.cluster_id}"
 }
 
 output "bastion_public_ip" {
@@ -53,3 +53,17 @@ output "data_pull_s3" {
   value = "${aws_s3_bucket.data-pull.id}"
 }
 
+output "private_subnets" {
+    description = "List of IDs of private subnets"
+    value       = ["${module.vpc.private_subnets}"]
+}
+
+output "msk_bootstrap_brokers" {
+  description = "A list of brokers that a client application can use to bootstrap."
+  value = "${aws_msk_cluster.benchmark-msk-cluster.bootstrap_brokers}"
+}
+
+output "msk_zookeeper_connect" {
+  description = "Connection string for Zookeeper."
+  value = "${aws_msk_cluster.benchmark-msk-cluster.zookeeper_connect}"
+}

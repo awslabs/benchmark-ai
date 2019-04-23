@@ -75,7 +75,7 @@ Outputs:
 bastion_pem = bastion_private.pem
 bastion_public_ip = 18.203.233.137
 cluster_endpoint = https://769F05FC85C1A9F9429459726706DBE3.yl4.eu-west-1.eks.amazonaws.com
-cluster_name = benchmark-cluster
+eks_cluster_name = benchmark-cluster
 cluster_security_group_id = sg-0015597c89ae1cec8
 config_map_aws_auth = <sensitive>
 es_endpoint = vpc-logs-lcq7uzesgj43lpx3ob3t72e6tm.eu-west-1.es.amazonaws.com
