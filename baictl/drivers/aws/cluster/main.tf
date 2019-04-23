@@ -140,6 +140,6 @@ resource "aws_msk_cluster" "benchmark-msk-cluster" {
   broker_instance_type   = "${var.msk_broker_instance_type}"
   broker_security_groups = ["${module.eks.worker_security_group_id}", "${aws_security_group.loopback.id}", "${aws_security_group.ssh-access-rules.id}"]
   broker_volume_size     = "${var.msk_broker_volume_size}"
-  client_subnets         = ["${slice(module.vpc.private_subnets, 0, local.msk_subnet_count - 1)}"]
+  client_subnets         = ["${slice(module.vpc.private_subnets, 0, local.msk_subnet_count)}"]
   kafka_version          = "${var.msk_kafka_version}"
 }
