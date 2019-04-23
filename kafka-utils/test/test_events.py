@@ -1,7 +1,9 @@
 import textwrap
 import pytest
+import bai_kafka_utils.events
 
-from bai_kafka_utils.events import DataSet, BenchmarkEvent, BenchmarkPayload, BenchmarkDoc
+from bai_kafka_utils.events import DataSet, BenchmarkEvent, BenchmarkPayload, BenchmarkDoc, \
+     FetcherPayload, ExecutorPayload
 
 
 @pytest.fixture
@@ -63,8 +65,9 @@ def test_fetcher_event():
               "data_sets":[{"src":"http://foo.com", "md5":"None", "dst":"None"}]
               }}""".replace('\n', ''))
 
-    event = BenchmarkEvent.from_json(json)
-    assert type(event.payload) == BenchmarkPayload
+    event_type = bai_kafka_utils.events.make_benchmark_event(FetcherPayload)
+    event = event_type.from_json(json)
+    assert type(event.payload) == FetcherPayload
     assert event.payload.toml is not None
     assert event.payload.data_sets is not None
 
@@ -85,8 +88,30 @@ def test_executor_event():
               "job":{"id":"job_id", "status":"status", "k8s_yaml":"yaml_file"}
               }}""".replace('\n', ''))
 
-    event = BenchmarkEvent.from_json(json)
+    event_type = bai_kafka_utils.events.make_benchmark_event(ExecutorPayload)
+    event = event_type.from_json(json)
+    assert type(event.payload) == ExecutorPayload
     assert event.payload.job.id == "job_id"
     assert event.payload.job.status == "status"
     assert event.payload.job.k8s_yaml == "yaml_file"
-    assert event.payload.job.out is None
+    assert event.payload.job.output is None
+
+
+def test_invalid_payload_type():
+    json = textwrap.dedent(
+        """{"request_id":"request-id",
+            "message_id":"message-id",
+            "client_id":"client-id",
+            "client_version":"client_version",
+            "client_user":"client_user",
+            "authenticated":"True",
+            "date":150000,
+            "visited":[],
+            "payload":{
+              "toml":{"contents":{"name": "doc"}, "md5":"md5", "doc":"dst"}
+              }}""".replace('\n', ''))
+
+    event_type = bai_kafka_utils.events.make_benchmark_event(FetcherPayload)
+    with pytest.raises(KeyError) as e:
+        event_type.from_json(json)
+    assert e.match("data_set")

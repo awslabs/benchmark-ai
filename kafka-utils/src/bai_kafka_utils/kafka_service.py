@@ -66,15 +66,16 @@ class KafkaService:
         self._producer = create_kafka_producer(args.bootstrap_servers)
         self._consumer = create_kafka_consumer(args.bootstrap_servers,
                                                args.consumer_group_id,
-                                               args.consumer_topic)
+                                               args.consumer_topic,
+                                               args.event_payload_type)
         self.callbacks = callbacks
-        signal(SIGTERM, self.cleanup_and_exit())
+        signal(SIGTERM, self.stop_loop())
 
     def safe_handle_msg(self, msg, callback: KafkaServiceCallback) -> BenchmarkEvent:
         try:
             return self.handle_event(msg.value, callback)
         except:
-            logger.exception("Failed to handle message: %s", msg)
+            logger.exception(f"Failed to handle message: {msg}")
 
     def handle_event(self, event: BenchmarkEvent, callback: KafkaServiceCallback) -> BenchmarkEvent:
         """
@@ -85,7 +86,7 @@ class KafkaService:
         """
         if not event:
             raise ValueError("Empty message received (no event found)")
-        logger.debug("Got event %s", event)
+        logger.debug(f"Got event {event}")
         return callback.handle_event(event)
 
     def send_event(self, event: BenchmarkEvent):
@@ -116,7 +117,11 @@ class KafkaService:
                     output = self.safe_handle_msg(msg, callback)
                     self.send_event(output)
 
-    def cleanup_and_exit(self):
+    def stop_loop(self):
+        class SigtermReceived(Exception):
+            pass
+
         for callback in self.callbacks:
             callback.cleanup()
-        exit(0)
+
+        raise SigtermReceived
