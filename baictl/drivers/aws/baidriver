@@ -91,7 +91,7 @@ create_infra() {
     _create_configmap_yaml_from_terraform_outputs | $kubectl apply -f -
 
     _install_kubeflow_operators || return 1
-    _install_kafka_topics || return 1
+    _create_kafka_topics || return 1
 
     [ "$validate" == false ] || validate_infra $@
 }
@@ -115,7 +115,7 @@ _install_msk_aware_terraform_plugin(){
 }
 
 
-_install_kafka_topics(){
+_create_kafka_topics(){
     local msk_zookeeper_connect=$(terraform output --state=$terraform_state msk_zookeeper_connect)
     local bastion_pem_filename=$(terraform output --state=$terraform_state bastion_pem_filename)
     local bastion_public_ip=$(terraform output --state=$terraform_state bastion_public_ip)
