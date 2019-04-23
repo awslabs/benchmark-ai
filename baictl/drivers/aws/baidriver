@@ -64,37 +64,22 @@ create_infra() {
     #Temporary behavior
     [ -z "$prefix_list_id" ] && printf "Missing required argument --aws-prefix-list-id\n" && return 1
 
+    _install_msk_aware_terraform_plugin || return 1
+
     cd $data_dir
 
     local vars=""
 
-    [ -n "$cluster_name" ] && vars="${vars} -var cluster_name=${cluster_name}"
-    [ -n "$region" ] && vars="${vars} -var region=${region}"
-    [ -n "$prefix_list_id" ] && vars="${vars} -var prefix_list_ids=[\"${prefix_list_id}\"]"
-
-    # Get Kafka AWS binary and put it in terraform plugins directory
-    local plugin_name="terraform-provider-aws_v2.4.0"
-    local kernel=$(uname | awk '{print tolower($0)}')
-    if test -e ~/.terraform.d/plugins/${plugin_name} ; then
-        :
-    else
-        printf 'Downloading MSK-aware aws terraform plugin binary...\n'
-        mkdir -p ~/.terraform.d/plugins
-        if aws s3 cp s3://benchmark-ai/${kernel}/${plugin_name} ~/.terraform.d/plugins; then
-            chmod +x ~/.terraform.d/plugins/${plugin_name}
-        else
-            CANONICAL_ID=$(aws s3api list-buckets --output json | jq --raw-output  '.Owner.ID')
-            printf "Please add your account ID: %s RW permissions to mxnet-edge-bln S3 bucket benchmark-ai\n" $CANONICAL_ID
-            return 1
-        fi
-    fi
+    [[ -n "$cluster_name" ]] && vars="${vars} -var cluster_name=${cluster_name}"
+    [[ -n "$region" ]] && vars="${vars} -var region=${region}"
+    [[ -n "$prefix_list_id" ]] && vars="${vars} -var prefix_list_ids=[\"${prefix_list_id}\"]"
 
     terraform init $terraform_dir
     terraform get $terraform_dir
 
-    terraform plan --state=$terraform_state --out=$terraform_plan ${vars} $terraform_dir
-    terraform apply $terraform_plan
-    terraform output kubectl_config >kubeconfig
+    terraform plan --state=$terraform_state --out=$terraform_plan ${vars} $terraform_dir || return 1
+    terraform apply $terraform_plan || return 1
+    terraform output kubectl_config >kubeconfig || return 1
 
     $kubectl apply -f fluentd-daemonset.yaml
     $kubectl apply -f autoscaler-deployment.yaml
@@ -106,17 +91,39 @@ create_infra() {
     _create_configmap_yaml_from_terraform_outputs | $kubectl apply -f -
 
     _install_kubeflow_operators || return 1
+    _create_kafka_topics || return 1
 
+    [ "$validate" == false ] || validate_infra $@
+}
+
+_install_msk_aware_terraform_plugin(){
+    # Get Kafka AWS binary and put it in terraform plugins directory
+    local plugin_name="terraform-provider-aws_v2.4.0"
+    local kernel=$(uname | awk '{print tolower($0)}')
+    local s3_key=s3://benchmark-ai/${kernel}/${plugin_name}
+    if [[ ! -f ~/.terraform.d/plugins/${plugin_name} ]] ; then
+        printf 'Downloading MSK-aware aws terraform plugin binary...\n'
+        mkdir -p ~/.terraform.d/plugins
+        if aws s3 cp "$s3_key" ~/.terraform.d/plugins; then
+            chmod +x ~/.terraform.d/plugins/${plugin_name}
+        else
+            CANONICAL_ID=$(aws s3api list-buckets --output json | jq --raw-output  '.Owner.ID')
+            printf "Please add your account ID: %s RO permissions to %s in mxnet-edge-bln account\n" "$CANONICAL_ID" "${s3_key}"
+            return 1
+        fi
+    fi
+}
+
+
+_create_kafka_topics(){
     local msk_zookeeper_connect=$(terraform output --state=$terraform_state msk_zookeeper_connect)
     local bastion_pem_filename=$(terraform output --state=$terraform_state bastion_pem_filename)
     local bastion_public_ip=$(terraform output --state=$terraform_state bastion_public_ip)
 
     printf "Creating Kafka Topics...\n"
-    ssh -i ${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "/snap/bin/kafka.topics --create --zookeeper $msk_zookeeper_connect --replication-factor 3 --partitions 1 --topic BAI_APP_BFF"
-    ssh -i ${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "/snap/bin/kafka.topics --create --zookeeper $msk_zookeeper_connect --replication-factor 3 --partitions 1 --topic BAI_APP_FETCHER"
-    ssh -i ${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "/snap/bin/kafka.topics --create --zookeeper $msk_zookeeper_connect --replication-factor 3 --partitions 1 --topic BAI_APP_EXECUTOR"
-
-    [ "$validate" == false ] || validate_infra $@
+    ssh -i ${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "/snap/bin/kafka.topics --create --if-not-exists --zookeeper $msk_zookeeper_connect --replication-factor 3 --partitions 1 --topic BAI_APP_BFF"
+    ssh -i ${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "/snap/bin/kafka.topics --create --if-not-exists --zookeeper $msk_zookeeper_connect --replication-factor 3 --partitions 1 --topic BAI_APP_FETCHER"
+    ssh -i ${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "/snap/bin/kafka.topics --create --if-not-exists --zookeeper $msk_zookeeper_connect --replication-factor 3 --partitions 1 --topic BAI_APP_EXECUTOR"
 }
 
 __create_kubeflow_namespace(){
