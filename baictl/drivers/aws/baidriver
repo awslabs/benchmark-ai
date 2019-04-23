@@ -231,7 +231,6 @@ __validate_mxnet_job(){
     __validate_crd mxjobs.kubeflow.org "$kubeflow_namespace"
 }
 
-
 __validate_kafka_topics(){
     printf "Kafka Topics are present"
     local msk_zookeeper_connect=$(terraform output --state=$terraform_state msk_zookeeper_connect)
