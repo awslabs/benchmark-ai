@@ -48,21 +48,9 @@ class FetcherEventHandler(KafkaServiceCallback):
             return
 
         def on_all_done():
-            # TODO: We need to add fields to this event before publishing it
             return event
 
         execute_all(tasks, on_all_done)
-
-    def cleanup(self):
-        pass
-
-
-class FetcherCleanupHandler(KafkaServiceCallback):
-    def __init__(self, data_set_mgr: DataSetManager):
-        self.data_set_mgr = data_set_mgr
-
-    def handle_event(self, event: BenchmarkEvent):
-        pass
 
     def cleanup(self):
         self.data_set_mgr.stop()

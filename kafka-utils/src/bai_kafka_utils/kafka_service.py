@@ -7,9 +7,9 @@ import uuid
 from configargparse import ArgParser
 from signal import signal, SIGTERM
 from bai_kafka_utils.kafka_client import create_kafka_consumer, create_kafka_producer
-from bai_kafka_utils.events import BenchmarkEvent, VisitedService
+from bai_kafka_utils.events import BenchmarkEvent, VisitedService, BenchmarkPayload
 
-from typing import List
+from typing import List, Type
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,13 @@ class KafkaServiceCallback(metaclass=abc.ABCMeta):
 
 
 class KafkaService:
-    def __init__(self, args, callbacks: List[KafkaServiceCallback]):
+    def __init__(self,
+                 name: str,
+                 version: str,
+                 payload_type: Type[BenchmarkPayload],
+                 args,
+                 callbacks: List[KafkaServiceCallback]):
+
         self.args = args
 
         self._producer_topic = args.producer_topic
@@ -68,6 +74,10 @@ class KafkaService:
                                                args.consumer_group_id,
                                                args.consumer_topic,
                                                args.event_payload_type)
+        self.name = name
+        self.version = version
+        self.payload_type = payload_type
+
         self.callbacks = callbacks
         signal(SIGTERM, self.stop_loop())
 
