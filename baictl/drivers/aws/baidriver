@@ -124,8 +124,6 @@ _create_kafka_topics(){
     ssh -i ${data_dir}/${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "/snap/bin/kafka.topics --create --if-not-exists --zookeeper $msk_zookeeper_connect --replication-factor 3 --partitions 1 --topic BAI_APP_BFF"
     ssh -i ${data_dir}/${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "/snap/bin/kafka.topics --create --if-not-exists --zookeeper $msk_zookeeper_connect --replication-factor 3 --partitions 1 --topic BAI_APP_FETCHER"
     ssh -i ${data_dir}/${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "/snap/bin/kafka.topics --create --if-not-exists --zookeeper $msk_zookeeper_connect --replication-factor 3 --partitions 1 --topic BAI_APP_EXECUTOR"
-
-    [ "$validate" == false ] || validate_infra $@
 }
 
 __create_kubeflow_namespace(){
@@ -404,6 +402,7 @@ done
 
 [ ! -d "$data_dir" ] && mkdir $data_dir
 
+data_dir=$(realpath $data_dir)
 kubeconfig=$(realpath $data_dir/kubeconfig)
 kube_config_arg=--kubeconfig=$kubeconfig
 kubectl="kubectl ${kube_config_arg}"
