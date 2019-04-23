@@ -1,20 +1,24 @@
 import logging
 
 import kafka
-from typing import List
+from typing import List, Type
 
-from bai_kafka_utils.events import BenchmarkEvent
+from bai_kafka_utils.events import make_benchmark_event, BenchmarkPayload
 from bai_kafka_utils.utils import DEFAULT_ENCODING
 
 logger = logging.getLogger(__name__)
 
 
-def create_kafka_consumer(bootstrap_servers: List[str], group_id: str, topic: str) -> kafka.KafkaConsumer:
+def create_kafka_consumer(bootstrap_servers: List[str],
+                          group_id: str,
+                          topic: str,
+                          payload_type: Type[BenchmarkPayload]) -> kafka.KafkaConsumer:
     def json_deserializer(msg_value):
         try:
-            return BenchmarkEvent.from_json(msg_value.decode(DEFAULT_ENCODING))
+
+            return make_benchmark_event(payload_type).from_json(msg_value.decode(DEFAULT_ENCODING))
         except:
-            logger.exception("Failed to deserialized %s", msg_value)
+            logger.exception("Failed to deserialize %s", msg_value)
             return None
 
     return kafka.KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group_id,

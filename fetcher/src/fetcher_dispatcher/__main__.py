@@ -1,12 +1,11 @@
 import logging
 
-from configargparse import ArgParser
-from fetcher_dispatcher.fetcher_dispatcher import FetcherEventHandler, FetcherCleanupHandler
+from fetcher_dispatcher import __version__
+from fetcher_dispatcher.fetcher_dispatcher import FetcherEventHandler, FetcherCleanupHandler, create_data_set_manager
 from bai_kafka_utils.kafka_service import create_kafka_service_parser, KafkaService
-from fetcher_dispatcher.fetcher_dispatcher import create_data_set_manager
+from bai_kafka_utils.events import FetcherPayload
 
 SERVICE_NAME = 'fetcher-dispatcher'
-VERSION = '1.0'
 
 
 def main(argv=None):
@@ -25,25 +24,27 @@ def main(argv=None):
 
 
 def get_args(args):
-    def add_fetcher_args(parser: ArgParser):
-        parser.add_argument("--zookeeper-ensemble-hosts",
-                            env_var="ZOOKEEPER_ENSEMBLE_HOSTS",
-                            default="localhost:2181")
-
-        parser.add_argument("--s3-data-set-bucket",
-                            env_var="S3_DATASET_BUCKET",
-                            required=True)
-
-        parser.add_argument("--kubeconfig",
-                            env_var="KUBECONFIG")
-
-        parser.add_argument("--fetcher-job-image",
-                            env_var="FETCHER_JOB_IMAGE")
-
     parser = create_kafka_service_parser(SERVICE_NAME)
-    add_fetcher_args(parser)
 
-    return parser.parse_args(args)
+    parser.add_argument("--zookeeper-ensemble-hosts",
+                        env_var="ZOOKEEPER_ENSEMBLE_HOSTS",
+                        default="localhost:2181")
+
+    parser.add_argument("--s3-data-set-bucket",
+                        env_var="S3_DATASET_BUCKET",
+                        required=True)
+
+    parser.add_argument("--kubeconfig",
+                        env_var="KUBECONFIG")
+
+    parser.add_argument("--fetcher-job-image",
+                        env_var="FETCHER_JOB_IMAGE")
+
+    parsed_args = parser.parse_args(args)
+    parsed_args['name'] = SERVICE_NAME
+    parsed_args['version'] = __version__
+    parsed_args['event_payload_type'] = FetcherPayload
+    return parsed_args
 
 
 def create_fetcher_dispatcher(args) -> KafkaService:
