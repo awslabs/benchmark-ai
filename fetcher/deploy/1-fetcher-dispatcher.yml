@@ -1,29 +1,17 @@
-apiVersion: v1
-kind: Service
-metadata:
-  name: fetcher-dispatcher
-  labels:
-    app: benchmark-ai
-spec:
-  clusterIP: None
-  selector:
-    app: benchmark-ai
-
----
 apiVersion: apps/v1
-kind: StatefulSet
+kind: ReplicaSet
 metadata:
   name: fetcher-dispatcher
 spec:
   selector:
     matchLabels:
       app: benchmark-ai # has to match .spec.template.metadata.labels
-  serviceName: "fetcher-dispatcher"
   replicas: 3 # by default is 1
   template:
     metadata:
       labels:
         app: benchmark-ai
+        service: fetcher-dispatcher
     spec:
       serviceAccountName: fetcher-dispatcher
       affinity:
@@ -34,7 +22,7 @@ spec:
                   - key: app
                     operator: In
                     values:
-                      - benchmark-ai
+                      - fetcher-dispatcher
               topologyKey: kubernetes.io/hostname
       containers:
         - name: fetcher-dispatcher
