@@ -19,7 +19,7 @@ spec:
     matchLabels:
       app: benchmark-ai # has to match .spec.template.metadata.labels
   serviceName: "fetcher-dispatcher"
-  replicas: 1 # by default is 1
+  replicas: 3 # by default is 1
   template:
     metadata:
       labels:
@@ -53,13 +53,20 @@ spec:
                   name: zookeeper
                   key: connect
             - name: KAFKA_BOOTSTRAP_SERVERS
-              value: "172.16.41.67:9092,172.16.26.27:9092,172.16.14.47:9092"
+              valueFrom:
+                configMapKeyRef:
+                  name: outputs-infrastructure
+                  key: msk_bootstrap_brokers
+            - name: CONSUMER_GROUP_ID
+              value: fetcher-dispatcher
             - name: CONSUMER_TOPIC
-              value: benchmark_control
+              value: BAI_APP_BFF
             - name: PRODUCER_TOPIC
-              value: benchmark_control
+              value: BAI_APP_FETCHER
             - name: LOGGING_LEVEL
               value: INFO
+            - name: FETCHER_NODE_SELECTOR
+              value: '{"node.type":"bai-services-network"}'
       nodeSelector:
         node.type: bai-services-cheap
       restartPolicy: Always
