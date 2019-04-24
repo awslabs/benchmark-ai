@@ -1,3 +1,8 @@
+#The file is a customization of 2 sources:
+# https://kubernetes.io/docs/tutorials/stateful-application/zookeeper/ - example of zookeeper deployment
+# https://github.com/kow3ns/kubernetes-zookeeper/tree/1.0-3.4.10/docker - example of zookeeper environment initialized
+# from kubernetes stateful set
+
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -60,10 +65,10 @@ metadata:
     app: zookeeper
 spec:
   ports:
-  - port: 2888
-    name: server
-  - port: 3888
-    name: leader-election
+    - port: 2888
+      name: server
+    - port: 3888
+      name: leader-election
   clusterIP: None
   selector:
     app: zookeeper
@@ -76,8 +81,8 @@ metadata:
     app: zookeeper
 spec:
   ports:
-  - port: 2181
-    name: client
+    - port: 2181
+      name: client
   selector:
     app: zookeeper
 ---
@@ -119,49 +124,49 @@ spec:
                   - key: "app"
                     operator: In
                     values:
-                    - zookeeper
+                      - zookeeper
               topologyKey: "kubernetes.io/hostname"
       containers:
-      - name: kubernetes-zookeeper
-        imagePullPolicy: Always
-        image: "zookeeper:3.4.13"
-        resources:
-          requests:
-            memory: "1Gi"
-            cpu: "0.5"
-        ports:
-        - containerPort: 2181
-          hostPort: 2181
-          name: client
-        - containerPort: 2888
-          name: server
-        - containerPort: 3888
-          name: leader-election
-        volumeMounts:
-        - name: entrypoints
-          mountPath: /opt/zookeeper
-          readOnly: true
-        command:
-        - /opt/zookeeper/run.sh
-        - "3"
-        readinessProbe:
-          exec:
-            command:
-            - "/opt/zookeeper/check.sh"
-          initialDelaySeconds: 10
-          timeoutSeconds: 5
-        livenessProbe:
-          exec:
-            command:
-            - "/opt/zookeeper/check.sh"
-          initialDelaySeconds: 10
-          timeoutSeconds: 5
+        - name: kubernetes-zookeeper
+          imagePullPolicy: Always
+          image: "zookeeper:3.4.13"
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "0.5"
+          ports:
+            - containerPort: 2181
+              hostPort: 2181
+              name: client
+            - containerPort: 2888
+              name: server
+            - containerPort: 3888
+              name: leader-election
+          volumeMounts:
+            - name: entrypoints
+              mountPath: /opt/zookeeper
+              readOnly: true
+          command:
+            - /opt/zookeeper/run.sh
+            - "3"
+          readinessProbe:
+            exec:
+              command:
+                - "/opt/zookeeper/check.sh"
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command:
+                - "/opt/zookeeper/check.sh"
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
       securityContext:
         runAsUser: 1000
         fsGroup: 1000
       volumes:
-      - name: entrypoints
-        configMap:
-          defaultMode: 0755
-          name: entrypoints
+        - name: entrypoints
+          configMap:
+            defaultMode: 0755
+            name: entrypoints
 
