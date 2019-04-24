@@ -1,8 +1,9 @@
 import argparse
+import configparser
 import os
 
 from transpiler.bai_knowledge import create_bai_config, EnvironmentInfo
-from transpiler.descriptor import Descriptor
+from transpiler.descriptor import Descriptor, DescriptorConfig
 
 
 def main():
@@ -23,11 +24,13 @@ def main():
 
     args = parser.parse_args()
 
+    config, descriptor_config = _read_config()
     descriptor = Descriptor.from_toml_file(args.descriptor)
+
     environment_info = EnvironmentInfo(
         availability_zones=args.availability_zones
     )
-    bai_config = create_bai_config(descriptor, environment_info=environment_info)
+    bai_config = create_bai_config(descriptor, config, environment_info=environment_info)
     yaml_string = bai_config.dump_yaml_string()
 
     if args.filename:
@@ -36,6 +39,16 @@ def main():
             f.write(yaml_string)
     else:
         print(yaml_string)
+
+
+def _read_config():
+    config = configparser.ConfigParser()
+    file_dir = os.path.dirname(os.path.abspath(__file__))
+
+    global_config = config.read(os.path.join(file_dir, 'config.ini'))
+    descriptor_config = DescriptorConfig(**global_config['descriptor-config'])
+
+    return global_config, descriptor_config
 
 
 if __name__ == '__main__':

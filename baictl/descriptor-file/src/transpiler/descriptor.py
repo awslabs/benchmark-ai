@@ -1,11 +1,23 @@
 import csv
 import logging
 import os
+import toml
+import json
+
 from typing import Dict, List
 from urllib.parse import urlparse
 from crontab import CronSlices
+from dataclasses import dataclass
 
-import toml
+
+@dataclass(init=False)
+class DescriptorConfig:
+    VALID_DATA_SOURCES: List[str]
+    VALID_STRATEGIES: List[str]
+
+    def __init__(self, VALID_DATA_SOURCES: str, VALID_STRATEGIES: str):
+        self.VALID_DATA_SOURCES = json.loads(VALID_DATA_SOURCES)
+        self.VALID_STRATEGIES = json.loads(VALID_STRATEGIES)
 
 
 class Descriptor:
@@ -13,15 +25,14 @@ class Descriptor:
     The model class for a Descriptor.
     It validates and contains all data the descriptor contains.
     """
-
-    VALID_DATA_SOURCES = ['s3', 'http', 'https', 'ftp', 'ftps']
-    VALID_STRATEGIES = ['single_node', 'horovod']
-
-    def __init__(self, descriptor_data: Dict):
+    def __init__(self, descriptor_data: Dict, config: DescriptorConfig):
         """
         Constructor
         :param descriptor_data: dict containing the data as loaded from the descriptor toml file
+        :param config: DescriptorConfig
         """
+        self.config = config
+
         try:
             self.instance_type = descriptor_data['hardware']['instance_type']
             self.strategy = descriptor_data['hardware']['strategy']
@@ -47,14 +58,13 @@ class Descriptor:
         self._validate()
 
     @classmethod
-    def from_toml_file(cls, toml_file: str):
+    def from_toml_file(cls, toml_file: str, config: DescriptorConfig):
         """
         Constructor from toml file path
         :param toml_file: TOML descriptor file path
-        :return:
         """
         descriptor_toml = toml.load(toml_file)
-        return Descriptor(descriptor_toml)
+        return Descriptor(descriptor_toml, config)
 
     def _validate(self):
         """
@@ -63,11 +73,11 @@ class Descriptor:
         for source in self.data_sources:
             if not source.get('uri', ''):
                 raise ValueError('Missing data uri')
-            if source['scheme'] not in self.VALID_DATA_SOURCES:
-                raise ValueError(f'Invalid data uri: {source["uri"]} (must be one of {self.VALID_DATA_SOURCES})')
+            if source['scheme'] not in self.config.VALID_DATA_SOURCES:
+                raise ValueError(f'Invalid data uri: {source["uri"]} (must be one of {self.config.VALID_DATA_SOURCES})')
 
-        if self.strategy not in self.VALID_STRATEGIES:
-            raise ValueError(f'Invalid strategy: {self.strategy} (must be one of {self.VALID_STRATEGIES})')
+        if self.strategy not in self.config.VALID_STRATEGIES:
+            raise ValueError(f'Invalid strategy: {self.strategy} (must be one of {self.config.VALID_STRATEGIES})')
 
         if self.distributed:
             if self.num_instances <= 1:

@@ -3,7 +3,7 @@ import toml
 
 import pytest
 
-from transpiler.descriptor import Descriptor
+from transpiler.descriptor import Descriptor, DescriptorConfig
 from transpiler.bai_knowledge import EnvironmentInfo
 
 @pytest.fixture
@@ -12,8 +12,16 @@ def bai_environment_info():
         availability_zones=["us-east-1a", "us-east-1b", "us-east-1c"]
     )
 
+
 @pytest.fixture
-def descriptor():
+def descriptor_config():
+    config_values = {'VALID_DATA_SOURCES': '["s3", "http", "https", "ftp", "ftps"]',
+                     'VALID_STRATEGIES': '["single_node", "horovod"]'}
+    return DescriptorConfig(**config_values)
+
+
+@pytest.fixture
+def descriptor(descriptor_config):
     return Descriptor(toml.loads(textwrap.dedent("""\
         spec_version = '0.1.0'
         [info]
@@ -37,4 +45,4 @@ def descriptor():
         [[data.sources]]
         uri = 's3://mlperf-data-stsukrov/imagenet/validation-480px'
         path = '~/data/tf-imagenet/'
-    """)))
+    """)), descriptor_config)

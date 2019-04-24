@@ -2,7 +2,6 @@ import os
 import random
 import shlex
 import uuid
-import configparser
 
 from typing import List, Dict
 from ruamel import yaml
@@ -30,6 +29,7 @@ class BaiConfig:
     def __init__(
             self,
             descriptor: Descriptor,
+            config: dict,
             config_template: ConfigTemplate,
             *,
             environment_info: EnvironmentInfo,
@@ -44,10 +44,7 @@ class BaiConfig:
                               generated.
         """
         self.descriptor = descriptor
-
-        self.config = configparser.ConfigParser()
-        file_dir = os.path.dirname(os.path.abspath(__file__))
-        self.config.read(os.path.join(file_dir, 'config.ini'))
+        self.config = config
 
         if random_object is None:
             random_object = random.Random()
@@ -223,11 +220,15 @@ class BaiConfig:
         return vol_mounts
 
 
-def create_bai_config(descriptor: Descriptor, environment_info: EnvironmentInfo, extra_bai_config_args=None) -> BaiConfig:
+def create_bai_config(descriptor: Descriptor,
+                      config: dict,
+                      environment_info: EnvironmentInfo,
+                      extra_bai_config_args=None) -> BaiConfig:
     """
     Builds a BaiConfig object
     :param environment_info: Information on the environment that BAI is running on.
     :param descriptor: The descriptor.
+    :param config: dict with the configuration values from 'config.ini'
     :param extra_bai_config_args: An optional Dict which will be forwarded to the `BaiConfig` object created.
     :return:
     """
@@ -245,7 +246,12 @@ def create_bai_config(descriptor: Descriptor, environment_info: EnvironmentInfo,
     with open(os.path.join(templates_dir, template_files[descriptor.strategy]), "r") as f:
         contents = f.read()
     config_template = ConfigTemplate(contents)
-    bai_config = BaiConfig(descriptor, config_template, environment_info=environment_info, **extra_bai_config_args)
+
+    bai_config = BaiConfig(descriptor,
+                           config,
+                           config_template,
+                           environment_info=environment_info,
+                           **extra_bai_config_args)
 
     if descriptor.strategy == 'single_node':
         bai_config.add_benchmark_cmd_to_container()
