@@ -161,9 +161,6 @@ spec:
                 - "/opt/zookeeper/check.sh"
             initialDelaySeconds: 10
             timeoutSeconds: 5
-      securityContext:
-        runAsUser: 1000
-        fsGroup: 1000
       volumes:
         - name: entrypoints
           configMap:
