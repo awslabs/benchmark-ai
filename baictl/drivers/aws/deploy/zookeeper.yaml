@@ -120,6 +120,7 @@ spec:
                     operator: In
                     values:
                     - zookeeper
+                    - benchmark-ai
               topologyKey: "kubernetes.io/hostname"
       containers:
       - name: kubernetes-zookeeper
