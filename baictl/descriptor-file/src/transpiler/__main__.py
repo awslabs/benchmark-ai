@@ -1,3 +1,4 @@
+import configparser
 import os
 
 from transpiler.args import get_args
@@ -23,6 +24,16 @@ def main(argv=None):
             f.write(yaml_string)
     else:
         print(yaml_string)
+
+
+def _read_config():
+    config = configparser.ConfigParser()
+    file_dir = os.path.dirname(os.path.abspath(__file__))
+
+    global_config = config.read(os.path.join(file_dir, 'config.ini'))
+    descriptor_config = DescriptorSettings(**global_config['descriptor-config'])
+
+    return global_config, descriptor_config
 
 
 if __name__ == '__main__':
