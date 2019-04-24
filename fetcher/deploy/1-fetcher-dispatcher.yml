@@ -6,7 +6,7 @@ spec:
   selector:
     matchLabels:
       app: benchmark-ai # has to match .spec.template.metadata.labels
-  replicas: 3 # by default is 1
+  replicas: 3
   template:
     metadata:
       labels:
