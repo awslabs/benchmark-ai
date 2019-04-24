@@ -1,7 +1,7 @@
 import logging
 
 from fetcher_dispatcher import __version__, SERVICE_NAME, SERVICE_DESCRIPTION
-from fetcher_dispatcher.fetcher_dispatcher import FetcherEventHandler, FetcherCleanupHandler, create_data_set_manager
+from fetcher_dispatcher.fetcher_dispatcher import FetcherEventHandler, create_data_set_manager
 from bai_kafka_utils.kafka_service import create_kafka_service_parser, KafkaService
 from bai_kafka_utils.events import FetcherPayload
 
