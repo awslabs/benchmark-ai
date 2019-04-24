@@ -1,13 +1,13 @@
 # Zookeeper based fetch synchronizer
 import logging
 
+from bai_kafka_utils.events import DataSet
+from bai_kafka_utils.utils import md5sum
 from kazoo.client import KazooClient
 from kazoo.exceptions import NodeExistsError
 from typing import Callable
 
-from bai_kafka_utils.events import DataSet
 from fetcher_dispatcher.fetch_state import FetchState
-from bai_kafka_utils.utils import md5sum
 
 DataSetDispatcher = Callable[[DataSet, str], None]
 NodePathSource = Callable[[DataSet], str]
@@ -59,7 +59,6 @@ class DataSetManager:
 
         node_data = self._zk.get(zk_node_path, _on_zk_changed)
         if node_data[0] == FetchState.STATE_DONE:
-            logger.info("Notify the completion %s", data_set)
             on_done(data_set)
 
     def stop(self) -> None:

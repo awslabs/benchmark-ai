@@ -1,7 +1,6 @@
 import logging
 
 import kubernetes
-
 from bai_kafka_utils.events import DataSet
 from bai_kafka_utils.utils import id_generator
 
@@ -40,13 +39,11 @@ class KubernetesDispatcher:
 
         container = kubernetes.client.V1Container(name="downloader", image=self.job_image, args=job_args, env=env_list)
         template.template.spec = kubernetes.client.V1PodSpec(containers=[container], restart_policy='Never',
-                                                             node_selector={"node.type": "bai-services-network"})
+                                                             node_selector={"node.type": "bai-services"})
         # And finally we can create our V1JobSpec!
         download_job.spec = kubernetes.client.V1JobSpec(ttl_seconds_after_finished=600, template=template.template)
 
         resp = self.api_instance.create_namespaced_job("default", download_job, pretty=True)
-
-        logger.info("Job for task %s dispatched", task)
         logger.debug("k8s response: %s", resp)
 
     def __call__(self, task: DataSet, zk_node_path: str):
