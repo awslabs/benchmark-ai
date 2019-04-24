@@ -21,7 +21,7 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             - labelSelector:
                 matchExpressions:
-                  - key: app
+                  - key: service
                     operator: In
                     values:
                       - fetcher-dispatcher
