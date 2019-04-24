@@ -27,5 +27,10 @@ def test_descriptor_config(descriptor_config):
     sources = ["s3", "http", "https", "ftp", "ftps"]
     strategies = ["single_node", "horovod"]
 
+<<<<<<< HEAD
     assert descriptor_config.valid_data_sources == sources
     assert descriptor_config.valid_strategies == strategies
+=======
+    assert descriptor_config.VALID_DATA_SOURCES == sources
+    assert descriptor_config.VALID_STRATEGIES == strategies
+>>>>>>> [baictl] Added tests for external settings.ini file

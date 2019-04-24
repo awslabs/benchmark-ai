@@ -16,7 +16,11 @@ from transpiler.bai_knowledge import create_bai_config
 def test_regressions(filename,
                      shared_datadir,
                      descriptor_config,
+<<<<<<< HEAD
                      config_args,
+=======
+                     config,
+>>>>>>> [baictl] Added tests for external settings.ini file
                      file_regression: FileRegressionFixture,
                      bai_environment_info):
     random_object = random.Random()
@@ -25,7 +29,11 @@ def test_regressions(filename,
     descriptor = Descriptor.from_toml_file(str(shared_datadir / filename), descriptor_config)
     bai_config = create_bai_config(
         descriptor,
+<<<<<<< HEAD
         config_args,
+=======
+        config,
+>>>>>>> [baictl] Added tests for external settings.ini file
         environment_info=bai_environment_info,
         extra_bai_config_args=dict(random_object=random_object)
     )

@@ -1,3 +1,4 @@
+import configparser
 import textwrap
 import toml
 import pytest
@@ -24,6 +25,7 @@ def config_args(shared_datadir):
 def descriptor_config():
     config_values = {'valid_data_sources': ["s3", "http", "https", "ftp", "ftps"],
                      'valid_strategies': ["single_node", "horovod"]}
+
     return DescriptorSettings(**config_values)
 
 
