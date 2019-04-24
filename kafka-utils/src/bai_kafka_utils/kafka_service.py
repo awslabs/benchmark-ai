@@ -58,6 +58,10 @@ class KafkaServiceCallback(metaclass=abc.ABCMeta):
         pass
 
 
+class KafkaServiceCallbackException(Exception):
+    pass
+
+
 class KafkaService:
     def __init__(self,
                  name: str,
@@ -79,12 +83,13 @@ class KafkaService:
         self.payload_type = payload_type
 
         self.callbacks = callbacks
+        self.running = False
         signal(SIGTERM, self.stop_loop())
 
     def safe_handle_msg(self, msg, callback: KafkaServiceCallback) -> BenchmarkEvent:
         try:
             return self.handle_event(msg.value, callback)
-        except:
+        except KafkaServiceCallbackException:
             logger.exception(f"Failed to handle message: {msg}")
 
     def handle_event(self, event: BenchmarkEvent, callback: KafkaServiceCallback) -> BenchmarkEvent:
@@ -95,13 +100,13 @@ class KafkaService:
         :param callback: implementation of KafkaServiceCallBack to handle the event
         """
         if not event:
-            raise ValueError("Empty message received (no event found)")
+            raise KafkaServiceCallbackException("Empty message received (no event found)")
         logger.debug(f"Got event {event}")
         return callback.handle_event(event)
 
     def send_event(self, event: BenchmarkEvent):
         """
-        Base method for sending a event to Kafka.
+        Base method for sending an event to Kafka.
         Adds this service to the visited field in the event and calls the KafkaProducer.
         :param event: value of the message to send
         """
@@ -119,19 +124,25 @@ class KafkaService:
                             value=event)
 
     def run_loop(self):
-        while True:
+        if self.running:
+            raise ValueError("Loop is already running")
+
+        self.running = True
+
+        while self.running:
             # KafkaConsumer.poll() might return more than one message
+            # TODO: Do we need a timeout here? (timeout_ms parameter)
             messages = self._consumer.poll()
             for msg in messages:
                 for callback in self.callbacks:
                     output = self.safe_handle_msg(msg, callback)
                     self.send_event(output)
 
-    def stop_loop(self):
-        class SigtermReceived(Exception):
-            pass
-
         for callback in self.callbacks:
             callback.cleanup()
 
-        raise SigtermReceived
+    def stop_loop(self):
+        if not self.running:
+            raise ValueError("Loop is not running")
+
+        self.running = False
