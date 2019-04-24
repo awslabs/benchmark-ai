@@ -1,0 +1,17 @@
+#!/bin/bash
+
+#Configuration
+export ENVIRONMENT="test"
+
+#Endpoints Server
+export SVC_PORT=8080
+export THREAD_POOL_SIZE=5
+export MAX_QUEUE_SIZE=20
+
+
+export JARFILE="/Users/cue/projects/bai-bff/target/bai-bff-0.1.0-SNAPSHOT-standalone.jar"
+
+cmd="java -jar ${JARFILE}"
+echo ${cmd}
+
+$cmd

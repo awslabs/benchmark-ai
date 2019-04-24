@@ -1,0 +1,17 @@
+{
+    "request_id": "<UUID>",
+    "client_id":  "<UUID>",
+    "action_id":  "<UUID>",
+    "action_type": "human name of action",
+    "client_version": "0.1.0",
+    "client_username": "vasya",
+    "date": "1554901873677",
+    "visited": [{"svc": "baictl", "tstamp": "1554901873677", "version": "v0.1.0-481dad1"}],
+    "payload":{
+        "toml":{
+            "descriptor_filename": "descriptor_cpu.toml",
+            "sha1": "d99cf00af3e9019f4fe7b180c47ef047395d2067",
+            "repo_uri": "Github repository location"
+        }
+    }
+}
