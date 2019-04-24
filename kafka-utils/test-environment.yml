@@ -10,3 +10,4 @@ dependencies:
       - pytest-mock
       - dataclasses-json
       - pytest-cov
+      - flake8
