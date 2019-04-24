@@ -1,9 +1,10 @@
+import configparser
 import textwrap
 import toml
 
 import pytest
 
-from transpiler.descriptor import Descriptor, DescriptorConfig
+from transpiler.descriptor import Descriptor, DescriptorSettings
 from transpiler.bai_knowledge import EnvironmentInfo
 
 @pytest.fixture
@@ -14,10 +15,17 @@ def bai_environment_info():
 
 
 @pytest.fixture
+def config(shared_datadir):
+    config = configparser.ConfigParser()
+    config.read(str(shared_datadir / 'settings.ini'))
+    return config
+
+
+@pytest.fixture
 def descriptor_config():
     config_values = {'VALID_DATA_SOURCES': '["s3", "http", "https", "ftp", "ftps"]',
                      'VALID_STRATEGIES': '["single_node", "horovod"]'}
-    return DescriptorConfig(**config_values)
+    return DescriptorSettings(**config_values)
 
 
 @pytest.fixture

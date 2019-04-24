@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 
 @dataclass(init=False)
-class DescriptorConfig:
+class DescriptorSettings:
     VALID_DATA_SOURCES: List[str]
     VALID_STRATEGIES: List[str]
 
@@ -25,7 +25,7 @@ class Descriptor:
     The model class for a Descriptor.
     It validates and contains all data the descriptor contains.
     """
-    def __init__(self, descriptor_data: Dict, config: DescriptorConfig):
+    def __init__(self, descriptor_data: Dict, config: DescriptorSettings):
         """
         Constructor
         :param descriptor_data: dict containing the data as loaded from the descriptor toml file
@@ -58,7 +58,7 @@ class Descriptor:
         self._validate()
 
     @classmethod
-    def from_toml_file(cls, toml_file: str, config: DescriptorConfig):
+    def from_toml_file(cls, toml_file: str, config: DescriptorSettings):
         """
         Constructor from toml file path
         :param toml_file: TOML descriptor file path

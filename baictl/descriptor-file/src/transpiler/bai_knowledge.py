@@ -84,11 +84,11 @@ class BaiConfig:
         pod_spec_volumes = self.root.get_pod_spec().volumes
         container_volume_mounts = self.root.find_container("benchmark").volumeMounts
 
-        shm_vol = Volume(name=self.config['general']['SHARED_MEMORY_VOL'],
+        shm_vol = Volume(name=self.config.get('general', 'SHARED_MEMORY_VOL'),
                          emptyDir=EmptyDirVolumeSource(medium="Memory"))
         pod_spec_volumes.append(shm_vol)
 
-        shm_vol_mount = VolumeMount(name=self.config['general']['SHARED_MEMORY_VOL'],
+        shm_vol_mount = VolumeMount(name=self.config.get('general', 'SHARED_MEMORY_VOL'),
                                     mountPath='/dev/shm')
         container_volume_mounts.append(shm_vol_mount)
 
@@ -196,14 +196,14 @@ class BaiConfig:
         s3_objects = []
         for s in data_sources:
             s3_objects.append(s['object'] + ',' +
-                              self.config['data-puller']['MOUNT_CHMOD'] + ',' +
+                              self.config.get('general', 'PULLER_MOUNT_CHMOD') + ',' +
                               data_volumes[s['path']]['name'])
 
-        puller_args = [self.config['data-puller']['S3_REGION'], data_sources[0]['bucket'], ':'.join(s3_objects)]
+        puller_args = [self.config.get('general', 'PULLER_S3_REGION'), data_sources[0]['bucket'], ':'.join(s3_objects)]
         # ------------------------------------------
 
         vol_mounts = self._get_puller_volume_mounts(data_volumes)
-        data_puller.image = self.config['data-puller']['DOCKER_IMAGE']
+        data_puller.image = self.config.get('general', 'PULLER_DOCKER_IMAGE')
         data_puller.args = puller_args
         if not data_puller.volumeMounts:
             data_puller.volumeMounts = vol_mounts
@@ -228,7 +228,7 @@ def create_bai_config(descriptor: Descriptor,
     Builds a BaiConfig object
     :param environment_info: Information on the environment that BAI is running on.
     :param descriptor: The descriptor.
-    :param config: dict with the configuration values from 'config.ini'
+    :param config: dict with the configuration values from 'settings.ini'
     :param extra_bai_config_args: An optional Dict which will be forwarded to the `BaiConfig` object created.
     :return:
     """

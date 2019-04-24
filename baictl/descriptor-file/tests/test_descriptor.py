@@ -21,3 +21,11 @@ def test_invalid_scheduling(descriptor, scheduling):
     descriptor.scheduling = scheduling
     with pytest.raises(ValueError) as e:
         descriptor._validate()
+
+
+def test_descriptor_config(descriptor_config):
+    sources = ["s3", "http", "https", "ftp", "ftps"]
+    strategies = ["single_node", "horovod"]
+
+    assert descriptor_config.VALID_DATA_SOURCES == sources
+    assert descriptor_config.VALID_STRATEGIES == strategies

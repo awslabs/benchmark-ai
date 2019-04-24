@@ -3,7 +3,7 @@ import configparser
 import os
 
 from transpiler.bai_knowledge import create_bai_config, EnvironmentInfo
-from transpiler.descriptor import Descriptor, DescriptorConfig
+from transpiler.descriptor import Descriptor, DescriptorSettings
 
 
 def main():
@@ -24,8 +24,9 @@ def main():
 
     args = parser.parse_args()
 
-    config, descriptor_config = _read_config()
-    descriptor = Descriptor.from_toml_file(args.descriptor)
+    config = _read_config()
+    descriptor_config = DescriptorSettings(**config.get('descriptor'))
+    descriptor = Descriptor.from_toml_file(args.descriptor, descriptor_config)
 
     environment_info = EnvironmentInfo(
         availability_zones=args.availability_zones
@@ -44,11 +45,8 @@ def main():
 def _read_config():
     config = configparser.ConfigParser()
     file_dir = os.path.dirname(os.path.abspath(__file__))
-
-    global_config = config.read(os.path.join(file_dir, 'config.ini'))
-    descriptor_config = DescriptorConfig(**global_config['descriptor-config'])
-
-    return global_config, descriptor_config
+    config.read(os.path.join(file_dir, 'settings.ini'))
+    return config
 
 
 if __name__ == '__main__':
