@@ -1,0 +1,61 @@
+# BenchmarkAI meta
+spec_version = "0.1.0"
+
+# 0. Job details
+[info]
+task_name = "Example benchmark"
+description = """ \
+    Full job description.\
+    """
+scheduling = 'single_run'
+
+# 1. Hardware
+[hardware]
+instance_type = "p3.8xlarge"
+strategy = "horovod"
+
+# [Opt] Section for distributed (multi node) mode
+[hardware.distributed]
+# [Upcoming] Strategy to follow
+num_instances = 3
+
+# 2. Environment
+[env]
+# Docker hub <hub-user>/<repo-name>:<tag> 
+docker_image = "user/repo:tag"
+# Args for the docker container
+# [Opt] Whether to run the container in privileged mode (default is false)
+privileged = false
+# [Opt] Whether more than 64MB shared memory is needed for containers (default is true)
+# (See docker's -shm option)
+extended_shm = true
+
+# 3. Machine learning related settings: 
+# dataset, benchmark code and parameters it takes
+[ml]
+# [Opt] Command to run when launching the container (entrypoint is used if not specfied)
+benchmark_code = "python /root/train.sh"
+# [Opt] Arguments to pass to the script in ml.benchmark_code
+# The code is called as defined in ml.benchmark_code, plus the args defined here
+args = "--model=resnet50_v2 --batch-size=32"
+
+# [Opt] 4. Dataset 
+[data]
+# Dataset ID
+id = "imagenet"
+
+# [Opt] Data sources
+# List all required data sources below. 
+# Make an entry for each with the same format as the ones below.
+[[data.sources]]
+# Data download URI.
+uri = "s3://bucket/imagenet/train"
+# Path where the dataset is stored in the container FS
+path = "~/data/tf-imagenet/"
+
+# Second data source
+[[data.sources]]
+# Data download URI.
+uri = "s3://bucket/imagenet/validation"
+# Path where the dataset is stored in the container FS
+path = "~/data/tf-imagenet/"
