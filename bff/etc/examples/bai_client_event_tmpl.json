@@ -1,0 +1,16 @@
+{
+    "message_id" : "@@MESSAGE_ID@@",
+    "client_id"  : "@@CLIENT_ID@@",
+    "action_id"  : "@@ACTION_ID@@",
+    "client_version" : "0.1.0",
+    "client_usrname" : "@@CLIENT_USERNAME@@",
+    "date" : "@@DATE@@",
+    "visited"  : [{"svc" : "baictl", "tstamp" : "@@TSTAMP@@", "version" :"v0.1.0-481dad2"}],
+    "payload"  : {
+        "toml" : {
+            "descriptor_filename" : "@@DESCRIPTOR_FILENAME@@",
+            "sha1" : "@@SHA1@@",
+            "doc" : "@@CONTENT_BASE_64@@"
+        }
+    }
+}
