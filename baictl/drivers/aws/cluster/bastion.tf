@@ -112,8 +112,8 @@ resource "aws_instance" "bastion" {
     }
 
     inline = [
-      # HACK: Snap takes longer than SSH to init
-      "tail -f /var/log/syslog | grep -q 'Startup finished'",
+      # HACK: Terraform ssh agent connects before host is initialized ()
+      "sleep 60",
       "sudo snap install --beta kafka",
     ]
   }

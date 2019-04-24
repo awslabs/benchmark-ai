@@ -109,9 +109,9 @@ variable "eks_gpu_ami_id" {
   default = "" # Empty because this must be a choice of the BAI administrator, wether he wants to override the AMI.
 }
 
-variable "msk_broker_count" {
+variable "msk_brokers_per_az" {
   type    = "string"
-  default = 3
+  default = 1
 }
 
 variable "msk_broker_instance_type" {

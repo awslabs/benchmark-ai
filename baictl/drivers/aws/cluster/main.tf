@@ -25,6 +25,8 @@ locals {
   vpc_cidr_block = "172.16.0.0/16"
   bits = 4
   maximum_subnets = "${256 / pow(2, local.bits)}"
+
+  msk_subnet_count = 3
 }
 
 resource "aws_security_group" "worker_group_mgmt_one" {
@@ -134,10 +136,10 @@ module "vpc" {
 resource "aws_msk_cluster" "benchmark-msk-cluster" {
   depends_on             = ["module.vpc"]
   name                   = "${var.cluster_name_prefix}"
-  broker_count           = "${var.msk_broker_count}"
+  broker_count           = "${var.msk_brokers_per_az * local.msk_subnet_count}"
   broker_instance_type   = "${var.msk_broker_instance_type}"
   broker_security_groups = ["${module.eks.worker_security_group_id}", "${aws_security_group.loopback.id}", "${aws_security_group.ssh-access-rules.id}"]
   broker_volume_size     = "${var.msk_broker_volume_size}"
-  client_subnets         = ["${module.vpc.private_subnets}"]
+  client_subnets         = ["${slice(module.vpc.private_subnets, 0, local.msk_subnet_count)}"]
   kafka_version          = "${var.msk_kafka_version}"
 }
