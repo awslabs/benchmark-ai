@@ -44,7 +44,7 @@ locals {
   bai_worker_group_subnets_count = "${local.private_subnet_count}"
   bai_worker_groups_count = "${local.bai_worker_group_subnets_count * length(local.bai_worker_group_instance_types)}"
 
-  worker_groups = "${concat(local.other_worker_groups, data.null_data_source.bai_worker_groups.*.outputs)}"
+  worker_groups = "${concat(data.null_data_source.bai_worker_groups.*.outputs, local.other_worker_groups)}"
   worker_groups_count = "${local.other_groups_count + local.bai_worker_groups_count}"
 
   worker_group_tags = {
