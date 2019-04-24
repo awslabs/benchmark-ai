@@ -1,11 +1,13 @@
 apiVersion: apps/v1
-kind: ReplicaSet
+kind: Deployment
 metadata:
   name: fetcher-dispatcher
+  labels:
+    app: benchmark-ai
 spec:
   selector:
     matchLabels:
-      app: benchmark-ai # has to match .spec.template.metadata.labels
+      app: benchmark-ai
   replicas: 3
   template:
     metadata:
