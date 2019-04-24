@@ -4,7 +4,7 @@ locals {
   bai_worker_kubelet_args   = "--node-labels=node.type=bai-worker"
   k8s_services_kubelet_args  = "--node-labels=node.type=k8s-services"
   bai_services_cheap_kubelet_args = "--node-labels=node.type=bai-services-cheap"
-  bai_services_compute_kubelet_args = "--node-labels=node.type=bai-service-compute"
+  bai_services_compute_kubelet_args = "--node-labels=node.type=bai-services-compute"
   bai_services_network_kubelet_args = "--node-labels=node.type=bai-services-network"
 
   other_worker_groups = [
