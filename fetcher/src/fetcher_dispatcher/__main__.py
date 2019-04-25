@@ -1,8 +1,9 @@
 import logging
 
 from fetcher_dispatcher import __version__, SERVICE_NAME, SERVICE_DESCRIPTION
+from fetcher_dispatcher.args import get_args
 from fetcher_dispatcher.fetcher_dispatcher import FetcherEventHandler, create_data_set_manager
-from bai_kafka_utils.kafka_service import create_kafka_service_parser, KafkaService
+from bai_kafka_utils.kafka_service import KafkaService
 from bai_kafka_utils.events import FetcherPayload
 
 
@@ -19,27 +20,6 @@ def main(argv=None):
 
     fetcher_service = create_fetcher_dispatcher(args)
     fetcher_service.run_loop()
-
-
-def get_args(args):
-    parser = create_kafka_service_parser(SERVICE_NAME)
-
-    parser.add_argument("--zookeeper-ensemble-hosts",
-                        env_var="ZOOKEEPER_ENSEMBLE_HOSTS",
-                        default="localhost:2181")
-
-    parser.add_argument("--s3-data-set-bucket",
-                        env_var="S3_DATASET_BUCKET",
-                        required=True)
-
-    parser.add_argument("--kubeconfig",
-                        env_var="KUBECONFIG")
-
-    parser.add_argument("--fetcher-job-image",
-                        env_var="FETCHER_JOB_IMAGE")
-
-    parsed_args = parser.parse_args(args)
-    return parsed_args
 
 
 def create_fetcher_dispatcher(args) -> KafkaService:
