@@ -39,7 +39,7 @@
   IAssertConfigured
   (assert-configured! [_ required-keys]
     (let [missing (difference required-keys
-                              (into #{} (filter #(not (empty? (str (@config %))))
+                              (set (filter #(seq (str (@config %)))
                                                 (keys @config))))]
       (when-not (empty? missing)
         (throw (AssertionError. (str "Configuration missing:" missing))))))

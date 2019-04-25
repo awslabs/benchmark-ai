@@ -10,7 +10,7 @@
                                                 logf tracef debugf infof warnf errorf fatalf reportf
                                                 spy get-env]]))
 
-(defn uuid [] (.toString (java.util.UUID/randomUUID)))
+(defn uuid [] (str (java.util.UUID/randomUUID)))
 
 (defn verify-doc-hash [event]
   (= (some-> event :payload :toml :sha1)
