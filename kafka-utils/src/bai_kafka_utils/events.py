@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from dataclasses_json import dataclass_json
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Type
 
 
 @dataclass_json
@@ -15,16 +15,36 @@ class DataSet:
 @dataclass_json
 @dataclass
 class BenchmarkDoc:
+    contents: Dict[str, str]
     doc: str
     md5: str
-    data: Dict
+
+
+@dataclass_json
+@dataclass
+class BenchmarkJob:
+    id: str
+    status: str
+    k8s_yaml: str
+    output: Optional[str] = None
 
 
 @dataclass_json
 @dataclass
 class BenchmarkPayload:
     toml: BenchmarkDoc
-    data_sets: Optional[List[DataSet]]
+
+
+@dataclass_json
+@dataclass
+class FetcherPayload(BenchmarkPayload):
+    data_sets: List[DataSet]
+
+
+@dataclass_json
+@dataclass
+class ExecutorPayload(BenchmarkPayload):
+    job: BenchmarkJob
 
 
 @dataclass_json
@@ -46,4 +66,12 @@ class BenchmarkEvent:
     authenticated: bool
     date: int
     visited: List[VisitedService]
-    payload: BenchmarkPayload
+    payload: Type[BenchmarkPayload]
+
+
+def make_benchmark_event(payload_type: Type[BenchmarkPayload]):
+    @dataclass_json
+    @dataclass
+    class BenchmarkEventWithPayload(BenchmarkEvent):
+        payload: payload_type
+    return BenchmarkEventWithPayload
