@@ -41,13 +41,6 @@ provider "aws" {
   ]
 }
 
-# Configure the GitHub Provider
-provider "github" {
-  version = ">= 1.3.0"
-//  token        = "${var.github_token}"
-  organization = "MXNetEdge"
-}
-
 resource "aws_iam_role" "code-build-role" {
   name = "code-build-role"
 
@@ -151,20 +144,5 @@ resource "null_resource" "ci-unit-tests-filter" {
   triggers {
     project_name = "${element(aws_codebuild_webhook.ci-unit-tests.*.project_name, count.index)}"
     filter_groups = "${jsonencode(local.filter_groups)}"
-  }
-}
-
-resource "github_repository_webhook" "ci-unit-tests" {
-  count = "${length(var.projects)}"
-  active     = true
-  events     = ["pull_request"]
-  name       = "web"
-  repository = "benchmark-ai"
-
-  configuration {
-    url          = "${element(aws_codebuild_webhook.ci-unit-tests.*.payload_url, count.index)}"
-    secret       = "${element(aws_codebuild_webhook.ci-unit-tests.*.secret, count.index)}"
-    content_type = "json"
-    insecure_ssl = false
   }
 }
