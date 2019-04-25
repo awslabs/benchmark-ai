@@ -93,6 +93,8 @@ create_infra() {
     _install_kubeflow_operators || return 1
     _create_kafka_topics || return 1
 
+    _install_zookeeper || return 1
+
     [ "$validate" == false ] || validate_infra $@
 }
 
@@ -166,6 +168,11 @@ _install_kubeflow_operators() {
         return 1
     )
 }
+
+_install_zookeeper(){
+    $kubectl apply -f $k8s_deploy_dir/zookeeper.yaml || return 1
+}
+
 destroy_infra() {
      for arg in "$@"; do
         case "${arg}" in
@@ -236,9 +243,16 @@ __validate_kafka_topics(){
     echo $result | grep "BAI_APP_EXECUTOR" > /dev/null || return 1
 }
 
+__validate_zookeeper_pods(){
+    printf "ZooKeeper is ready"
+    $kubectl wait --for=condition=ready pod --selector=app=zookeeper --timeout=300s > /dev/null || return 1
+}
+
 validate_infra(){
     local all_ok=true
-    local rules=(__validate_mpi_job __validate_mxnet_job __validate_kafka_topics)
+
+    local rules=(__validate_mpi_job __validate_mxnet_job __validate_kafka_topics __validate_zookeeper_pods)
+
     for rule in "${rules[@]}"; do
         local result=true
         eval "$rule" || result=false
@@ -416,6 +430,7 @@ terraform_state=$(realpath $terraform_state)
 terraform_plan=$(realpath $terraform_plan)
 
 project_dir=$(realpath $(dirname $BASH_SOURCE)/../../..)
+k8s_deploy_dir=$(realpath $(dirname $BASH_SOURCE))/deploy
 
 readonly kubeflow_namespace=kubeflow
 

@@ -13,15 +13,18 @@ from fetcher_dispatcher.kubernetes_client import KubernetesDispatcher
 logger = logging.getLogger(__name__)
 
 
-def create_data_set_manager(zookeeper_ensemble_hosts: str, kubeconfig: str, fetcher_job_image: str):
+def create_data_set_manager(zookeeper_ensemble_hosts: str, kubeconfig: str, fetcher_job_image: str,
+                            fetcher_node_selector: dict):
     zk_client = KazooClient(zookeeper_ensemble_hosts)
-    job_dispatcher = KubernetesDispatcher(kubeconfig, fetcher_job_image, zookeeper_ensemble_hosts)
+    job_dispatcher = KubernetesDispatcher(kubeconfig, fetcher_job_image, zookeeper_ensemble_hosts,
+                                          fetcher_node_selector)
 
     return DataSetManager(zk_client, job_dispatcher)
 
 
 def run_msg_loop(args):
-    data_set_mgr = create_data_set_manager(args.zookeeper_ensemble_hosts, args.kubeconfig, args.fetcher_job_image)
+    data_set_mgr = create_data_set_manager(args.zookeeper_ensemble_hosts, args.kubeconfig, args.fetcher_job_image,
+                                           args.fetcher_node_selector)
     data_set_mgr.start()
 
     producer = create_kafka_producer(args.bootstrap_servers)

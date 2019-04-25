@@ -3,7 +3,9 @@ locals {
   # for an explanation on each type of node.
   bai_worker_kubelet_args   = "--node-labels=node.type=bai-worker"
   k8s_services_kubelet_args  = "--node-labels=node.type=k8s-services"
-  bai_services_kubelet_args = "--node-labels=node.type=bai-services"
+  bai_services_cheap_kubelet_args = "--node-labels=node.type=bai-services-cheap"
+  bai_services_compute_kubelet_args = "--node-labels=node.type=bai-services-compute"
+  bai_services_network_kubelet_args = "--node-labels=node.type=bai-services-network"
 
   other_worker_groups = [
     {
@@ -16,17 +18,35 @@ locals {
       kubelet_extra_args   = "${local.k8s_services_kubelet_args}"
     },
     {
+      instance_type        = "t2.small"
+      subnets              = "${join(",", slice(module.vpc.private_subnets, 0, 3))}"
+      asg_desired_capacity = 0
+      asg_max_size         = 100
+      asg_min_size         = 0
+      name                 = "bai-services-cheap"
+      kubelet_extra_args   = "${local.bai_services_cheap_kubelet_args}"
+    },
+    {
       instance_type        = "m5d.4xlarge"
       subnets              = "${join(",", slice(module.vpc.private_subnets, 0, 3))}"
-      asg_desired_capacity = 1
-      asg_max_size         = 4
-      asg_min_size         = 1
-      name                 = "bai-services"
-      kubelet_extra_args   = "${local.bai_services_kubelet_args}"
+      asg_desired_capacity = 0
+      asg_max_size         = 100
+      asg_min_size         = 0
+      name                 = "bai-services-compute"
+      kubelet_extra_args   = "${local.bai_services_compute_kubelet_args}"
     },
+    {
+      instance_type        = "m5d.4xlarge"
+      subnets              = "${join(",", slice(module.vpc.private_subnets, 0, 3))}"
+      asg_desired_capacity = 0
+      asg_max_size         = 100
+      asg_min_size         = 0
+      name                 = "bai-services-network"
+      kubelet_extra_args   = "${local.bai_services_network_kubelet_args}"
+    }
   ]
   # HACK: Terraform versions < 0.12 don't know how to count local lists: https://github.com/hashicorp/terraform/issues/16712
-  other_groups_count = 2
+  other_groups_count = 4
 
   bai_worker_group_instance_types = "${var.benchmark_workers_instance_types}"
   worker_group_subnets = ["${module.vpc.private_subnets}"]
@@ -55,10 +75,24 @@ locals {
         propagate_at_launch = true
       }
     ]
-    bai-services = [
+    bai-services-cheap = [
       {
         key = "k8s.io/cluster-autoscaler/node-template/label/node.type"
-        value = "bai-services"
+        value = "bai-services-cheap"
+        propagate_at_launch = true
+      }
+    ]
+    bai-services-compute = [
+      {
+        key = "k8s.io/cluster-autoscaler/node-template/label/node.type"
+        value = "bai-services-compute"
+        propagate_at_launch = true
+      }
+    ]
+    bai-services-network = [
+      {
+        key = "k8s.io/cluster-autoscaler/node-template/label/node.type"
+        value = "bai-services-network"
         propagate_at_launch = true
       }
     ]
