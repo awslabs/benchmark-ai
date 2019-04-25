@@ -11,7 +11,7 @@ import toml
 class Descriptor:
     """
     The model class for a Descriptor.
-    It validates and contains all data the transpiler contains.
+    It validates and contains all data the descriptor contains.
     """
 
     VALID_DATA_SOURCES = ['s3', 'http', 'https', 'ftp', 'ftps']
@@ -20,14 +20,14 @@ class Descriptor:
     def __init__(self, descriptor_data: Dict):
         """
         Constructor
-        :param descriptor_data: dict contaning the data as loaded from the transpiler toml file
+        :param descriptor_data: dict containing the data as loaded from the descriptor toml file
         """
         try:
             self.instance_type = descriptor_data['hardware']['instance_type']
             self.strategy = descriptor_data['hardware']['strategy']
             self.docker_image = descriptor_data['env']['docker_image']
         except KeyError as e:
-            raise KeyError(f'Required field is missing in the transpiler toml file: {e.args[0]}') from e
+            raise KeyError(f'Required field is missing in the descriptor toml file: {e.args[0]}') from e
 
         self.scheduling = descriptor_data['info'].get('scheduling', 'single_run')
 
@@ -50,7 +50,7 @@ class Descriptor:
     def from_toml_file(cls, toml_file: str):
         """
         Constructor from toml file path
-        :param toml_file: TOML transpiler file path
+        :param toml_file: TOML descriptor file path
         :return:
         """
         descriptor_toml = toml.load(toml_file)
@@ -58,7 +58,7 @@ class Descriptor:
 
     def _validate(self):
         """
-        Validates that this transpiler is valid
+        Validates that this descriptor is valid
         """
         for source in self.data_sources:
             if not source.get('uri', ''):

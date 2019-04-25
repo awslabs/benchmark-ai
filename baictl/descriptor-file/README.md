@@ -63,14 +63,14 @@ id = "imagenet"
 # Data download URI.
 uri = "s3://bucket/imagenet/train"
 # Path where the dataset is stored in the container FS
-path = "~/data/tf-imagenet/"
+path = "/data/tf-imagenet/train"
 
 # Second data source
 [[data.sources]]
 # Data download URI.
 uri = "s3://bucket/imagenet/validation"
 # Path where the dataset is stored in the container FS
-path = "~/data/tf-imagenet/"
+path = "/data/tf-imagenet/val"
 ```
 
 

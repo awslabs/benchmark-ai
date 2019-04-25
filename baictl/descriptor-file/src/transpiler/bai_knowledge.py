@@ -40,7 +40,7 @@ class BaiConfig:
             random_object: random.Random = None
     ):
         """
-        Reads the values from the transpiler file into a settings dictionary
+        Reads the values from the descriptor file into a settings dictionary
         :param descriptor: Descriptor object with the information from the TOML
         :param config_template: The YAML template
         :param random_object: An instance of random.Random [optional].
@@ -226,9 +226,8 @@ class BaiConfig:
 def create_bai_config(descriptor: Descriptor, environment_info: EnvironmentInfo, extra_bai_config_args=None) -> BaiConfig:
     """
     Builds a BaiConfig object
-
     :param environment_info: Information on the environment that BAI is running on.
-    :param descriptor: The transpiler.
+    :param descriptor: The descriptor.
     :param extra_bai_config_args: An optional Dict which will be forwarded to the `BaiConfig` object created.
     :return:
     """
@@ -253,6 +252,6 @@ def create_bai_config(descriptor: Descriptor, environment_info: EnvironmentInfo,
     elif descriptor.strategy == 'horovod':
         bai_config.add_benchmark_cmd_to_config_map()
     else:
-        raise ValueError("Unsupported configuration at transpiler")
+        raise ValueError("Unsupported configuration in descriptor file")
 
     return bai_config
