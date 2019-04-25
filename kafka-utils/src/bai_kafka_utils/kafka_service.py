@@ -1,15 +1,15 @@
+import abc
 import argparse
 import logging
-import abc
 import time
 import uuid
+from signal import signal, SIGTERM
+from typing import List, Type
 
 from configargparse import ArgParser
-from signal import signal, SIGTERM
-from bai_kafka_utils.kafka_client import create_kafka_consumer, create_kafka_producer
-from bai_kafka_utils.events import BenchmarkEvent, VisitedService, BenchmarkPayload
 
-from typing import List, Type
+from bai_kafka_utils.events import BenchmarkEvent, VisitedService, BenchmarkPayload
+from bai_kafka_utils.kafka_client import create_kafka_consumer, create_kafka_producer
 
 logger = logging.getLogger(__name__)
 

@@ -6,6 +6,7 @@ dependencies:
   - kafka-python 1.4.*
   - pip
   - pip:
+      - ConfigArgParse
       - pytest
       - pytest-mock
       - dataclasses-json

@@ -1,8 +1,8 @@
 from unittest.mock import patch, MagicMock, ANY
 
 import bai_kafka_utils
-from bai_kafka_utils.kafka_client import create_kafka_consumer, create_kafka_producer
 from bai_kafka_utils.events import BenchmarkPayload
+from bai_kafka_utils.kafka_client import create_kafka_consumer, create_kafka_producer
 from bai_kafka_utils.utils import DEFAULT_ENCODING
 
 BOOTSTRAP_SERVERS = ["kafka_node"]
@@ -37,5 +37,3 @@ def test_kafka_producer_pass_through(mockKafkaProducer):
 def get_deserializer(mock: MagicMock):
     kwargs = mock.call_args[1]
     return kwargs["value_deserializer"]
-
-

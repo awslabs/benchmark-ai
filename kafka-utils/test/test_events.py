@@ -1,10 +1,9 @@
-import textwrap
-import pytest
 import json
-import bai_kafka_utils.events
 
-from bai_kafka_utils.events import DataSet, BenchmarkEvent, BenchmarkPayload, BenchmarkDoc, \
-     FetcherPayload, ExecutorPayload
+import pytest
+
+import bai_kafka_utils.events
+from bai_kafka_utils.events import DataSet, FetcherPayload, ExecutorPayload
 
 
 @pytest.fixture

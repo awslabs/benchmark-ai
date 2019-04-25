@@ -1,30 +1,39 @@
 SHELL :=/bin/bash
 ENV_NAME = kafka-utils-test
 CONDA_RUN = conda run -n $(ENV_NAME)
-PYTHON = python
-PYTEST = pytest
+PYTHON = $(CONDA_RUN) python
+PYTEST = $(CONDA_RUN) pytest
 TEST_FLAGS = -v
 COVERAGE_FLAGS = --cov=src --cov-report html --cov-fail-under 90
+
+LINT = $(CONDA_RUN) flake8
+
+.DEFAULT_GOAL := default
 
 clean:
 	rm -rf build/
 	rm -rf dist/
-	rm -rf *.egg-info
+	rm -rf **/*.egg-info
+	rm -rf htmlcov
+	rm -rf .pytest_cache
+	rm -f .coverage
 
 venv:
-	conda env create -f test-environment.yml --force-reinstall
+	conda env update -f test-environment.yml --prune
 
 develop: venv
-	$(CONDA_RUN) $(PYTHON) setup.py develop
+	$(PYTHON) setup.py develop
 
 install: venv
-	$(CONDA_RUN) $(PYTHON) setup.py install
+	$(PYTHON) setup.py install
 
 test: develop
-	$(CONDA_RUN) $(PYTEST) $(TEST_FLAGS)
+	$(PYTEST) $(TEST_FLAGS)
 
 coverage: develop
-	$(CONDA_RUN) $(PYTEST) $(TEST_FLAGS) $(COVERAGE_FLAGS)
+	$(PYTEST) $(TEST_FLAGS) $(COVERAGE_FLAGS)
 
 lint: venv
-	flake8 ./
+	$(LINT) ./
+
+default: clean lint coverage install
