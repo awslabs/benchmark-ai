@@ -7,6 +7,7 @@ from signal import signal, SIGTERM
 from typing import List, Type
 
 from configargparse import ArgParser
+from kafka import KafkaProducer, KafkaConsumer
 
 from bai_kafka_utils.events import BenchmarkEvent, VisitedService, BenchmarkPayload
 from bai_kafka_utils.kafka_client import create_kafka_consumer, create_kafka_producer
@@ -23,7 +24,7 @@ def create_kafka_service_parser(program_name: str) -> ArgParser:
         return customAction
 
     parser = ArgParser(auto_env_var_prefix="",
-                                           prog=program_name)
+                       prog=program_name)
 
     parser.add_argument("--consumer-topic",
                         env_var='CONSUMER_TOPIC',
@@ -50,7 +51,7 @@ def create_kafka_service_parser(program_name: str) -> ArgParser:
 
 class KafkaServiceCallback(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def handle_event(self, event: BenchmarkEvent):
+    def handle_event(self, event: BenchmarkEvent) -> BenchmarkEvent:
         pass
 
     @abc.abstractmethod
@@ -68,29 +69,34 @@ class KafkaService:
                  version: str,
                  payload_type: Type[BenchmarkPayload],
                  args,
-                 callbacks: List[KafkaServiceCallback]):
-
-        self.args = args
+                 callbacks: List[KafkaServiceCallback],
+                 kafka_consumer: KafkaConsumer,
+                 kafka_producer: KafkaProducer
+                 ):
 
         self._producer_topic = args.producer_topic
-        self._producer = create_kafka_producer(args.bootstrap_servers)
-        self._consumer = create_kafka_consumer(args.bootstrap_servers,
-                                               args.consumer_group_id,
-                                               args.consumer_topic,
-                                               args.event_payload_type)
+        self._producer = kafka_producer or create_kafka_producer(args.bootstrap_servers)
+        self._consumer = kafka_consumer or create_kafka_consumer(args.bootstrap_servers,
+                                                                 args.consumer_group_id,
+                                                                 args.consumer_topic,
+                                                                 payload_type)
         self.name = name
         self.version = version
         self.payload_type = payload_type
 
         self.callbacks = callbacks
-        self.running = False
-        signal(SIGTERM, self.stop_loop())
+        self._running = False
+        signal(SIGTERM, self.stop_loop)
+
+    _LOOP_IS_ALREADY_RUNNING = "Loop is already running"
+    _IS_NOT_RUNNING = "Loop is not running"
 
     def safe_handle_msg(self, msg, callback: KafkaServiceCallback) -> BenchmarkEvent:
         try:
             return self.handle_event(msg.value, callback)
         except KafkaServiceCallbackException:
             logger.exception(f"Failed to handle message: {msg}")
+        return None
 
     def handle_event(self, event: BenchmarkEvent, callback: KafkaServiceCallback) -> BenchmarkEvent:
         """
@@ -110,10 +116,11 @@ class KafkaService:
         Adds this service to the visited field in the event and calls the KafkaProducer.
         :param event: value of the message to send
         """
+
         def add_self_to_visited(event):
-            entry = VisitedService(self.args.name,
-                                   int(time.time() * 1000),
-                                   self.args.version)
+            entry = VisitedService(self.name,
+                                   time.time_ns(),
+                                   self.version)
             event.visited.append(entry)
 
         # Message ID is unique per message
@@ -124,25 +131,26 @@ class KafkaService:
                             value=event)
 
     def run_loop(self):
-        if self.running:
-            raise ValueError("Loop is already running")
+        if self._running:
+            raise ValueError(KafkaService._LOOP_IS_ALREADY_RUNNING)
 
-        self.running = True
+        self._running = True
 
-        while self.running:
+        while self._running:
             # KafkaConsumer.poll() might return more than one message
             # TODO: Do we need a timeout here? (timeout_ms parameter)
             messages = self._consumer.poll()
             for msg in messages:
                 for callback in self.callbacks:
                     output = self.safe_handle_msg(msg, callback)
-                    self.send_event(output)
+                    if output:
+                        self.send_event(output)
 
         for callback in self.callbacks:
             callback.cleanup()
 
     def stop_loop(self):
-        if not self.running:
-            raise ValueError("Loop is not running")
+        if not self._running:
+            raise ValueError(KafkaService._IS_NOT_RUNNING)
 
-        self.running = False
+        self._running = False
