@@ -1,4 +1,4 @@
-from fetcher_dispatcher.__main__ import get_args
+from fetcher_dispatcher.args import get_args
 
 REQUIRED_ARGS = "--consumer-topic C --producer-topic P --s3-data-set-bucket S3"
 
