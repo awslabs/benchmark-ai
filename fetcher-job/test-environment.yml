@@ -1,0 +1,6 @@
+name: fetcher-job-tests
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pytest
