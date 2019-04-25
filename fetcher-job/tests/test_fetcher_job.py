@@ -1,2 +1,2 @@
 def test_imports():
-    from benchmarkai_fetcher_job import *
+    import benchmarkai_fetcher_job.__main__
