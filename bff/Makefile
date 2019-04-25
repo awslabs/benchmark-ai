@@ -35,8 +35,9 @@ CD_TARGET_PATH := target
 #----------------------------------------------------------------
 
 #(note: may set VERSION variable in above stanza to override the default below, which gets it from the nearest git tag of the form v.#.#.#<blah>)
-VERSION ?= $(shell git tag | sed -n -e 's/^v\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p' | sort -s -u -t. -k1,1n -k2,2n -k3,3n | tail -n 1)
-MODULE := $(shell git describe | sed -n 's/\(.*\)-[0-9].*/\1/p' | xargs) #TODO: set tp docker container id
+VERSION ?= $(shell git tag | sed -n -e 's/.*-v\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p' | sort -s -u -t. -k1,1n -k2,2n -k3,3n | tail -n 1)
+TAG := $(shell git describe --abbrev=0)
+MODULE := $(shell git describe | sed -n 's/\(.*\)-[v]\?[0-9].*/\1/p' | xargs) #TODO: set tp docker container id
 BRANCH := $(shell git branch | grep '*' | sed -n 's/\*[ ]*//p' | xargs)
 COMMIT := $(shell git log -p -n1 | sed -n -e 's/^commit \(.*\)/\1/p'   | xargs)
 COMMIT_DATE :=   $(shell git log -p -n1 | sed -n -e 's/^Date: \(.*\)/\1/p'   | xargs)
@@ -68,6 +69,7 @@ all: test docs dist
 show-vars:
 	@echo "----------------------------------"
 	@echo "VERSION =  $(VERSION)"
+	@echo "TAG = $(TAG)"
 	@echo "PROJECT = $(PROJECT)"
 	@echo "ORGANIZATION = $(ORGANIZATION)"
 	@echo "RELEASE_NAME = $(RELEASE_NAME)"
@@ -101,6 +103,7 @@ project.clj: $(TEMPLATE)
 	     -e 's|@@REPO_SITE@@|$(REPO_SITE)|g' \
 	     -e 's|@@PROJECT@@|$(PROJECT)|g' \
              -e 's|@@ORGANIZATION@@|$(ORGANIZATION)|g' \
+	     -e 's|@@TAG@@|$(TAG)|g' \
 	     -e 's|@@VERSION@@|$(VERSION)|g' \
 	     -e 's|@@CD_PACKAGE_VERSION_STAMP@@|$(CD_PACKAGE_VERSION_STAMP)|g' \
 	     -e 's|@@MODULE@@|$(MODULE)|g' \
