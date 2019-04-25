@@ -1,4 +1,5 @@
 import logging
+import json
 
 from fetcher_dispatcher import __version__, SERVICE_NAME, SERVICE_DESCRIPTION
 from fetcher_dispatcher.fetcher_dispatcher import FetcherEventHandler, create_data_set_manager
@@ -37,6 +38,10 @@ def get_args(args):
 
     parser.add_argument("--fetcher-job-image",
                         env_var="FETCHER_JOB_IMAGE")
+
+    parser.add_argument("--fetcher-job-node-selector",
+                        env_var="FETCHER_NODE_SELECTOR",
+                        type=json.loads)
 
     parsed_args = parser.parse_args(args)
     return parsed_args
