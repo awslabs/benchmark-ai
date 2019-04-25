@@ -41,7 +41,7 @@
                                                    (json/decode (.value record) true))
                                                  (.records records (get config :kafka-source-topic)))]
                                         ; XXX: do this with a value.deserializer
-                                 (when-not (= false (process-records-fn events))
+                                 (when-not (false? (process-records-fn events))
                                         ; XXX: Add telemetry
                                    (.commitSync consumer))))
                              (log/info "Shutdown kafka consumer (source)")
