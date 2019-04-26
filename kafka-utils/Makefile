@@ -5,7 +5,7 @@ PYTHON = $(CONDA_RUN) python
 PYTEST = $(CONDA_RUN) pytest
 TEST_FLAGS = -v
 # We mentally do --cov-fail-under 90
-COVERAGE_FLAGS = --cov=src --cov-report html
+COVERAGE_FLAGS = --cov=src --cov-report html --cov-report term
 
 
 LINT = $(CONDA_RUN) flake8

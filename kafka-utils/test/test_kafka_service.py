@@ -44,7 +44,7 @@ def test_kafka_service_imports():
     assert KafkaService
 
 
-@fixture()
+@fixture
 def benchmark_event():
     doc = BenchmarkDoc({"var": "val"}, "var = val", MOCK_MD5)
     payload = MockBenchmarkPayload(foo="FOO", bar=42, toml=doc)
@@ -54,7 +54,7 @@ def benchmark_event():
                           payload=payload)
 
 
-@fixture()
+@fixture
 def kafka_consumer(benchmark_event: BenchmarkEvent):
     consumer = MagicMock(spec=KafkaConsumer)
 
@@ -63,7 +63,7 @@ def kafka_consumer(benchmark_event: BenchmarkEvent):
     return consumer
 
 
-@fixture()
+@fixture
 def kafka_consumer_with_invalid_message():
     consumer = MagicMock(spec=KafkaConsumer)
 
@@ -73,12 +73,12 @@ def kafka_consumer_with_invalid_message():
     return consumer
 
 
-@fixture()
+@fixture
 def kafka_producer():
     return MagicMock(spec=KafkaProducer)
 
 
-@fixture()
+@fixture
 def simple_kafka_service(kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer):
     callbacks = []
     kafka_service = KafkaService(SERVICE_NAME, VERSION, PRODUCER_TOPIC, callbacks, kafka_consumer,
