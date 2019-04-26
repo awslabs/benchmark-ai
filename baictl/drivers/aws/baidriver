@@ -74,8 +74,7 @@ create_infra() {
     [[ -n "$region" ]] && vars="${vars} -var region=${region}"
     [[ -n "$prefix_list_id" ]] && vars="${vars} -var prefix_list_ids=[\"${prefix_list_id}\"]"
 
-    terraform init $terraform_dir
-    terraform get $terraform_dir
+    _initialize_terraform_backend
 
     terraform plan --state=$terraform_state --out=$terraform_plan ${vars} $terraform_dir || return 1
     terraform apply $terraform_plan || return 1
@@ -96,6 +95,22 @@ create_infra() {
     _install_zookeeper || return 1
 
     [ "$validate" == false ] || validate_infra $@
+}
+
+_initialize_terraform_backend(){
+    if [[ ! -f $data_dir/backend.tfvars ]] ; then
+        printf "Creating bootstrap S3 bucket...\n"
+        local uuid=$(uuidgen | tr '[:upper:]' '[:lower:]')
+        aws s3 mb s3://terraform-state-$uuid || return 1
+        printf "bucket=\"terraform-state-${uuid}\"" > backend.tfvars
+    fi
+    local s3_bucket_name=$(awk -F'"' '{print $2}'  bai/backend.tfvars)
+    if ! aws s3 ls s3://s3_bucket; then
+        printf "S3 bucket in $data_dir/backend.tfvars does not exist!"
+        return 1
+    fi
+    terraform init --var-file=$data_dir/backend.tfvars $terraform_dir
+    terraform get --var-file=$data_dir/backend.tfvars $terraform_dir
 }
 
 _install_msk_aware_terraform_plugin(){
