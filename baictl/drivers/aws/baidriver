@@ -74,8 +74,7 @@ create_infra() {
     [[ -n "$region" ]] && vars="${vars} -var region=${region}"
     [[ -n "$prefix_list_id" ]] && vars="${vars} -var prefix_list_ids=[\"${prefix_list_id}\"]"
 
-    terraform init $terraform_dir
-    terraform get $terraform_dir
+    _initialize_terraform_backend
 
     terraform plan --state=$terraform_state --out=$terraform_plan ${vars} $terraform_dir || return 1
     terraform apply $terraform_plan || return 1
@@ -96,6 +95,16 @@ create_infra() {
     _install_zookeeper || return 1
 
     [ "$validate" == false ] || validate_infra $@
+}
+
+_initialize_terraform_backend(){
+    if [[ ! -f backend.tfvars ]] ; then
+        local uuid=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+        aws s3 mb terraform-state-$uuid || return 1
+        printf "backend=\"terraform-state-${uuid}\"" > backend.tfvars
+    fi
+    terraform init $terraform_dir
+    terraform get $terraform_dir
 }
 
 _install_msk_aware_terraform_plugin(){
