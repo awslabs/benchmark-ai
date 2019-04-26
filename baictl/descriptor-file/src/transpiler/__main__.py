@@ -1,33 +1,20 @@
-import argparse
 import os
 
+from transpiler.args import get_args
+from transpiler.descriptor import Descriptor, DescriptorSettings
 from transpiler.bai_knowledge import create_bai_config, EnvironmentInfo
-from transpiler.descriptor import Descriptor
 
 
-def main():
-    parser = argparse.ArgumentParser(description='Reads the descriptor file and creates the '
-                                                 'corresponding job config yaml file.')
+def main(argv=None):
+    args = get_args(argv)
 
-    parser.add_argument('descriptor',
-                        help='Relative path to descriptor file')
+    descriptor_config = DescriptorSettings(**args)
+    descriptor = Descriptor.from_toml_file(args.descriptor, descriptor_config)
 
-    parser.add_argument('-f', '--filename', metavar='filename', nargs='?',
-                        help='Output to file. If not specified, output to stdout',
-                        default=None,
-                        const='job_config.yaml')
-
-    parser.add_argument('--availability-zones', nargs='+',
-                        help='All the availability zones which the benchmark can run',
-                        required=True)
-
-    args = parser.parse_args()
-
-    descriptor = Descriptor.from_toml_file(args.descriptor)
     environment_info = EnvironmentInfo(
         availability_zones=args.availability_zones
     )
-    bai_config = create_bai_config(descriptor, environment_info=environment_info)
+    bai_config = create_bai_config(descriptor, args, environment_info=environment_info)
     yaml_string = bai_config.dump_yaml_string()
 
     if args.filename:
