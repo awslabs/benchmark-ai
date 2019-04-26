@@ -3,7 +3,7 @@
 from setuptools import find_packages, setup
 
 setup(
-    name='benchmarkai-fetfcher-job',
+    name='benchmarkai-fetcher-job',
     url='https://github.com/MXNetEdge/benchmark-ai',
     package_dir={'': 'src'},
     packages=find_packages("src"),
