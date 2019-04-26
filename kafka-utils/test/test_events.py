@@ -46,6 +46,11 @@ def test_data_set_optional_missing_src():
         DataSet.from_json(json)
 
 
+def test_data_set_dont_fail_unknown_fields():
+    json = '{"src":"http://foo.com","foo":"bar"}'
+    DataSet.from_json(json)
+
+
 def test_fetcher_event(base_event_as_dict):
     fetcher_event_as_dict = base_event_as_dict
     fetcher_event_as_dict["payload"]["data_sets"] = [
