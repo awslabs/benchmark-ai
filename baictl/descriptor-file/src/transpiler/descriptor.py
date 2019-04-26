@@ -2,7 +2,6 @@ import csv
 import logging
 import os
 import toml
-import json
 
 from typing import Dict, List
 from urllib.parse import urlparse
@@ -10,14 +9,10 @@ from crontab import CronSlices
 from dataclasses import dataclass
 
 
-@dataclass(init=False)
+@dataclass
 class DescriptorSettings:
-    VALID_DATA_SOURCES: List[str]
-    VALID_STRATEGIES: List[str]
-
-    def __init__(self, VALID_DATA_SOURCES: str, VALID_STRATEGIES: str):
-        self.VALID_DATA_SOURCES = json.loads(VALID_DATA_SOURCES)
-        self.VALID_STRATEGIES = json.loads(VALID_STRATEGIES)
+    valid_data_sources: List[str]
+    valid_strategies: List[str]
 
 
 class Descriptor:
@@ -73,11 +68,11 @@ class Descriptor:
         for source in self.data_sources:
             if not source.get('uri', ''):
                 raise ValueError('Missing data uri')
-            if source['scheme'] not in self.config.VALID_DATA_SOURCES:
-                raise ValueError(f'Invalid data uri: {source["uri"]} (must be one of {self.config.VALID_DATA_SOURCES})')
+            if source['scheme'] not in self.config.valid_data_sources:
+                raise ValueError(f'Invalid data uri: {source["uri"]} (must be one of {self.config.valid_data_sources})')
 
-        if self.strategy not in self.config.VALID_STRATEGIES:
-            raise ValueError(f'Invalid strategy: {self.strategy} (must be one of {self.config.VALID_STRATEGIES})')
+        if self.strategy not in self.config.valid_strategies:
+            raise ValueError(f'Invalid strategy: {self.strategy} (must be one of {self.config.valid_strategies})')
 
         if self.distributed:
             if self.num_instances <= 1:

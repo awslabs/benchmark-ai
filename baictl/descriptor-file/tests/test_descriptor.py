@@ -27,5 +27,5 @@ def test_descriptor_config(descriptor_config):
     sources = ["s3", "http", "https", "ftp", "ftps"]
     strategies = ["single_node", "horovod"]
 
-    assert descriptor_config.VALID_DATA_SOURCES == sources
-    assert descriptor_config.VALID_STRATEGIES == strategies
+    assert descriptor_config.valid_data_sources == sources
+    assert descriptor_config.valid_strategies == strategies

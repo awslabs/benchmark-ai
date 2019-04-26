@@ -29,7 +29,7 @@ class BaiConfig:
     def __init__(
             self,
             descriptor: Descriptor,
-            config: dict,
+            config_args,
             config_template: ConfigTemplate,
             *,
             environment_info: EnvironmentInfo,
@@ -44,7 +44,7 @@ class BaiConfig:
                               generated.
         """
         self.descriptor = descriptor
-        self.config = config
+        self.config = config_args
 
         if random_object is None:
             random_object = random.Random()
@@ -84,11 +84,11 @@ class BaiConfig:
         pod_spec_volumes = self.root.get_pod_spec().volumes
         container_volume_mounts = self.root.find_container("benchmark").volumeMounts
 
-        shm_vol = Volume(name=self.config.get('general', 'SHARED_MEMORY_VOL'),
+        shm_vol = Volume(name=self.config.shared_memory_vol,
                          emptyDir=EmptyDirVolumeSource(medium="Memory"))
         pod_spec_volumes.append(shm_vol)
 
-        shm_vol_mount = VolumeMount(name=self.config.get('general', 'SHARED_MEMORY_VOL'),
+        shm_vol_mount = VolumeMount(name=self.config.shared_memory_vol,
                                     mountPath='/dev/shm')
         container_volume_mounts.append(shm_vol_mount)
 
@@ -196,14 +196,14 @@ class BaiConfig:
         s3_objects = []
         for s in data_sources:
             s3_objects.append(s['object'] + ',' +
-                              self.config.get('general', 'PULLER_MOUNT_CHMOD') + ',' +
+                              self.config.puller_mount_chmod + ',' +
                               data_volumes[s['path']]['name'])
 
-        puller_args = [self.config.get('general', 'PULLER_S3_REGION'), data_sources[0]['bucket'], ':'.join(s3_objects)]
+        puller_args = [self.config.puller_s3_region, data_sources[0]['bucket'], ':'.join(s3_objects)]
         # ------------------------------------------
 
         vol_mounts = self._get_puller_volume_mounts(data_volumes)
-        data_puller.image = self.config.get('general', 'PULLER_DOCKER_IMAGE')
+        data_puller.image = self.config.puller_docker_image
         data_puller.args = puller_args
         if not data_puller.volumeMounts:
             data_puller.volumeMounts = vol_mounts
@@ -221,14 +221,14 @@ class BaiConfig:
 
 
 def create_bai_config(descriptor: Descriptor,
-                      config: dict,
+                      config_args,
                       environment_info: EnvironmentInfo,
                       extra_bai_config_args=None) -> BaiConfig:
     """
     Builds a BaiConfig object
-    :param environment_info: Information on the environment that BAI is running on.
     :param descriptor: The descriptor.
-    :param config: dict with the configuration values from 'settings.ini'
+    :param config_args: Configuration values
+    :param environment_info: Information on the environment that BAI is running on.
     :param extra_bai_config_args: An optional Dict which will be forwarded to the `BaiConfig` object created.
     :return:
     """
@@ -248,7 +248,7 @@ def create_bai_config(descriptor: Descriptor,
     config_template = ConfigTemplate(contents)
 
     bai_config = BaiConfig(descriptor,
-                           config,
+                           config_args,
                            config_template,
                            environment_info=environment_info,
                            **extra_bai_config_args)
