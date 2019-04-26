@@ -26,11 +26,11 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.labels['mpi_role_type']
-        image: stsukrov/s3dataprovider
+        image: test/docker:image
         args:
-        - eu-west-1
+        - s3_region
         - mlperf-data-stsukrov
-        - imagenet/train-480px,777,p0:imagenet/validation-480px,777,p0
+        - imagenet/train-480px,700,p0:imagenet/validation-480px,700,p0
         volumeMounts:
         - name: p0
           mountPath: /data/p0

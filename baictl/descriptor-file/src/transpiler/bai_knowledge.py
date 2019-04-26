@@ -7,6 +7,7 @@ from typing import List, Dict
 from ruamel import yaml
 from dataclasses import dataclass
 from transpiler.descriptor import Descriptor
+from transpiler.config import BaiConfig
 from transpiler.kubernetes_spec_logic import ConfigTemplate, VolumeMount, HostPath, Volume, EmptyDirVolumeSource
 
 
@@ -20,7 +21,7 @@ class EnvironmentInfo:
     availability_zones: List[str]
 
 
-class BaiConfig:
+class BaiKubernetesObjectBuilder:
     """
     Adds the logic required from BAI into the Kubernetes root object that represents
     launching a benchmark.
@@ -29,7 +30,7 @@ class BaiConfig:
     def __init__(
             self,
             descriptor: Descriptor,
-            config,
+            config: BaiConfig,
             config_template: ConfigTemplate,
             *,
             environment_info: EnvironmentInfo,
@@ -220,10 +221,10 @@ class BaiConfig:
         return vol_mounts
 
 
-def create_bai_config(descriptor: Descriptor,
-                      config,
-                      environment_info: EnvironmentInfo,
-                      extra_bai_config_args=None) -> BaiConfig:
+def create_bai_k8s_builder(descriptor: Descriptor,
+                           config,
+                           environment_info: EnvironmentInfo,
+                           extra_bai_config_args=None) -> BaiKubernetesObjectBuilder:
     """
     Builds a BaiConfig object
     :param descriptor: The descriptor.
@@ -247,11 +248,11 @@ def create_bai_config(descriptor: Descriptor,
         contents = f.read()
     config_template = ConfigTemplate(contents)
 
-    bai_config = BaiConfig(descriptor,
-                           config,
-                           config_template,
-                           environment_info=environment_info,
-                           **extra_bai_config_args)
+    bai_config = BaiKubernetesObjectBuilder(descriptor,
+                                            config,
+                                            config_template,
+                                            environment_info=environment_info,
+                                            **extra_bai_config_args)
 
     if descriptor.strategy == 'single_node':
         bai_config.add_benchmark_cmd_to_container()

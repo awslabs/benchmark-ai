@@ -1,11 +1,11 @@
-import configparser
 import textwrap
 import toml
 import pytest
 
-from transpiler.descriptor import Descriptor, DescriptorSettings
+from transpiler.descriptor import Descriptor
 from transpiler.bai_knowledge import EnvironmentInfo
 from transpiler.args import get_args
+from transpiler.config import DescriptorConfig, BaiConfig
 
 
 @pytest.fixture
@@ -26,7 +26,15 @@ def descriptor_config():
     config_values = {'valid_data_sources': ["s3", "http", "https", "ftp", "ftps"],
                      'valid_strategies': ["single_node", "horovod"]}
 
-    return DescriptorSettings(**config_values)
+    return DescriptorConfig(**config_values)
+
+
+@pytest.fixture
+def bai_config():
+    return BaiConfig(shared_memory_vol="dshm",
+                     puller_mount_chmod="700",
+                     puller_s3_region="s3_region",
+                     puller_docker_image="test/docker:image")
 
 
 @pytest.fixture

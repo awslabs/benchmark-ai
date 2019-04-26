@@ -6,13 +6,8 @@ import toml
 from typing import Dict, List
 from urllib.parse import urlparse
 from crontab import CronSlices
-from dataclasses import dataclass
 
-
-@dataclass
-class DescriptorSettings:
-    valid_data_sources: List[str]
-    valid_strategies: List[str]
+from transpiler.config import DescriptorConfig
 
 
 class Descriptor:
@@ -20,7 +15,7 @@ class Descriptor:
     The model class for a Descriptor.
     It validates and contains all data the descriptor contains.
     """
-    def __init__(self, descriptor_data: Dict, config: DescriptorSettings):
+    def __init__(self, descriptor_data: Dict, config: DescriptorConfig):
         """
         Constructor
         :param descriptor_data: dict containing the data as loaded from the descriptor toml file
@@ -53,9 +48,10 @@ class Descriptor:
         self._validate()
 
     @classmethod
-    def from_toml_file(cls, toml_file: str, config: DescriptorSettings):
+    def from_toml_file(cls, toml_file: str, config: DescriptorConfig):
         """
         Constructor from toml file path
+        :param config: Configuration values for the descriptor
         :param toml_file: TOML descriptor file path
         """
         descriptor_toml = toml.load(toml_file)
