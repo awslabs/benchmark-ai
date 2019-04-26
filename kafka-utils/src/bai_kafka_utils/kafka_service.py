@@ -2,6 +2,7 @@ import abc
 import logging
 import time
 import uuid
+from dataclasses import dataclass
 from signal import signal, SIGTERM
 from typing import List, Optional
 
@@ -10,6 +11,15 @@ from kafka import KafkaProducer, KafkaConsumer
 from bai_kafka_utils.events import BenchmarkEvent, VisitedService
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass()
+class KafkaServiceConfig:
+    consumer_topic: str
+    producer_topic: str
+    bootstrap_servers: List[str]
+    consumer_group_id: str
+    logging_level: str
 
 
 class KafkaServiceCallback(metaclass=abc.ABCMeta):

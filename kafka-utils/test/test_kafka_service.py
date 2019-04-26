@@ -38,12 +38,6 @@ class MockBenchmarkPayload(BenchmarkPayload):
 MockConsumerRecord = collections.namedtuple("FakeConsumerRecord", ["key", "value"])
 
 
-# Trivial test to check if KafkaService imports something missing
-def test_kafka_service_imports():
-    from bai_kafka_utils.kafka_service import KafkaService
-    assert KafkaService
-
-
 @fixture
 def benchmark_event():
     doc = BenchmarkDoc({"var": "val"}, "var = val", MOCK_MD5)

@@ -2,25 +2,15 @@ import argparse
 
 from configargparse import ArgParser
 
-LOGGING_LEVEL_ENV = "LOGGING_LEVEL"
+from bai_kafka_utils.kafka_service import KafkaServiceConfig
 
-CONSUMER_GROUP_ID_ENV = "CONSUMER_GROUP_ID"
 
-BOOTSTRAP_SERVERS_ENV = "KAFKA_BOOTSTRAP_SERVERS"
-
-PRODUCER_TOPIC_ENV = 'PRODUCER_TOPIC'
-
-CONSUMER_TOPIC_ENV = 'CONSUMER_TOPIC'
-
-LOGGING_LEVEL_ARG = "--logging-level"
-
-CONSUMER_GROUP_ID_ARG = "--consumer-group-id"
-
-BOOTSTRAP_SERVERS_ARG = "--bootstrap-servers"
-
-PRODUCER_TOPIC_ARG = "--producer-topic"
-
-CONSUMER_TOPIC_ARG = "--consumer-topic"
+def get_kafka_service_config(program_name: str, cmd_args: str) -> KafkaServiceConfig:
+    parser = create_kafka_service_parser(program_name)
+    args, _ = parser.parse_known_args(cmd_args)
+    return KafkaServiceConfig(consumer_topic=args.consumer_topic, producer_topic=args.producer_topic,
+                              consumer_group_id=args.consumer_group_id, bootstrap_servers=args.bootstrap_servers,
+                              logging_level=args.logging_level)
 
 
 def create_kafka_service_parser(program_name: str) -> ArgParser:
@@ -34,24 +24,24 @@ def create_kafka_service_parser(program_name: str) -> ArgParser:
     parser = ArgParser(auto_env_var_prefix="",
                        prog=program_name)
 
-    parser.add_argument(CONSUMER_TOPIC_ARG,
-                        env_var=CONSUMER_TOPIC_ENV,
+    parser.add_argument("--consumer-topic",
+                        env_var='CONSUMER_TOPIC',
                         required=True)
 
-    parser.add_argument(PRODUCER_TOPIC_ARG,
-                        env_var=PRODUCER_TOPIC_ENV,
+    parser.add_argument("--producer-topic",
+                        env_var='PRODUCER_TOPIC',
                         required=True)
 
-    parser.add_argument(BOOTSTRAP_SERVERS_ARG,
-                        env_var=BOOTSTRAP_SERVERS_ENV,
+    parser.add_argument("--bootstrap-servers",
+                        env_var="KAFKA_BOOTSTRAP_SERVERS",
                         default="localhost:9092",
                         action=create_split_action(','))
 
-    parser.add_argument(CONSUMER_GROUP_ID_ARG,
-                        env_var=CONSUMER_GROUP_ID_ENV)
+    parser.add_argument("--consumer-group-id",
+                        env_var="CONSUMER_GROUP_ID")
 
-    parser.add_argument(LOGGING_LEVEL_ARG,
-                        env_var=LOGGING_LEVEL_ENV,
+    parser.add_argument("--logging-level",
+                        env_var="LOGGING_LEVEL",
                         default="INFO")
 
     return parser
