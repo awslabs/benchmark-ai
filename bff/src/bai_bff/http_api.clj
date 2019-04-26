@@ -68,7 +68,7 @@
                                                                  (let [event (message->event
                                                                               request
                                                                               (json/parse-string body-string true))]
-                                                                   (pprint event )
+                                                                   (println (json/generate-string event {:pretty true}))
                                         ;(eventbus/dispatch-submit event) ; TODO - implement me!
                                                                    (response (:action_id event))))
                                                                (catch IllegalStateException e
