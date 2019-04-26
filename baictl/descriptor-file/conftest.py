@@ -16,8 +16,8 @@ def bai_environment_info():
 
 @pytest.fixture
 def config_args(shared_datadir):
-    required_args = "descriptor.toml --availability-zones=us-east-1a,us-east-1b,us-east-1c"
-    return get_args(required_args + f'-c {str(shared_datadir / "config.yaml")}')
+    required_args = "descriptor.toml --availability-zones=us-east-1a us-east-1b us-east-1c"
+    return get_args(required_args + f' -c {str(shared_datadir / "config.yaml")}')
 
 
 @pytest.fixture

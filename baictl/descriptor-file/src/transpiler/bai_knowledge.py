@@ -29,7 +29,7 @@ class BaiConfig:
     def __init__(
             self,
             descriptor: Descriptor,
-            config_args,
+            config,
             config_template: ConfigTemplate,
             *,
             environment_info: EnvironmentInfo,
@@ -44,7 +44,7 @@ class BaiConfig:
                               generated.
         """
         self.descriptor = descriptor
-        self.config = config_args
+        self.config = config
 
         if random_object is None:
             random_object = random.Random()
@@ -221,13 +221,13 @@ class BaiConfig:
 
 
 def create_bai_config(descriptor: Descriptor,
-                      config_args,
+                      config,
                       environment_info: EnvironmentInfo,
                       extra_bai_config_args=None) -> BaiConfig:
     """
     Builds a BaiConfig object
     :param descriptor: The descriptor.
-    :param config_args: Configuration values
+    :param config: Configuration values
     :param environment_info: Information on the environment that BAI is running on.
     :param extra_bai_config_args: An optional Dict which will be forwarded to the `BaiConfig` object created.
     :return:
@@ -248,7 +248,7 @@ def create_bai_config(descriptor: Descriptor,
     config_template = ConfigTemplate(contents)
 
     bai_config = BaiConfig(descriptor,
-                           config_args,
+                           config,
                            config_template,
                            environment_info=environment_info,
                            **extra_bai_config_args)
