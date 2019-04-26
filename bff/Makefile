@@ -1,3 +1,5 @@
+#NOTE: Requires: sed, git, docker, kubectl
+
 #----------------------------------------------------------------
 # Project Specific Info
 #----------------------------------------------------------------
@@ -153,6 +155,7 @@ clean-all: clean
 	rm -rf $(COMPILE_PATH)
 	rm -rf $(GEN_DOCS_PATH)
 	rm project.clj
+	rm deploy.yml
 	rm -rf $(CD_TARGET_PATH)
 
 $(JAR_FILE): $(MAIN_CLASS_FILE)
