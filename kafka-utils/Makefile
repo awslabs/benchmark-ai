@@ -1,10 +1,12 @@
 SHELL :=/bin/bash
 ENV_NAME = kafka-utils-test
-CONDA_RUN = conda run -n $(ENV_NAME)
+CONDA_RUN = conda run --name $(ENV_NAME)
 PYTHON = $(CONDA_RUN) python
 PYTEST = $(CONDA_RUN) pytest
 TEST_FLAGS = -v
-COVERAGE_FLAGS = --cov=src --cov-report html --cov-fail-under 90
+# We mentally do --cov-fail-under 90
+COVERAGE_FLAGS = --cov=src --cov-report html
+
 
 LINT = $(CONDA_RUN) flake8
 
@@ -19,7 +21,9 @@ clean:
 	rm -f .coverage
 
 venv:
-	conda env update -f test-environment.yml --prune
+	conda install --channel conda-forge --name base conda==4.6.14 --yes
+	conda env update --file environment.yml --prune
+	conda env update --file test-environment.yml --prune
 
 develop: venv
 	$(PYTHON) setup.py develop

@@ -1,13 +1,20 @@
 import logging
 from json import JSONDecodeError
-from typing import List, Type
+from typing import List, Type, Tuple
 
 import kafka
+from kafka import KafkaConsumer, KafkaProducer
 
 from bai_kafka_utils.events import make_benchmark_event, BenchmarkPayload
 from bai_kafka_utils.utils import DEFAULT_ENCODING
 
 logger = logging.getLogger(__name__)
+
+
+# args from kafka
+def create_kafka_consumer_producer(args, payload_type: Type[BenchmarkPayload]) -> Tuple[KafkaConsumer, KafkaProducer]:
+    return create_kafka_consumer(args.bootstrap_servers, args.consumer_group_id, args.consumer_topic,
+                                 payload_type), create_kafka_producer(args.bootstrap_servers)
 
 
 def create_kafka_consumer(bootstrap_servers: List[str],
