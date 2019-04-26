@@ -1,0 +1,5 @@
+FROM continuumio/miniconda3
+
+RUN conda install --channel conda-forge --name base conda==4.6.14 --yes
+RUN apt-get update && apt-get install make
+
