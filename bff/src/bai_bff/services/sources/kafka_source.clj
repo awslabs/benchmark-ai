@@ -7,7 +7,7 @@
 
 (def kafka-keys
   #{:kafka-bootstrap-servers
-    :kafka-group-id
+    :kafka-consumer-group-id
     :kafka-source-topic
     :kafka-poll-interval-ms
     ;:kafka-auto-offset-reset
@@ -28,7 +28,7 @@
                            (let [consumer (KafkaConsumer. (doto (java.util.Properties.)
                                         ; XXX: Implement DNS service discovery
                                                             (.put "bootstrap.servers"  (get config :kafka-bootstrap-servers))
-                                                            (.put "group.id",          (get config :kafka-group-id))
+                                                            (.put "group.id",          (get config :kafka-consumer-group-id))
                                                             (.put "auto.offset.reset"  (get config :kafka-auto-offset-reset "latest"))
                                                             (.put "session.timeout.ms" (Integer/parseInt (get config :kafka-session-timeout-ms 10000)))
                                                             (.put "key.deserializer",  (get config :kafka-key-serializer   "org.apache.kafka.common.serialization.StringDeserializer"))

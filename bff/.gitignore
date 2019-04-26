@@ -6,6 +6,7 @@
 /checkouts
 project.clj
 profiles.clj
+deploy.yml
 pom.xml
 pom.xml.asc
 *.jar

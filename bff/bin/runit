@@ -1,17 +1,29 @@
 #!/bin/bash
 
 #Configuration
-export ENVIRONMENT="test"
+export ENVIRONMENT=${ENVIRONMENT:="test"}
+export LOGGING_LEVEL=${LOGGING_LEVEL:="info"}
 
 #Endpoints Server
-export SVC_PORT=8080
-export THREAD_POOL_SIZE=5
-export MAX_QUEUE_SIZE=20
+export SVC_PORT=${SVC_PORT:=8080}
+export THREAD_POOL_SIZE=${THREAD_POOL_SIZE:=5}
+export MAX_QUEUE_SIZE=${MAX_QUEUE_SIZE:=20}
 
+
+#Kafka
+export KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:="local"}
+
+#Kafa Source (consumer/processor..)
+export KAFKA_SOURCE_TOPIC=${KAFKA_SOURCE_TOPIC:="none"}
+export KAFKA_CONSUMER_GROUP_ID=${KAFKA_CONSUMER_GROUP_ID:="none"}
+export KAFKA_POLL_INTERVAL_MS=${KAFKA_POLL_INTERVAL_MS:=666}
+
+#Kafka Sink (producer/sender...)
+export KAFKA_SINK_TOPIC=${KAFKA_SINK_TOPIC:="none"}
 
 export JARFILE="/Users/cue/projects/bai-bff/target/bai-bff-0.1.0-SNAPSHOT-standalone.jar"
 
 cmd="java -jar ${JARFILE}"
 echo ${cmd}
-
-$cmd
+env
+#$cmd

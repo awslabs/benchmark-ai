@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: @@PROJECT@@
+  labels:
+    app: benchmark-ai
+    service: @@PROJECT@@
+spec:
+  selector:
+    matchLabels:
+      app: benchmark-ai
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: benchmark-ai
+        service: @@PROJECT@@
+        version: @@VERSION@@
+    spec:
+      serviceAccountName: @@PROJECT@@
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: service
+                    operator: In
+                    values:
+                      - @@PROJECT@@
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: @@PROJECT@@
+          image: gavin/@@PROJECT@@
+          livenessProbe:
+            httpGet:
+              path: /healthy
+              port: @@SVC_PORT@@
+            initialDelaySeconds: 5
+            timeoutSeconds: 1
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: @@SVC_PORT@@
+          env:
+            - name: ENVIRONMENT
+              value: @@ENVIRONMENT@@
+            - name: LOGGING_LEVEL
+              value: @@LOGGING_LEVEL@@
+            - name: SVC_PORT
+              value: @@SVC_PORT@@
+            - name: THREAD_POOL_SIZE
+              value: @@THREAD_POOL_SIZE@@
+            - name: MAX_QUEUE_SIZE
+              value: @@MAX_QUEUE_SIZE@@
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: outputs-infrastructure
+                  key: msk_bootstrap_brokers
+            - name: KAFKA_SOURCE_TOPIC
+              value: @@KAFKA_SOURCE_TOPIC@@
+            - name: KAFKA_CONSUMER_GROUP_ID
+              value: @@KAFKA_CONSUMER_GROUP_ID@@
+            - name: KAFKA_POLL_INTERVAL_MS
+              value: @@KAFKA_POLL_INTERVAL_MS@@
+            - name: KAFKA_SINK_TOPIC
+              value: @@KAFKA_SINK_TOPIC@@
+      nodeSelector:
+        node.type: bai-services-cheap
+      restartPolicy: Always

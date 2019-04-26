@@ -8,7 +8,7 @@
 
 (def kafka-keys
   #{:kafka-bootstrap-servers
-    :kafka-topic
+    :kafka-sink-topic
     ;:send-kafka  ; <-- this code's own flag for turning on and off kafka sending entirely
     ;:kafka-acks
     ;:kafka-retries
@@ -54,7 +54,7 @@
   Sink
   (send! [_ message]
     (when @started?
-      (.send @producer  (ProducerRecord. (get config :kafka-topic)
+      (.send @producer  (ProducerRecord. (get config :kafka-sink-topic)
                                          (str message)))))
   Object
   (toString [_] "<KafkaSinkService>"))

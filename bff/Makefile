@@ -19,7 +19,33 @@ TARGET_PATH := target
 RELEASE_PATH := release
 GEN_DOCS_PATH := docs-generated
 
-MAIN := bai-bff.app
+#---
+# Project metadata
+#---
+#(note: may set VERSION variable in above stanza to override the default below, which gets it from the nearest git tag of the form v.#.#.#<blah>)
+VERSION ?= $(shell git tag | sed -n -e 's/.*-v\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p' | sort -s -u -t. -k1,1n -k2,2n -k3,3n | tail -n 1)
+TAG := $(shell git describe --abbrev=0)
+MODULE := $(shell git describe | sed -n 's/\(.*\)-[v]\?[0-9].*/\1/p' | xargs) #TODO: set tp docker container id
+BRANCH := $(shell git branch | grep '*' | sed -n 's/\*[ ]*//p' | xargs)
+COMMIT := $(shell git log -p -n1 | sed -n -e 's/^commit \(.*\)/\1/p'   | xargs)
+COMMIT_DATE :=   $(shell git log -p -n1 | sed -n -e 's/^Date: \(.*\)/\1/p'   | xargs)
+COMMIT_AUTHOR := $(shell git log -p -n1 | sed -n -e 's/^Author: \(.*\)/\1/p' | xargs)
+BUILD_DATE := $(shell date)
+
+#---
+# Building core artifact(s)
+#---
+TEMPLATE := etc/project.clj.tmpl
+MAIN := $(PROJECT).app
+LEIN_ROOT := true
+LEIN := ./bin/lein
+
+JAR_FILE := $(TARGET_PATH)/$(PROJECT)-$(VERSION)-standalone.jar
+TARGET := $(PROJECT)-$(VERSION)
+RELEASE_FILE := $(TARGET).tar.gz
+CLJ_FILES := $(shell find $(SOURCE_PATHS) -name '*.clj')
+CLJ_TEST_FILES := $(shell find $(TEST_PATHS) -name '*.clj')
+MAIN_CLASS_FILE := $(COMPILE_PATH)/$(shell sed -e 's@\.@/@g' -e 's@-@_@g' <<<$(MAIN))__init.class
 
 #---
 # Continuous Delivery, Packaging and Containerization
@@ -32,31 +58,25 @@ CD_PACKAGE_VERSION_STAMP := FIXME
 CD_RUNTIME_STACK := clojure
 CD_MANIFEST := manifest.json
 CD_TARGET_PATH := target
+
+#---
+# Deployment
+#---
+DEPLOY_TEMPLATE := etc/deploy.yml.tmpl
+
+#Run Environment (ref: deploy template and runit script)
+ENVIRONMENT := test
+LOGGING_LEVEL := info
+SVC_PORT := 8080
+THREAD_POOL_SIZE := 6
+MAX_QUEUE_SIZE := 21
+#KAFKA_BOOTSTRAP_SERVERS #Here only as a note that this is a thing
+KAFKA_SOURCE_TOPIC := huh
+KAFKA_CONSUMER_GROUP_ID := huh
+KAFKA_POLL_INTERVAL_MS := 667
+KAFKA_SINK_TOPIC := huh
+
 #----------------------------------------------------------------
-
-#(note: may set VERSION variable in above stanza to override the default below, which gets it from the nearest git tag of the form v.#.#.#<blah>)
-VERSION ?= $(shell git tag | sed -n -e 's/.*-v\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p' | sort -s -u -t. -k1,1n -k2,2n -k3,3n | tail -n 1)
-TAG := $(shell git describe --abbrev=0)
-MODULE := $(shell git describe | sed -n 's/\(.*\)-[v]\?[0-9].*/\1/p' | xargs) #TODO: set tp docker container id
-BRANCH := $(shell git branch | grep '*' | sed -n 's/\*[ ]*//p' | xargs)
-COMMIT := $(shell git log -p -n1 | sed -n -e 's/^commit \(.*\)/\1/p'   | xargs)
-COMMIT_DATE :=   $(shell git log -p -n1 | sed -n -e 's/^Date: \(.*\)/\1/p'   | xargs)
-COMMIT_AUTHOR := $(shell git log -p -n1 | sed -n -e 's/^Author: \(.*\)/\1/p' | xargs)
-BUILD_DATE := $(shell date)
-
-TEMPLATE := etc/project.clj.tmpl
-
-LEIN_ROOT := true
-LEIN := ./bin/lein
-
-JAR_FILE := $(TARGET_PATH)/$(PROJECT)-$(VERSION)-standalone.jar
-
-TARGET := $(PROJECT)-$(VERSION)
-RELEASE_FILE := $(TARGET).tar.gz
-
-CLJ_FILES := $(shell find $(SOURCE_PATHS) -name '*.clj')
-CLJ_TEST_FILES := $(shell find $(TEST_PATHS) -name '*.clj')
-MAIN_CLASS_FILE := $(COMPILE_PATH)/$(shell sed -e 's@\.@/@g' -e 's@-@_@g' <<<$(MAIN))__init.class
 
 compile: $(MAIN_CLASS_FILE)
 
@@ -209,11 +229,27 @@ cd-pipeline-setup:
 	@echo "------------------------"
 	#create or update the pipeline
 
-deploy:
+deploy.yml: $(DEPLOY_TEMPLATE)
+	@echo "Generating kubernetes deploy.yaml from template..."
+	@sed -e 's|@@PROJECT@@|$(PROJECT)|g' \
+	     -e 's|@@VERSION@@|$(VERSION)|g' \
+	     -e 's|@@ENVIRONMENT@@|$(ENVIRONMENT)|g' \
+	     -e 's|@@LOGGING_LEVEL@@|$(LOGGING_LEVEL)|g' \
+	     -e 's|@@SVC_PORT@@|$(SVC_PORT)|g' \
+             -e 's|@@THREAD_POOL_SIZE@@|$(THREAD_POOL_SIZE)|g' \
+	     -e 's|@@MAX_QUEUE_SIZE@@|$(MAX_QUEUE_SIZE)|g' \
+	     -e 's|@@KAFKA_SOURCE_TOPIC@@|$(KAFKA_SOURCE_TOPIC)|g' \
+	     -e 's|@@KAFKA_CONSUMER_GROUP_ID@@|$(KAFKA_CONSUMER_GROUP_ID)|g' \
+	     -e 's|@@KAFKA_POLL_INTERVAL_MS@@|$(KAFKA_POLL_INTERVAL_MS)|g' \
+	     -e 's|@@KAFKA_SINK_TOPIC@@|$(KAFKA_SINK_TOPIC)|g' $(DEPLOY_TEMPLATE) > $(shell sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(DEPLOY_TEMPLATE))
+
+deploy: deploy.yml
 	@echo "------------------------"
-	@echo "Setting up CD pipeline..."
+	@echo "K8S deployment..."
 	@echo "------------------------"
-	#Deploy this code to the k8s cluster
+	#Deploy this service to the k8s cluster
+	#kubectl apply -f deploy.yaml
+
 
 
 # (may want to put in the k8s cycle here as well scale up and down)
