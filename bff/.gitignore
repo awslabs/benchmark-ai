@@ -7,6 +7,7 @@
 project.clj
 profiles.clj
 deploy.yml
+Dockerfile
 pom.xml
 pom.xml.asc
 *.jar

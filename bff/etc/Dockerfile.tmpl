@@ -1,0 +1,6 @@
+FROM clojure:lein-alpine
+RUN mkdir -p /srv/app
+WORKDIR /srv/app
+COPY @@JAR_FILE@@ /srv/app/
+EXPOSE @@SVC_PORT@@
+CMD ["java" "-jar" "@@PROJECT@@-@@VERSION@@-standalone.jar"]

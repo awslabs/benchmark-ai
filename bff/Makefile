@@ -30,6 +30,7 @@ TAG := $(shell git describe --abbrev=0)
 MODULE := $(shell git describe | sed -n 's/\(.*\)-[v]\?[0-9].*/\1/p' | xargs) #TODO: set tp docker container id
 BRANCH := $(shell git branch | grep '*' | sed -n 's/\*[ ]*//p' | xargs)
 COMMIT := $(shell git log -p -n1 | sed -n -e 's/^commit \(.*\)/\1/p'   | xargs)
+COMMIT_SHORT_HASH := $(shell git rev-parse --short HEAD)
 COMMIT_DATE :=   $(shell git log -p -n1 | sed -n -e 's/^Date: \(.*\)/\1/p'   | xargs)
 COMMIT_AUTHOR := $(shell git log -p -n1 | sed -n -e 's/^Author: \(.*\)/\1/p' | xargs)
 BUILD_DATE := $(shell date)
@@ -52,7 +53,7 @@ MAIN_CLASS_FILE := $(COMPILE_PATH)/$(shell sed -e 's@\.@/@g' -e 's@-@_@g' <<<$(M
 #---
 # Continuous Delivery, Packaging and Containerization
 #---
-DOCKER_REGISTRY := I_DUNNO
+DOCKER_REGISTRY := gavin
 SERVICE_DIRECTORY_PAGE := http://foo.bar.com/services/$(PROJECT)
 
 CD_SERVER := http://foo.bar.com/job/$(PROJECT)
@@ -65,6 +66,7 @@ CD_TARGET_PATH := target
 # Deployment
 #---
 DEPLOY_TEMPLATE := etc/deploy.yml.tmpl
+DOCKER_TEMPLATE := etc/Dockerfile.tmpl
 
 #Run Environment (ref: deploy template and runit script)
 ENVIRONMENT := test
@@ -213,12 +215,20 @@ build-deploy-container: dist
 	@echo "------------------------"
 	@echo "Building container'ed artifact... ($(PROFILE))"
 	@echo "------------------------"
+	@echo "Generating Docker's Dockerfile from template..."
+	@sed -e 's|@@PROJECT@@|$(PROJECT)|g' \
+	     -e 's|@@VERSION@@|$(VERSION)|g' \
+	     -e 's|@@JAR_FILE@@|$(JAR_FILE)|g' \
+	     -e 's|@@SVC_PORT@@|$(SVC_PORT)|g' $(DOCKER_TEMPLATE) > $(shell sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(DOCKER_TEMPLATE))
+	docker build -t $(DOCKER_REGISTRY)/$(PROJECT)-$(COMMIT_SHORT_HASH) .
+	docker image ls | grep $(PROJECT)
 
 
 publish-container: build-deploy-container
 	@echo "------------------------"
 	@echo "Publishing container to registry... ($(PROFILE))"
 	@echo "------------------------"
+	#docker push
 
 
 
