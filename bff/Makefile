@@ -209,15 +209,15 @@ publish-dev-container:
 	@echo "------------------------"
 
 
-build-deploy-container:
+build-deploy-container: dist
 	@echo "------------------------"
-	@echo "Build artifact in container..."
+	@echo "Building container'ed artifact... ($(PROFILE))"
 	@echo "------------------------"
-	#docker pull
 
-publish-container:
+
+publish-container: build-deploy-container
 	@echo "------------------------"
-	@echo "Publishing container to registry..."
+	@echo "Publishing container to registry... ($(PROFILE))"
 	@echo "------------------------"
 
 
