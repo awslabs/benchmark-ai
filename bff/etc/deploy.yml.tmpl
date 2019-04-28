@@ -30,7 +30,7 @@ spec:
               topologyKey: kubernetes.io/hostname
       containers:
         - name: @@PROJECT@@
-          image: gavin/@@PROJECT@@
+          image: @@DOCKER_REGISTRY@@/@@PROJECT@@:latest
           livenessProbe:
             httpGet:
               path: /healthy
@@ -48,7 +48,7 @@ spec:
               value: @@ENVIRONMENT@@
             - name: LOGGING_LEVEL
               value: @@LOGGING_LEVEL@@
-            - name: SVC_PORT
+            - name: ENDPOINTS_PORT
               value: @@SVC_PORT@@
             - name: THREAD_POOL_SIZE
               value: @@THREAD_POOL_SIZE@@

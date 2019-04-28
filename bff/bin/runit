@@ -21,7 +21,7 @@ export KAFKA_POLL_INTERVAL_MS=${KAFKA_POLL_INTERVAL_MS:=666}
 #Kafka Sink (producer/sender...)
 export KAFKA_SINK_TOPIC=${KAFKA_SINK_TOPIC:="none"}
 
-export JARFILE="/Users/cue/projects/bai-bff/target/bai-bff-0.1.0-SNAPSHOT-standalone.jar"
+export JARFILE="bai-bff-0.0.1-standalone.jar"
 
 cmd="java -jar ${JARFILE}"
 echo ${cmd}

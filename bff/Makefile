@@ -26,7 +26,7 @@ GEN_DOCS_PATH := docs-generated
 #---
 #(note: may set VERSION variable in above stanza to override the default below, which gets it from the nearest git tag of the form v.#.#.#<blah>)
 VERSION ?= $(shell git tag | sed -n -e 's/.*-v\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p' | sort -s -u -t. -k1,1n -k2,2n -k3,3n | tail -n 1)
-TAG := $(shell git describe --abbrev=0)
+TAG := $(shell git describe)
 MODULE := $(shell git describe | sed -n 's/\(.*\)-[v]\?[0-9].*/\1/p' | xargs) #TODO: set tp docker container id
 BRANCH := $(shell git branch | grep '*' | sed -n 's/\*[ ]*//p' | xargs)
 COMMIT := $(shell git log -p -n1 | sed -n -e 's/^commit \(.*\)/\1/p'   | xargs)
@@ -43,7 +43,8 @@ MAIN := $(PROJECT).app
 LEIN_ROOT := true
 LEIN := ./bin/lein
 
-JAR_FILE := $(TARGET_PATH)/$(PROJECT)-$(VERSION)-standalone.jar
+JAR_FILENAME := $(PROJECT)-$(VERSION)-standalone.jar
+JAR_FILE := $(TARGET_PATH)/$(JAR_FILENAME)
 TARGET := $(PROJECT)-$(VERSION)
 RELEASE_FILE := $(TARGET).tar.gz
 CLJ_FILES := $(shell find $(SOURCE_PATHS) -name '*.clj')
@@ -67,6 +68,7 @@ CD_TARGET_PATH := target
 #---
 DEPLOY_TEMPLATE := etc/deploy.yml.tmpl
 DOCKER_TEMPLATE := etc/Dockerfile.tmpl
+DOCKER_DEV_TEMPLATE := etc/Dockerfile_dev.tmpl
 
 #Run Environment (ref: deploy template and runit script)
 ENVIRONMENT := test
@@ -80,6 +82,8 @@ KAFKA_CONSUMER_GROUP_ID := huh
 KAFKA_POLL_INTERVAL_MS := 667
 KAFKA_SINK_TOPIC := huh
 
+#This project may be built in the context of a docker environment using the image: gavin/bai-bff-dev
+#docker run -it --rm -v "$PWD":/srv/app -w /srv/app gavin/bai-bff-dev <command>
 #----------------------------------------------------------------
 
 compile: $(MAIN_CLASS_FILE)
@@ -149,16 +153,18 @@ project.clj: $(TEMPLATE)
 #NOTE: hardcoded "dist" used instead of TARGET_PATH
 #(hesitant to use var here as don't want it overwritten to be "/" or something)
 clean:	project.clj
-	$(LEIN) clean
-	rm -rf $(TARGET_PATH)
+	@$(LEIN) clean
+	$(shell [[ -d $(TARGET_PATH) ]] && rm -rf $(TARGET_PATH))
 
 clean-all: clean
-	rm -rf $(RELEASE_PATH)
-	rm -rf $(COMPILE_PATH)
-	rm -rf $(GEN_DOCS_PATH)
-	rm project.clj
-	rm deploy.yml
-	rm -rf $(CD_TARGET_PATH)
+	$(shell [[ -f project.clj ]]    && rm project.clj)
+	$(shell [[ -f deploy.yml ]]     && rm deploy.yml)
+	$(shell [[ -f Dockerfile ]]     && rm Dockerfile)
+	$(shell [[ -f Dockerfile_dev ]] && rm Dockerfile_dev)
+	$(shell [[ -d $(RELEASE_PATH) ]]   && rm -rf $(RELEASE_PATH))
+	$(shell [[ -d $(COMPILE_PATH) ]]   && rm -rf $(COMPILE_PATH))
+	$(shell [[ -d $(GEN_DOCS_PATH) ]]  && rm -rf $(GEN_DOCS_PATH))
+	$(shell [[ -d $(CD_TARGET_PATH) ]] && rm -rf $(CD_TARGET_PATH))
 
 $(JAR_FILE): $(MAIN_CLASS_FILE)
 	@echo "------------------------"
@@ -171,7 +177,7 @@ $(JAR_FILE): $(MAIN_CLASS_FILE)
 dist:	$(JAR_FILE)
 
 run:	compile
-	$(LEIN) run
+	$(LEIN) run server
 
 docs:	compile
 	$(LEIN) codox
@@ -199,36 +205,59 @@ integration-test: compile
 # Package Environments (Containers)
 #----------------------------
 
-create-dev-container:
+#docker run -it --rm -v "$PWD":/srv/app -w /srv/app gavin/bai-bff-dev <command>
+build-dev-container: project.clj
 	@echo "------------------------"
 	@echo "Creating development container..."
 	@echo "------------------------"
+	@echo "Generating Docker Development Image, from template..."
+	@sed -e 's|@@PROJECT@@|$(PROJECT)|g' \
+	     -e 's|@@VERSION@@|$(VERSION)|g' \
+	     -e 's|@@TAG@@|$(TAG)|g' \
+	     -e 's|@@REPO_SITE@@|$(REPO_SITE)|g' \
+	     -e 's|@@ORGANIZATION@@|$(ORGANIZATION)|g' \
+	     -e 's|@@AUTHOR@@|$(AUTHOR)|g' \
+	     -e 's|@@RELEASE_NAME@@|$(RELEASE_NAME)|g' \
+	     -e 's|@@JAR_FILE@@|$(JAR_FILE)|g' \
+	     -e 's|@@JAR_FILENAME@@|$(JAR_FILENAME)|g' \
+	     -e 's|@@SVC_PORT@@|$(SVC_PORT)|g' $(DOCKER_DEV_TEMPLATE) > $(shell sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(DOCKER_DEV_TEMPLATE))
+	docker build -f $(shell sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(DOCKER_DEV_TEMPLATE)) \
+			-t $(DOCKER_REGISTRY)/$(PROJECT)-dev:$(VERSION)-$(COMMIT_SHORT_HASH) \
+			-t $(DOCKER_REGISTRY)/$(PROJECT)-dev:latest .
+	docker image ls | grep $(PROJECT)-dev
 
 
 publish-dev-container:
 	@echo "------------------------"
 	@echo "Publishing development container..."
 	@echo "------------------------"
-
+	docker push $(DOCKER_REGISTRY)/$(PROJECT)-dev
 
 build-deploy-container: dist
 	@echo "------------------------"
 	@echo "Building container'ed artifact... ($(PROFILE))"
 	@echo "------------------------"
-	@echo "Generating Docker's Dockerfile from template..."
+	@echo "Generating Docker Deployment Image, from template..."
 	@sed -e 's|@@PROJECT@@|$(PROJECT)|g' \
 	     -e 's|@@VERSION@@|$(VERSION)|g' \
+	     -e 's|@@TAG@@|$(TAG)|g' \
+	     -e 's|@@REPO_SITE@@|$(REPO_SITE)|g' \
+	     -e 's|@@ORGANIZATION@@|$(ORGANIZATION)|g' \
+	     -e 's|@@AUTHOR@@|$(AUTHOR)|g' \
+	     -e 's|@@RELEASE_NAME@@|$(RELEASE_NAME)|g' \
 	     -e 's|@@JAR_FILE@@|$(JAR_FILE)|g' \
+	     -e 's|@@JAR_FILENAME@@|$(JAR_FILENAME)|g' \
 	     -e 's|@@SVC_PORT@@|$(SVC_PORT)|g' $(DOCKER_TEMPLATE) > $(shell sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(DOCKER_TEMPLATE))
-	docker build -t $(DOCKER_REGISTRY)/$(PROJECT)-$(COMMIT_SHORT_HASH) .
+	docker build -t $(DOCKER_REGISTRY)/$(PROJECT):$(VERSION)-$(COMMIT_SHORT_HASH) \
+		     -t $(DOCKER_REGISTRY)/$(PROJECT):latest .
 	docker image ls | grep $(PROJECT)
 
 
-publish-container: build-deploy-container
+publish-deploy-container: build-deploy-container
 	@echo "------------------------"
 	@echo "Publishing container to registry... ($(PROFILE))"
 	@echo "------------------------"
-	#docker push
+	docker push $(DOCKER_REGISTRY)/$(PROJECT)
 
 
 
@@ -249,6 +278,8 @@ deploy.yml: $(DEPLOY_TEMPLATE)
 	     -e 's|@@ENVIRONMENT@@|$(ENVIRONMENT)|g' \
 	     -e 's|@@LOGGING_LEVEL@@|$(LOGGING_LEVEL)|g' \
 	     -e 's|@@SVC_PORT@@|$(SVC_PORT)|g' \
+	     -e 's|@@DOCKER_REGISTRY@@|$(DOCKER_REGISTRY)|g' \
+	     -e 's|@@COMMIT_SHORT_HASH@@|$(COMMIT_SHORT_HASH)|g' \
              -e 's|@@THREAD_POOL_SIZE@@|$(THREAD_POOL_SIZE)|g' \
 	     -e 's|@@MAX_QUEUE_SIZE@@|$(MAX_QUEUE_SIZE)|g' \
 	     -e 's|@@KAFKA_SOURCE_TOPIC@@|$(KAFKA_SOURCE_TOPIC)|g' \

@@ -8,6 +8,7 @@ project.clj
 profiles.clj
 deploy.yml
 Dockerfile
+Dockerfile_dev
 pom.xml
 pom.xml.asc
 *.jar
