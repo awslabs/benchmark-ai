@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: ReplicaSet
+kind: Deployment
 metadata:
   name: @@PROJECT@@
   labels:
@@ -16,6 +16,7 @@ spec:
         app: benchmark-ai
         service: @@PROJECT@@
         version: @@VERSION@@
+        env: @@ENVIRONMENT@@
     spec:
       serviceAccountName: @@PROJECT@@
       affinity:
@@ -31,6 +32,10 @@ spec:
       containers:
         - name: @@PROJECT@@
           image: @@DOCKER_REGISTRY@@/@@PROJECT@@:latest
+          ports:
+            - containerPort: @@SVC_PORT@@
+              name: http
+              protocol: TCP
           livenessProbe:
             httpGet:
               path: /healthy
@@ -43,6 +48,10 @@ spec:
             httpGet:
               path: /ready
               port: @@SVC_PORT@@
+            initialDelaySeconds: 30
+            timeoutSeconds: 1
+            periodSeconds: 10
+            failureThreshold: 3
           env:
             - name: ENVIRONMENT
               value: @@ENVIRONMENT@@

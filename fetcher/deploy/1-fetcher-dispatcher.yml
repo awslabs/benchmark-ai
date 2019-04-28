@@ -6,7 +6,7 @@ metadata:
     app: benchmark-ai
 spec:
   selector:
-    matchLabels:
+   matchLabels:
       app: benchmark-ai
   replicas: 3
   template:
