@@ -9,26 +9,17 @@ spec:
   selector:
     matchLabels:
       app: benchmark-ai
+      service: @@PROJECT@@
+      env: @@ENVIRONMENT@@
   replicas: 3
   template:
     metadata:
       labels:
         app: benchmark-ai
         service: @@PROJECT@@
-        version: @@VERSION@@
         env: @@ENVIRONMENT@@
+        version: @@VERSION@@
     spec:
-      serviceAccountName: @@PROJECT@@
-      affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                  - key: service
-                    operator: In
-                    values:
-                      - @@PROJECT@@
-              topologyKey: kubernetes.io/hostname
       containers:
         - name: @@PROJECT@@
           image: @@DOCKER_REGISTRY@@/@@PROJECT@@:latest
