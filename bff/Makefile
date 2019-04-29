@@ -77,13 +77,18 @@ SVC_PORT := 8080
 THREAD_POOL_SIZE := 6
 MAX_QUEUE_SIZE := 21
 #KAFKA_BOOTSTRAP_SERVERS #Here only as a note that this is a thing
-KAFKA_SOURCE_TOPIC := huh
-KAFKA_CONSUMER_GROUP_ID := huh
-KAFKA_POLL_INTERVAL_MS := 667
-KAFKA_SINK_TOPIC := huh
+KAFKA_SOURCE_TOPIC := nil
+KAFKA_CONSUMER_GROUP_ID := $(PROJECT)
+KAFKA_POLL_INTERVAL_MS := 500
+KAFKA_SINK_TOPIC := BAI_APP_BFF
+KAFKA_CMD_SUBMIT_TOPIC := CMD_SUBMIT
+KAFKA_CMD_RETURN_TOPIC := CMD_RETURN
 
 #This project may be built in the context of a docker environment using the image: gavin/bai-bff-dev
 #docker run -it --rm -v "$PWD":/srv/app -w /srv/app gavin/bai-bff-dev <command>
+
+#HACK!!!!
+K8S_KUBECTL_ARGS := --kubeconfig=/Users/bellgav/.devo/kubeconfig
 #----------------------------------------------------------------
 
 compile: $(MAIN_CLASS_FILE)
@@ -285,15 +290,22 @@ deploy.yml: $(DEPLOY_TEMPLATE)
 	     -e 's|@@KAFKA_SOURCE_TOPIC@@|$(KAFKA_SOURCE_TOPIC)|g' \
 	     -e 's|@@KAFKA_CONSUMER_GROUP_ID@@|$(KAFKA_CONSUMER_GROUP_ID)|g' \
 	     -e 's|@@KAFKA_POLL_INTERVAL_MS@@|$(KAFKA_POLL_INTERVAL_MS)|g' \
-	     -e 's|@@KAFKA_SINK_TOPIC@@|$(KAFKA_SINK_TOPIC)|g' $(DEPLOY_TEMPLATE) > $(shell sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(DEPLOY_TEMPLATE))
+	     -e 's|@@KAFKA_SINK_TOPIC@@|$(KAFKA_SINK_TOPIC)|g' \
+	     -e 's|@@KAFKA_CMD_SUBMIT_TOPIC@@|$(KAFKA_CMD_SUBMIT_TOPIC)|g' \
+	     -e 's|@@KAFKA_CMD_RETURN_TOPIC@@|$(KAFKA_CMD_RETURN_TOPIC)|g' $(DEPLOY_TEMPLATE) > $(shell sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(DEPLOY_TEMPLATE))
 
 deploy: deploy.yml
 	@echo "------------------------"
 	@echo "K8S deployment..."
 	@echo "------------------------"
 	#Deploy this service to the k8s cluster
-	#kubectl apply -f deploy.yaml
+	kubectl $(K8S_KUBECTL_ARGS) apply -f deploy.yml
 
+undeploy:
+	@echo "------------------------"
+	@echo "K8S ***NUKING*** the deployment... (softly)"
+	@echo "------------------------"
+	kubectl $(K8S_KUBECTL_ARGS) delete deployment $(PROJECT) --grace-period=60
 
 
 # (may want to put in the k8s cycle here as well scale up and down)

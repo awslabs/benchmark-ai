@@ -11,7 +11,7 @@ spec:
       app: benchmark-ai
       service: @@PROJECT@@
       env: @@ENVIRONMENT@@
-  replicas: 3
+  replicas: 1
   template:
     metadata:
       labels:
@@ -20,6 +20,16 @@ spec:
         env: @@ENVIRONMENT@@
         version: @@VERSION@@
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: service
+                    operator: In
+                    values:
+                      - @@PROJECT@@
+              topologyKey: kubernetes.io/hostname
       containers:
         - name: @@PROJECT@@
           image: @@DOCKER_REGISTRY@@/@@PROJECT@@:latest
@@ -29,10 +39,10 @@ spec:
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: /healthy
+              path: /lively
               port: @@SVC_PORT@@
-            initialDelaySeconds: 5
-            timeoutSeconds: 1
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
             periodSeconds: 10
             failureThreshold: 3
           readinessProbe:
@@ -67,4 +77,10 @@ spec:
               value: "@@KAFKA_POLL_INTERVAL_MS@@"
             - name: KAFKA_SINK_TOPIC
               value: "@@KAFKA_SINK_TOPIC@@"
+            - name: KAFKA_CMD_SUBMIT_TOPIC
+              value: "@@KAFKA_CMD_SUBMIT_TOPIC@@"
+            - name: KAFKA_CMD_RETURN_TOPIC
+              value: "@@KAFKA_CMD_RETURN_TOPIC@@"
+      nodeSelector:
+        node.type: bai-services-cheap
       restartPolicy: Always
