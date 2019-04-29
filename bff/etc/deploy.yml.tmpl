@@ -11,7 +11,7 @@ spec:
       app: benchmark-ai
       service: @@PROJECT@@
       env: @@ENVIRONMENT@@
-  replicas: 1
+  replicas: 3
   template:
     metadata:
       labels:
@@ -41,7 +41,7 @@ spec:
             httpGet:
               path: /lively
               port: @@SVC_PORT@@
-            initialDelaySeconds: 30
+            initialDelaySeconds: 20
             timeoutSeconds: 5
             periodSeconds: 10
             failureThreshold: 3
