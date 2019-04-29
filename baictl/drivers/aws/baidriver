@@ -74,7 +74,7 @@ create_infra() {
     [[ -n "$region" ]] && vars="${vars} -var region=${region}"
     [[ -n "$prefix_list_id" ]] && vars="${vars} -var prefix_list_ids=[\"${prefix_list_id}\"]"
 
-    _initialize_terraform_backend
+    _initialize_terraform_backend || return 1
 
     terraform plan --state=$terraform_state --out=$terraform_plan ${vars} $terraform_dir || return 1
     terraform apply $terraform_plan || return 1
@@ -102,11 +102,11 @@ _initialize_terraform_backend(){
         printf "Creating bootstrap S3 bucket...\n"
         local uuid=$(uuidgen | tr '[:upper:]' '[:lower:]')
         aws s3 mb s3://terraform-state-$uuid || return 1
-        printf "bucket=\"terraform-state-${uuid}\"" > backend.tfvars
+        printf "bucket=\"terraform-state-${uuid}\"\nkey=\"terraform.tfstate\"\nregion=\"eu-west-1\"" > backend.tfvars
     fi
-    local s3_bucket_name=$(awk -F'"' '{print $2}'  bai/backend.tfvars)
-    if ! aws s3 ls s3://s3_bucket; then
-        printf "S3 bucket in $data_dir/backend.tfvars does not exist!"
+    local s3_bucket_name=$(awk -F'"' '{print $2}'  $data_dir/backend.tfvars)
+    if ! aws s3 ls s3://$s3_bucket; then
+        printf "S3 bucket in $data_dir/backend.tfvars does not exist!\n"
         return 1
     fi
     terraform init --backend-config=$data_dir/backend.tfvars $terraform_dir
