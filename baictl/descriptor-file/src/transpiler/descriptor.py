@@ -3,8 +3,7 @@ import logging
 import os
 import toml
 
-from typing import Dict, List
-from urllib.parse import urlparse
+from typing import Dict
 from crontab import CronSlices
 
 from transpiler.config import DescriptorConfig
@@ -43,8 +42,8 @@ class Descriptor:
         self.ml_args = descriptor_data['ml'].get('args', '')
 
         self.dataset = descriptor_data.get('data', {}).get('id', '')
-        descriptor_sources = descriptor_data.get('data', {}).get('sources', [])
-        self.data_sources = self._process_data_sources(descriptor_sources)
+        self.data_sources = descriptor_data.get('data', {}).get('sources', [])
+
         self._validate()
 
     @classmethod
@@ -61,13 +60,7 @@ class Descriptor:
         """
         Validates that this descriptor is valid
         """
-        for source in self.data_sources:
-            if not source.get('uri', ''):
-                raise ValueError('Missing data uri')
-            if source['scheme'] not in self.config.valid_data_sources:
-                raise ValueError(f'Invalid data uri: {source["uri"]} (must be one of {self.config.valid_data_sources})')
-
-        if self.strategy not in self.config.valid_strategies:
+        if self.strategy.lower() not in self.config.valid_strategies:
             raise ValueError(f'Invalid strategy: {self.strategy} (must be one of {self.config.valid_strategies})')
 
         if self.distributed:
@@ -78,30 +71,6 @@ class Descriptor:
             if not CronSlices.is_valid(self.scheduling):
                 raise ValueError(f'Invalid cron expression in scheduling field: {self.scheduling}. '
                                  f'Please use Kubernetes cron job syntax or "single_run" for non-periodic runs')
-
-    def _process_data_sources(self, data_sources: List) -> List:
-        processed_sources = []
-
-        for source in data_sources:
-            uri_components = self._process_uri(source.get('uri', ''))
-            processed_sources.append({**source, **uri_components})
-
-        return processed_sources
-
-    def _process_uri(self, uri):
-        """
-        Handles a data URI to extract the relevant information.
-        :param uri: str starting with the source, such as s3://bucket/object-name
-        :return: dict with the relevant information
-        """
-        parsed = urlparse(uri)
-
-        if parsed.scheme == 's3':
-            return {'scheme': parsed.scheme, 'bucket': parsed.netloc, 'object': parsed.path[1:]}
-
-        # TODO: Add data sources other than S3
-        else:
-            raise ValueError(f'{parsed.scheme} not supported as a data source yet')
 
     def get_instance_gpus(self, instance_type: str) -> int:
         file_dir = os.path.dirname(os.path.abspath(__file__))
@@ -114,3 +83,11 @@ class Descriptor:
             return gpus_per_instance[instance_type]
         else:
             raise ValueError(f'Invalid instance type: {instance_type}')
+
+    def find_data_source(self, uri: str):
+        for source in self.data_sources:
+            if source['uri'] == uri:
+                return source
+        else:
+            raise ValueError(f'Could not find data source with uri: {uri} \n'
+                             f'Data sources are: {self.data_sources}')

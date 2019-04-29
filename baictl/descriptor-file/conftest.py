@@ -5,7 +5,23 @@ import pytest
 from transpiler.descriptor import Descriptor
 from transpiler.bai_knowledge import EnvironmentInfo
 from transpiler.args import get_args
-from transpiler.config import DescriptorConfig, BaiConfig
+from transpiler.config import DescriptorConfig, BaiConfig, FetchedDataSource
+
+
+@pytest.fixture
+def base_data_sources():
+    return [{
+        "uri": "s3://mlperf-data-stsukrov/imagenet/train-480px",
+        "md5": "md5",
+        "path": "/data/tf-imagenet/train",
+        "puller_uri": "s3://puller-data-stsukrov/imagenet/train",
+    },
+        {
+        "uri": "s3://mlperf-data-stsukrov/imagenet/validation-480px",
+        "md5": "md5",
+        "path": "/data/tf-imagenet/validation",
+        "puller_uri": "s3://puller-data-stsukrov/imagenet/validation",
+    }]
 
 
 @pytest.fixture
@@ -16,6 +32,20 @@ def bai_environment_info():
 
 
 @pytest.fixture
+def fetched_data_sources(base_data_sources):
+    sources = []
+
+    for source in base_data_sources:
+        sources.append(FetchedDataSource(
+            uri=source['uri'],
+            md5=source['md5'],
+            dst=source['puller_uri'],
+        ))
+
+    return sources
+
+
+@pytest.fixture
 def config_args(shared_datadir):
     required_args = "descriptor.toml --availability-zones=us-east-1a us-east-1b us-east-1c"
     return get_args(required_args + f' -c {str(shared_datadir / "config.yaml")}')
@@ -23,8 +53,7 @@ def config_args(shared_datadir):
 
 @pytest.fixture
 def descriptor_config():
-    config_values = {'valid_data_sources': ["s3", "http", "https", "ftp", "ftps"],
-                     'valid_strategies': ["single_node", "horovod"]}
+    config_values = {'valid_strategies': ["single_node", "horovod"]}
 
     return DescriptorConfig(**config_values)
 
@@ -38,8 +67,8 @@ def bai_config():
 
 
 @pytest.fixture
-def descriptor(descriptor_config):
-    return Descriptor(toml.loads(textwrap.dedent("""\
+def descriptor(descriptor_config, base_data_sources):
+    return Descriptor(toml.loads(textwrap.dedent(f"""\
         spec_version = '0.1.0'
         [info]
         task_name = 'Title'
@@ -57,9 +86,9 @@ def descriptor(descriptor_config):
         [data]
         id = 'mnist'
         [[data.sources]]
-        uri = 's3://mlperf-data-stsukrov/imagenet/train-480px'
-        path = '~/data/tf-imagenet/'
+        uri = '{base_data_sources[0]['uri']}'
+        path = '{base_data_sources[0]['path']}'
         [[data.sources]]
-        uri = 's3://mlperf-data-stsukrov/imagenet/validation-480px'
-        path = '~/data/tf-imagenet/'
+        uri = '{base_data_sources[1]['uri']}'
+        path = '{base_data_sources[1]['path']}'
     """)), descriptor_config)
