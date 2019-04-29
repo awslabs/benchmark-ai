@@ -1,10 +1,9 @@
-import textwrap
-import pytest
 import json
-import bai_kafka_utils.events
 
-from bai_kafka_utils.events import DataSet, BenchmarkEvent, BenchmarkPayload, BenchmarkDoc, \
-     FetcherPayload, ExecutorPayload
+import pytest
+
+import bai_kafka_utils.events
+from bai_kafka_utils.events import DataSet, FetcherPayload, ExecutorPayload
 
 
 @pytest.fixture
@@ -45,6 +44,12 @@ def test_data_set_optional_missing_src():
     json = '{"dst":"http://foo.com", "md5":"42"}'
     with pytest.raises(KeyError):
         DataSet.from_json(json)
+
+
+def test_data_set_dont_fail_unknown_fields():
+    json = '{"src":"http://foo.com","foo":"bar"}'
+    dataset = DataSet.from_json(json)
+    assert not hasattr(dataset, "foo")
 
 
 def test_fetcher_event(base_event_as_dict):

@@ -98,7 +98,44 @@ resource "aws_codebuild_project" "ci-unit-tests" {
 
   environment {
     compute_type                = "BUILD_GENERAL1_SMALL"
-    image                       = "conda/miniconda3"
+    image                       = "${var.ci_docker_image}"
+    type                        = "LINUX_CONTAINER"
+  }
+
+  source {
+    type            = "GITHUB"
+    location        = "https://github.com/MXNetEdge/benchmark-ai.git"
+    git_clone_depth = 1
+    auth = {
+      type = "OAUTH"
+    }
+    buildspec = "${element(var.projects, count.index)}/buildspec.yml"
+    report_build_status = true
+  }
+
+  tags = {
+    GithubRepo  = "benchmark-ai"
+    GithubOrg   = "MXNetEdge"
+    Workspace   = "${terraform.workspace}"
+  }
+}
+
+
+resource "aws_codebuild_project" "ci-unit-tests-master" {
+  count = "${length(var.projects)}"
+  name          = "${element(var.projects, count.index)}-master"
+  description   = "Unit tests master build of ${element(var.projects, count.index)}"
+  build_timeout = "10"
+  service_role  = "${aws_iam_role.code-build-role.arn}"
+  badge_enabled = true
+
+  artifacts {
+    type = "NO_ARTIFACTS"
+  }
+
+  environment {
+    compute_type                = "BUILD_GENERAL1_SMALL"
+    image                       = "${var.ci_docker_image}"
     type                        = "LINUX_CONTAINER"
   }
 
@@ -125,11 +162,26 @@ resource "aws_codebuild_webhook" "ci-unit-tests" {
   project_name = "${element(aws_codebuild_project.ci-unit-tests.*.name, count.index)}"
 }
 
+resource "aws_codebuild_webhook" "ci-unit-tests-master" {
+  count = "${length(var.projects)}"
+  project_name = "${element(aws_codebuild_project.ci-unit-tests-master.*.name, count.index)}"
+}
+
 locals {
-  filter_groups = [
+  filter_groups_prs = [
     {
       type = "EVENT"
       pattern = "PULL_REQUEST_CREATED, PULL_REQUEST_UPDATED, PULL_REQUEST_REOPENED"
+    },
+  ]
+  filter_groups_master = [
+    {
+      type = "EVENT"
+      pattern = "PUSH"
+    },
+    {
+      type = "HEAD_REF"
+      pattern = "refs/heads/master$"
     },
   ]
 }
@@ -143,6 +195,18 @@ resource "null_resource" "ci-unit-tests-filter" {
 
   triggers {
     project_name = "${element(aws_codebuild_webhook.ci-unit-tests.*.project_name, count.index)}"
-    filter_groups = "${jsonencode(local.filter_groups)}"
+    filter_groups = "${jsonencode(local.filter_groups_prs)}"
+  }
+}
+
+resource "null_resource" "ci-unit-tests-master-filter" {
+  count = "${length(var.projects)}"
+  provisioner "local-exec" {
+    command = "aws --region ${var.region} codebuild update-webhook --project-name ${self.triggers.project_name} --filter-groups '[${self.triggers.filter_groups}]'"
+  }
+
+  triggers {
+    project_name = "${element(aws_codebuild_webhook.ci-unit-tests-master.*.project_name, count.index)}"
+    filter_groups = "${jsonencode(local.filter_groups_master)}"
   }
 }

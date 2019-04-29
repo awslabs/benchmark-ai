@@ -109,8 +109,8 @@ _initialize_terraform_backend(){
         printf "S3 bucket in $data_dir/backend.tfvars does not exist!"
         return 1
     fi
-    terraform init --var-file=$data_dir/backend.tfvars $terraform_dir
-    terraform get --var-file=$data_dir/backend.tfvars $terraform_dir
+    terraform init --backend-config=$data_dir/backend.tfvars $terraform_dir
+    terraform get $terraform_dir
 }
 
 _install_msk_aware_terraform_plugin(){
@@ -136,11 +136,13 @@ _create_kafka_topics(){
     local msk_zookeeper_connect=$(terraform output --state=$terraform_state msk_zookeeper_connect)
     local bastion_pem_filename=$(terraform output --state=$terraform_state bastion_pem_filename)
     local bastion_public_ip=$(terraform output --state=$terraform_state bastion_public_ip)
+    local kafka_topics=("BAI_APP_BFF" "BAI_APP_FETCHER" "BAI_APP_EXECUTOR" "BAI_SYS_BFF" "BAI_SYS_FETCHER" "BAI_SYS_EXECUTOR" "CMD_SUBMIT" "CMD_RETURN")
 
     printf "Creating Kafka Topics...\n"
-    ssh -i ${data_dir}/${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "/snap/bin/kafka.topics --create --if-not-exists --zookeeper $msk_zookeeper_connect --replication-factor 3 --partitions 1 --topic BAI_APP_BFF"
-    ssh -i ${data_dir}/${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "/snap/bin/kafka.topics --create --if-not-exists --zookeeper $msk_zookeeper_connect --replication-factor 3 --partitions 1 --topic BAI_APP_FETCHER"
-    ssh -i ${data_dir}/${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "/snap/bin/kafka.topics --create --if-not-exists --zookeeper $msk_zookeeper_connect --replication-factor 3 --partitions 1 --topic BAI_APP_EXECUTOR"
+    for topic in "${kafka_topics[@]}"; do
+        ssh -i ${data_dir}/${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "/snap/bin/kafka.topics --create --if-not-exists --zookeeper $msk_zookeeper_connect --replication-factor 3 --partitions 1 --topic $topic"
+    done
+
 }
 
 __create_kubeflow_namespace(){
@@ -252,10 +254,11 @@ __validate_kafka_topics(){
     local bastion_pem_filename=$(terraform output --state=$terraform_state bastion_pem_filename)
     local bastion_public_ip=$(terraform output --state=$terraform_state bastion_public_ip)
     local result=$(ssh -i ${data_dir}/${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no -o LogLevel=QUIET "/snap/bin/kafka.topics --list --zookeeper $msk_zookeeper_connect")
+    local kafka_topics=("BAI_APP_BFF" "BAI_APP_FETCHER" "BAI_APP_EXECUTOR" "BAI_SYS_BFF" "BAI_SYS_FETCHER" "BAI_SYS_EXECUTOR" "CMD_SUBMIT" "CMD_RETURN")
 
-    echo $result | grep "BAI_APP_BFF" > /dev/null || return 1 
-    echo $result | grep "BAI_APP_FETCHER" > /dev/null || return 1
-    echo $result | grep "BAI_APP_EXECUTOR" > /dev/null || return 1
+    for topic in "${kafka_topics[@]}"; do
+        echo $result | grep $topic > /dev/null || return 1 
+    done
 }
 
 __validate_zookeeper_pods(){

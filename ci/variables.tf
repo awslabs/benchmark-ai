@@ -21,3 +21,8 @@ variable "region" {
   type = "string"
   default = "us-east-1"
 }
+
+variable "ci_docker_image" {
+  type = "string"
+  default = "jlcont/bai-ci-python:260419"
+}
