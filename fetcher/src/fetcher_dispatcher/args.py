@@ -1,8 +1,10 @@
 import json
 from dataclasses import dataclass
 
-from bai_kafka_utils.kafka_service_args import create_kafka_service_parser
+from configargparse import ArgParser
+
 from fetcher_dispatcher import SERVICE_NAME
+
 
 @dataclass
 class FetcherServiceConfig:
@@ -12,9 +14,11 @@ class FetcherServiceConfig:
     fetcher_job_image: str
     fetcher_job_node_selector: str
 
-#We ignore unrecognized objects at the moment
+
+# We ignore unrecognized objects at the moment
 def get_fetcher_service_config(args) -> FetcherServiceConfig:
-    parser = create_kafka_service_parser(SERVICE_NAME)
+    parser = ArgParser(auto_env_var_prefix="",
+                       prog=SERVICE_NAME)
 
     parser.add_argument("--zookeeper-ensemble-hosts",
                         env_var="ZOOKEEPER_ENSEMBLE_HOSTS",
