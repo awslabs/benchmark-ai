@@ -98,13 +98,19 @@ create_infra() {
 }
 
 _initialize_terraform_backend(){
-    if [[ ! -f backend.tfvars ]] ; then
-        local uuid=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
-        aws s3 mb terraform-state-$uuid || return 1
-        printf "backend=\"terraform-state-${uuid}\"" > backend.tfvars
+    if [[ ! -f $data_dir/backend.tfvars ]] ; then
+        printf "Creating bootstrap S3 bucket...\n"
+        local uuid=$(uuidgen | tr '[:upper:]' '[:lower:]')
+        aws s3 mb s3://terraform-state-$uuid || return 1
+        printf "bucket=\"terraform-state-${uuid}\"" > backend.tfvars
     fi
-    terraform init $terraform_dir
-    terraform get $terraform_dir
+    local s3_bucket_name=$(awk -F'"' '{print $2}'  bai/backend.tfvars)
+    if ! aws s3 ls s3://s3_bucket; then
+        printf "S3 bucket in $data_dir/backend.tfvars does not exist!"
+        return 1
+    fi
+    terraform init --var-file=$data_dir/backend.tfvars $terraform_dir
+    terraform get --var-file=$data_dir/backend.tfvars $terraform_dir
 }
 
 _install_msk_aware_terraform_plugin(){
