@@ -109,8 +109,8 @@ _initialize_terraform_backend(){
         printf "S3 bucket in $data_dir/backend.tfvars does not exist!"
         return 1
     fi
-    terraform init --var-file=$data_dir/backend.tfvars $terraform_dir
-    terraform get --var-file=$data_dir/backend.tfvars $terraform_dir
+    terraform init --backend-config=$data_dir/backend.tfvars $terraform_dir
+    terraform get $terraform_dir
 }
 
 _install_msk_aware_terraform_plugin(){
