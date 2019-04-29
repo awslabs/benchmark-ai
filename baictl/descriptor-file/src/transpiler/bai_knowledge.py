@@ -6,8 +6,10 @@ import uuid
 from typing import List, Dict
 from ruamel import yaml
 from dataclasses import dataclass
+
+from bai_kafka_utils.events import DataSet
 from transpiler.descriptor import Descriptor
-from transpiler.config import BaiConfig, FetchedDataSource, BaiDataSource
+from transpiler.config import BaiConfig, BaiDataSource
 from transpiler.kubernetes_spec_logic import ConfigTemplate, VolumeMount, HostPath, Volume, EmptyDirVolumeSource
 
 
@@ -215,9 +217,9 @@ class BaiKubernetesObjectBuilder:
         return vol_mounts
 
 
-def create_bai_data_sources(fetched_data_sources: List[FetchedDataSource],
+def create_bai_data_sources(fetched_data_sources: List[DataSet],
                             descriptor: Descriptor) -> List[BaiDataSource]:
-    def find_destination_path(fetched_source: FetchedDataSource) -> str:
+    def find_destination_path(fetched_source: DataSet) -> str:
         return descriptor.find_data_source(fetched_source.uri)['path']
 
     return [BaiDataSource(fetched, find_destination_path(fetched)) for fetched in fetched_data_sources]
@@ -225,7 +227,7 @@ def create_bai_data_sources(fetched_data_sources: List[FetchedDataSource],
 
 def create_bai_k8s_builder(descriptor: Descriptor,
                            bai_config: BaiConfig,
-                           fetched_data_sources: List[FetchedDataSource],
+                           fetched_data_sources: List[DataSet],
                            environment_info: EnvironmentInfo,
                            extra_bai_config_args=None) -> BaiKubernetesObjectBuilder:
     """

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
-from typing import List
 from urllib.parse import urlparse
+from bai_kafka_utils.events import DataSet
+from typing import List
 
 
 @dataclass
@@ -17,13 +18,6 @@ class BaiConfig:
 
 
 @dataclass
-class FetchedDataSource:
-    uri: str
-    md5: str
-    dst: str  # S3 bucket where the fetcher left the data
-
-
-@dataclass
 class BaiDataSource:
     scheme: str
     bucket: str
@@ -31,7 +25,7 @@ class BaiDataSource:
     path: str
 
     def __init__(self,
-                 fetched_data_source: FetchedDataSource,
+                 fetched_data_source: DataSet,
                  path: str):
         parsed_uri = urlparse(fetched_data_source.dst)
         self.src = fetched_data_source.uri

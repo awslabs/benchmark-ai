@@ -7,7 +7,7 @@ from typing import Dict, List, Optional, Type
 @dataclass_json
 @dataclass
 class DataSet:
-    src: str
+    uri: str
     md5: Optional[str] = None
     dst: Optional[str] = None
 

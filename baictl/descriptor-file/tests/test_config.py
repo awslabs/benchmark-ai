@@ -1,9 +1,11 @@
 import pytest
-from transpiler.config import BaiDataSource, FetchedDataSource
+
+from bai_kafka_utils.events import DataSet
+from transpiler.config import BaiDataSource
 
 
 def test_bai_data_source_invalid_uri():
-    fetched_source = FetchedDataSource(
+    fetched_source = DataSet(
         uri="whatever/uri",
         md5="md5",
         dst="bad://bucket/object"

@@ -2,10 +2,11 @@ import textwrap
 import toml
 import pytest
 
+from bai_kafka_utils.events import DataSet
 from transpiler.descriptor import Descriptor
 from transpiler.bai_knowledge import EnvironmentInfo
 from transpiler.args import get_args
-from transpiler.config import DescriptorConfig, BaiConfig, FetchedDataSource
+from transpiler.config import DescriptorConfig, BaiConfig
 
 
 @pytest.fixture
@@ -36,7 +37,7 @@ def fetched_data_sources(base_data_sources):
     sources = []
 
     for source in base_data_sources:
-        sources.append(FetchedDataSource(
+        sources.append(DataSet(
             uri=source['uri'],
             md5=source['md5'],
             dst=source['puller_uri'],

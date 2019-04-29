@@ -5,7 +5,7 @@ import toml
 
 from pytest_regressions.file_regression import FileRegressionFixture
 from transpiler.__main__ import create_yaml_spec
-from transpiler.config import FetchedDataSource
+from bai_kafka_utils.events import DataSet
 
 from typing import List
 
@@ -42,10 +42,10 @@ def test_regressions(filename,
     file_regression.check(yaml_spec, basename=basename, extension=".yaml")
 
 
-def generate_fetched_data_sources(descriptor_data) -> List[FetchedDataSource]:
+def generate_fetched_data_sources(descriptor_data) -> List[DataSet]:
     data_sources = descriptor_data.get('data', {}).get('sources', [])
     if data_sources:
-        return [FetchedDataSource(uri=source['uri'], md5='md5', dst=PULLER_S3_URI)
+        return [DataSet(uri=source['uri'], md5='md5', dst=PULLER_S3_URI)
                 for source in data_sources]
     else:
         return []

@@ -35,7 +35,7 @@ class KubernetesDispatcher:
         template = kubernetes.client.V1PodTemplate()
         template.template = kubernetes.client.V1PodTemplateSpec()
 
-        job_args = ["--src", task.src, "--dst", task.dst, "--zk-node-path", zk_node_path]
+        job_args = ["--src", task.uri, "--dst", task.dst, "--zk-node-path", zk_node_path]
 
         env_list = [kubernetes.client.V1EnvVar(name="ZOOKEEPER_ENSEMBLE_HOSTS", value=self.zk_ensemble)]
 

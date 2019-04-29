@@ -4,7 +4,7 @@ import toml
 from transpiler.args import get_args, create_bai_config, create_descriptor_config
 from transpiler.descriptor import Descriptor
 from transpiler.bai_knowledge import create_bai_k8s_builder, EnvironmentInfo
-from transpiler.config import DescriptorConfig, BaiConfig, FetchedDataSource
+from transpiler.config import DescriptorConfig, BaiConfig, DataSet
 from typing import Dict, List
 
 
@@ -17,6 +17,9 @@ def main(argv=None):
     environment_info = EnvironmentInfo(
         availability_zones=args.availability_zones
     )
+
+    # TODO: Pass this as an argument
+    fetched_data_sources = descriptor_data.get('data', {}).get('sources', [])
 
     yaml_string = create_yaml_spec(descriptor_data,
                                    descriptor_config,
@@ -35,7 +38,7 @@ def main(argv=None):
 def create_yaml_spec(descriptor_contents: Dict,
                      descriptor_config: DescriptorConfig,
                      bai_config: BaiConfig,
-                     fetched_data_sources: List[FetchedDataSource],
+                     fetched_data_sources: List[DataSet],
                      environment_info: EnvironmentInfo,
                      extra_bai_config_args=None):
     """
