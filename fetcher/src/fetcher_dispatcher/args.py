@@ -40,6 +40,7 @@ def get_fetcher_service_config(args) -> FetcherServiceConfig:
 
     parsed_args, _ = parser.parse_known_args(args)
     return FetcherServiceConfig(zookeeper_ensemble_hosts=parsed_args.zookeeper_ensemble_hosts,
-                                s3_data_set_bucket=parsed_args.s3_data_set_bucket, kubeconfig=parsed_args.kubeconfig,
+                                s3_data_set_bucket=parsed_args.s3_data_set_bucket,
+                                kubeconfig=parsed_args.kubeconfig,
                                 fetcher_job_image=parsed_args.fetcher_job_image,
                                 fetcher_job_node_selector=parsed_args.fetcher_job_node_selector)

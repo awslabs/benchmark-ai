@@ -27,6 +27,7 @@ SERVICE_NAME = "FAKE_SERVICE"
 VERSION = "1.0"
 
 VISIT_TIME = 123
+VISIT_TIME_MS = VISIT_TIME * 1000
 
 
 @dataclass
@@ -154,18 +155,18 @@ def test_immutable_callbacks(kafka_consumer: KafkaConsumer, kafka_producer: Kafk
 
 
 # The patched objects are passed in the reverse order
-@patch.object(time, "time_ns")
+@patch.object(time, "time")
 @patch.object(uuid, "uuid4")
-def test_message_sent(mock_uuid4, mock_time_ns, kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer,
+def test_message_sent(mock_uuid4, mock_time, kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer,
                       benchmark_event: BenchmarkEvent):
     result_event = copy.deepcopy(benchmark_event)
     expected_event = copy.deepcopy(result_event)
 
     mock_uuid4.return_value = uuid.UUID(hex=MOCK_UUID)
-    mock_time_ns.return_value = VISIT_TIME
+    mock_time.return_value = VISIT_TIME
 
     expected_event.message_id = str(mock_uuid4())
-    expected_event.visited.append(VisitedService(SERVICE_NAME, timestamp=VISIT_TIME, version=VERSION))
+    expected_event.visited.append(VisitedService(SERVICE_NAME, timestamp=VISIT_TIME_MS, version=VERSION))
 
     mock_callback = Mock(spec=KafkaServiceCallback)
     mock_callback.handle_event = Mock(return_value=result_event)
