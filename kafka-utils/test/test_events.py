@@ -48,7 +48,8 @@ def test_data_set_optional_missing_src():
 
 def test_data_set_dont_fail_unknown_fields():
     json = '{"src":"http://foo.com","foo":"bar"}'
-    DataSet.from_json(json)
+    dataset = DataSet.from_json(json)
+    assert not hasattr(dataset, "foo")
 
 
 def test_fetcher_event(base_event_as_dict):
