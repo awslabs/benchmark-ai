@@ -17,3 +17,4 @@ dependencies:
   - awscli >= 1.16
   - pip:
     - ConfigArgParse
+    - python-crontab
