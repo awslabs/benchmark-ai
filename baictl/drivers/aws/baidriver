@@ -126,6 +126,11 @@ _create_kafka_topics(){
     ssh -i ${data_dir}/${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "/snap/bin/kafka.topics --create --if-not-exists --zookeeper $msk_zookeeper_connect --replication-factor 3 --partitions 1 --topic BAI_APP_BFF"
     ssh -i ${data_dir}/${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "/snap/bin/kafka.topics --create --if-not-exists --zookeeper $msk_zookeeper_connect --replication-factor 3 --partitions 1 --topic BAI_APP_FETCHER"
     ssh -i ${data_dir}/${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "/snap/bin/kafka.topics --create --if-not-exists --zookeeper $msk_zookeeper_connect --replication-factor 3 --partitions 1 --topic BAI_APP_EXECUTOR"
+    ssh -i ${data_dir}/${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "/snap/bin/kafka.topics --create --if-not-exists --zookeeper $msk_zookeeper_connect --replication-factor 3 --partitions 1 --topic BAI_SYS_BFF"
+    ssh -i ${data_dir}/${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "/snap/bin/kafka.topics --create --if-not-exists --zookeeper $msk_zookeeper_connect --replication-factor 3 --partitions 1 --topic BAI_SYS_FETCHER"
+    ssh -i ${data_dir}/${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "/snap/bin/kafka.topics --create --if-not-exists --zookeeper $msk_zookeeper_connect --replication-factor 3 --partitions 1 --topic BAI_SYS_EXECUTOR"
+    ssh -i ${data_dir}/${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "/snap/bin/kafka.topics --create --if-not-exists --zookeeper $msk_zookeeper_connect --replication-factor 3 --partitions 1 --topic CMD_SUBMIT"
+    ssh -i ${data_dir}/${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "/snap/bin/kafka.topics --create --if-not-exists --zookeeper $msk_zookeeper_connect --replication-factor 3 --partitions 1 --topic CMD_RETURN"
 }
 
 __create_kubeflow_namespace(){
@@ -241,6 +246,11 @@ __validate_kafka_topics(){
     echo $result | grep "BAI_APP_BFF" > /dev/null || return 1 
     echo $result | grep "BAI_APP_FETCHER" > /dev/null || return 1
     echo $result | grep "BAI_APP_EXECUTOR" > /dev/null || return 1
+    echo $result | grep "BAI_SYS_BFF" > /dev/null || return 1 
+    echo $result | grep "BAI_SYS_FETCHER" > /dev/null || return 1
+    echo $result | grep "BAI_SYS_EXECUTOR" > /dev/null || return 1
+    echo $result | grep "CMD_SUBMIT" > /dev/null || return 1
+    echo $result | grep "CMD_RETURN" > /dev/null || return 1
 }
 
 __validate_zookeeper_pods(){
