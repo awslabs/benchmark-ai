@@ -15,5 +15,5 @@ dependencies:
   - addict 2.2.*
   - ksonnet 0.13.1
   - awscli >= 1.16
-  -- pip:
+  - pip:
     - ConfigArgParse
