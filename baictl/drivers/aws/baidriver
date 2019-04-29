@@ -102,7 +102,11 @@ _initialize_terraform_backend(){
         printf "Creating bootstrap S3 bucket...\n"
         local uuid=$(uuidgen | tr '[:upper:]' '[:lower:]')
         aws s3 mb s3://terraform-state-$uuid || return 1
-        printf "bucket=\"terraform-state-${uuid}\"\nkey=\"terraform.tfstate\"\nregion=\"eu-west-1\"" > backend.tfvars
+        cat <<-END > backend.tfvars
+        bucket="terraform-state-${uuid}"
+        key="terraform.tfstate"
+        region="eu-west-1"
+END
     fi
     local s3_bucket_name=$(awk -F'"' '{print $2}'  $data_dir/backend.tfvars)
     if ! aws s3 ls s3://$s3_bucket; then
