@@ -10,16 +10,11 @@ MOCK_ZOOKEEPER_ENSEMBLE = "ZE1,ZE2"
 
 MOCK_KUBECONFIG = "/path/kubeconfig"
 
-MOCK_DONTCARE = "DONTCARE"
-
-ALL_ARGS = f"--consumer-topic DONTCARE " \
-    f"--producer-topic DONTCARE " \
-    f"--s3-data-set-bucket={MOCK_S3_BUCKET} " \
+ALL_ARGS = f"--s3-data-set-bucket={MOCK_S3_BUCKET} " \
     f"--fetcher-job-image={MOCK_DOCKER_IMAGE} " \
     f"--zookeeper-ensemble-hosts={MOCK_ZOOKEEPER_ENSEMBLE} " \
     f"--kubeconfig={MOCK_KUBECONFIG} " \
-    '--fetcher-job-node-selector={"node.type":"foo"} ' \
-    f"--consumer-group-id DONTCARE"
+    '--fetcher-job-node-selector={"node.type":"foo"} '
 
 EXPECTED_CFG = FetcherServiceConfig(zookeeper_ensemble_hosts=MOCK_ZOOKEEPER_ENSEMBLE, s3_data_set_bucket=MOCK_S3_BUCKET,
                                     kubeconfig=MOCK_KUBECONFIG, fetcher_job_node_selector=EXPECTED_NODE_SELECTOR,
