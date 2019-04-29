@@ -66,7 +66,7 @@ class BenchmarkEvent:
     authenticated: bool
     date: int
     visited: List[VisitedService]
-    payload: Type[BenchmarkPayload]
+    payload: BenchmarkPayload
 
 
 def make_benchmark_event(payload_type: Type[BenchmarkPayload]):

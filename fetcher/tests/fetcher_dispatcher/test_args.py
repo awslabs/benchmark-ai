@@ -1,8 +1,30 @@
-from fetcher_dispatcher.args import get_args
+from fetcher_dispatcher.args import get_fetcher_service_config, FetcherServiceConfig
 
-REQUIRED_ARGS = "--consumer-topic C --producer-topic P --s3-data-set-bucket S3"
+MOCK_S3_BUCKET = "s3://something"
+
+EXPECTED_NODE_SELECTOR = {"node.type": "foo"}
+
+MOCK_DOCKER_IMAGE = "docker/image"
+
+MOCK_ZOOKEEPER_ENSEMBLE = "ZE1,ZE2"
+
+MOCK_KUBECONFIG = "/path/kubeconfig"
+
+ALL_ARGS = f"--s3-data-set-bucket={MOCK_S3_BUCKET} " \
+    f"--fetcher-job-image={MOCK_DOCKER_IMAGE} " \
+    f"--zookeeper-ensemble-hosts={MOCK_ZOOKEEPER_ENSEMBLE} " \
+    f"--kubeconfig={MOCK_KUBECONFIG} " \
+    '--fetcher-job-node-selector={"node.type":"foo"} '
+
+EXPECTED_CFG = FetcherServiceConfig(zookeeper_ensemble_hosts=MOCK_ZOOKEEPER_ENSEMBLE, s3_data_set_bucket=MOCK_S3_BUCKET,
+                                    kubeconfig=MOCK_KUBECONFIG, fetcher_job_node_selector=EXPECTED_NODE_SELECTOR,
+                                    fetcher_job_image=MOCK_DOCKER_IMAGE)
 
 
-def test_json_arg():
-    args = get_args(REQUIRED_ARGS + ' --fetcher-job-node-selector={"node.type":"foo"}')
-    assert args.fetcher_job_node_selector == {"node.type": "foo"}
+def test_get_cfg():
+    cfg = get_fetcher_service_config(ALL_ARGS)
+    assert cfg == EXPECTED_CFG
+
+
+def test_dont_fail_unrecognized():
+    get_fetcher_service_config(ALL_ARGS + " -foo")

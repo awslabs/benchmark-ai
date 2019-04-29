@@ -3,9 +3,8 @@ channels:
   - conda-forge
   - defaults
 dependencies:
+  - kafka-python 1.4.*
   - pip
   - pip:
-      - pytest
-      - pytest-mock
-      - pytest-cov
-      - flake8
+      - ConfigArgParse
+      - dataclasses-json

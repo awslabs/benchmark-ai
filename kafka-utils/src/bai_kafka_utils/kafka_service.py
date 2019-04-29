@@ -1,56 +1,30 @@
-import argparse
-import logging
 import abc
+import logging
 import time
 import uuid
-
-from configargparse import ArgParser
+from dataclasses import dataclass
 from signal import signal, SIGTERM
-from bai_kafka_utils.kafka_client import create_kafka_consumer, create_kafka_producer
-from bai_kafka_utils.events import BenchmarkEvent, VisitedService, BenchmarkPayload
+from typing import List, Optional
 
-from typing import List, Type
+from kafka import KafkaProducer, KafkaConsumer
+
+from bai_kafka_utils.events import BenchmarkEvent, VisitedService
 
 logger = logging.getLogger(__name__)
 
 
-def create_kafka_service_parser(program_name: str) -> ArgParser:
-    def create_split_action(delimiter: str):
-        class customAction(argparse.Action):
-            def __call__(self, parser, args, values, option_string=None):
-                setattr(args, self.dest, values.split(delimiter))
-
-        return customAction
-
-    parser = ArgParser(auto_env_var_prefix="",
-                                           prog=program_name)
-
-    parser.add_argument("--consumer-topic",
-                        env_var='CONSUMER_TOPIC',
-                        required=True)
-
-    parser.add_argument("--producer-topic",
-                        env_var='PRODUCER_TOPIC',
-                        required=True)
-
-    parser.add_argument("--bootstrap-servers",
-                        env_var="KAFKA_BOOTSTRAP_SERVERS",
-                        default="localhost:9092",
-                        action=create_split_action(','))
-
-    parser.add_argument("--consumer-group-id",
-                        env_var="CONSUMER_GROUP_ID")
-
-    parser.add_argument("--logging-level",
-                        env_var="LOGGING_LEVEL",
-                        default="INFO")
-
-    return parser
+@dataclass()
+class KafkaServiceConfig:
+    consumer_topic: str
+    producer_topic: str
+    bootstrap_servers: List[str]
+    consumer_group_id: str
+    logging_level: str
 
 
 class KafkaServiceCallback(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def handle_event(self, event: BenchmarkEvent):
+    def handle_event(self, event: BenchmarkEvent, kafka_service) -> Optional[BenchmarkEvent]:
         pass
 
     @abc.abstractmethod
@@ -63,46 +37,53 @@ class KafkaServiceCallbackException(Exception):
 
 
 class KafkaService:
+    class LoopAlreadyRunningException(Exception):
+        pass
+
+    class LoopNotRunningException(Exception):
+        pass
+
     def __init__(self,
                  name: str,
                  version: str,
-                 payload_type: Type[BenchmarkPayload],
-                 args,
-                 callbacks: List[KafkaServiceCallback]):
+                 producer_topic: str,
+                 callbacks: List[KafkaServiceCallback],
+                 kafka_consumer: KafkaConsumer,
+                 kafka_producer: KafkaProducer
+                 ):
 
-        self.args = args
-
-        self._producer_topic = args.producer_topic
-        self._producer = create_kafka_producer(args.bootstrap_servers)
-        self._consumer = create_kafka_consumer(args.bootstrap_servers,
-                                               args.consumer_group_id,
-                                               args.consumer_topic,
-                                               args.event_payload_type)
+        self._producer_topic = producer_topic
+        self._producer = kafka_producer
+        self._consumer = kafka_consumer
         self.name = name
         self.version = version
-        self.payload_type = payload_type
+        # Immutability helps us to avoid nasty bugs.
+        self._callbacks = list(callbacks)
+        self._running = False
+        signal(SIGTERM, self.stop_loop)
 
-        self.callbacks = callbacks
-        self.running = False
-        signal(SIGTERM, self.stop_loop())
+    _LOOP_IS_ALREADY_RUNNING = "Loop is already running"
+    _IS_NOT_RUNNING = "Loop is not running"
+    _CANNOT_UPDATE_CALLBACKS = "Cannot update callbacks with running loop"
 
-    def safe_handle_msg(self, msg, callback: KafkaServiceCallback) -> BenchmarkEvent:
+    def safe_handle_msg(self, msg, callback: KafkaServiceCallback) -> Optional[BenchmarkEvent]:
         try:
             return self.handle_event(msg.value, callback)
         except KafkaServiceCallbackException:
             logger.exception(f"Failed to handle message: {msg}")
+        return None
 
-    def handle_event(self, event: BenchmarkEvent, callback: KafkaServiceCallback) -> BenchmarkEvent:
+    def handle_event(self, event: BenchmarkEvent, callback: KafkaServiceCallback) -> Optional[BenchmarkEvent]:
         """
         Utility method for handling a benchmark event.
-        Does the logging and calls the callback funtion to handle the event
+        Does the logging and calls the callback function to handle the event
         :param event: event contained in the benchmark
         :param callback: implementation of KafkaServiceCallBack to handle the event
         """
         if not event:
             raise KafkaServiceCallbackException("Empty message received (no event found)")
         logger.debug(f"Got event {event}")
-        return callback.handle_event(event)
+        return callback.handle_event(event, self)
 
     def send_event(self, event: BenchmarkEvent):
         """
@@ -110,10 +91,12 @@ class KafkaService:
         Adds this service to the visited field in the event and calls the KafkaProducer.
         :param event: value of the message to send
         """
+
         def add_self_to_visited(event):
-            entry = VisitedService(self.args.name,
-                                   int(time.time() * 1000),
-                                   self.args.version)
+            current_tims_ms = time.time() * 1000
+            entry = VisitedService(self.name,
+                                   current_tims_ms,
+                                   self.version)
             event.visited.append(entry)
 
         # Message ID is unique per message
@@ -123,26 +106,43 @@ class KafkaService:
         self._producer.send(self._producer_topic,
                             value=event)
 
+    @property
+    def running(self) -> bool:
+        return self._running
+
     def run_loop(self):
-        if self.running:
-            raise ValueError("Loop is already running")
+        if self._running:
+            raise KafkaService.LoopAlreadyRunningException(KafkaService._LOOP_IS_ALREADY_RUNNING)
 
-        self.running = True
+        self._running = True
 
-        while self.running:
+        while self._running:
             # KafkaConsumer.poll() might return more than one message
             # TODO: Do we need a timeout here? (timeout_ms parameter)
             messages = self._consumer.poll()
             for msg in messages:
-                for callback in self.callbacks:
+                for callback in self._callbacks:
                     output = self.safe_handle_msg(msg, callback)
-                    self.send_event(output)
+                    if output:
+                        self.send_event(output)
 
-        for callback in self.callbacks:
+        for callback in self._callbacks:
             callback.cleanup()
 
     def stop_loop(self):
-        if not self.running:
-            raise ValueError("Loop is not running")
+        if not self._running:
+            raise KafkaService.LoopNotRunningException(KafkaService._IS_NOT_RUNNING)
 
-        self.running = False
+        self._running = False
+
+    def add_callback(self, callback: KafkaServiceCallback):
+        if self._running:
+            raise KafkaService.LoopAlreadyRunningException(KafkaService._CANNOT_UPDATE_CALLBACKS)
+
+        self._callbacks.append(callback)
+
+    def remove_callback(self, callback: KafkaServiceCallback):
+        if self._running:
+            raise KafkaService.LoopAlreadyRunningException(KafkaService._CANNOT_UPDATE_CALLBACKS)
+
+        self._callbacks.remove(callback)

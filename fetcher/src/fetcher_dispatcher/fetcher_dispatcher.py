@@ -1,17 +1,18 @@
 from kazoo.client import KazooClient
-
-from fetcher_dispatcher.data_set_pull import get_dataset_dst
-from fetcher_dispatcher.data_set_manager import DataSet, DataSetManager
-from fetcher_dispatcher.kubernetes_client import KubernetesDispatcher
-from bai_kafka_utils.kafka_service import KafkaServiceCallback
-from bai_kafka_utils.events import BenchmarkEvent
-
 from typing import List, Callable
 
+from bai_kafka_utils.events import BenchmarkEvent
+from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService
+from fetcher_dispatcher.data_set_manager import DataSet, DataSetManager
+from fetcher_dispatcher.data_set_pull import get_dataset_dst
+from fetcher_dispatcher.kubernetes_client import KubernetesDispatcher
 
-def create_data_set_manager(zookeeper_ensemble_hosts: str, kubeconfig: str, fetcher_job_image: str):
+
+def create_data_set_manager(zookeeper_ensemble_hosts: str, kubeconfig: str, fetcher_job_image: str,
+                            fetcher_node_selector: dict):
     zk_client = KazooClient(zookeeper_ensemble_hosts)
-    job_dispatcher = KubernetesDispatcher(kubeconfig, fetcher_job_image, zookeeper_ensemble_hosts)
+    job_dispatcher = KubernetesDispatcher(kubeconfig, fetcher_job_image, zookeeper_ensemble_hosts,
+                                          fetcher_node_selector)
 
     return DataSetManager(zk_client, job_dispatcher)
 
@@ -21,7 +22,7 @@ class FetcherEventHandler(KafkaServiceCallback):
         self.data_set_mgr = data_set_mgr
         self.s3_data_set_bucket = s3_data_set_bucket
 
-    def handle_event(self, event: BenchmarkEvent):
+    def handle_event(self, event: BenchmarkEvent, kafka_service: KafkaService):
         def extract_data_sets(event) -> List[DataSet]:
             return event.payload.data_sets
 
