@@ -28,7 +28,7 @@ class BaiDataSource:
                  fetched_data_source: DataSet,
                  path: str):
         parsed_uri = urlparse(fetched_data_source.dst)
-        self.src = fetched_data_source.uri
+        self.src = fetched_data_source.src
         self.scheme = parsed_uri.scheme
         self.bucket = parsed_uri.netloc
         self.object = parsed_uri.path[1:]

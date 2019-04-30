@@ -27,7 +27,7 @@ class FetcherEventHandler(KafkaServiceCallback):
             return event.payload.data_sets
 
         def execute(task: DataSet, callback) -> None:
-            task.dst = get_dataset_dst(task.uri, self.s3_data_set_bucket)
+            task.dst = get_dataset_dst(task.src, self.s3_data_set_bucket)
 
             self.data_set_mgr.fetch(task, callback)
 

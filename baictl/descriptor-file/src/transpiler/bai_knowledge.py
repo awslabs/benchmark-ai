@@ -223,7 +223,7 @@ class BaiKubernetesObjectBuilder:
 def create_bai_data_sources(fetched_data_sources: List[DataSet],
                             descriptor: Descriptor) -> List[BaiDataSource]:
     def find_destination_path(fetched_source: DataSet) -> str:
-        return descriptor.find_data_source(fetched_source.uri)['path']
+        return descriptor.find_data_source(fetched_source.src)['path']
 
     return [BaiDataSource(fetched, find_destination_path(fetched)) for fetched in fetched_data_sources]
 

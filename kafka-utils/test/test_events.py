@@ -33,21 +33,21 @@ def dataset():
 
 
 # Rather a boundary test for DataSet optional
-def test_data_set_optional_fields_just_uri():
-    json = '{"uri":"http://foo.com"}'
+def test_data_set_optional_fields_just_src():
+    json = '{"src":"http://foo.com"}'
     with pytest.warns(None) as record:
         DataSet.from_json(json)
     assert not record.list
 
 
-def test_data_set_optional_missing_uri():
+def test_data_set_optional_missing_src():
     json = '{"dst":"http://foo.com", "md5":"42"}'
     with pytest.raises(KeyError):
         DataSet.from_json(json)
 
 
 def test_data_set_dont_fail_unknown_fields():
-    json = '{"uri":"http://foo.com","foo":"bar"}'
+    json = '{"src":"http://foo.com","foo":"bar"}'
     dataset = DataSet.from_json(json)
     assert not hasattr(dataset, "foo")
 
@@ -55,7 +55,7 @@ def test_data_set_dont_fail_unknown_fields():
 def test_fetcher_event(base_event_as_dict):
     fetcher_event_as_dict = base_event_as_dict
     fetcher_event_as_dict["payload"]["data_sets"] = [
-        {"uri": "http://foo.com", "md5": "None", "dst": "None"}
+        {"src": "http://foo.com", "md5": "None", "dst": "None"}
     ]
     event_as_json_string = json.dumps(fetcher_event_as_dict)
 
@@ -68,7 +68,7 @@ def test_fetcher_event(base_event_as_dict):
 
 def test_executor_event(base_event_as_dict):
     executor_event_as_dict = base_event_as_dict
-    executor_event_as_dict["payload"]["data_sets"] = [{"uri": "http://foo.com", "md5": "None", "dst": "None"}]
+    executor_event_as_dict["payload"]["data_sets"] = [{"src": "http://foo.com", "md5": "None", "dst": "None"}]
     executor_event_as_dict["payload"]["job"] = {"id": "job_id", "status": "status", "k8s_yaml": "yaml_file"}
 
     event_as_json_string = json.dumps(executor_event_as_dict)

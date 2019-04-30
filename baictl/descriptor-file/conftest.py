@@ -40,7 +40,7 @@ def fetched_data_sources(base_data_sources):
 
     for source in base_data_sources:
         sources.append(DataSet(
-            uri=source['uri'],
+            src=source['uri'],
             md5=source['md5'],
             dst=source['puller_uri'],
         ))
