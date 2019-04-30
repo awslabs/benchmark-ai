@@ -40,7 +40,7 @@ EOF
 
 create_infra() {
     local cluster_name=""
-    local region=""
+    local region=${default_region}
     local prefix_list_id=""
     local validate=true
 
@@ -74,7 +74,7 @@ create_infra() {
     [[ -n "$region" ]] && vars="${vars} -var region=${region}"
     [[ -n "$prefix_list_id" ]] && vars="${vars} -var prefix_list_ids=[\"${prefix_list_id}\"]"
 
-    _initialize_terraform_backend || return 1
+    _initialize_terraform_backend ${region} || return 1
 
     terraform plan --state=$terraform_state --out=$terraform_plan ${vars} $terraform_dir || return 1
     terraform apply $terraform_plan || return 1
@@ -98,14 +98,21 @@ create_infra() {
 }
 
 _initialize_terraform_backend(){
+    local region=$1
     if [[ ! -f $data_dir/backend.tfvars ]] ; then
-        printf "Creating bootstrap S3 bucket...\n"
-        local uuid=$(uuidgen | tr '[:upper:]' '[:lower:]')
-        aws s3 mb s3://terraform-state-$uuid || return 1
+        local account_id=$(aws sts get-caller-identity | jq -r '.Account') || return 1
+        local bucket="bai-terraform-state-${region}-${account_id}"
+
+        if aws s3 ls s3://$bucket; then
+            printf "S3 bucket in $data_dir/backend.tfvars already exists. Only creating backend.tfvars file\n"
+        else
+            printf "Creating bootstrap S3 bucket...\n"
+            aws s3 mb s3://${bucket}  --region ${region} || return 1
+        fi
         cat <<-END > backend.tfvars
-        bucket="terraform-state-${uuid}"
+        bucket="${bucket}"
         key="terraform.tfstate"
-        region="eu-west-1"
+        region="${region}"
 END
     fi
     # Get bucket name from backend.tfvars
@@ -196,7 +203,8 @@ _install_zookeeper(){
 }
 
 destroy_infra() {
-     for arg in "$@"; do
+    local region=$default_region
+    for arg in "$@"; do
         case "${arg}" in
         --aws-region=*)
             region="${arg#*=}"
@@ -208,7 +216,7 @@ destroy_infra() {
 
     [ -n "$region" ] && vars="${vars} -var region=${region}"
 
-    _initialize_terraform_backend || return 1
+    _initialize_terraform_backend ${region} || return 1
     terraform destroy --state=$terraform_state -auto-approve ${vars} $terraform_dir
 }
 
