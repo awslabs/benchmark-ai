@@ -204,7 +204,7 @@ resource "aws_key_pair" "worker_key" {
 
 resource "local_file" "worker_privatekey_pem" {
   content  = "${tls_private_key.worker_private_key.private_key_pem}"
-  filename = "worker_private.pem"
+  filename = "${var.data_dir}/worker_private.pem"
   provisioner "local-exec" {
     # HACK while Terraform does not have a proper way to set file permissions: https://github.com/terraform-providers/terraform-provider-local/issues/19
     command = "chmod 400 ${local_file.worker_privatekey_pem.filename}"
@@ -239,4 +239,5 @@ module "eks" {
   map_users_count                      = "${var.map_users_count}"
   map_accounts                         = "${var.map_accounts}"
   map_accounts_count                   = "${var.map_accounts_count}"
+  config_output_path                   = "${var.data_dir}/"
 }

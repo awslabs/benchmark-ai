@@ -40,7 +40,7 @@ EOF
 
 create_infra() {
     local cluster_name=""
-    local region=""
+    local region=${default_region}
     local prefix_list_id=""
     local validate=true
 
@@ -66,7 +66,7 @@ create_infra() {
 
     _install_msk_aware_terraform_plugin || return 1
 
-    cd $data_dir
+    cd $terraform_dir
 
     local vars=""
 
@@ -74,14 +74,18 @@ create_infra() {
     [[ -n "$region" ]] && vars="${vars} -var region=${region}"
     [[ -n "$prefix_list_id" ]] && vars="${vars} -var prefix_list_ids=[\"${prefix_list_id}\"]"
 
-    _initialize_terraform_backend || return 1
+    echo "==> Initializing terraform"
+    _initialize_terraform_backend ${region} || return 1
 
-    terraform plan --state=$terraform_state --out=$terraform_plan ${vars} $terraform_dir || return 1
+    echo "==> Calling terraform plan with ${vars}"
+    terraform plan --out=$terraform_plan -var data_dir=$data_dir ${vars} || return 1
     terraform apply $terraform_plan || return 1
-    terraform output kubectl_config >kubeconfig || return 1
 
-    $kubectl apply -f fluentd-daemonset.yaml
-    $kubectl apply -f autoscaler-deployment.yaml
+    terraform output kubectl_config > $kubeconfig || return 1
+
+    echo "==> Creating Kubernetes objects"
+    $kubectl apply -f $data_dir/fluentd-daemonset.yaml
+    $kubectl apply -f $data_dir/autoscaler-deployment.yaml
 
     $kubectl apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v1.11/nvidia-device-plugin.yml
     $kubectl apply -f $project_dir/metrics-pusher/metrics-pusher-roles.yaml
@@ -89,33 +93,50 @@ create_infra() {
 
     _create_configmap_yaml_from_terraform_outputs | $kubectl apply -f -
 
+    echo "==> Installing kubeflow operators"
     _install_kubeflow_operators || return 1
+
+#    echo "==> Validating bastion SSH connectivity"
+#    __validate_bastion || return 1
+
+    echo "==> Creating Kafka topics"
     _create_kafka_topics || return 1
 
+    echo "==> Installing zookeeper"
     _install_zookeeper || return 1
 
+    echo "==> Validating infrastructure"
     [ "$validate" == false ] || validate_infra $@
 }
 
 _initialize_terraform_backend(){
-    if [[ ! -f $data_dir/backend.tfvars ]] ; then
-        printf "Creating bootstrap S3 bucket...\n"
-        local uuid=$(uuidgen | tr '[:upper:]' '[:lower:]')
-        aws s3 mb s3://terraform-state-$uuid || return 1
-        cat <<-END > backend.tfvars
-        bucket="terraform-state-${uuid}"
+    local region=$1
+    if [[ ! -f ${data_dir}/backend.tfvars ]] ; then
+        local account_id=$(aws sts get-caller-identity | jq -r '.Account') || return 1
+        local bucket="bai-terraform-state-${region}-${account_id}"
+
+        if aws s3 ls s3://$bucket; then
+            printf "S3 bucket in $data_dir/backend.tfvars already exists. Only creating backend.tfvars file\n"
+        else
+            printf "Creating bootstrap S3 bucket...\n"
+            aws s3 mb s3://${bucket}  --region ${region} || return 1
+        fi
+        cat <<-END > ${data_dir}/backend.tfvars
+        bucket="${bucket}"
         key="terraform.tfstate"
-        region="eu-west-1"
+        region="${region}"
 END
     fi
     # Get bucket name from backend.tfvars
-    local s3_bucket_name=$(awk -F'"' '{print $2}'  $data_dir/backend.tfvars)
-    if ! aws s3 ls s3://$s3_bucket; then
-        printf "S3 bucket in $data_dir/backend.tfvars does not exist!\n"
+    local s3_bucket_name=$(cat $data_dir/backend.tfvars | grep bucket | awk -F'"' '{print $2}')
+    if [[ "$s3_bucket_name" == "" ]] || ! aws s3 ls s3://${s3_bucket_name}; then
+        printf "S3 bucket ($s3_bucket_name) in $data_dir/backend.tfvars does not exist!\n"
         return 1
     fi
-    terraform init --backend-config=$data_dir/backend.tfvars $terraform_dir
-    terraform get $terraform_dir
+    echo "-> Calling terraform init"
+    terraform init --backend-config=${data_dir}/backend.tfvars || return 1
+    echo "-> Calling terraform get"
+    terraform get || return 1
 }
 
 _install_msk_aware_terraform_plugin(){
@@ -138,14 +159,18 @@ _install_msk_aware_terraform_plugin(){
 
 
 _create_kafka_topics(){
-    local msk_zookeeper_connect=$(terraform output --state=$terraform_state msk_zookeeper_connect)
-    local bastion_pem_filename=$(terraform output --state=$terraform_state bastion_pem_filename)
-    local bastion_public_ip=$(terraform output --state=$terraform_state bastion_public_ip)
+    local outputs=$(terraform output -json)
+    local msk_zookeeper_connect=$(echo $outputs | jq -r '.msk_zookeeper_connect.value')
+    local bastion_pem_filename=$(echo $outputs | jq -r '.bastion_pem_filename.value')
+    local bastion_public_ip=$(echo $outputs | jq -r '.bastion_public_ip.value')
+
     local kafka_topics=("BAI_APP_BFF" "BAI_APP_FETCHER" "BAI_APP_EXECUTOR" "BAI_SYS_BFF" "BAI_SYS_FETCHER" "BAI_SYS_EXECUTOR" "CMD_SUBMIT" "CMD_RETURN")
 
     printf "Creating Kafka Topics...\n"
     for topic in "${kafka_topics[@]}"; do
-        ssh -i ${data_dir}/${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "/snap/bin/kafka.topics --create --if-not-exists --zookeeper $msk_zookeeper_connect --replication-factor 3 --partitions 1 --topic $topic"
+        echo "---- Topic: ${topic}..."
+        ssh -i ${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "/snap/bin/kafka.topics --create --if-not-exists --zookeeper $msk_zookeeper_connect --replication-factor 3 --partitions 1 --topic $topic"
+        echo "---- Topic: ${topic}... DONE"
     done
 
 }
@@ -160,35 +185,40 @@ EOF
 }
 
 _install_kubeflow_operators() {
-    if [ ! -d "kubeflow-ks-app" ]; then
-        (
-            mkdir kubeflow-ks-app
-            cd kubeflow-ks-app || return 1
+    if [[ ! -d "$data_dir/kubeflow-ks-app" ]]; then
+        mkdir $data_dir/kubeflow-ks-app
+        pushd $data_dir/kubeflow-ks-app
 
-            export KUBECONFIG=$kubeconfig
-            ks init ks_app
+        export KUBECONFIG=$kubeconfig
+        ks init ks_app
 
-            cd ks_app || return 1
+        cd ks_app || return 1
 
-            __create_kubeflow_namespace | kubectl apply -f -
+        echo "-> Creating kubeflow namespace"
+        __create_kubeflow_namespace | kubectl apply -f -
 
-            ks registry add kubeflow https://github.com/kubeflow/kubeflow/tree/v0.4.1/kubeflow && \
+        echo "-> Applying kubeflow stuff"
+        ks registry add kubeflow https://github.com/kubeflow/kubeflow/tree/v0.4.1/kubeflow && \
             ks env add kubeflow --namespace "$kubeflow_namespace" && \
             ks pkg install kubeflow/mpi-job && \
             ks pkg install kubeflow/mxnet-job && \
             ks generate mpi-operator mpi-operator && \
-            ks generate mxnet-operator mxnet-operator || \
-            return 1
-        )
+            ks generate mxnet-operator mxnet-operator
+        local exit_code=$?
+        popd
+        [[ "$exit_code" != 0 ]] && echo "[ERROR] Failed with exit code: $exit_code" && return 1
     fi
 
-    (
-        export KUBECONFIG=$kubeconfig
-        cd kubeflow-ks-app/ks_app || return 1
-        ks apply kubeflow --component mpi-operator && \
-        ks apply kubeflow --component mxnet-operator || \
-        return 1
-    )
+    echo "-> Kubeflow should be already installed, re-applying configuration"
+    export KUBECONFIG=$kubeconfig
+    pushd $data_dir/kubeflow-ks-app/ks_app
+    ks apply kubeflow --component mpi-operator && \
+        ks apply kubeflow --component mxnet-operator
+    local exit_code=$?
+    popd
+    [[ "$exit_code" != 0 ]] && echo "[ERROR] Failed with exit code: $exit_code" && return 1
+
+    return 0
 }
 
 _install_zookeeper(){
@@ -196,7 +226,8 @@ _install_zookeeper(){
 }
 
 destroy_infra() {
-     for arg in "$@"; do
+    local region=$default_region
+    for arg in "$@"; do
         case "${arg}" in
         --aws-region=*)
             region="${arg#*=}"
@@ -204,15 +235,17 @@ destroy_infra() {
         esac
     done
 
-    cd $data_dir
+    cd $terraform_dir
 
     [ -n "$region" ] && vars="${vars} -var region=${region}"
 
-    _initialize_terraform_backend || return 1
-    terraform destroy --state=$terraform_state -auto-approve ${vars} $terraform_dir
+    _initialize_terraform_backend ${region} || return 1
+    terraform destroy -auto-approve ${vars}
 }
 
 get_infra() {
+    cd $terraform_dir
+
     for arg in "$@"; do
         printf "\n----------\n"
         case "${arg}" in
@@ -220,15 +253,15 @@ get_infra() {
             $kubectl get nodes -o wide
             ;;
         --aws-es)
-            terraform output --state=$terraform_state es_endpoint
+            terraform output es_endpoint
             ;;
         --aws-cluster)
-            terraform output --state=$terraform_state region
-            terraform output --state=$terraform_state cluster_name
-            terraform output --state=$terraform_state cluster_endpoint
+            terraform output region
+            terraform output eks_cluster_name
+            terraform output cluster_endpoint
             ;;
         --aws-bastion-ip)
-            terraform output --state=$terraform_state bastion_public_ip
+            terraform output bastion_public_ip
             ;;
         esac
     done
@@ -256,10 +289,15 @@ __validate_mxnet_job(){
 
 __validate_kafka_topics(){
     printf "Kafka Topics are present"
-    local msk_zookeeper_connect=$(terraform output --state=$terraform_state msk_zookeeper_connect)
-    local bastion_pem_filename=$(terraform output --state=$terraform_state bastion_pem_filename)
-    local bastion_public_ip=$(terraform output --state=$terraform_state bastion_public_ip)
-    local result=$(ssh -i ${data_dir}/${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no -o LogLevel=QUIET "/snap/bin/kafka.topics --list --zookeeper $msk_zookeeper_connect")
+
+    pushd $terraform_dir > /dev/null
+    local outputs=$(terraform output -json)
+    local msk_zookeeper_connect=$(echo $outputs | jq -r '.msk_zookeeper_connect.value')
+    local bastion_pem_filename=$(echo $outputs | jq -r '.bastion_pem_filename.value')
+    local bastion_public_ip=$(echo $outputs | jq -r '.bastion_public_ip.value')
+    popd > /dev/null
+
+    local result=$(ssh -i ${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no -o LogLevel=QUIET "/snap/bin/kafka.topics --list --zookeeper $msk_zookeeper_connect")
     local kafka_topics=("BAI_APP_BFF" "BAI_APP_FETCHER" "BAI_APP_EXECUTOR" "BAI_SYS_BFF" "BAI_SYS_FETCHER" "BAI_SYS_EXECUTOR" "CMD_SUBMIT" "CMD_RETURN")
 
     for topic in "${kafka_topics[@]}"; do
@@ -305,15 +343,17 @@ get_benchmark() {
     [ -z "$benchmark_name" ] && printf "Missing required argument --name\n" && return 1
     [ -z "$page_size" ] && page_size=10000
 
-    bastion_pem_filename=$(terraform output --state=$terraform_state bastion_pem_filename)
-    bastion_ip=$(terraform output --state=$terraform_state bastion_public_ip)
-    es_endpoint=$(terraform output --state=$terraform_state es_endpoint)
+    cd $terraform_dir
+
+    bastion_pem_filename=$(terraform output bastion_pem_filename)
+    bastion_ip=$(terraform output bastion_public_ip)
+    es_endpoint=$(terraform output es_endpoint)
 
     _call_elasticsearch() {
         local url=${1}
         local query_body=${2}
         local curl_cmd="curl -X POST -s -H 'Content-Type: application/json' -d '$query_body' ${es_endpoint}/${url}"
-        local result=$(ssh -q -o StrictHostKeyChecking=no -i ${data_dir}/${bastion_pem_filename} ubuntu@${bastion_ip} "${curl_cmd}")
+        local result=$(ssh -q -o StrictHostKeyChecking=no -i ${bastion_pem_filename} ubuntu@${bastion_ip} "${curl_cmd}")
         local status=$(echo $result | jq '.status')
         if [[ "$status" -ne "null" ]]; then
             echo "==========================================================================================" >&2
@@ -383,7 +423,9 @@ run_benchmark() {
 
     export PYTHONPATH=${src_dir}/../../descriptor-file/src:${src_dir}/../../../kafka-utils/src
 
+    pushd $terraform_dir > /dev/null
     local azs=$(terraform output -json --state=${terraform_state} availability_zones | jq -r '.value | join(" ")')
+    popd > /dev/null
 
     [ -z "${azs}" ] && printf "Availability zones could not be identified from terraform state %s\n" "${terraform_state}" && return 1
 
@@ -445,19 +487,16 @@ for arg in "$@"; do
     esac
 done
 
-[ ! -d "$data_dir" ] && mkdir $data_dir
+[ ! -d "$data_dir" ] && mkdir -p $data_dir
 
 data_dir=$(realpath $data_dir)
 kubeconfig=$(realpath $data_dir/kubeconfig)
 kube_config_arg=--kubeconfig=$kubeconfig
 kubectl="kubectl ${kube_config_arg}"
-terraform_state=$data_dir/terraform.tfstate
-terraform_state_arg=--state=$data_dir/terraform.tfstate
 terraform_dir=$(dirname $BASH_SOURCE)/cluster
 terraform_plan=$data_dir/terraform.plan
 
 terraform_dir=$(realpath $terraform_dir)
-terraform_state=$(realpath $terraform_state)
 terraform_plan=$(realpath $terraform_plan)
 
 project_dir=$(realpath $(dirname $BASH_SOURCE)/../../..)

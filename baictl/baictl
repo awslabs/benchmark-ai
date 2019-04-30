@@ -21,6 +21,7 @@ fi
 verbose=""
 just_help=""
 data_dir=${HOME}/bai
+default_region="eu-west-1"
 
 for arg in "$@"
 do
