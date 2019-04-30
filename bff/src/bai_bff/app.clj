@@ -8,6 +8,7 @@
   Basically Objects ain't all bad :-) "
   (:require [bai-bff.core :refer :all]
             [bai-bff.services.configuration :refer [create-configuration-service]]
+            [bai-bff.services.eventbus  :refer [create-eventbus-service]]
             [bai-bff.services.endpoints :refer [create-endpoints-service]]
             [taoensso.timbre :as log])
   (:gen-class))
@@ -15,12 +16,16 @@
 (defn create-services
   ([] (create-services {}))
   ([{:keys [config-fn
+            eventbus-fn
             endpoints-fn]
      :or {config-fn     create-configuration-service
+          eventbus-fn   create-eventbus-service
           endpoints-fn  create-endpoints-service}}]
    (let [configuration  (config-fn)
+         eventbus       (eventbus-fn)
          endpoints      (endpoints-fn configuration)]
      {:configuration configuration
+      :eventbus  eventbus
       :endpoints endpoints})))
 
 (defn stop [services]
@@ -34,6 +39,7 @@
   ([] (start (create-services)))
   ([services]
    (let [services (map services [:configuration
+                                 :eventbus
                                  :endpoints])]
      (doseq [service services]
        (println "Starting service: " service)
