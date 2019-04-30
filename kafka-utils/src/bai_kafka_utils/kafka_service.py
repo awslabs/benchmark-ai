@@ -18,8 +18,8 @@ class KafkaServiceConfig:
     consumer_topic: str
     producer_topic: str
     bootstrap_servers: List[str]
-    consumer_group_id: str
     logging_level: str
+    consumer_group_id: Optional[str] = None
 
 
 class KafkaServiceCallback(metaclass=abc.ABCMeta):

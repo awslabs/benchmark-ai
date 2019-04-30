@@ -36,7 +36,7 @@ def test_main(mock_create_fetcher_dispatcher):
          f"--fetcher-job-image {FETCHER_JOB_IMAGE}")
 
     expected_common_kafka_cfg = KafkaServiceConfig(consumer_topic=CONSUMER_TOPIC, producer_topic=PRODUCER_TOPIC,
-                                                   bootstrap_servers=BOOTSTRAP_SERVERS, consumer_group_id=None,
+                                                   bootstrap_servers=BOOTSTRAP_SERVERS,
                                                    logging_level=LOGGING_LEVEL)
 
     fetcher_dispatcher_cfg = FetcherServiceConfig(zookeeper_ensemble_hosts=ZOOKEEPER_ENSEMBLE_HOSTS,
