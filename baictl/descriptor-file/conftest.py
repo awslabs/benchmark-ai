@@ -11,18 +11,20 @@ from transpiler.config import DescriptorConfig, BaiConfig
 
 @pytest.fixture
 def base_data_sources():
-    return [{
-        "uri": "s3://mlperf-data-stsukrov/imagenet/train-480px",
-        "md5": "md5",
-        "path": "/data/tf-imagenet/train",
-        "puller_uri": "s3://puller-data-stsukrov/imagenet/train",
-    },
+    return [
         {
-        "uri": "s3://mlperf-data-stsukrov/imagenet/validation-480px",
-        "md5": "md5",
-        "path": "/data/tf-imagenet/validation",
-        "puller_uri": "s3://puller-data-stsukrov/imagenet/validation",
-    }]
+            "uri": "s3://mlperf-data-stsukrov/imagenet/train-480px",
+            "md5": "md5",
+            "path": "/data/tf-imagenet/train",
+            "puller_uri": "s3://puller-data-stsukrov/imagenet/train",
+        },
+        {
+            "uri": "s3://mlperf-data-stsukrov/imagenet/validation-480px",
+            "md5": "md5",
+            "path": "/data/tf-imagenet/validation",
+            "puller_uri": "s3://puller-data-stsukrov/imagenet/validation",
+        },
+    ]
 
 
 @pytest.fixture

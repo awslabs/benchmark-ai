@@ -4,7 +4,7 @@ import pytest
 import toml
 
 from pytest_regressions.file_regression import FileRegressionFixture
-from transpiler.__main__ import create_yaml_spec
+from transpiler.bai_knowledge import create_yaml_spec
 from bai_kafka_utils.events import DataSet
 
 from typing import List
