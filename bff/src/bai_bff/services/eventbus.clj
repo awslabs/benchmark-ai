@@ -16,16 +16,16 @@
             [clojure.core.async :as a :refer [>! <! >!! <!! go chan buffer close! thread
                                               alts! alts!! timeout]]))
 
-(def send-event-channel-atom     (atom (chan 1000)))      ;;output channel
-(def receive-events-channel-atom (atom (chan 1000)))  ;;input channel
+(def send-event-channel-atom     (atom nil))  ;;output channel
+(def receive-events-channel-atom (atom nil))  ;;input channel
 
 ;;TODO add a stop function that closes channels and allows to drain.
-(defrecord EventbusService []
+(defrecord EventbusService [send-channel receive-channel]
   RunService
   (start! [this]
     (log/info (str "starting eventbus service component..."))
-    (reset! send-event-channel-atom (chan 1000))
-    (reset! receive-events-channel-atom (chan 1000)))
+    (reset! send-event-channel-atom send-channel)
+    (reset! receive-events-channel-atom receive-channel))
   (stop! [this]
     (locking this
       (log/info (str "stopping eventbus service component... (closing channels)"))
@@ -38,4 +38,5 @@
   (.write w "<EventbusService>"))
 
 (defn create-eventbus-service []
-  (->EventbusService))
+  (map->EventbusService {:send-channel    (chan 1000)
+                         :receive-channel (chan 1000)}))
