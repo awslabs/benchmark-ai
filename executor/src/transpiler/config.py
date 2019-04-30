@@ -18,6 +18,24 @@ class BaiConfig:
 
 
 @dataclass
+class EnvironmentInfo:
+    """
+    Holds information on the environment that BAI is running.
+    It is meant to aid in making decisions on how to run the benchmarks.
+    """
+    availability_zones: List[str]
+
+
+@dataclass
+class TranspilerConfig:
+    descriptor: str
+    filename: str
+    descriptor_config: DescriptorConfig
+    bai_config: BaiConfig
+    environment_info: EnvironmentInfo
+
+
+@dataclass
 class BaiDataSource:
     scheme: str
     bucket: str

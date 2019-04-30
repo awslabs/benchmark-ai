@@ -1,7 +1,7 @@
+import dataclasses
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Type, Any
-
 from dataclasses_json import dataclass_json
+from typing import Dict, List, Optional, Type, Any
 
 
 @dataclass_json
@@ -49,6 +49,12 @@ class FetcherPayload(BenchmarkPayload):
 class ExecutorPayload(BenchmarkPayload):
     job: BenchmarkJob
 
+    @classmethod
+    def from_fetcher_payload(cls, payload, job: BenchmarkJob):
+        payload_as_dict = dataclasses.asdict(payload)
+        payload_as_dict['job'] = job
+        return cls(**payload_as_dict)
+
 
 @dataclass_json
 @dataclass
@@ -70,6 +76,11 @@ class BenchmarkEvent:
     tstamp: int
     visited: List[VisitedService]
     payload: Any
+
+    @classmethod
+    def from_event_new_payload(cls, benchmark_event, payload: BenchmarkPayload):
+        benchmark_event.payload = payload
+        return cls(**dataclasses.asdict(benchmark_event))
 
 
 def __make_benchmark_event(payload_type: Type):

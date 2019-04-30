@@ -5,7 +5,7 @@ import pytest
 from bai_kafka_utils.events import DataSet
 from transpiler.descriptor import Descriptor
 from transpiler.bai_knowledge import EnvironmentInfo
-from transpiler.args import get_args
+from executor.args import get_args
 from transpiler.config import DescriptorConfig, BaiConfig
 
 
@@ -46,12 +46,6 @@ def fetched_data_sources(base_data_sources):
         ))
 
     return sources
-
-
-@pytest.fixture
-def config_args(shared_datadir):
-    required_args = "descriptor.toml --availability-zones=us-east-1a us-east-1b us-east-1c"
-    return get_args(required_args + f' -c {str(shared_datadir / "config.yaml")}')
 
 
 @pytest.fixture

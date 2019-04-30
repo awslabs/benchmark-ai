@@ -1,0 +1,18 @@
+name: fetcher
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python 3.7.*
+  - ruamel.yaml >= 0.15
+  - toml 0.9.*
+  - addict 2.2.*
+  - kazoo 2.5.*
+  - kafka-python 1.4.*
+  - boto3 1.9.*
+  - python-kubernetes 9.0.*
+  - pip
+  - pip:
+    - ConfigArgParse 0.13.*
+    - python-crontab 2.3.*
+    - dataclasses-json 0.2.*
