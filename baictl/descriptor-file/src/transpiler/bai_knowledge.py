@@ -6,7 +6,10 @@ import uuid
 from typing import List, Dict
 from ruamel import yaml
 from dataclasses import dataclass
+
+from bai_kafka_utils.events import DataSet
 from transpiler.descriptor import Descriptor
+from transpiler.config import BaiConfig, BaiDataSource, DescriptorConfig
 from transpiler.kubernetes_spec_logic import ConfigTemplate, VolumeMount, HostPath, Volume, EmptyDirVolumeSource
 
 
@@ -14,13 +17,12 @@ from transpiler.kubernetes_spec_logic import ConfigTemplate, VolumeMount, HostPa
 class EnvironmentInfo:
     """
     Holds information on the environment that BAI is running.
-
     It is meant to aid in making decisions on how to run the benchmarks.
     """
     availability_zones: List[str]
 
 
-class BaiConfig:
+class BaiKubernetesObjectBuilder:
     """
     Adds the logic required from BAI into the Kubernetes root object that represents
     launching a benchmark.
@@ -29,7 +31,8 @@ class BaiConfig:
     def __init__(
             self,
             descriptor: Descriptor,
-            config,
+            config: BaiConfig,
+            data_sources: List[BaiDataSource],
             config_template: ConfigTemplate,
             *,
             environment_info: EnvironmentInfo,
@@ -61,18 +64,17 @@ class BaiConfig:
             "availability_zone": availability_zone,
         })
         self.root = config_template.build()
-        self.add_volumes()
+        self.add_volumes(data_sources)
 
         if descriptor.scheduling != 'single_run':
             self.root.to_cronjob(descriptor.scheduling)
 
-    def add_volumes(self):
-        data_volumes = self._get_data_volumes(self.descriptor.data_sources)
-
+    def add_volumes(self, data_sources: List[BaiDataSource]):
         benchmark_container = self.root.find_container("benchmark")
         pod_spec = self.root.get_pod_spec()
 
-        self._update_data_puller(data_volumes, self.descriptor.data_sources)
+        data_volumes = self._get_data_volumes(data_sources)
+        self._update_data_puller(data_volumes, data_sources)
 
         benchmark_container.volumeMounts.extend(self._get_container_volume_mounts(data_volumes))
         pod_spec.volumes.extend(self._get_pod_spec_volumes(data_volumes))
@@ -143,14 +145,14 @@ class BaiConfig:
         else:
             self.add_benchmark_cmd_to_container()
 
-    def _get_data_volumes(self, data_sources: List) -> Dict:
+    def _get_data_volumes(self, data_sources: List[BaiDataSource]) -> Dict:
         """
         Processes the input data sources to get a dict with the required data volumes
         :param data_sources:
         :return:
         """
         # Data destination paths and the corresponding mounted vols
-        destination_paths = {s['path'] for s in data_sources}
+        destination_paths = {s.path for s in data_sources}
         data_vols = {}
 
         for idx, dest in enumerate(destination_paths):
@@ -178,29 +180,27 @@ class BaiConfig:
                                           mountPath=dest_path))
         return vol_mounts
 
-    def _update_data_puller(self, data_volumes, data_sources):
+    def _update_data_puller(self, data_volumes, data_sources: List[BaiDataSource]):
         """
         Completes the data puller by adding the required arguments and volume mounts.
-
         If no data sources are found, the data puller is deleted.
         """
-
         if not data_sources:
             self.root.remove_container("data-puller")
             return
 
         data_puller = self.root.find_container("data-puller")
 
-        # Placeholder until the data fetcher is ready
-        # ------------------------------------------
         s3_objects = []
         for s in data_sources:
-            s3_objects.append(s['object'] + ',' +
-                              self.config.puller_mount_chmod + ',' +
-                              data_volumes[s['path']]['name'])
+            s3_objects.append(
+                "{object},{chmod},{path_name}".format(
+                    object=s.object,
+                    chmod=self.config.puller_mount_chmod,
+                    path_name=data_volumes[s.path]['name'])
+            )
 
-        puller_args = [self.config.puller_s3_region, data_sources[0]['bucket'], ':'.join(s3_objects)]
-        # ------------------------------------------
+        puller_args = [self.config.puller_s3_region, data_sources[0].bucket, ':'.join(s3_objects)]
 
         vol_mounts = self._get_puller_volume_mounts(data_volumes)
         data_puller.image = self.config.puller_docker_image
@@ -220,14 +220,24 @@ class BaiConfig:
         return vol_mounts
 
 
-def create_bai_config(descriptor: Descriptor,
-                      config,
-                      environment_info: EnvironmentInfo,
-                      extra_bai_config_args=None) -> BaiConfig:
+def create_bai_data_sources(fetched_data_sources: List[DataSet],
+                            descriptor: Descriptor) -> List[BaiDataSource]:
+    def find_destination_path(fetched_source: DataSet) -> str:
+        return descriptor.find_data_source(fetched_source.src)['path']
+
+    return [BaiDataSource(fetched, find_destination_path(fetched)) for fetched in fetched_data_sources]
+
+
+def create_bai_k8s_builder(descriptor: Descriptor,
+                           bai_config: BaiConfig,
+                           fetched_data_sources: List[DataSet],
+                           environment_info: EnvironmentInfo,
+                           extra_bai_config_args=None) -> BaiKubernetesObjectBuilder:
     """
-    Builds a BaiConfig object
+    Builds a BaiKubernetesObjectBuilder object
     :param descriptor: The descriptor.
-    :param config: Configuration values
+    :param bai_config: Configuration values.
+    :param fetched_data_sources: list of fetched data sources, as generated by the fetcher.
     :param environment_info: Information on the environment that BAI is running on.
     :param extra_bai_config_args: An optional Dict which will be forwarded to the `BaiConfig` object created.
     :return:
@@ -246,18 +256,45 @@ def create_bai_config(descriptor: Descriptor,
     with open(os.path.join(templates_dir, template_files[descriptor.strategy]), "r") as f:
         contents = f.read()
     config_template = ConfigTemplate(contents)
+    bai_data_sources = create_bai_data_sources(fetched_data_sources, descriptor)
 
-    bai_config = BaiConfig(descriptor,
-                           config,
-                           config_template,
-                           environment_info=environment_info,
-                           **extra_bai_config_args)
+    bai_k8s_builder = BaiKubernetesObjectBuilder(descriptor,
+                                                 bai_config,
+                                                 bai_data_sources,
+                                                 config_template,
+                                                 environment_info=environment_info,
+                                                 **extra_bai_config_args)
 
     if descriptor.strategy == 'single_node':
-        bai_config.add_benchmark_cmd_to_container()
+        bai_k8s_builder.add_benchmark_cmd_to_container()
     elif descriptor.strategy == 'horovod':
-        bai_config.add_benchmark_cmd_to_config_map()
+        bai_k8s_builder.add_benchmark_cmd_to_config_map()
     else:
         raise ValueError("Unsupported configuration in descriptor file")
 
-    return bai_config
+    return bai_k8s_builder
+
+
+def create_yaml_spec(descriptor_contents: Dict,
+                     descriptor_config: DescriptorConfig,
+                     bai_config: BaiConfig,
+                     fetched_data_sources: List[DataSet],
+                     environment_info: EnvironmentInfo,
+                     extra_bai_config_args=None):
+    """
+    Creates the YAML spec file corresponding to a descriptor passed as parameter
+    :param descriptor_contents: dict containing the parsed descriptor
+    :param descriptor_config: configuration for the descriptor
+    :param bai_config: configuration for the BaiKubernetesObjectBuilder
+    :param fetched_data_sources: list of fetched data sources, as generated by the fetcher.
+    :param environment_info: contains BAI information, such as availability zones, etc
+    :param extra_bai_config_args: An optional Dict which will be forwarded to the `BaiConfig` object created.
+    :return: The yaml string for the given descriptor
+    """
+    descriptor = Descriptor(descriptor_contents, descriptor_config)
+    bai_k8s_builder = create_bai_k8s_builder(descriptor,
+                                             bai_config,
+                                             fetched_data_sources,
+                                             environment_info=environment_info,
+                                             extra_bai_config_args=extra_bai_config_args)
+    return bai_k8s_builder.dump_yaml_string()
