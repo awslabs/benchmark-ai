@@ -1,12 +1,9 @@
 import logging
 
-from bai_kafka_utils.events import FetcherPayload
-from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
-from bai_kafka_utils.kafka_service import KafkaService, KafkaServiceConfig
 from bai_kafka_utils.kafka_service_args import get_kafka_service_config
-from fetcher_dispatcher import __version__, SERVICE_NAME, SERVICE_DESCRIPTION
-from fetcher_dispatcher.args import get_fetcher_service_config, FetcherServiceConfig
-from fetcher_dispatcher.fetcher_dispatcher import FetcherEventHandler, create_data_set_manager
+from fetcher_dispatcher import SERVICE_NAME, SERVICE_DESCRIPTION
+from fetcher_dispatcher.args import get_fetcher_service_config
+from fetcher_dispatcher.fetcher_dispatcher import create_fetcher_dispatcher
 
 
 def main(argv=None):
@@ -24,25 +21,6 @@ def main(argv=None):
 
     fetcher_service = create_fetcher_dispatcher(common_kafka_cfg, fetcher_cfg)
     fetcher_service.run_loop()
-
-
-def create_fetcher_dispatcher(common_kafka_cfg: KafkaServiceConfig, fetcher_cfg: FetcherServiceConfig) -> KafkaService:
-    data_set_mgr = create_data_set_manager(fetcher_cfg.zookeeper_ensemble_hosts,
-                                           fetcher_cfg.kubeconfig,
-                                           fetcher_cfg.fetcher_job_image, fetcher_cfg.fetcher_job_node_selector)
-    data_set_mgr.start()
-
-    callbacks = [
-        FetcherEventHandler(data_set_mgr,
-                            fetcher_cfg.s3_data_set_bucket)
-    ]
-
-    consumer, producer = create_kafka_consumer_producer(common_kafka_cfg, FetcherPayload)
-
-    return KafkaService(SERVICE_NAME,
-                        __version__,
-                        common_kafka_cfg.producer_topic,
-                        callbacks, consumer, producer)
 
 
 if __name__ == '__main__':

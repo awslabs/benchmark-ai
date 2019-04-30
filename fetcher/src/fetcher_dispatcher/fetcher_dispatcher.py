@@ -1,8 +1,11 @@
 from kazoo.client import KazooClient
 from typing import List, Callable
 
-from bai_kafka_utils.events import BenchmarkEvent
-from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService
+from bai_kafka_utils.events import BenchmarkEvent, FetcherPayload
+from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
+from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService, KafkaServiceConfig
+from fetcher_dispatcher import SERVICE_NAME, __version__
+from fetcher_dispatcher.args import FetcherServiceConfig
 from fetcher_dispatcher.data_set_manager import DataSet, DataSetManager
 from fetcher_dispatcher.data_set_pull import get_dataset_dst
 from fetcher_dispatcher.kubernetes_client import KubernetesDispatcher
@@ -46,12 +49,31 @@ class FetcherEventHandler(KafkaServiceCallback):
         tasks = list(filter(lambda t: not t.dst, tasks))
 
         if not tasks:
-            return
+            return event
 
         def on_all_done():
-            return event
+            return kafka_service.send_event(event)
 
         execute_all(tasks, on_all_done)
 
     def cleanup(self):
         self.data_set_mgr.stop()
+
+
+def create_fetcher_dispatcher(common_kafka_cfg: KafkaServiceConfig, fetcher_cfg: FetcherServiceConfig) -> KafkaService:
+    data_set_mgr = create_data_set_manager(fetcher_cfg.zookeeper_ensemble_hosts,
+                                           fetcher_cfg.kubeconfig,
+                                           fetcher_cfg.fetcher_job_image, fetcher_cfg.fetcher_job_node_selector)
+    data_set_mgr.start()
+
+    callbacks = [
+        FetcherEventHandler(data_set_mgr,
+                            fetcher_cfg.s3_data_set_bucket)
+    ]
+
+    consumer, producer = create_kafka_consumer_producer(common_kafka_cfg, FetcherPayload)
+
+    return KafkaService(SERVICE_NAME,
+                        __version__,
+                        common_kafka_cfg.producer_topic,
+                        callbacks, consumer, producer)
