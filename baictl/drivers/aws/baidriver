@@ -208,6 +208,7 @@ destroy_infra() {
 
     [ -n "$region" ] && vars="${vars} -var region=${region}"
 
+    _initialize_terraform_backend || return 1
     terraform destroy --state=$terraform_state -auto-approve ${vars} $terraform_dir
 }
 
