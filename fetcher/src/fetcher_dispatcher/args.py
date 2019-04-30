@@ -1,7 +1,8 @@
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from configargparse import ArgParser
+from typing import Optional, Dict
 
 from fetcher_dispatcher import SERVICE_NAME
 
@@ -10,9 +11,9 @@ from fetcher_dispatcher import SERVICE_NAME
 class FetcherServiceConfig:
     zookeeper_ensemble_hosts: str
     s3_data_set_bucket: str
-    kubeconfig: str
     fetcher_job_image: str
-    fetcher_job_node_selector: str
+    fetcher_job_node_selector: Dict[str, str] = field(default_factory=dict)
+    kubeconfig: Optional[str] = None
 
 
 # We ignore unrecognized objects at the moment
@@ -32,11 +33,13 @@ def get_fetcher_service_config(args) -> FetcherServiceConfig:
                         env_var="KUBECONFIG")
 
     parser.add_argument("--fetcher-job-image",
-                        env_var="FETCHER_JOB_IMAGE")
+                        env_var="FETCHER_JOB_IMAGE",
+                        required=True)
 
     parser.add_argument("--fetcher-job-node-selector",
                         env_var="FETCHER_NODE_SELECTOR",
-                        type=json.loads)
+                        type=json.loads,
+                        default={})
 
     parsed_args, _ = parser.parse_known_args(args)
     return FetcherServiceConfig(zookeeper_ensemble_hosts=parsed_args.zookeeper_ensemble_hosts,
