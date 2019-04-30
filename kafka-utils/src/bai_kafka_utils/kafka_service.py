@@ -82,7 +82,7 @@ class KafkaService:
         """
         if not event:
             raise KafkaServiceCallbackException("Empty message received (no event found)")
-        logger.debug(f"Got event {event}")
+        logger.info(f"Got event {event}")
         return callback.handle_event(event, self)
 
     def send_event(self, event: BenchmarkEvent):
@@ -119,12 +119,13 @@ class KafkaService:
         while self._running:
             # KafkaConsumer.poll() might return more than one message
             # TODO: Do we need a timeout here? (timeout_ms parameter)
-            messages = self._consumer.poll()
-            for msg in messages:
-                for callback in self._callbacks:
-                    output = self.safe_handle_msg(msg, callback)
-                    if output:
-                        self.send_event(output)
+            records = self._consumer.poll().values()
+            for record in records:
+                for msg in record:
+                    for callback in self._callbacks:
+                        output = self.safe_handle_msg(msg, callback)
+                        if output:
+                            self.send_event(output)
 
         for callback in self._callbacks:
             callback.cleanup()

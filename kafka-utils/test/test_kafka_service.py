@@ -29,6 +29,8 @@ VERSION = "1.0"
 VISIT_TIME = 123
 VISIT_TIME_MS = VISIT_TIME * 1000
 
+CONSUMER_TOPIC = 'IN_TOPIC'
+
 
 @dataclass
 class MockBenchmarkPayload(BenchmarkPayload):
@@ -53,8 +55,8 @@ def benchmark_event():
 def kafka_consumer(benchmark_event: BenchmarkEvent):
     consumer = MagicMock(spec=KafkaConsumer)
 
-    consumer.poll = Mock(return_value=[
-        MockConsumerRecord(value=benchmark_event, key=SOME_KEY)])
+    consumer.poll = Mock(return_value={CONSUMER_TOPIC: [
+        MockConsumerRecord(value=benchmark_event, key=SOME_KEY)]})
     return consumer
 
 
@@ -63,8 +65,8 @@ def kafka_consumer_with_invalid_message():
     consumer = MagicMock(spec=KafkaConsumer)
 
     # Add a good one to allow the stop handler to do it's job
-    consumer.poll = Mock(return_value=[MockConsumerRecord(value=None, key=SOME_KEY),
-                                       MockConsumerRecord(value=benchmark_event, key=SOME_KEY)])
+    consumer.poll = Mock(return_value={CONSUMER_TOPIC: [MockConsumerRecord(value=None, key=SOME_KEY),
+                                                        MockConsumerRecord(value=benchmark_event, key=SOME_KEY)]})
     return consumer
 
 
