@@ -7,8 +7,6 @@ from fetcher_dispatcher.data_set_manager import DataSetManager
 from fetcher_dispatcher.fetcher_dispatcher import FetcherEventHandler
 
 S3_BUCKET = "some_bucket"
-SRC1 = "src1"
-SRC2 = "src2"
 
 
 @fixture
@@ -28,7 +26,7 @@ def benchmark_doc() -> BenchmarkDoc:
 
 @fixture
 def benchmark_event_with_data_sets(benchmark_doc: BenchmarkDoc) -> BenchmarkEvent:
-    payload = FetcherPayload(toml=benchmark_doc, data_sets=[DataSet(src=SRC1), DataSet(src=SRC2)])
+    payload = FetcherPayload(toml=benchmark_doc, data_sets=[DataSet(src="src1"), DataSet(src="src2")])
     return get_benchmark_event(payload)
 
 
