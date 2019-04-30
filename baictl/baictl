@@ -20,7 +20,7 @@ fi
 
 verbose=""
 just_help=""
-data_dir=./bai
+data_dir=${HOME}/bai
 
 for arg in "$@"
 do
