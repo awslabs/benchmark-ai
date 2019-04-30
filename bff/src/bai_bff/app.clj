@@ -7,9 +7,11 @@
   follows the philosophy of Stuart Sierra Component framework.
   Basically Objects ain't all bad :-) "
   (:require [bai-bff.core :refer :all]
-            [bai-bff.services.configuration :refer [create-configuration-service]]
-            [bai-bff.services.eventbus  :refer [create-eventbus-service]]
-            [bai-bff.services.endpoints :refer [create-endpoints-service]]
+            [bai-bff.services.configuration        :refer [create-configuration-service]]
+            [bai-bff.services.sinks.kafka-sink     :refer [create-kafka-sink-service]]
+            [bai-bff.services.sources.kafka-source :refer [create-kafka-source-service]]
+            [bai-bff.services.eventbus             :refer [create-eventbus-service]]
+            [bai-bff.services.endpoints            :refer [create-endpoints-service]]
             [taoensso.timbre :as log])
   (:gen-class))
 
@@ -17,16 +19,24 @@
   ([] (create-services {}))
   ([{:keys [config-fn
             eventbus-fn
+            kafka-sink-fn
+            kafka-source-fn
             endpoints-fn]
-     :or {config-fn     create-configuration-service
-          eventbus-fn   create-eventbus-service
-          endpoints-fn  create-endpoints-service}}]
+     :or {config-fn       create-configuration-service
+          eventbus-fn     create-eventbus-service
+          kafka-sink-fn   create-kafka-sink-service
+          kafka-source-fn create-kafka-source-service
+          endpoints-fn    create-endpoints-service}}]
    (let [configuration  (config-fn)
          eventbus       (eventbus-fn)
+         kafka-sink     (kafka-sink-fn configuration)
+         kafka-source   (kafka-source-fn configuration)
          endpoints      (endpoints-fn configuration)]
      {:configuration configuration
-      :eventbus  eventbus
-      :endpoints endpoints})))
+      :eventbus      eventbus
+      :kafka-sink    kafka-sink
+      :kafka-soure   kafka-source
+      :endpoints     endpoints})))
 
 (defn stop [services]
   (let [services (reverse services)]
@@ -40,6 +50,8 @@
   ([services]
    (let [services (map services [:configuration
                                  :eventbus
+                                 :kafka-sink
+                                 :kafka-source
                                  :endpoints])]
      (doseq [service services]
        (println "Starting service: " service)

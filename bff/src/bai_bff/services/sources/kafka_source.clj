@@ -2,6 +2,7 @@
   (:require [bai-bff.services :refer [RunService]] ;Source
             [cheshire.core :as json]
             [bai-bff.utils.srv :refer :all]
+            [bai-bff.services.eventbus :refer [receive-events-channel-atom]]
             [taoensso.timbre :as log])
   (:import  [org.apache.kafka.clients.consumer KafkaConsumer]))
 
@@ -41,7 +42,7 @@
                                                    (json/decode (.value record) true))
                                                  (.records records (get config :kafka-source-topic)))]
                                         ; XXX: do this with a value.deserializer
-                                 (when-not (false? (process-records-fn events))
+                                 (when-not (false? (process-records-fn events)) ;;TODO; (zoiks) - replace this process-records-fn with putting events on the @receive-events-channel-atom channel
                                         ; XXX: Add telemetry
                                    (.commitSync consumer))))
                              (log/info "Shutdown kafka consumer (source)")

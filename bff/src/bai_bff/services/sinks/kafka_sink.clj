@@ -1,6 +1,7 @@
 (ns bai-bff.services.sinks.kafka-sink
   (:require [bai-bff.services :refer [RunService Sink]]
             [bai-bff.utils.srv :refer :all]
+            [bai-bff.services.eventbus :refer [send-event-channel-atom]]
             [taoensso.timbre :as log])
   (:import (org.apache.kafka.clients.producer KafkaProducer
                                               ProducerRecord)
@@ -44,6 +45,7 @@
                              (.put "value.serializer"  (get config :kafka-value-serializer "org.apache.kafka.common.serialization.StringDeserializer"))
                              )]
           (reset! producer (KafkaProducer. kafka-config))
+          ;TODO (zoiks) - put in a loop here where I am reading from @send-event-channel-atom and passing to kafka.
           (reset! started? true)))))
   (stop! [_]
     (when @started?
