@@ -1,12 +1,12 @@
 import abc
 import logging
+from dataclasses import dataclass
+
 import time
 import uuid
-from dataclasses import dataclass
+from kafka import KafkaProducer, KafkaConsumer
 from signal import signal, SIGTERM
 from typing import List, Optional
-
-from kafka import KafkaProducer, KafkaConsumer
 
 from bai_kafka_utils.events import BenchmarkEvent, VisitedService
 
@@ -18,8 +18,8 @@ class KafkaServiceConfig:
     consumer_topic: str
     producer_topic: str
     bootstrap_servers: List[str]
-    consumer_group_id: str
     logging_level: str
+    consumer_group_id: Optional[str] = None
 
 
 class KafkaServiceCallback(metaclass=abc.ABCMeta):
@@ -102,6 +102,8 @@ class KafkaService:
         # Message ID is unique per message
         event.message_id = str(uuid.uuid4())
         add_self_to_visited(event)
+
+        logger.info(f"Sending {event} -> {self._producer_topic}")
 
         self._producer.send(self._producer_topic,
                             value=event)
