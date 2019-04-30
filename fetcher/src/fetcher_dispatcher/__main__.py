@@ -10,7 +10,7 @@ from fetcher_dispatcher.fetcher_dispatcher import FetcherEventHandler, create_da
 
 
 def main(argv=None):
-    common_kafka_cfg = get_kafka_service_config(argv)
+    common_kafka_cfg = get_kafka_service_config(SERVICE_NAME, argv)
     fetcher_cfg = get_fetcher_service_config(argv)
 
     logging.basicConfig(
