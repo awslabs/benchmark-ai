@@ -90,6 +90,8 @@ KAFKA_CMD_RETURN_TOPIC := CMD_RETURN
 #HACK!!!!
 K8S_KUBECTL_ARGS := --kubeconfig=/Users/bellgav/.devo/kubeconfig
 #----------------------------------------------------------------
+# The pipeline: clean-all -> build -> test -> package -> publish -> deploy
+#----------------------------------------------------------------
 
 compile: $(MAIN_CLASS_FILE)
 
@@ -97,7 +99,9 @@ $(MAIN_CLASS_FILE): project.clj $(CLJ_FILES)
 	$(LEIN) compile
 	@touch $@
 
-all: compile test docs dist
+all: compile unit_test docs dist build-deploy-container
+build: compile dist
+test: unit_test integration-test
 package: build-deploy-container
 publish: publish-deploy-container
 
@@ -201,17 +205,17 @@ docs:	compile
 # Testing...
 #----------------------------
 
-test: compile
+unit_test: compile
 	@echo "------------------------"
 	@echo "Runnig Unit Tests..."
 	@echo "------------------------"
-	@$(LEIN) with-profile test
+	@echo "<not>"
 
 integration-test: compile
 	@echo "------------------------"
 	@echo "Running Integration Tests..."
 	@echo "------------------------"
-
+	@echo "<not>"
 
 
 #----------------------------
