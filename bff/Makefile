@@ -22,10 +22,10 @@ RELEASE_PATH := release
 GEN_DOCS_PATH := docs-generated
 
 #---
-# Project metadata
+# Project metadata info
 #---
 #(note: may set VERSION variable in above stanza to override the default below, which gets it from the nearest git tag of the form v.#.#.#<blah>)
-VERSION ?= $(shell git tag | sed -n -e 's/.*-v\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p' | sort -s -u -t. -k1,1n -k2,2n -k3,3n | tail -n 1)
+VERSION ?= $(shell git tag | sed -n -e 's/^$(PROJECT).*-v\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p' | sort -s -u -t. -k1,1n -k2,2n -k3,3n | tail -n 1)
 TAG := $(shell git describe)
 MODULE := $(shell git describe | sed -n 's/\(.*\)-[v]\?[0-9].*/\1/p' | xargs) #TODO: set tp docker container id
 BRANCH := $(shell git branch | grep '*' | sed -n 's/\*[ ]*//p' | xargs)
@@ -36,7 +36,7 @@ COMMIT_AUTHOR := $(shell git log -p -n1 | sed -n -e 's/^Author: \(.*\)/\1/p' | x
 BUILD_DATE := $(shell date)
 
 #---
-# Building core artifact(s)
+# Building core artifact(s)' info
 #---
 TEMPLATE := etc/project.clj.tmpl
 MAIN := $(PROJECT).app
@@ -45,8 +45,8 @@ LEIN := ./bin/lein
 
 JAR_FILENAME := $(PROJECT)-$(VERSION)-standalone.jar
 JAR_FILE := $(TARGET_PATH)/$(JAR_FILENAME)
-TARGET := $(PROJECT)-$(VERSION)
-RELEASE_FILE := $(TARGET).tar.gz
+TARGET := $(PROJECT)-$(VERSION)   #<- (TODO - don't seem to be used)
+RELEASE_FILE := $(TARGET).tar.gz  #<- (TODO - don't seem to be used)
 CLJ_FILES := $(shell find $(SOURCE_PATHS) -name '*.clj')
 CLJ_TEST_FILES := $(shell find $(TEST_PATHS) -name '*.clj')
 MAIN_CLASS_FILE := $(COMPILE_PATH)/$(shell sed -e 's@\.@/@g' -e 's@-@_@g' <<<$(MAIN))__init.class
@@ -55,7 +55,7 @@ MAIN_CLASS_FILE := $(COMPILE_PATH)/$(shell sed -e 's@\.@/@g' -e 's@-@_@g' <<<$(M
 # Continuous Delivery, Packaging and Containerization
 #---
 DOCKER_REGISTRY := gavin
-SERVICE_DIRECTORY_PAGE := http://foo.bar.com/services/$(PROJECT)
+DOCKER_TAG := $(VERSION)-$(COMMIT_SHORT_HASH)
 
 CD_SERVER := http://foo.bar.com/job/$(PROJECT)
 CD_PACKAGE_VERSION_STAMP := FIXME
@@ -97,18 +97,18 @@ $(MAIN_CLASS_FILE): project.clj $(CLJ_FILES)
 	$(LEIN) compile
 	@touch $@
 
-all: test docs dist
+all: compile test docs dist
+package: build-deploy-container
+publish: publish-deploy-container
 
 show-vars:
 	@echo "----------------------------------"
 	@echo "VERSION =  $(VERSION)"
-	@echo "TAG = $(TAG)"
 	@echo "PROJECT = $(PROJECT)"
 	@echo "ORGANIZATION = $(ORGANIZATION)"
 	@echo "RELEASE_NAME = $(RELEASE_NAME)"
 	@echo "PROFILE = $(PROFILE)"
 	@echo "AUTHOR = $(AUTHOR)"
-	@echo "REPO_SITE = $(REPO_SITE)"
 	@echo "RESOURCE_PATHS = $(RESOURCE_PATHS)"
 	@echo "SOURCE_PATHS = $(SOURCE_PATHS)"
 	@echo "TEST_PATHS = $(TEST_PATHS)"
@@ -117,11 +117,19 @@ show-vars:
 	@echo "TARGET_PATH = $(TARGET_PATH)"
 	@echo "RELEASE_PATH = $(RELEASE_PATH)"
 	@echo "MAIN = $(MAIN)"
-	@echo "BUILD_DATE = $(BUILD_DATE)"
 	@echo "----------------------------------"
-	@echo "SERVICE_DIRECTORY_PAGE : $(SERVICE_DIRECTORY_PAGE)"
-	@echo "DOCKER_REGISTRY        : $(DOCKER_REGISTRY)"
-	@echo "Package Version     : $(CD_PACKAGE_VERSION_STAMP)"
+	@echo "BUILD_DATE = $(BUILD_DATE)"
+	@echo "REPO_SITE  = $(REPO_SITE)"
+	@echo "BRANCH = $(BRANCH)"
+	@echo "TAG    = $(TAG)"
+	@echo "MODULE = $(MODULE)"
+	@echo "COMMIT = $(COMMIT)"
+	@echo "COMMIT_AUTHOR = $(COMMIT_AUTHOR)"
+	@echo "COMMIT_DATE   = $(COMMIT_DATE)"
+	@echo "----------------------------------"
+	@echo "DOCKER_REGISTRY : $(DOCKER_REGISTRY)"
+	@echo "DOCKER_TAG      : $(DOCKER_TAG)"
+	@echo "Package Version : $(CD_PACKAGE_VERSION_STAMP)"
 	@echo "----------------------------------"
 	$(shell touch $(TEMPLATE))
 
@@ -227,7 +235,7 @@ build-dev-container: project.clj
 	     -e 's|@@JAR_FILENAME@@|$(JAR_FILENAME)|g' \
 	     -e 's|@@SVC_PORT@@|$(SVC_PORT)|g' $(DOCKER_DEV_TEMPLATE) > $(shell sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(DOCKER_DEV_TEMPLATE))
 	docker build -f $(shell sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(DOCKER_DEV_TEMPLATE)) \
-			-t $(DOCKER_REGISTRY)/$(PROJECT)-dev:$(VERSION)-$(COMMIT_SHORT_HASH) \
+			-t $(DOCKER_REGISTRY)/$(PROJECT)-dev:$(DOCKER_TAG) \
 			-t $(DOCKER_REGISTRY)/$(PROJECT)-dev:latest .
 	docker image ls | grep $(PROJECT)-dev
 
@@ -253,7 +261,7 @@ build-deploy-container: dist
 	     -e 's|@@JAR_FILE@@|$(JAR_FILE)|g' \
 	     -e 's|@@JAR_FILENAME@@|$(JAR_FILENAME)|g' \
 	     -e 's|@@SVC_PORT@@|$(SVC_PORT)|g' $(DOCKER_TEMPLATE) > $(shell sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(DOCKER_TEMPLATE))
-	docker build -t $(DOCKER_REGISTRY)/$(PROJECT):$(VERSION)-$(COMMIT_SHORT_HASH) \
+	docker build -t $(DOCKER_REGISTRY)/$(PROJECT):$(DOCKER_TAG) \
 		     -t $(DOCKER_REGISTRY)/$(PROJECT):latest .
 	docker image ls | grep $(PROJECT)
 
@@ -306,6 +314,13 @@ undeploy:
 	@echo "K8S ***NUKING*** the deployment... (softly)"
 	@echo "------------------------"
 	kubectl $(K8S_KUBECTL_ARGS) delete deployment $(PROJECT) --grace-period=60
+
+rollback:
+	@echo "------------------------"
+	@echo "K8S Rollback to the last deployment..."
+	@echo "------------------------"
+	#kubectl $(K8S_KUBECTL_ARGS) <TODO>
+
 
 
 # (may want to put in the k8s cycle here as well scale up and down)
