@@ -96,41 +96,82 @@ To run the service (via the jar file) issue the following command
 
 #### You may also build and run this project in a container environment that contains all the necessary prerequisites already and doesn't require you to install anything explicitly (beside `make`).
 
-[todo]
+First get the Docker image
 
+```bash
+%> docker pull gavin/bai-bff-dev
+```
+Then run the make command within that context, like so...
 
+```bash
+%> docker run -it --rm -v "$PWD":/srv/app -w /srv/app gavin/bai-bff-dev make
+```
+(caveat... the Makefile assumes that the code is currently in a git repo, this is not the case *inside* of the container.)
 
 ---
 
 ### How do I test the codebase and service?
 
+To perform the unit tests
 
+```bash
+%> make unit-test
+```
 
 ---
 
 ### How do I run integration tests?
 
-
+```bash
+%> make integration-test
+```
 
 ---
 
 ### How do I package this service?
 
+Packaging the service has multiple forms.  Most simply there are the souce and class files.  There are also Jars that are built, as well as containers.
 
+To generate class files:
+
+```bash
+%> make compile
+```
+To generate JARs:
+
+```bash
+%> make dist
+```
+To generate Docker image:
+```bash
+%> make build-deploy-container
+```
 
 ---
 
 ### How do I publish this packaged service?
 
+Publishing this packaged service, means, pushing a docker image of the project.
 
+```bash
+%> make publish
+or
+%> make publish-deploy-container
+```
+(Note: you will have to login to hub.docker.com)
 
 ---
 
 ### How do I deploy this service in Kubernetes?
 
+Given that you have a Kubernetes cluster at your disposal, you may deploy via...
+```bash
+%> make deploy
+```
+(Note: you will have to have kubctl configured to communicate with your cluster)
 
 
 ---
 
 ### How do I monitor this service?
-
+[todo]
