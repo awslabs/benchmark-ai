@@ -99,11 +99,12 @@ $(MAIN_CLASS_FILE): project.clj $(CLJ_FILES)
 	$(LEIN) compile
 	@touch $@
 
-all: compile unit_test docs dist build-deploy-container
 build: compile dist
-test: unit_test integration-test
+test: unit-test integration-test docs
 package: build-deploy-container
 publish: publish-deploy-container
+
+all: build test package #publish #deploy
 
 show-vars:
 	@echo "----------------------------------"
@@ -205,7 +206,7 @@ docs:	compile
 # Testing...
 #----------------------------
 
-unit_test: compile
+unit-test: compile
 	@echo "------------------------"
 	@echo "Runnig Unit Tests..."
 	@echo "------------------------"
