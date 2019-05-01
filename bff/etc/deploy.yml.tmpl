@@ -32,7 +32,7 @@ spec:
               topologyKey: kubernetes.io/hostname
       containers:
         - name: @@PROJECT@@
-          image: @@DOCKER_REGISTRY@@/@@PROJECT@@:latest
+          image: @@DOCKER_REGISTRY@@/@@PROJECT@@:@@DOCKER_TAG@@
           ports:
             - containerPort: @@SVC_PORT@@
               name: http

@@ -88,7 +88,7 @@ KAFKA_CMD_RETURN_TOPIC := CMD_RETURN
 #docker run -it --rm -v "$PWD":/srv/app -w /srv/app gavin/bai-bff-dev <command>
 
 #HACK!!!!
-K8S_KUBECTL_ARGS := --kubeconfig=/Users/bellgav/.devo/kubeconfig
+K8S_KUBECTL_ARGS := ${KUBECONFIG} #--kubeconfig=/Users/bellgav/.devo/kubeconfig
 #----------------------------------------------------------------
 # The pipeline: clean-all -> build -> test -> package -> publish -> deploy
 #----------------------------------------------------------------
@@ -277,8 +277,6 @@ publish-deploy-container: build-deploy-container
 	@echo "------------------------"
 	docker push $(DOCKER_REGISTRY)/$(PROJECT)
 
-
-
 #----------------------------
 # CD Pipeline setup
 #----------------------------
@@ -289,6 +287,10 @@ cd-pipeline-setup:
 	@echo "------------------------"
 	#create or update the pipeline
 
+
+#----------------------------
+# Deployment
+#----------------------------
 deploy.yml: $(DEPLOY_TEMPLATE)
 	@echo "Generating kubernetes deploy.yaml from template..."
 	@sed -e 's|@@PROJECT@@|$(PROJECT)|g' \
@@ -297,6 +299,7 @@ deploy.yml: $(DEPLOY_TEMPLATE)
 	     -e 's|@@LOGGING_LEVEL@@|$(LOGGING_LEVEL)|g' \
 	     -e 's|@@SVC_PORT@@|$(SVC_PORT)|g' \
 	     -e 's|@@DOCKER_REGISTRY@@|$(DOCKER_REGISTRY)|g' \
+	     -e 's|@@DOCKER_TAG@@|$(DOCKER_TAG)|g' \
 	     -e 's|@@COMMIT_SHORT_HASH@@|$(COMMIT_SHORT_HASH)|g' \
              -e 's|@@THREAD_POOL_SIZE@@|$(THREAD_POOL_SIZE)|g' \
 	     -e 's|@@MAX_QUEUE_SIZE@@|$(MAX_QUEUE_SIZE)|g' \
