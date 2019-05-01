@@ -51,9 +51,7 @@
 
                              (reset! producer (KafkaProducer. kafka-config))
                              (while @started?
-                               (if-let [event (<!! @send-event-channel-atom)]
-                                 (log/info "Dispatching Message: <"event">")
-                                 (.send @producer (ProducerRecord. (get config :kafka-sink-topic) (json/generate-string event)))))
+                               (.send @producer (ProducerRecord. (get config :kafka-sink-topic) (str(<!! @send-event-channel-atom)))))
                              (log/info "Shutdown Kafka producer (sender/sink)")
                              (.close @producer)
                              ))))

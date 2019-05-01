@@ -30,7 +30,7 @@
    (let [configuration  (config-fn)
          eventbus       (eventbus-fn)
          kafka-sink     (kafka-sink-fn configuration)
-         kafka-source   (kafka-source-fn configuration)
+         kafka-source   (kafka-source-fn configuration (fn [events] (println (str "Got something: "events)) true)) ; <-- TODO: story for event reception TBD <= here to be annoyingly obvious
          endpoints      (endpoints-fn configuration)]
      {:configuration configuration
       :eventbus      eventbus

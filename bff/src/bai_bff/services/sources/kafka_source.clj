@@ -17,7 +17,7 @@
 
     ; XXX: We need to create a mechanism to propagate failure here as
     ; worker-thread deaths will go unnoticed :/
-(defrecord KafkaSourceService [process-records-fn config worker-thread shutdown? started?]
+(defrecord KafkaSourceService [config process-records-fn worker-thread shutdown? started?]
   RunService
   (start! [this]
     (locking this
@@ -67,9 +67,9 @@
   (.write w "<KafkaSourceService>"))
 
 
-(defn create-kafka-source-service [process-records-fn config]
-  (KafkaSourceService. process-records-fn
-                       config
+(defn create-kafka-source-service [config process-records-fn]
+  (KafkaSourceService. config
+                       process-records-fn
                        (atom nil)
                        (atom false)
                        (atom false)))

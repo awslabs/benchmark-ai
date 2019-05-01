@@ -1,6 +1,7 @@
 (ns bai-bff.http-api
   (:require [bai-bff.core :refer :all]
             [bai-bff.events :refer :all]
+            [bai-bff.services.eventbus :as eventbus]
             [clojure.pprint :refer :all]
             [clojure.java.io :as io]
             [ring.adapter.jetty :refer :all]
@@ -12,7 +13,8 @@
             [ring.middleware.keyword-params :refer [wrap-keyword-params]]
             [ring.middleware.reload :refer [wrap-reload]]
             [cheshire.core :as json]
-            [taoensso.timbre :as log]))
+            [taoensso.timbre :as log]
+            [clojure.core.async :as a :refer [>!!]]))
 
 ;;----
 ;; To post a descriptor file do the following at the command line
@@ -67,9 +69,10 @@
                                                                  (println "message body is now an event...")
                                                                  (let [event (message->event
                                                                               request
-                                                                              (json/parse-string body-string true))]
-                                                                   (println (json/generate-string event {:pretty true}))
-                                        ;(eventbus/dispatch-submit event) ; TODO - implement me!
+                                                                              (json/parse-string body-string true))
+                                                                       json-event (json/generate-string event {:pretty true})]
+                                                                   (log/info json-event)
+                                                                   (>!! @eventbus/send-event-channel-atom json-event)
                                                                    (response (:action_id event))))
                                                                (catch IllegalStateException e
                                                                  (log/error "Could Not Parse Descriptor Input")
