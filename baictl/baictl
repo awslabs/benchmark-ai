@@ -47,15 +47,10 @@ fi
 
 target="${target:=aws}"
 
-if [ -L $BASH_SOURCE ] ; then
-    dir=$(dirname "$(readlink -n $BASH_SOURCE)")
-else
-    dir=$(dirname $BASH_SOURCE)
-fi
+dir=$(dirname "$(readlink -f ${BASH_SOURCE})")
+backend=${dir}/drivers/${target}/baidriver
 
-backend=$dir/drivers/$target/baidriver
-
-if [ -f $backend ]; then
+if [ -f "${backend}" ]; then
    ${backend} "$@" || print_usage_and_exit
 else
    printf "Backend %s does not exist.\n" "$target"
