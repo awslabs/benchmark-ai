@@ -1,7 +1,6 @@
-transpiler_shared_memory_vol: dshm
-transpiler_puller_mount_chmod: 777
-transpiler_puller_s3_region: eu-west-1
-transpiler_puller_docker_image: stsukrov/s3dataprovider
+transpiler-puller-mount-chmod: 777
+transpiler-puller-s3-region: eu-west-1
+transpiler-puller-docker-image: stsukrov/s3dataprovider
 
 # descriptor config
-transpiler_valid_strategies: '["single_node", "horovod"]'
+transpiler-valid-strategies: '["single_node", "horovod"]'

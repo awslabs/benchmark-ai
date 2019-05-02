@@ -7,7 +7,11 @@ setup(
     url='https://github.com/MXNetEdge/benchmark-ai',
     package_dir={'': 'src'},
     packages=find_packages("src"),
-    include_package_data=True,
+    package_data={
+        'util': ['ec2_instance_info.csv'],
+        'executor': "*.yaml",
+        'transpiler.templates': "*.yaml",
+    },
     entry_points={
         "console_scripts": ["executor=executor.__main__:main"]
     }

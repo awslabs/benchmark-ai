@@ -1,4 +1,3 @@
-transpiler_shared_memory_vol: dshm
 transpiler_puller_mount_chmod: 777
 transpiler_puller_s3_region: eu-west-1
 transpiler_puller_docker_image: stsukrov/s3dataprovider

@@ -1,4 +1,4 @@
-name: executor-tests
+name: executor
 channels:
   - conda-forge
   - defaults
@@ -8,3 +8,4 @@ dependencies:
       - pytest
       - mock
       - pytest-mock
+      - pytest-datadir

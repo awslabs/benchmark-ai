@@ -11,7 +11,6 @@ class DescriptorConfig:
 
 @dataclass
 class BaiConfig:
-    shared_memory_vol: str
     puller_mount_chmod: str
     puller_s3_region: str
     puller_docker_image: str

@@ -13,6 +13,6 @@ dependencies:
   - python-kubernetes 9.0.*
   - pip
   - pip:
-    - ConfigArgParse 0.13.*
-    - python-crontab 2.3.*
-    - dataclasses-json 0.2.*
+    - ConfigArgParse >= 0.13
+    - python-crontab >= 2.3
+    - dataclasses-json >= 0.2

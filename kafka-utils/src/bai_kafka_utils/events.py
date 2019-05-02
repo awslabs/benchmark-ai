@@ -1,3 +1,5 @@
+import copy
+import json
 import dataclasses
 from dataclasses import dataclass
 from dataclasses_json import dataclass_json
@@ -15,7 +17,6 @@ class DataSet:
 @dataclass_json
 @dataclass
 class BenchmarkDoc:
-    # descriptor_filename: str
     contents: Dict[str, Any]
     doc: str
     sha1: str
@@ -46,7 +47,7 @@ class FetcherPayload(BenchmarkPayload):
 
 @dataclass_json
 @dataclass
-class ExecutorPayload(BenchmarkPayload):
+class ExecutorPayload(FetcherPayload):
     job: BenchmarkJob
 
     @classmethod
@@ -79,8 +80,9 @@ class BenchmarkEvent:
 
     @classmethod
     def from_event_new_payload(cls, benchmark_event, payload: BenchmarkPayload):
-        benchmark_event.payload = payload
-        return cls(**dataclasses.asdict(benchmark_event))
+        event_as_dict = dataclasses.asdict(benchmark_event)
+        event_as_dict['payload'] = payload
+        return cls(**event_as_dict)
 
 
 def __make_benchmark_event(payload_type: Type):

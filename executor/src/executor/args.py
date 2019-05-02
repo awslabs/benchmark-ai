@@ -8,22 +8,15 @@ from executor.config import ExecutorConfig
 
 def get_args(argv):
     base_dir = os.path.abspath(os.path.dirname(__file__))
+    config_file = os.path.join(base_dir, 'default_config.yaml')
 
-    parser = configargparse.ArgParser(default_config_files=[os.path.join(base_dir, 'default_config.yaml')],
+    parser = configargparse.ArgParser(default_config_files=[config_file],
                                       config_file_parser_class=configargparse.YAMLConfigFileParser,
                                       description='Reads the descriptor file and creates the '
                                                   'corresponding job config yaml file.')
 
     parser.add('-c', '--my-config', required=False, is_config_file=True,
                help='Config file path')
-
-    parser.add_argument('--descriptor',
-                        help='Relative path to descriptor file',
-                        required=True)
-
-    parser.add_argument('-f', '--filename',
-                        help='Output to file. If not specified, output to stdout',
-                        default=None)
 
     parser.add_argument('--availability-zones', nargs='+',
                         help='All the availability zones which the benchmark can run',
@@ -62,8 +55,7 @@ def create_descriptor_config(args):
 
 
 def create_bai_config(args):
-    return BaiConfig(shared_memory_vol=args.shared_memory_vol,
-                     puller_mount_chmod=args.puller_mount_chmod,
+    return BaiConfig(puller_mount_chmod=args.puller_mount_chmod,
                      puller_s3_region=args.puller_s3_region,
                      puller_docker_image=args.puller_docker_image)
 
@@ -74,8 +66,6 @@ def create_executor_config(argv):
         availability_zones=args.availability_zones
     )
     return ExecutorConfig(
-        descriptor=args.descriptor,
-        filename=args.filename,
         kubeconfig=args.kubeconfig,
         descriptor_config=create_descriptor_config(args),
         bai_config=create_bai_config(args),
