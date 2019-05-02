@@ -33,8 +33,8 @@ _pre_venv::
 
 #venv body - replacable
 _venv: _pre_venv
-	conda env update --file environment.yml --prune
-	conda env update --file test-environment.yml --prune
+	conda env update --file environment.yml --prune --name $(ENV_NAME)
+	conda env update --file test-environment.yml --name $(ENV_NAME)
 
 #Things to run after - extendable
 _post_venv::_venv
