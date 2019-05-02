@@ -54,12 +54,14 @@
         (assoc-in [:visited] (conj (get-in event [:visited]) {:svc svc :tstamp (:tstamp event) :version VERSION})))))
 
 (defn message->event
-  "Takes a \"message\" from the client (wild outside world) and turns it
-  into a proper \"event\" that is augmented and dispatched through to
-  the next hop.  Note because of the exposure to the wilds of the
-  internet, it is NOT a \"tolerant\" reader.  Every field that is
-  forwarded from the client is explicitly done so here. This code will
-  have to be modified along with client event changes"
+  "Takes a \"message\" from the client (as a keyword map), from the wild
+  outside world, and turns it into a proper \"event\" that is
+  augmented and dispatched through to the next hop in the system.
+  Note because of the exposure to the wilds of the internet, it is NOT
+  a \"tolerant\" reader.  Every field that is forwarded from the
+  client is explicitly assigned as a part of the construction of the
+  *new* event. This code will have to be modified along with client
+  code if there are event changes."
   [req message-body]
   (let [tstamp (System/currentTimeMillis)
         authenticated false] ;NOTE auth should have been taken care of by middleware.

@@ -1,6 +1,7 @@
 (ns bai-bff.services.endpoints
   (:require [bai-bff.services :refer [RunService]]
             [bai-bff.http-api :as http-api]
+            [bai-bff.utils.utils :refer [assert-configured!]]
             [clojure.pprint :refer :all]
             [environ.core :refer [env]]
             [ring.adapter.jetty :as ring]
@@ -11,25 +12,24 @@
 (def endpoints-required-keys #{:endpoints-port})
 
 ;;TODO - come and take a look a this... apparently this ain't a thing anymore???
-(defn jetty-configurator-provider [config]
+(defn jetty-configurator-provider []
   (fn [^Server server]
-    (let [^QueuedThreadPool threadPool (QueuedThreadPool. (Integer/valueOf (:thread-pool-size config)))]
-      (.setMaxQueued threadPool (Integer/valueOf (:max-queue-size config)))
+    (let [^QueuedThreadPool threadPool (QueuedThreadPool. (Integer/valueOf (env :thread-pool-size)))]
+      (.setMaxQueued threadPool (Integer/valueOf (env :max-queue-size)))
       (.setSendServerVersion server false)
       (.setThreadPool server threadPool))))
 
-(defrecord EndpointsServer [config int-server]
+(defrecord EndpointsServer [int-server]
   RunService
   (start! [this]
     (locking this
-      (pprint config)
-      (log/info (str "starting endpoints server component... port["(:endpoints-port config)"]"))
-      (pprint (type (:endpoints-port config)))
-      (.assert-configured! config endpoints-required-keys)
-      (let [handler (http-api/create-application-routes config)
-            base-options {:port  (Integer/valueOf (:endpoints-port config "8085"))
+      (log/info (str "starting endpoints server component... port["(env :endpoints-port)"]"))
+      (pprint (type (env :endpoints-port)))
+      (assert-configured! endpoints-required-keys)
+      (let [handler (http-api/create-application-routes)
+            base-options {:port  (Integer/valueOf (env :endpoints-port "8085"))
                           :join? false}
-            ;; :configurator (jetty-configurator-provider config) ;;TODO - see above
+            ;; :configurator (jetty-configurator-provider) ;;TODO - see above
             ssl-options {:ssl? true
                          :ssl-port "443"
                          :keystore (env :keystore "keystore.jks")
@@ -48,6 +48,5 @@
 (defmethod print-method EndpointsServer [v ^java.io.Writer w]
   (.write w "<EndpointsServer>"))
 
-(defn create-endpoints-service [config]
-  (->EndpointsServer config
-                     (atom nil)))
+(defn create-endpoints-service []
+  (->EndpointsServer (atom nil)))

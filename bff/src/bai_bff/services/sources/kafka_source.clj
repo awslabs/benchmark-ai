@@ -1,8 +1,9 @@
 (ns bai-bff.services.sources.kafka-source
   (:require [bai-bff.services :refer [RunService]] ;Source
-            [cheshire.core :as json]
-            [bai-bff.utils.srv :refer :all]
             [bai-bff.services.eventbus :refer [receive-events-channel-atom]]
+            [bai-bff.utils.utils :refer [assert-configured!]]
+            [environ.core :refer [env]]
+            [cheshire.core :as json]
             [taoensso.timbre :as log])
   (:import  [org.apache.kafka.clients.consumer KafkaConsumer]))
 
@@ -17,30 +18,30 @@
 
     ; XXX: We need to create a mechanism to propagate failure here as
     ; worker-thread deaths will go unnoticed :/
-(defrecord KafkaSourceService [config process-records-fn worker-thread shutdown? started?]
+(defrecord KafkaSourceService [process-records-fn worker-thread shutdown? started?]
   RunService
   (start! [this]
     (locking this
       (when-not @started?
         (log/info "Starting kafka consumer! (source)")
-        (.assert-configured! config kafka-keys)
+        (assert-configured! kafka-keys)
         (reset! worker-thread
                 (Thread. (fn []
                            (let [consumer (KafkaConsumer. (doto (java.util.Properties.)
                                         ; XXX: Implement DNS service discovery
-                                                            (.put "bootstrap.servers"  (get config :kafka-bootstrap-servers))
-                                                            (.put "group.id",          (get config :kafka-consumer-group-id))
-                                                            (.put "auto.offset.reset"  (get config :kafka-auto-offset-reset "latest"))
-                                                            (.put "session.timeout.ms" (Integer/parseInt (get config :kafka-session-timeout-ms 10000)))
-                                                            (.put "key.deserializer",  (get config :kafka-key-serializer   "org.apache.kafka.common.serialization.StringDeserializer"))
-                                                            (.put "value.deserializer" (get config :kafka-value-serializer "org.apache.kafka.common.serialization.StringDeserializer"))))]
-                             (.subscribe consumer [(get config :kafka-source-topic)])
+                                                            (.put "bootstrap.servers"  (env :kafka-bootstrap-servers))
+                                                            (.put "group.id",          (env :kafka-consumer-group-id))
+                                                            (.put "auto.offset.reset"  (env :kafka-auto-offset-reset "latest"))
+                                                            (.put "session.timeout.ms" (Integer/parseInt (env :kafka-session-timeout-ms 10000)))
+                                                            (.put "key.deserializer",  (env :kafka-key-serializer   "org.apache.kafka.common.serialization.StringDeserializer"))
+                                                            (.put "value.deserializer" (env :kafka-value-serializer "org.apache.kafka.common.serialization.StringDeserializer"))))]
+                             (.subscribe consumer [(env :kafka-source-topic)])
                              (while @started?
-                               (let [poll-interval (Integer/parseInt (get config :kafka-poll-interval-ms))
+                               (let [poll-interval (Integer/parseInt (env :kafka-poll-interval-ms))
                                      records (.poll consumer poll-interval)
                                      events (map (fn [record]
                                                    (json/decode (.value record) true))
-                                                 (.records records (get config :kafka-source-topic)))]
+                                                 (.records records (env :kafka-source-topic)))]
                                         ; XXX: do this with a value.deserializer
                                  (when-not (false? (process-records-fn events)) ;;TODO; (zoiks) - replace this process-records-fn with putting events on the @receive-events-channel-atom channel
                                         ; XXX: Add telemetry
@@ -67,9 +68,8 @@
   (.write w "<KafkaSourceService>"))
 
 
-(defn create-kafka-source-service [config process-records-fn]
-  (KafkaSourceService. config
-                       process-records-fn
+(defn create-kafka-source-service [process-records-fn]
+  (KafkaSourceService. process-records-fn
                        (atom nil)
                        (atom false)
                        (atom false)))

@@ -10,7 +10,6 @@
   there is state I manage it in this way. Oh well.)"
   (:require [bai-bff.core :refer :all]
             [bai-bff.services :refer [RunService]]
-            [bai-bff.services.configuration :refer :all]
             [taoensso.timbre :as log]
             [clojure.pprint :refer :all]
             [clojure.core.async :as a :refer [>! <! >!! <!! go chan buffer close! thread

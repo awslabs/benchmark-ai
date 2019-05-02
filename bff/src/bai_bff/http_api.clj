@@ -89,7 +89,7 @@
 (def core-routes
   (routes info-routes k8s-routes api-routes))
 
-(defn create-application-routes[config]
+(defn create-application-routes[]
   (-> #'core-routes
       (wrap-reload)
       (wrap-canonical-redirect)

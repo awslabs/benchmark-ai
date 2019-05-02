@@ -7,7 +7,6 @@
   follows the philosophy of Stuart Sierra Component framework.
   Basically Objects ain't all bad :-) "
   (:require [bai-bff.core :refer :all]
-            [bai-bff.services.configuration        :refer [create-configuration-service]]
             [bai-bff.services.sinks.kafka-sink     :refer [create-kafka-sink-service]]
             [bai-bff.services.sources.kafka-source :refer [create-kafka-source-service]]
             [bai-bff.services.eventbus             :refer [create-eventbus-service]]
@@ -17,23 +16,19 @@
 
 (defn create-services
   ([] (create-services {}))
-  ([{:keys [config-fn
-            eventbus-fn
+  ([{:keys [eventbus-fn
             kafka-sink-fn
             kafka-source-fn
             endpoints-fn]
-     :or {config-fn       create-configuration-service
-          eventbus-fn     create-eventbus-service
+     :or {eventbus-fn     create-eventbus-service
           kafka-sink-fn   create-kafka-sink-service
           kafka-source-fn create-kafka-source-service
           endpoints-fn    create-endpoints-service}}]
-   (let [configuration  (config-fn)
-         eventbus       (eventbus-fn)
-         kafka-sink     (kafka-sink-fn configuration)
-         kafka-source   (kafka-source-fn configuration (fn [events] (println (str "Got something: "events)) true)) ; <-- TODO: story for event reception TBD <= here to be annoyingly obvious
-         endpoints      (endpoints-fn configuration)]
-     {:configuration configuration
-      :eventbus      eventbus
+   (let [eventbus       (eventbus-fn)
+         kafka-sink     (kafka-sink-fn)
+         kafka-source   (kafka-source-fn (fn [events] (println (str "Got something: "events)) true)) ; <-- TODO: story for event reception TBD <= here to be annoyingly obvious
+         endpoints      (endpoints-fn)]
+     {:eventbus      eventbus
       :kafka-sink    kafka-sink
       :kafka-soure   kafka-source
       :endpoints     endpoints})))
@@ -48,8 +43,7 @@
   "Start application services"
   ([] (start (create-services)))
   ([services]
-   (let [services (map services [:configuration
-                                 :eventbus
+   (let [services (map services [:eventbus
                                  :kafka-sink
                                  :kafka-source
                                  :endpoints])]
