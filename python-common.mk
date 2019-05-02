@@ -26,14 +26,17 @@ clean:
 	rm -rf .pytest_cache
 	rm -f .coverage
 
+#Things to run before - extendable
 _pre_venv::
 	echo "Pre env actions"
 	conda install --channel conda-forge --name base conda==4.6.14 --yes
 
+#venv body - replacable
 _venv: _pre_venv
 	conda env update --file environment.yml --prune
 	conda env update --file test-environment.yml --prune
 
+#Things to run after - extendable
 _post_venv::_venv
 	echo "Post env actions"
 
