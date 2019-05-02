@@ -47,8 +47,8 @@
                                                 (.put "linger.ms"         (Integer/valueOf  (env :kafka-linger-ms 0)))
                                                 (.put "buffer.memory"     (Integer/valueOf  (env :kafka-buffer-memory 33554432)))
                                                 (.put "compression.type"  (env :kafka-compression-type "none"))
-                                                (.put "key.serializer"    (env :kafka-key-serializer   "org.apache.kafka.common.serialization.StringDeserializer"))
-                                                (.put "value.serializer"  (env :kafka-value-serializer "org.apache.kafka.common.serialization.StringDeserializer")))]
+                                                (.put "key.serializer"    (env :kafka-key-serializer   "org.apache.kafka.common.serialization.StringSerializer"))
+                                                (.put "value.serializer"  (env :kafka-value-serializer "org.apache.kafka.common.serialization.StringSerializer")))]
 
                              (reset! producer (KafkaProducer. kafka-config))
                              (while @started?

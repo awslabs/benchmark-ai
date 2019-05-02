@@ -30,7 +30,7 @@
          endpoints      (endpoints-fn)]
      {:eventbus      eventbus
       :kafka-sink    kafka-sink
-      :kafka-soure   kafka-source
+      :kafka-source   kafka-source
       :endpoints     endpoints})))
 
 (defn stop [services]

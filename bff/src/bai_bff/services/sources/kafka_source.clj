@@ -32,9 +32,9 @@
                                                             (.put "bootstrap.servers"  (env :kafka-bootstrap-servers))
                                                             (.put "group.id",          (env :kafka-consumer-group-id))
                                                             (.put "auto.offset.reset"  (env :kafka-auto-offset-reset "latest"))
-                                                            (.put "session.timeout.ms" (Integer/parseInt (env :kafka-session-timeout-ms 10000)))
-                                                            (.put "key.deserializer",  (env :kafka-key-serializer   "org.apache.kafka.common.serialization.StringDeserializer"))
-                                                            (.put "value.deserializer" (env :kafka-value-serializer "org.apache.kafka.common.serialization.StringDeserializer"))))]
+                                                            (.put "session.timeout.ms" (Integer/parseInt (env :kafka-session-timeout-ms "10000")))
+                                                            (.put "key.deserializer",  (env :kafka-key-deserializer   "org.apache.kafka.common.serialization.StringDeserializer"))
+                                                            (.put "value.deserializer" (env :kafka-value-deserializer "org.apache.kafka.common.serialization.StringDeserializer"))))]
                              (.subscribe consumer [(env :kafka-source-topic)])
                              (while @started?
                                (let [poll-interval (Integer/parseInt (env :kafka-poll-interval-ms))
