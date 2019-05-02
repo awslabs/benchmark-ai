@@ -1,4 +1,4 @@
-name: fetcher
+name: executor-tests
 channels:
   - conda-forge
   - defaults

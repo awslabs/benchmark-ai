@@ -27,15 +27,6 @@ class EnvironmentInfo:
 
 
 @dataclass
-class TranspilerConfig:
-    descriptor: str
-    filename: str
-    descriptor_config: DescriptorConfig
-    bai_config: BaiConfig
-    environment_info: EnvironmentInfo
-
-
-@dataclass
 class BaiDataSource:
     scheme: str
     bucket: str

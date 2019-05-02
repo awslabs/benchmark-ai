@@ -5,7 +5,7 @@ import toml
 
 from pytest_regressions.file_regression import FileRegressionFixture
 from transpiler.bai_knowledge import create_job_yaml_spec
-from executor.args import create_transpiler_config
+from executor.args import create_executor_config
 from bai_kafka_utils.events import DataSet
 
 from typing import List
@@ -29,7 +29,7 @@ def test_regressions(filename,
 
     descriptor_data = toml.load(str(shared_datadir / filename))
     fetched_data_sources = generate_fetched_data_sources(descriptor_data)
-    transpiler_config = create_transpiler_config(config_args)
+    transpiler_config = create_executor_config(config_args)
 
     yaml_spec, _ = create_job_yaml_spec(descriptor_data,
                                         transpiler_config,

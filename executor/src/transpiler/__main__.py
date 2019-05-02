@@ -1,12 +1,12 @@
 import os
 import toml
 
-from executor.args import get_args, create_transpiler_config
+from executor.args import get_args, create_executor_config
 from transpiler.bai_knowledge import create_job_yaml_spec
 
 
 def main(argv=None):
-    transpiler_config = create_transpiler_config(argv)
+    transpiler_config = create_executor_config(argv)
     descriptor_data = toml.load(transpiler_config.descriptor_path)
 
     # TODO: Pass this as an argument

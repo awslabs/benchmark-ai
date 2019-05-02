@@ -2,7 +2,7 @@ import json
 import subprocess
 
 from executor import SERVICE_NAME, __version__
-from transpiler.config import TranspilerConfig
+from executor.config import ExecutorConfig
 from transpiler.bai_knowledge import create_job_yaml_spec
 from bai_kafka_utils.events import BenchmarkEvent, ExecutorPayload, BenchmarkJob
 from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
@@ -40,7 +40,7 @@ class ExecutorEventHandler(KafkaServiceCallback):
 
 
 def create_executor(common_kafka_cfg: KafkaServiceConfig,
-                    transpiler_config: TranspilerConfig) -> KafkaService:
+                    transpiler_config: ExecutorConfig) -> KafkaService:
 
     callbacks = [
         ExecutorEventHandler(transpiler_config)

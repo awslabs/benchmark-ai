@@ -8,11 +8,9 @@ from ruamel import yaml
 
 from bai_kafka_utils.events import DataSet
 from transpiler.descriptor import Descriptor
-<<<<<<< HEAD:baictl/descriptor-file/src/transpiler/bai_knowledge.py
-from transpiler.config import BaiConfig, BaiDataSource, DescriptorConfig
-=======
-from transpiler.config import BaiConfig, BaiDataSource, EnvironmentInfo, TranspilerConfig
->>>>>>> [executor] Create executor service and move transpiler directory under executor/:executor/src/transpiler/bai_knowledge.py
+
+from transpiler.config import BaiConfig, BaiDataSource, EnvironmentInfo
+from executor.config import ExecutorConfig
 from transpiler.kubernetes_spec_logic import ConfigTemplate, VolumeMount, HostPath, Volume, EmptyDirVolumeSource
 
 
@@ -272,7 +270,7 @@ def create_bai_k8s_builder(descriptor: Descriptor,
 
 
 def create_job_yaml_spec(descriptor_contents: Dict,
-                         transpiler_config: TranspilerConfig,
+                         transpiler_config: ExecutorConfig,
                          fetched_data_sources: List[DataSet],
                          extra_bai_config_args=None) -> Tuple[str, str]:
     """

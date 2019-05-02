@@ -2,7 +2,8 @@ import os
 import json
 import configargparse
 
-from transpiler.config import DescriptorConfig, BaiConfig, TranspilerConfig, EnvironmentInfo
+from transpiler.config import DescriptorConfig, BaiConfig, EnvironmentInfo
+from executor.config import ExecutorConfig
 
 
 def get_args(argv):
@@ -48,6 +49,10 @@ def get_args(argv):
                dest='valid_strategies',
                help='List of valid strategies such as single_node or horovod')
 
+    parser.add('--kubeconfig',
+               env_var='KUBECONFIG',
+               help='Kubeconfig option for kubectl')
+
     parsed_args, _ = parser.parse_known_args(argv)
     return parsed_args
 
@@ -63,13 +68,17 @@ def create_bai_config(args):
                      puller_docker_image=args.puller_docker_image)
 
 
-def create_transpiler_config(argv):
+def create_executor_config(argv):
     args = get_args(argv)
     environment_info = EnvironmentInfo(
         availability_zones=args.availability_zones
     )
-    return TranspilerConfig(
+    return ExecutorConfig(
+        descriptor=args.descriptor,
+        filename=args.filename,
+        kubeconfig=args.kubeconfig,
         descriptor_config=create_descriptor_config(args),
         bai_config=create_bai_config(args),
         environment_info=environment_info
     )
+
