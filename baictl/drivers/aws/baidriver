@@ -181,7 +181,7 @@ _install_kubeflow_operators() {
             return 1
         )
     fi
-    
+
     (
         export KUBECONFIG=$kubeconfig
         cd kubeflow-ks-app/ks_app || return 1
@@ -263,7 +263,7 @@ __validate_kafka_topics(){
     local kafka_topics=("BAI_APP_BFF" "BAI_APP_FETCHER" "BAI_APP_EXECUTOR" "BAI_SYS_BFF" "BAI_SYS_FETCHER" "BAI_SYS_EXECUTOR" "CMD_SUBMIT" "CMD_RETURN")
 
     for topic in "${kafka_topics[@]}"; do
-        echo $result | grep $topic > /dev/null || return 1 
+        echo $result | grep $topic > /dev/null || return 1
     done
 }
 
@@ -378,9 +378,16 @@ run_benchmark() {
 
     [ -z "$descriptor" ] && printf "Missing required argument --descriptor\n" && return 1
 
-    export PYTHONPATH=$(dirname $BASH_SOURCE)/../../descriptor-file/src
-    local azs=$(terraform output -json --state=$terraform_state availability_zones | jq -r '.value | join(" ")')
-    python3 $(dirname $BASH_SOURCE)/../../descriptor-file/src/transpiler/__main__.py $(pwd)/$descriptor --availability-zones $azs | $kubectl apply -f -
+    local bash_src=$(readlink -f ${BASH_SOURCE})
+    local src_dir=$(dirname "${bash_src}")
+
+    export PYTHONPATH=${src_dir}/../../descriptor-file/src:${src_dir}/../../../kafka-utils/src
+
+    local azs=$(terraform output -json --state=${terraform_state} availability_zones | jq -r '.value | join(" ")')
+
+    [ -z "${azs}" ] && printf "Availability zones could not be identified from terraform state %s\n" "${terraform_state}" && return 1
+
+    python3 ${src_dir}/../../descriptor-file/src/transpiler/__main__.py $(pwd)/$descriptor --availability-zones ${azs} | $kubectl apply -f -
 }
 
 delete_benchmark() {
