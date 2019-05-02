@@ -37,7 +37,7 @@ def benchmark_event_without_data_sets(benchmark_doc: BenchmarkDoc) -> BenchmarkE
 
 
 def get_benchmark_event(payload):
-    return BenchmarkEvent(request_id="REQUEST_ID", message_id="MESSAGE_ID", client_id="CLIENT_ID",
+    return BenchmarkEvent(action_id="ACTION_ID", message_id="MESSAGE_ID", client_id="CLIENT_ID",
                           client_version="CLIENT_VERSION", client_user="CLIENT_USER", authenticated=False,
                           date=42, visited=[],
                           payload=payload)

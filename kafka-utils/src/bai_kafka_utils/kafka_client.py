@@ -1,9 +1,9 @@
 import logging
 from json import JSONDecodeError
-from typing import List, Type, Tuple
 
 import kafka
 from kafka import KafkaConsumer, KafkaProducer
+from typing import List, Type, Tuple
 
 from bai_kafka_utils.events import make_benchmark_event, BenchmarkPayload
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
@@ -29,6 +29,9 @@ def create_kafka_consumer(bootstrap_servers: List[str],
             return make_benchmark_event(payload_type).from_json(msg_value.decode(DEFAULT_ENCODING))
         except JSONDecodeError:
             logger.exception("Failed to deserialize %s", msg_value)
+            return None
+        except KeyError:
+            logger.exception("Missing required fields on %s", msg_value)
             return None
 
     return kafka.KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group_id,

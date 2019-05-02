@@ -9,7 +9,7 @@ from bai_kafka_utils.events import DataSet, FetcherPayload, ExecutorPayload
 @pytest.fixture
 def base_event_as_dict():
     return {
-        "request_id": "request-id",
+        "action_id": "action-id",
         "message_id": "message-id",
         "client_id": "client-id",
         "client_version": "client_version",

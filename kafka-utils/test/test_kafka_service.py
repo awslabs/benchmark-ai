@@ -1,15 +1,15 @@
 import collections
 import copy
+from dataclasses import dataclass
+
+import pytest
 import re
 import time
 import uuid
-from dataclasses import dataclass
-from typing import Optional
-from unittest.mock import MagicMock, Mock, patch
-
-import pytest
 from kafka import KafkaConsumer, KafkaProducer
 from pytest import fixture
+from typing import Optional
+from unittest.mock import MagicMock, Mock, patch
 
 from bai_kafka_utils.events import BenchmarkPayload, BenchmarkEvent, BenchmarkDoc, VisitedService
 from bai_kafka_utils.kafka_service import KafkaService, KafkaServiceCallback
@@ -45,7 +45,7 @@ MockConsumerRecord = collections.namedtuple("FakeConsumerRecord", ["key", "value
 def benchmark_event():
     doc = BenchmarkDoc({"var": "val"}, "var = val", MOCK_MD5)
     payload = MockBenchmarkPayload(foo="FOO", bar=42, toml=doc)
-    return BenchmarkEvent(request_id="REQUEST_ID", message_id="MESSAGE_ID", client_id="CLIENT_ID",
+    return BenchmarkEvent(action_id="ACTION_ID", message_id="MESSAGE_ID", client_id="CLIENT_ID",
                           client_version="CLIENT_VERSION", client_user="CLIENT_USER", authenticated=False,
                           date=42, visited=[],
                           payload=payload)

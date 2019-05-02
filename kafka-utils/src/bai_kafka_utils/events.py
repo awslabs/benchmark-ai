@@ -58,7 +58,7 @@ class VisitedService:
 @dataclass_json
 @dataclass
 class BenchmarkEvent:
-    request_id: str
+    action_id: str
     message_id: str
     client_id: str
     client_version: str

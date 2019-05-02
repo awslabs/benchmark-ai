@@ -10,6 +10,7 @@ TOPIC = "TOPIC"
 GROUP_ID = "GROUP_ID"
 
 INVALID_JSON = "INVALID".encode(DEFAULT_ENCODING)
+WRONG_SCHEMA_JSON = '{"foo":"bar"}'.encode(DEFAULT_ENCODING)
 
 
 @patch.object(bai_kafka_utils.kafka_client.kafka, "KafkaConsumer")
@@ -25,6 +26,15 @@ def test_kafka_consumer_handles_invalid_format(mockKafkaConsumer):
     deserializer = get_deserializer(mockKafkaConsumer)
 
     res = deserializer(INVALID_JSON)
+    assert not res
+
+
+@patch.object(bai_kafka_utils.kafka_client.kafka, "KafkaConsumer")
+def test_kafka_consumer_handles_wrong_schema(mockKafkaConsumer):
+    create_kafka_consumer(BOOTSTRAP_SERVERS, GROUP_ID, TOPIC, BenchmarkPayload)
+    deserializer = get_deserializer(mockKafkaConsumer)
+
+    res = deserializer(WRONG_SCHEMA_JSON)
     assert not res
 
 
