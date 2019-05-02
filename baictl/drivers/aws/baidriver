@@ -110,7 +110,7 @@ END
     fi
     # Get bucket name from backend.tfvars
     local s3_bucket_name=$(awk -F'"' '{print $2}'  $data_dir/backend.tfvars)
-    if ! aws s3 ls s3://$s3_bucket; then
+    if ! aws s3 ls s3://$s3_bucket_name; then
         printf "S3 bucket in $data_dir/backend.tfvars does not exist!\n"
         return 1
     fi
