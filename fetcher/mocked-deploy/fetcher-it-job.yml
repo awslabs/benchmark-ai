@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fetcher-it
+spec:
+  template:
+    spec:
+      containers:
+        - name: it
+          image: stsukrov/fetcher-it
+          imagePullPolicy: Always
+          env:
+            - name: BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: outputs-infrastructure
+                  key: msk_bootstrap_brokers
+            - name: CONSUMER_GROUP_ID
+              value: fetcher-dispatcher
+            - name: CONSUMER_TOPIC
+              value: BAI_APP_BFF
+            - name: PRODUCER_TOPIC
+              value: BAI_APP_FETCHER
+      restartPolicy: Never
+  backoffLimit: 0
