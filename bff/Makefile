@@ -298,6 +298,8 @@ deploy.yml: $(DEPLOY_TEMPLATE)
 	     -e 's|@@ENVIRONMENT@@|$(ENVIRONMENT)|g' \
 	     -e 's|@@LOGGING_LEVEL@@|$(LOGGING_LEVEL)|g' \
 	     -e 's|@@SVC_PORT@@|$(SVC_PORT)|g' \
+	     -e 's|@@REPO_SITE@@|$(REPO_SITE)|g' \
+	     -e 's|@@TAG@@|$(TAG)|g' \
 	     -e 's|@@DOCKER_REGISTRY@@|$(DOCKER_REGISTRY)|g' \
 	     -e 's|@@DOCKER_TAG@@|$(DOCKER_TAG)|g' \
 	     -e 's|@@COMMIT_SHORT_HASH@@|$(COMMIT_SHORT_HASH)|g' \

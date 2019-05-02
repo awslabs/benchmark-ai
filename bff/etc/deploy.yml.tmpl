@@ -19,6 +19,9 @@ spec:
         service: @@PROJECT@@
         env: @@ENVIRONMENT@@
         version: @@VERSION@@
+      annotations:
+        benchmark-ai.@@PROJECT@@.git-tag: "@@REPO_SITE@@ @@TAG@@"
+        benchmark-ai.@@PROJECT@@.docker-tag: "@@DOCKER_REGISTRY@@ @@DOCKER_TAG@@"
     spec:
       affinity:
         podAntiAffinity:
