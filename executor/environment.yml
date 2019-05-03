@@ -11,9 +11,8 @@ dependencies:
   - kafka-python 1.4.*
   - boto3 1.9.*
   - python-kubernetes 9.0.*
-  - pip
+  - ConfigArgParse >= 0.13
+  - python-crontab >= 2.3
   - pip:
-    - ConfigArgParse >= 0.13
-    - python-crontab >= 2.3
     - dataclasses-json >= 0.2
     - dacite

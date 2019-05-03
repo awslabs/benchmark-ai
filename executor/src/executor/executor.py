@@ -1,5 +1,6 @@
 import json
 import subprocess
+import logging
 
 from executor import SERVICE_NAME, __version__
 from executor.config import ExecutorConfig
@@ -7,6 +8,9 @@ from transpiler.bai_knowledge import create_job_yaml_spec
 from bai_kafka_utils.events import BenchmarkEvent, FetcherPayload, ExecutorPayload, BenchmarkJob
 from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
 from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService, KafkaServiceConfig
+from bai_kafka_utils.utils import DEFAULT_ENCODING
+
+logger = logging.getLogger(SERVICE_NAME)
 
 
 class ExecutorEventHandler(KafkaServiceCallback):
@@ -21,11 +25,11 @@ class ExecutorEventHandler(KafkaServiceCallback):
                                             self.executor_config,
                                             fetched_data_sources)
 
-        #self._kubernetes_apply(yaml)
+        self._kubernetes_apply(yaml)
 
         job = BenchmarkJob(
             id=job_id,
-            status='SUBMITTED',  # TODO: Get response from kubectl apply?
+            status='SUBMITTED',
             k8s_yaml=yaml
         )
 
@@ -33,7 +37,10 @@ class ExecutorEventHandler(KafkaServiceCallback):
         return BenchmarkEvent.from_event_new_payload(event, result_payload)
 
     def _kubernetes_apply(self, yaml):
-        subprocess.run(["kubectl", "apply", "--kubeconfig", self.executor_config.kubeconfig, "-f", yaml])
+        cmd = ["kubectl", "apply", "--kubeconfig", self.executor_config.kubeconfig, "-f", "-"]
+        logger.info(f"Applying yaml file using ${' '.join(cmd)}")
+        result = subprocess.check_output(cmd, input=yaml.encode(DEFAULT_ENCODING))
+        logger.info(f"Response from kubectl: {result}")  # TODO: Do something with this response?
 
     def cleanup(self):
         pass

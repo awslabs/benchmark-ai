@@ -3,9 +3,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - pip
-  - pip:
-      - pytest
-      - mock
-      - pytest-mock
-      - pytest-datadir
+  - pytest
+  - mock
+  - pytest-mock
+  - pytest-datadir
