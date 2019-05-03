@@ -54,7 +54,7 @@ backend=${dir}/drivers/${target}/baidriver
 if [ -f "${backend}" ]; then
    ${backend} "$@" || print_usage_and_exit
 else
-   printf "Backend %s does not exist.\n" "$target"
+   printf "Backend %s (${backend}) does not exist.\n" "$target"
    print_usage_and_exit
 fi
 
