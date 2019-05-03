@@ -183,8 +183,9 @@ EOF
 
 _install_kubeflow_operators() {
     if [[ ! -d "$data_dir/kubeflow-ks-app" ]]; then
+    (
         mkdir $data_dir/kubeflow-ks-app
-        pushd $data_dir/kubeflow-ks-app
+        cd $data_dir/kubeflow-ks-app
 
         export KUBECONFIG=$kubeconfig
         ks init ks_app
@@ -202,18 +203,19 @@ _install_kubeflow_operators() {
             ks generate mpi-operator mpi-operator && \
             ks generate mxnet-operator mxnet-operator
         local exit_code=$?
-        popd
         [[ "$exit_code" != 0 ]] && echo "[ERROR] Failed with exit code: $exit_code" && return 1
+    )
     fi
 
     echo "-> Kubeflow should be already installed, re-applying configuration"
+    (
     export KUBECONFIG=$kubeconfig
-    pushd $data_dir/kubeflow-ks-app/ks_app
+    cd $data_dir/kubeflow-ks-app/ks_app
     ks apply kubeflow --component mpi-operator && \
         ks apply kubeflow --component mxnet-operator
     local exit_code=$?
-    popd
     [[ "$exit_code" != 0 ]] && echo "[ERROR] Failed with exit code: $exit_code" && return 1
+    )
 
     return 0
 }
@@ -287,12 +289,12 @@ __validate_mxnet_job(){
 __validate_kafka_topics(){
     printf "Kafka Topics are present"
 
-    pushd $terraform_dir > /dev/null
+    (
+    cd $terraform_dir > /dev/null
     local outputs=$(terraform output -json)
     local msk_zookeeper_connect=$(echo $outputs | jq -r '.msk_zookeeper_connect.value')
     local bastion_pem_filename=$(echo $outputs | jq -r '.bastion_pem_filename.value')
     local bastion_public_ip=$(echo $outputs | jq -r '.bastion_public_ip.value')
-    popd > /dev/null
 
     local result=$(ssh -i ${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no -o LogLevel=QUIET "/snap/bin/kafka.topics --list --zookeeper $msk_zookeeper_connect")
     local kafka_topics=("BAI_APP_BFF" "BAI_APP_FETCHER" "BAI_APP_EXECUTOR" "BAI_SYS_BFF" "BAI_SYS_FETCHER" "BAI_SYS_EXECUTOR" "CMD_SUBMIT" "CMD_RETURN")
@@ -300,6 +302,7 @@ __validate_kafka_topics(){
     for topic in "${kafka_topics[@]}"; do
         echo $result | grep $topic > /dev/null || return 1
     done
+    )
 }
 
 __validate_zookeeper_pods(){
@@ -415,18 +418,19 @@ run_benchmark() {
 
     [ -z "$descriptor" ] && printf "Missing required argument --descriptor\n" && return 1
 
+    (
     local bash_src=$(readlink -f ${BASH_SOURCE})
     local src_dir=$(dirname "${bash_src}")
 
     export PYTHONPATH=${src_dir}/../../descriptor-file/src:${src_dir}/../../../kafka-utils/src
 
-    pushd $terraform_dir > /dev/null
+    cd $terraform_dir > /dev/null
     local azs=$(terraform output -json --state=${terraform_state} availability_zones | jq -r '.value | join(" ")')
-    popd > /dev/null
 
     [ -z "${azs}" ] && printf "Availability zones could not be identified from terraform state %s\n" "${terraform_state}" && return 1
 
     python3 ${src_dir}/../../descriptor-file/src/transpiler/__main__.py $(pwd)/$descriptor --availability-zones ${azs} | $kubectl apply -f -
+    )
 }
 
 delete_benchmark() {
