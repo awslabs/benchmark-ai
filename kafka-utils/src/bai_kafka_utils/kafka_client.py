@@ -18,36 +18,25 @@ def create_kafka_consumer_producer(
 ) -> Tuple[KafkaConsumer, KafkaProducer]:
     return (
         create_kafka_consumer(
-            kafka_cfg.bootstrap_servers,
-            kafka_cfg.consumer_group_id,
-            kafka_cfg.consumer_topic,
-            payload_type,
+            kafka_cfg.bootstrap_servers, kafka_cfg.consumer_group_id, kafka_cfg.consumer_topic, payload_type
         ),
         create_kafka_producer(kafka_cfg.bootstrap_servers),
     )
 
 
 def create_kafka_consumer(
-    bootstrap_servers: List[str],
-    group_id: str,
-    topic: str,
-    payload_type: Type[BenchmarkPayload],
+    bootstrap_servers: List[str], group_id: str, topic: str, payload_type: Type[BenchmarkPayload]
 ) -> kafka.KafkaConsumer:
     def json_deserializer(msg_value):
         try:
 
-            return make_benchmark_event(payload_type).from_json(
-                msg_value.decode(DEFAULT_ENCODING)
-            )
+            return make_benchmark_event(payload_type).from_json(msg_value.decode(DEFAULT_ENCODING))
         except JSONDecodeError:
             logger.exception("Failed to deserialize %s", msg_value)
             return None
 
     return kafka.KafkaConsumer(
-        topic,
-        bootstrap_servers=bootstrap_servers,
-        group_id=group_id,
-        value_deserializer=json_deserializer,
+        topic, bootstrap_servers=bootstrap_servers, group_id=group_id, value_deserializer=json_deserializer
     )
 
 
@@ -55,6 +44,4 @@ def create_kafka_producer(bootstrap_servers: List[str]) -> kafka.KafkaProducer:
     def json_serializer(msg_value):
         return msg_value.to_json().encode(DEFAULT_ENCODING)
 
-    return kafka.KafkaProducer(
-        bootstrap_servers=bootstrap_servers, value_serializer=json_serializer
-    )
+    return kafka.KafkaProducer(bootstrap_servers=bootstrap_servers, value_serializer=json_serializer)

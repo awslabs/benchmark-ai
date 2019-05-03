@@ -98,14 +98,10 @@ def update_zk_node(zk_node_path):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Downloads the dataset from http/ftp/s3 to internal s3"
-    )
+    parser = argparse.ArgumentParser(description="Downloads the dataset from http/ftp/s3 to internal s3")
 
     parser.add_argument("--src", required=True, help="Source", default=None)
-    parser.add_argument(
-        "--dst", metavar="dst", required=True, help="Destination", default=None
-    )
+    parser.add_argument("--dst", metavar="dst", required=True, help="Destination", default=None)
     parser.add_argument("--md5", help="MD5 hash", default=None)
     parser.add_argument("--zk-node-path", help="Zookeeper node to update", default=None)
 

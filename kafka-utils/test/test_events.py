@@ -48,9 +48,7 @@ def test_data_set_dont_fail_unknown_fields():
 
 def test_fetcher_event(base_event_as_dict):
     fetcher_event_as_dict = base_event_as_dict
-    fetcher_event_as_dict["payload"]["data_sets"] = [
-        {"src": "http://foo.com", "md5": "None", "dst": "None"}
-    ]
+    fetcher_event_as_dict["payload"]["data_sets"] = [{"src": "http://foo.com", "md5": "None", "dst": "None"}]
     event_as_json_string = json.dumps(fetcher_event_as_dict)
 
     event_type = bai_kafka_utils.events.make_benchmark_event(FetcherPayload)
@@ -62,14 +60,8 @@ def test_fetcher_event(base_event_as_dict):
 
 def test_executor_event(base_event_as_dict):
     executor_event_as_dict = base_event_as_dict
-    executor_event_as_dict["payload"]["data_sets"] = [
-        {"src": "http://foo.com", "md5": "None", "dst": "None"}
-    ]
-    executor_event_as_dict["payload"]["job"] = {
-        "id": "job_id",
-        "status": "status",
-        "k8s_yaml": "yaml_file",
-    }
+    executor_event_as_dict["payload"]["data_sets"] = [{"src": "http://foo.com", "md5": "None", "dst": "None"}]
+    executor_event_as_dict["payload"]["job"] = {"id": "job_id", "status": "status", "k8s_yaml": "yaml_file"}
 
     event_as_json_string = json.dumps(executor_event_as_dict)
 

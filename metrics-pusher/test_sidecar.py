@@ -17,9 +17,7 @@ def create_mock_for_get_fifo_from_string(string):
     # The `closed` attribute will be
     # side_effect = ([False] * string.count("\n")) + [True]
     # type(mocked_stream).closed = mock.PropertyMock(side_effect=side_effect)
-    with mock.patch(
-        "benchmarkai_sidecar._get_fifo", return_value=mocked_stream
-    ) as mock_get_fifo:
+    with mock.patch("benchmarkai_sidecar._get_fifo", return_value=mocked_stream) as mock_get_fifo:
         yield mock_get_fifo
 
 

@@ -51,6 +51,4 @@ def test_main(mock_create_fetcher_dispatcher):
         fetcher_job_image=FETCHER_JOB_IMAGE,
     )
 
-    mock_create_fetcher_dispatcher.assert_called_with(
-        expected_common_kafka_cfg, fetcher_dispatcher_cfg
-    )
+    mock_create_fetcher_dispatcher.assert_called_with(expected_common_kafka_cfg, fetcher_dispatcher_cfg)
