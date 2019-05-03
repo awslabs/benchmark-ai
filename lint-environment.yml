@@ -1,0 +1,10 @@
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - flake8
+  - pytest-cov
+  - black
+  - pip
+  - pip:
+      - flake8-black
