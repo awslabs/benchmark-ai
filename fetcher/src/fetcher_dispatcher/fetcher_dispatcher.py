@@ -1,7 +1,7 @@
 from kazoo.client import KazooClient
 from typing import List, Callable
 
-from bai_kafka_utils.events import BenchmarkEvent, FetcherPayload
+from bai_kafka_utils.events import BenchmarkEvent, FetcherBenchmarkEvent
 from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
 from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService, KafkaServiceConfig
 from fetcher_dispatcher import SERVICE_NAME, __version__
@@ -26,8 +26,8 @@ class FetcherEventHandler(KafkaServiceCallback):
         self.s3_data_set_bucket = s3_data_set_bucket
 
     def handle_event(self, event: BenchmarkEvent, kafka_service: KafkaService):
-        def extract_data_sets(event) -> List[DataSet]:
-            return event.payload.data_sets
+        def extract_datasets(event) -> List[DataSet]:
+            return event.payload.datasets
 
         def execute(task: DataSet, callback) -> None:
             task.dst = get_dataset_dst(task.src, self.s3_data_set_bucket)
@@ -45,7 +45,7 @@ class FetcherEventHandler(KafkaServiceCallback):
             for tsk in tasks:
                 execute(tsk, on_done)
 
-        tasks = extract_data_sets(event)
+        tasks = extract_datasets(event)
         tasks = list(filter(lambda t: not t.dst, tasks))
 
         if not tasks:
@@ -71,7 +71,7 @@ def create_fetcher_dispatcher(common_kafka_cfg: KafkaServiceConfig, fetcher_cfg:
                             fetcher_cfg.s3_data_set_bucket)
     ]
 
-    consumer, producer = create_kafka_consumer_producer(common_kafka_cfg, FetcherPayload)
+    consumer, producer = create_kafka_consumer_producer(common_kafka_cfg, FetcherBenchmarkEvent)
 
     return KafkaService(SERVICE_NAME,
                         __version__,
