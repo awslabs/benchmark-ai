@@ -5,8 +5,6 @@ PIP = $(CONDA_RUN) pip
 PYTEST = $(CONDA_RUN) pytest
 TEST_FLAGS = -v
 
-DOCKER = docker
-
 TEST_FOLDERS=tests
 SRC_FOLDERS=src
 INTEGRATION_TEST_FOLDERS=integration_tests
@@ -46,8 +44,7 @@ venv: _post_venv
 develop: venv
 	$(PYTHON) setup.py develop
 
-install: venv
-	$(PYTHON) setup.py install
+
 
 test: develop
 	$(PYTEST) $(TEST_FLAGS) $(TEST_FOLDERS)
@@ -58,4 +55,9 @@ coverage: develop
 lint: venv
 	$(LINT) ./
 
-default: clean lint coverage install
+build: clean lint coverage
+
+install: build
+	$(PYTHON) setup.py install
+
+default: install
