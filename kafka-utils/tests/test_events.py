@@ -122,12 +122,12 @@ def test_invalid_payload_type(base_event_as_dict):
     assert e.match("dataset")
 
 
-BIG_JSON = '''{ 
+BIG_JSON = '''{
                "date": "Thu May 02 16:15:42 UTC 2019",
                "authenticated": false,
                "payload": {
                    "toml": {
-                       "descriptor_filename": "example_descriptor2.toml", 
+                       "descriptor_filename": "example_descriptor2.toml",
                        "sha1": "be60cb85620fa041c1bfabd9a9b1c8c1d6be1c78",
                        "doc": "IyBCZW5jaG1hcYS90Zi1pbWFnZW5ldC8iCg==",
                        "verified": true,
