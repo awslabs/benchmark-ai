@@ -9,10 +9,10 @@ here = abspath(dirname(__file__))
 bai_project_path = abspath(join(here, os.pardir))
 
 setup(
-    description='Shared library for kafka-based services',
-    name='kafka_utils',
-    url='https://github.com/MXNetEdge/benchmark-ai',
-    package_dir={'': 'src'},
+    description="Shared library for kafka-based services",
+    name="kafka_utils",
+    url="https://github.com/MXNetEdge/benchmark-ai",
+    package_dir={"": "src"},
     packages=find_packages("src"),
-    include_package_data=True
+    include_package_data=True,
 )
