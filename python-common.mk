@@ -14,6 +14,9 @@ COVERAGE_FLAGS = --cov=$(SRC_FOLDERS) --cov-report html --cov-report term
 
 LINT = $(CONDA_RUN) flake8
 
+FORMAT = $(CONDA_RUN) black
+FORMAT_FLAGS = --line-length=120
+
 .DEFAULT_GOAL := default
 
 clean:
@@ -60,5 +63,11 @@ build: clean lint coverage
 
 install: build
 	$(PYTHON) setup.py install
+
+format: venv _format
+_format:
+	$(FORMAT) $(FORMAT_FLAGS) setup.py
+	$(FORMAT) $(FORMAT_FLAGS) $(SRC_FOLDERS)
+	$(FORMAT) $(FORMAT_FLAGS) $(TEST_FOLDERS)
 
 default: install
