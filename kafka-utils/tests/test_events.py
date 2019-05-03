@@ -53,8 +53,8 @@ def test_data_set_dont_fail_unknown_fields():
     assert not hasattr(dataset, "foo")
 
 
+# This was seen in the wild!
 def test_crazy_json():
-    #This was seen in the wild!
     json = '{"toml":{"contents": {"name": "doc"},"sha1": "sha1","doc": "dst"}, ' \
            '"datasets" : [ [ {"src" : "s3://bucket/imagenet/train"}, { } ] ]}'
     with pytest.raises(TypeError):
