@@ -24,9 +24,7 @@ class KafkaServiceConfig:
 
 class KafkaServiceCallback(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def handle_event(
-        self, event: BenchmarkEvent, kafka_service
-    ) -> Optional[BenchmarkEvent]:
+    def handle_event(self, event: BenchmarkEvent, kafka_service) -> Optional[BenchmarkEvent]:
         pass
 
     @abc.abstractmethod
@@ -69,18 +67,14 @@ class KafkaService:
     _IS_NOT_RUNNING = "Loop is not running"
     _CANNOT_UPDATE_CALLBACKS = "Cannot update callbacks with running loop"
 
-    def safe_handle_msg(
-        self, msg, callback: KafkaServiceCallback
-    ) -> Optional[BenchmarkEvent]:
+    def safe_handle_msg(self, msg, callback: KafkaServiceCallback) -> Optional[BenchmarkEvent]:
         try:
             return self.handle_event(msg.value, callback)
         except KafkaServiceCallbackException:
             logger.exception(f"Failed to handle message: {msg}")
         return None
 
-    def handle_event(
-        self, event: BenchmarkEvent, callback: KafkaServiceCallback
-    ) -> Optional[BenchmarkEvent]:
+    def handle_event(self, event: BenchmarkEvent, callback: KafkaServiceCallback) -> Optional[BenchmarkEvent]:
         """
         Utility method for handling a benchmark event.
         Does the logging and calls the callback function to handle the event
@@ -88,9 +82,7 @@ class KafkaService:
         :param callback: implementation of KafkaServiceCallBack to handle the event
         """
         if not event:
-            raise KafkaServiceCallbackException(
-                "Empty message received (no event found)"
-            )
+            raise KafkaServiceCallbackException("Empty message received (no event found)")
         logger.info(f"Got event {event}")
         return callback.handle_event(event, self)
 
@@ -120,9 +112,7 @@ class KafkaService:
 
     def run_loop(self):
         if self._running:
-            raise KafkaService.LoopAlreadyRunningException(
-                KafkaService._LOOP_IS_ALREADY_RUNNING
-            )
+            raise KafkaService.LoopAlreadyRunningException(KafkaService._LOOP_IS_ALREADY_RUNNING)
 
         self._running = True
 
@@ -148,16 +138,12 @@ class KafkaService:
 
     def add_callback(self, callback: KafkaServiceCallback):
         if self._running:
-            raise KafkaService.LoopAlreadyRunningException(
-                KafkaService._CANNOT_UPDATE_CALLBACKS
-            )
+            raise KafkaService.LoopAlreadyRunningException(KafkaService._CANNOT_UPDATE_CALLBACKS)
 
         self._callbacks.append(callback)
 
     def remove_callback(self, callback: KafkaServiceCallback):
         if self._running:
-            raise KafkaService.LoopAlreadyRunningException(
-                KafkaService._CANNOT_UPDATE_CALLBACKS
-            )
+            raise KafkaService.LoopAlreadyRunningException(KafkaService._CANNOT_UPDATE_CALLBACKS)
 
         self._callbacks.remove(callback)

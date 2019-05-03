@@ -26,9 +26,7 @@ def benchmark_doc() -> BenchmarkDoc:
 
 @fixture
 def benchmark_event_with_data_sets(benchmark_doc: BenchmarkDoc) -> BenchmarkEvent:
-    payload = FetcherPayload(
-        toml=benchmark_doc, data_sets=[DataSet(src="src1"), DataSet(src="src2")]
-    )
+    payload = FetcherPayload(toml=benchmark_doc, data_sets=[DataSet(src="src1"), DataSet(src="src2")])
     return get_benchmark_event(payload)
 
 
@@ -53,21 +51,15 @@ def get_benchmark_event(payload):
 
 
 def test_fetcher_event_handler_fetch(
-    data_set_manager: DataSetManager,
-    benchmark_event_with_data_sets: BenchmarkEvent,
-    kafka_service: KafkaService,
+    data_set_manager: DataSetManager, benchmark_event_with_data_sets: BenchmarkEvent, kafka_service: KafkaService
 ):
     fetcher_callback = FetcherEventHandler(data_set_manager, S3_BUCKET)
-    event_to_send_sync = fetcher_callback.handle_event(
-        benchmark_event_with_data_sets, kafka_service
-    )
+    event_to_send_sync = fetcher_callback.handle_event(benchmark_event_with_data_sets, kafka_service)
 
     # Nothing to send immediately
     assert not event_to_send_sync
     # All data_sets fetched
-    assert data_set_manager.fetch.call_count == len(
-        benchmark_event_with_data_sets.payload.data_sets
-    )
+    assert data_set_manager.fetch.call_count == len(benchmark_event_with_data_sets.payload.data_sets)
     # Nothing yet sent
     kafka_service.send_event.assert_not_called()
 
@@ -79,14 +71,10 @@ def test_fetcher_event_handler_fetch(
 
 
 def test_fetcher_event_handler_nothing_to_do(
-    data_set_manager: DataSetManager,
-    benchmark_event_without_data_sets: BenchmarkEvent,
-    kafka_service: KafkaService,
+    data_set_manager: DataSetManager, benchmark_event_without_data_sets: BenchmarkEvent, kafka_service: KafkaService
 ):
     fetcher_callback = FetcherEventHandler(data_set_manager, S3_BUCKET)
-    event_to_send_sync = fetcher_callback.handle_event(
-        benchmark_event_without_data_sets, kafka_service
-    )
+    event_to_send_sync = fetcher_callback.handle_event(benchmark_event_without_data_sets, kafka_service)
     assert event_to_send_sync == benchmark_event_without_data_sets
 
 

@@ -11,9 +11,7 @@ def main(argv=None):
     # Configure logging
     logging_streams = {"stdout": sys.stdout, "stderr": sys.stderr}
     stream = logging_streams[os.environ.get("LOGGING_STREAM", "stderr").lower()]
-    logging.basicConfig(
-        stream=stream, level=os.environ.get("LOGGING_LEVEL", "INFO").upper()
-    )
+    logging.basicConfig(stream=stream, level=os.environ.get("LOGGING_LEVEL", "INFO").upper())
 
     # Start the app
     logger = logging.getLogger("metrics-pusher")
