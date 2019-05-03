@@ -37,6 +37,7 @@ _pre_venv::
 _venv: _pre_venv
 	conda env update --file environment.yml --prune --name $(ENV_NAME)
 	conda env update --file test-environment.yml --name $(ENV_NAME)
+	conda env update --file ../lint-environment.yml --name $(ENV_NAME)
 
 #Things to run after - extendable
 _post_venv::_venv
