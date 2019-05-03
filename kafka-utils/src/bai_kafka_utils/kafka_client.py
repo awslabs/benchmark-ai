@@ -1,5 +1,4 @@
 import logging
-from json import JSONDecodeError
 
 import kafka
 from kafka import KafkaConsumer, KafkaProducer
@@ -34,11 +33,11 @@ def create_kafka_consumer(bootstrap_servers: List[str],
         try:
 
             return event_type.from_json(msg_value.decode(DEFAULT_ENCODING))
-        except JSONDecodeError:
+        # Our json deserializer can raise anything - constructor can raise anything).
+        # Handling JsonDecodeError and KeyError is not enough
+        # For example TypeError is possible as well. So let's play safe.
+        except Exception:
             logger.exception("Failed to deserialize %s", msg_value)
-            return None
-        except KeyError:
-            logger.exception("Missing required fields on %s", msg_value)
             return None
 
     return kafka.KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group_id,

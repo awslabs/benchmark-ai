@@ -53,6 +53,14 @@ def test_data_set_dont_fail_unknown_fields():
     assert not hasattr(dataset, "foo")
 
 
+def test_crazy_json():
+    #This was seen in the wild!
+    json = '{"toml":{"contents": {"name": "doc"},"sha1": "sha1","doc": "dst"}, ' \
+           '"datasets" : [ [ {"src" : "s3://bucket/imagenet/train"}, { } ] ]}'
+    with pytest.raises(TypeError):
+        FetcherPayload.from_json(json)
+
+
 def test_fetcher_event(base_event_as_dict):
     fetcher_event_as_dict = base_event_as_dict
     fetcher_event_as_dict["payload"]["datasets"] = [
