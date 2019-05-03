@@ -488,7 +488,7 @@ for arg in "$@"; do
     esac
 done
 
-[ ! -d "$data_dir" ] && mkdir -p $data_dir
+mkdir -p $data_dir
 
 data_dir=$(realpath $data_dir)
 kubeconfig=$(realpath $data_dir/kubeconfig)
