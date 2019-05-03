@@ -84,10 +84,10 @@ class Descriptor:
         else:
             raise ValueError(f'Invalid instance type: {instance_type}')
 
-    def find_data_source(self, uri: str):
+    def find_data_source(self, src: str):
         for source in self.data_sources:
-            if source['uri'] == uri:
+            if source['src'] == src:
                 return source
         else:
-            raise ValueError(f'Could not find data source with uri: {uri} \n'
+            raise ValueError(f'Could not find data source with src: {src} \n'
                              f'Data sources are: {self.data_sources}')

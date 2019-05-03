@@ -13,13 +13,13 @@ from transpiler.config import DescriptorConfig, BaiConfig
 def base_data_sources():
     return [
         {
-            "uri": "s3://mlperf-data-stsukrov/imagenet/train-480px",
+            "src": "s3://mlperf-data-stsukrov/imagenet/train-480px",
             "md5": "md5",
             "path": "/data/tf-imagenet/train",
             "puller_uri": "s3://puller-data-stsukrov/imagenet/train",
         },
         {
-            "uri": "s3://mlperf-data-stsukrov/imagenet/validation-480px",
+            "src": "s3://mlperf-data-stsukrov/imagenet/validation-480px",
             "md5": "md5",
             "path": "/data/tf-imagenet/validation",
             "puller_uri": "s3://puller-data-stsukrov/imagenet/validation",
@@ -40,7 +40,7 @@ def fetched_data_sources(base_data_sources):
 
     for source in base_data_sources:
         sources.append(DataSet(
-            src=source['uri'],
+            src=source['src'],
             md5=source['md5'],
             dst=source['puller_uri'],
         ))
@@ -89,9 +89,9 @@ def descriptor(descriptor_config, base_data_sources):
         [data]
         id = 'mnist'
         [[data.sources]]
-        uri = '{base_data_sources[0]['uri']}'
+        src = '{base_data_sources[0]['src']}'
         path = '{base_data_sources[0]['path']}'
         [[data.sources]]
-        uri = '{base_data_sources[1]['uri']}'
+        src = '{base_data_sources[1]['src']}'
         path = '{base_data_sources[1]['path']}'
     """)), descriptor_config)
