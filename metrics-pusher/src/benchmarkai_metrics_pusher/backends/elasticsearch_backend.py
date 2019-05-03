@@ -18,12 +18,7 @@ class ElasticsearchBackend:
             verify_certs = False
 
         self.es = Elasticsearch(
-            [dict(host=hostname,
-                  port=port,
-                  verify_certs=verify_certs,
-                  use_ssl=True,
-                  )
-            ]
+            [dict(host=hostname, port=port, verify_certs=verify_certs, use_ssl=True)]
         )
 
     def __call__(self, metrics):
@@ -32,9 +27,7 @@ class ElasticsearchBackend:
             "job-id": self.job_id,
             "timestamp": timestamp,
             "metrics": metrics,
-            "tracing": {
-                "service": "metrics-pusher",
-            }
+            "tracing": {"service": "metrics-pusher"},
         }
         r = self.es.index(index="job-metrics", doc_type="metric", body=json.dumps(doc))
         logger.debug("Response: %r", r)

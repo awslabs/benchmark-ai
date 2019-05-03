@@ -18,7 +18,7 @@ def start_kubernetes_pod_watcher(pod_name: str, pod_namespace: str):
         target=watch_kubernetes_pod,
         name="watch-kubernetes-pod",
         args=(pod_name, pod_namespace),
-        daemon=True
+        daemon=True,
     )
     thread.start()
     return thread
@@ -30,8 +30,10 @@ def watch_kubernetes_pod(pod_name: str, namespace: str):
         v1 = client.CoreV1Api()
         v1pod: V1Pod = v1.read_namespaced_pod_status(pod_name, namespace)
 
-        container_status_mapping = {container_status.name: container_status
-                                    for container_status in v1pod.status.container_statuses}
+        container_status_mapping = {
+            container_status.name: container_status
+            for container_status in v1pod.status.container_statuses
+        }
         state: V1ContainerState = container_status_mapping["benchmark"].state
         terminated: V1ContainerStateTerminated = state.terminated
         logger.debug("Container state: %s", state)
