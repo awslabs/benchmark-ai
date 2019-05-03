@@ -28,4 +28,4 @@ WORKDIR /work/baictl
 
 RUN /opt/conda/bin/conda env update
 
-ENTRYPOINT [ "/opt/conda/bin/conda", "run", "-n", "baictl", "./baictl" ]
+ENTRYPOINT [ "/opt/conda/bin/conda", "run", "-n", "baictl", "./baictl", "create", "infra" ]

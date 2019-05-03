@@ -11,7 +11,7 @@ Resources:
     Properties:
       ClusterName: !Sub ${AWS::StackName}-cluster
 
-  BastionLogGroup:
+  BaictlLogGroup:
     Type: "AWS::Logs::LogGroup"
     Properties: 
       LogGroupName: !Sub ${AWS::StackName}-baictl
@@ -40,9 +40,9 @@ Resources:
           LogConfiguration:
             LogDriver: awslogs
             Options:
-              awslogs-group: !Ref BastionLogGroup
+              awslogs-group: !Ref BaictlLogGroup
               awslogs-region: !Ref 'AWS::Region'
-              awslogs-stream-prefix: 'ssh'
+              awslogs-stream-prefix: 'baictl'
 
   VPC:
     Type: AWS::EC2::VPC
@@ -144,3 +144,10 @@ Resources:
       Path: /
 
 
+Outputs:
+  #EcrImagePath:
+  #  Description: "ECR image path holding the image that ECS is going to run"
+  #  Value: !Select [0, !Ref TaskDefinition.ContainerDefinitions]
+  EcrImagePath:
+    Description: "ECR image path holding the image that ECS is going to run"
+    Value: !Ref TaskDefinition
