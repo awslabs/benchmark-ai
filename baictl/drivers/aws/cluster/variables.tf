@@ -1,6 +1,7 @@
 variable "region" {
-  default = "eu-west-1"
 }
+
+variable "data_dir" {}
 
 variable "prefix_list_ids" {
   type        = "list"

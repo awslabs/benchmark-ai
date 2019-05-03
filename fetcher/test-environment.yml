@@ -3,8 +3,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - pip
-  - pip:
-      - pytest
-      - mock
-      - pytest-mock
+  - flake8
+  - pytest
+  - pytest-mock
+  - pytest-cov

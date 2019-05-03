@@ -4,5 +4,4 @@ puller_s3_region: eu-west-1
 puller_docker_image: stsukrov/s3dataprovider
 
 # descriptor config
-valid_data_sources: '["s3", "http", "https", "ftp", "ftps"]'
 valid_strategies: '["single_node", "horovod"]'

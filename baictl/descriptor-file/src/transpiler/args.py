@@ -2,6 +2,8 @@ import os
 import json
 import configargparse
 
+from transpiler.config import DescriptorConfig, BaiConfig
+
 
 def get_args(argv):
     base_dir = os.path.abspath(os.path.dirname(__file__))
@@ -38,10 +40,18 @@ def get_args(argv):
     parser.add('--puller_docker_image',
                help='Docker image used by the data puller')
 
-    parser.add('--valid_data_sources', type=json.loads,
-               help='List of valid data sources, such as S3 or ftp')
-
     parser.add('--valid_strategies', type=json.loads,
                help='List of valid strategies such as single_node or horovod')
 
     return parser.parse_args(argv)
+
+
+def create_descriptor_config(args):
+    return DescriptorConfig(valid_strategies=args.valid_strategies)
+
+
+def create_bai_config(args):
+    return BaiConfig(shared_memory_vol=args.shared_memory_vol,
+                     puller_mount_chmod=args.puller_mount_chmod,
+                     puller_s3_region=args.puller_s3_region,
+                     puller_docker_image=args.puller_docker_image)

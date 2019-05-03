@@ -1,5 +1,6 @@
 terraform {
   required_version = ">= 0.11.8"
+  backend "s3" {}
 }
 
 provider "aws" {
@@ -82,8 +83,8 @@ data "template_file" "ssh_config" {
   vars = {
     es_endpoint = "${aws_elasticsearch_domain.logs.endpoint}"
     bastion_public_ip = "${aws_instance.bastion.public_ip}"
-    bastion_private_key_filename = "${path.cwd}/${local_file.bastion_privatekey_pem.filename}"
-    worker_private_key_filename = "${path.cwd}/${local_file.worker_privatekey_pem.filename}"
+    bastion_private_key_filename = "${local_file.bastion_privatekey_pem.filename}"
+    worker_private_key_filename = "${local_file.worker_privatekey_pem.filename}"
     # Extracts the first 2 parts of the CIDR: `172.16.0.0/16 => 172.16.*`
     host_wildcard = "${join(".",
                          slice(
@@ -98,7 +99,7 @@ data "template_file" "ssh_config" {
 }
 resource "local_file" "ssh_config" {
   content  = "${data.template_file.ssh_config.rendered}"
-  filename = "ssh-config"
+  filename = "${var.data_dir}/ssh-config"
 }
 
 data "null_data_source" "subnets" {

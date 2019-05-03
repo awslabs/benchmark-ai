@@ -19,13 +19,15 @@ def test_wrong_descriptor(datadir, filename, descriptor_config):
 ])
 def test_invalid_scheduling(descriptor, scheduling):
     descriptor.scheduling = scheduling
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(ValueError):
         descriptor._validate()
 
 
 def test_descriptor_config(descriptor_config):
-    sources = ["s3", "http", "https", "ftp", "ftps"]
     strategies = ["single_node", "horovod"]
-
-    assert descriptor_config.valid_data_sources == sources
     assert descriptor_config.valid_strategies == strategies
+
+
+def test_find_data_source(descriptor, base_data_sources):
+    source = descriptor.find_data_source(base_data_sources[0]['uri'])
+    assert source['path'] == base_data_sources[0]['path']

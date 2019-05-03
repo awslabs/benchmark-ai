@@ -19,3 +19,4 @@ dependencies:
   - pip:
     - ConfigArgParse
     - python-crontab
+    - dataclasses-json

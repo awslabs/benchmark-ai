@@ -8,9 +8,13 @@ from bai_kafka_utils.kafka_service import KafkaServiceConfig
 def get_kafka_service_config(program_name: str, cmd_args: str) -> KafkaServiceConfig:
     parser = create_kafka_service_parser(program_name)
     args, _ = parser.parse_known_args(cmd_args)
-    return KafkaServiceConfig(consumer_topic=args.consumer_topic, producer_topic=args.producer_topic,
-                              consumer_group_id=args.consumer_group_id, bootstrap_servers=args.bootstrap_servers,
-                              logging_level=args.logging_level)
+    return KafkaServiceConfig(
+        consumer_topic=args.consumer_topic,
+        producer_topic=args.producer_topic,
+        consumer_group_id=args.consumer_group_id,
+        bootstrap_servers=args.bootstrap_servers,
+        logging_level=args.logging_level,
+    )
 
 
 def create_kafka_service_parser(program_name: str) -> ArgParser:
@@ -21,27 +25,21 @@ def create_kafka_service_parser(program_name: str) -> ArgParser:
 
         return customAction
 
-    parser = ArgParser(auto_env_var_prefix="",
-                       prog=program_name)
+    parser = ArgParser(auto_env_var_prefix="", prog=program_name)
 
-    parser.add_argument("--consumer-topic",
-                        env_var='CONSUMER_TOPIC',
-                        required=True)
+    parser.add_argument("--consumer-topic", env_var="CONSUMER_TOPIC", required=True)
 
-    parser.add_argument("--producer-topic",
-                        env_var='PRODUCER_TOPIC',
-                        required=True)
+    parser.add_argument("--producer-topic", env_var="PRODUCER_TOPIC", required=True)
 
-    parser.add_argument("--bootstrap-servers",
-                        env_var="KAFKA_BOOTSTRAP_SERVERS",
-                        default="localhost:9092",
-                        action=create_split_action(','))
+    parser.add_argument(
+        "--bootstrap-servers",
+        env_var="KAFKA_BOOTSTRAP_SERVERS",
+        default="localhost:9092",
+        action=create_split_action(","),
+    )
 
-    parser.add_argument("--consumer-group-id",
-                        env_var="CONSUMER_GROUP_ID")
+    parser.add_argument("--consumer-group-id", env_var="CONSUMER_GROUP_ID")
 
-    parser.add_argument("--logging-level",
-                        env_var="LOGGING_LEVEL",
-                        default="INFO")
+    parser.add_argument("--logging-level", env_var="LOGGING_LEVEL", default="INFO")
 
     return parser
