@@ -4,7 +4,7 @@ import dataclasses
 from dacite import from_dict
 from dataclasses import dataclass
 from dataclasses_json import dataclass_json
-from typing import Dict, List, Optional, Type, Any
+from typing import List, Optional, Type, Dict, Any
 
 
 @dataclass_json
