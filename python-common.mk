@@ -57,7 +57,8 @@ coverage: develop
 	$(PYTEST) $(TEST_FLAGS) $(COVERAGE_FLAGS)
 
 lint: venv
-	$(LINT) ./
+	$(LINT) --config=../.flake8 $(SRC_FOLDERS)
+	$(LINT) --config=../.flake8 $(TEST_FOLDERS)
 
 build: clean lint coverage
 
