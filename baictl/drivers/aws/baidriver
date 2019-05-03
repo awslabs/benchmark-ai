@@ -96,9 +96,6 @@ create_infra() {
     echo "==> Installing kubeflow operators"
     _install_kubeflow_operators || return 1
 
-#    echo "==> Validating bastion SSH connectivity"
-#    __validate_bastion || return 1
-
     echo "==> Creating Kafka topics"
     _create_kafka_topics || return 1
 
