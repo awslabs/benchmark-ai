@@ -5,7 +5,11 @@ import pytest
 from kazoo.client import KazooClient
 
 from bai_kafka_utils.events import DataSet
-from fetcher_dispatcher.data_set_manager import DataSetManager, DataSetDispatcher, DataSetOnDone
+from fetcher_dispatcher.data_set_manager import (
+    DataSetManager,
+    DataSetDispatcher,
+    DataSetOnDone,
+)
 from fetcher_dispatcher.fetch_state import FetchState
 
 SOME_PATH = "/some/path"
@@ -68,9 +72,12 @@ def kubernetes_job_starter() -> DataSetDispatcher:
 
 
 @pytest.fixture
-def data_set_manager(zoo_keeper_client: KazooClient,
-                     kubernetes_job_starter: DataSetDispatcher) -> DataSetManager:
-    data_set_manager = DataSetManager(zoo_keeper_client, kubernetes_job_starter, data_set_to_path)
+def data_set_manager(
+    zoo_keeper_client: KazooClient, kubernetes_job_starter: DataSetDispatcher
+) -> DataSetManager:
+    data_set_manager = DataSetManager(
+        zoo_keeper_client, kubernetes_job_starter, data_set_to_path
+    )
     return data_set_manager
 
 
@@ -79,21 +86,30 @@ def some_data_set() -> DataSet:
     return DataSet("http://imagenet.org/bigdata.zip")
 
 
-def test_pass_through_start(zoo_keeper_client: KazooClient, kubernetes_job_starter: DataSetDispatcher):
+def test_pass_through_start(
+    zoo_keeper_client: KazooClient, kubernetes_job_starter: DataSetDispatcher
+):
     data_set_manager = DataSetManager(zoo_keeper_client, kubernetes_job_starter)
     data_set_manager.start()
     assert zoo_keeper_client.start.called
 
 
-def test_pass_through_stop(zoo_keeper_client: KazooClient, kubernetes_job_starter: DataSetDispatcher):
+def test_pass_through_stop(
+    zoo_keeper_client: KazooClient, kubernetes_job_starter: DataSetDispatcher
+):
     data_set_manager = DataSetManager(zoo_keeper_client, kubernetes_job_starter)
     data_set_manager.stop()
     assert zoo_keeper_client.stop.called
 
 
-def test_first_fast_success(zoo_keeper_client_with_done_node: KazooClient, some_data_set: DataSet,
-                            kubernetes_job_starter: DataSetDispatcher):
-    data_set_manager = DataSetManager(zoo_keeper_client_with_done_node, kubernetes_job_starter, data_set_to_path)
+def test_first_fast_success(
+    zoo_keeper_client_with_done_node: KazooClient,
+    some_data_set: DataSet,
+    kubernetes_job_starter: DataSetDispatcher,
+):
+    data_set_manager = DataSetManager(
+        zoo_keeper_client_with_done_node, kubernetes_job_starter, data_set_to_path
+    )
 
     on_done = mock.MagicMock()
 
@@ -103,9 +119,14 @@ def test_first_fast_success(zoo_keeper_client_with_done_node: KazooClient, some_
     assert on_done.called
 
 
-def test_first_wait_success(zoo_keeper_client_with_running_node: KazooClient, some_data_set: DataSet,
-                            kubernetes_job_starter: DataSetDispatcher):
-    data_set_manager = DataSetManager(zoo_keeper_client_with_running_node, kubernetes_job_starter, data_set_to_path)
+def test_first_wait_success(
+    zoo_keeper_client_with_running_node: KazooClient,
+    some_data_set: DataSet,
+    kubernetes_job_starter: DataSetDispatcher,
+):
+    data_set_manager = DataSetManager(
+        zoo_keeper_client_with_running_node, kubernetes_job_starter, data_set_to_path
+    )
 
     on_done = mock.MagicMock()
 
@@ -117,10 +138,16 @@ def test_first_wait_success(zoo_keeper_client_with_running_node: KazooClient, so
     _verify_wait_succes(on_done, zoo_keeper_client_with_running_node)
 
 
-def test_second_already_done(zoo_keeper_client_with_done_node_that_exists: KazooClient, some_data_set: DataSet,
-                             kubernetes_job_starter: DataSetDispatcher):
-    data_set_manager = DataSetManager(zoo_keeper_client_with_done_node_that_exists, kubernetes_job_starter,
-                                      data_set_to_path)
+def test_second_already_done(
+    zoo_keeper_client_with_done_node_that_exists: KazooClient,
+    some_data_set: DataSet,
+    kubernetes_job_starter: DataSetDispatcher,
+):
+    data_set_manager = DataSetManager(
+        zoo_keeper_client_with_done_node_that_exists,
+        kubernetes_job_starter,
+        data_set_to_path,
+    )
 
     on_done = mock.MagicMock()
 
@@ -130,10 +157,16 @@ def test_second_already_done(zoo_keeper_client_with_done_node_that_exists: Kazoo
     assert on_done.called
 
 
-def test_second_wait_success(zoo_keeper_client_with_running_node_that_exists: KazooClient, some_data_set: DataSet,
-                             kubernetes_job_starter: DataSetDispatcher):
-    data_set_manager = DataSetManager(zoo_keeper_client_with_running_node_that_exists, kubernetes_job_starter,
-                                      data_set_to_path)
+def test_second_wait_success(
+    zoo_keeper_client_with_running_node_that_exists: KazooClient,
+    some_data_set: DataSet,
+    kubernetes_job_starter: DataSetDispatcher,
+):
+    data_set_manager = DataSetManager(
+        zoo_keeper_client_with_running_node_that_exists,
+        kubernetes_job_starter,
+        data_set_to_path,
+    )
 
     on_done = mock.MagicMock()
 

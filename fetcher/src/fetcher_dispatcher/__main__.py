@@ -10,9 +10,7 @@ def main(argv=None):
     common_kafka_cfg = get_kafka_service_config(SERVICE_NAME, argv)
     fetcher_cfg = get_fetcher_service_config(argv)
 
-    logging.basicConfig(
-        level=common_kafka_cfg.logging_level
-    )
+    logging.basicConfig(level=common_kafka_cfg.logging_level)
 
     logger = logging.getLogger(SERVICE_NAME)
     logger.info(f"Starting {SERVICE_NAME} Service: {SERVICE_DESCRIPTION}")
@@ -23,5 +21,5 @@ def main(argv=None):
     fetcher_service.run_loop()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

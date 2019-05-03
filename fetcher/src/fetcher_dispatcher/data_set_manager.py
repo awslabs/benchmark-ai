@@ -22,8 +22,12 @@ class DataSetManager:
     def __get_node_path(data_set: DataSet) -> str:
         return f"/data_sets/{md5sum(data_set.src)}"
 
-    def __init__(self, zk: KazooClient, data_set_dispatcher: DataSetDispatcher,
-                 get_node_path: NodePathSource = None):
+    def __init__(
+        self,
+        zk: KazooClient,
+        data_set_dispatcher: DataSetDispatcher,
+        get_node_path: NodePathSource = None,
+    ):
         self._zk = zk
         self._data_set_dispatcher = data_set_dispatcher
         self._get_node_path = get_node_path or DataSetManager.__get_node_path
@@ -54,7 +58,9 @@ class DataSetManager:
 
         self.__handle_node_state(zk_node_path, on_done, data_set)
 
-    def __handle_node_state(self, zk_node_path: str, on_done: DataSetOnDone, data_set: DataSet):
+    def __handle_node_state(
+        self, zk_node_path: str, on_done: DataSetOnDone, data_set: DataSet
+    ):
         def _on_zk_changed(evt):
             self.__on_zk_changed(evt, on_done, data_set)
 
