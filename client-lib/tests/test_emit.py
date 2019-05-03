@@ -1,5 +1,6 @@
 import six
 import pytest
+
 if six.PY2:
     import mock
 else:
@@ -9,14 +10,7 @@ else:
 from benchmarkai import _emit_to_fifo, _emit_to_stdout, FifoNotCreatedInTimeError
 
 
-@pytest.mark.parametrize("param", [
-    [1, 2],
-    "string",
-    None,
-    {"set"},
-    1,
-    1.5
-])
+@pytest.mark.parametrize("param", [[1, 2], "string", None, {"set"}, 1, 1.5])
 def test_wrong_types(param):
     with pytest.raises(TypeError):
         _emit_to_stdout(param)
@@ -31,6 +25,7 @@ def test_empty_dictionary():
 
 def test_emit_to_fifo():
     import json
+
     metric_object = {"metric": 1}
     expected_dump = json.dumps(metric_object)
     with mock.patch("benchmarkai._getfifo") as mocked_fifo:
