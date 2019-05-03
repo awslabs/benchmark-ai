@@ -45,7 +45,7 @@ def test_regressions(filename,
 def generate_fetched_data_sources(descriptor_data) -> List[DataSet]:
     data_sources = descriptor_data.get('data', {}).get('sources', [])
     if data_sources:
-        return [DataSet(src=source['uri'], md5='md5', dst=PULLER_S3_URI)
+        return [DataSet(src=source['src'], md5='md5', dst=PULLER_S3_URI)
                 for source in data_sources]
     else:
         return []

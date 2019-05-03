@@ -3,6 +3,7 @@ import toml
 
 from transpiler.args import get_args, create_bai_config, create_descriptor_config
 from transpiler.bai_knowledge import EnvironmentInfo, create_yaml_spec
+from bai_kafka_utils.events import DataSet
 
 
 def main(argv=None):
@@ -17,6 +18,7 @@ def main(argv=None):
 
     # TODO: Pass this as an argument
     fetched_data_sources = descriptor_data.get('data', {}).get('sources', [])
+    fetched_data_sources = [DataSet(src=source['src'], dst=source['src']) for source in fetched_data_sources]
 
     yaml_string = create_yaml_spec(descriptor_data,
                                    descriptor_config,
