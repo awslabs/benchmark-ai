@@ -5,12 +5,6 @@ from executor.config import ExecutorConfig
 from executor.args import get_args, create_bai_config, create_descriptor_config, create_executor_config
 
 
-@pytest.fixture
-def config_args(shared_datadir):
-    required_args = "--descriptor=descriptor.toml --availability-zones=us-east-1a us-east-1b us-east-1c"
-    return f'{required_args} -c {str(shared_datadir / default_config.yaml)}'
-
-
 def test_args_azs(config_args):
     args = get_args(config_args)
     assert args.availability_zones == ['us-east-1a', 'us-east-1b', 'us-east-1c']
@@ -31,7 +25,6 @@ def test_create_descriptor_config(config_args):
 def test_create_bai_config(config_args):
     args = get_args(config_args)
     expected_config = BaiConfig(
-        shared_memory_vol=args.shared_memory_vol,
         puller_docker_image=args.puller_docker_image,
         puller_mount_chmod=args.puller_mount_chmod,
         puller_s3_region=args.puller_s3_region
@@ -47,7 +40,6 @@ def test_create_transpiler_config(config_args):
     args = get_args(config_args)
     expected_descriptor_config = DescriptorConfig(valid_strategies=args.valid_strategies)
     expected_bai_config = BaiConfig(
-        shared_memory_vol=args.shared_memory_vol,
         puller_docker_image=args.puller_docker_image,
         puller_mount_chmod=args.puller_mount_chmod,
         puller_s3_region=args.puller_s3_region
@@ -56,11 +48,10 @@ def test_create_transpiler_config(config_args):
         availability_zones=args.availability_zones
     )
     expected_transpiler_config = ExecutorConfig(
-        descriptor=args.descriptor,
-        filename=args.filename,
         descriptor_config=expected_descriptor_config,
         bai_config=expected_bai_config,
-        environment_info=expected_environment_info
+        environment_info=expected_environment_info,
+        kubeconfig=args.kubeconfig
     )
 
     assert transpiler_config == expected_transpiler_config

@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: executor
+  labels:
+    app: benchmark-ai
+spec:
+  selector:
+    matchLabels:
+      app: benchmark-ai
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: benchmark-ai
+        service: executor
+    spec:
+      serviceAccountName: executor
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: service
+                    operator: In
+                    values:
+                      - executor
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: executor
+          image: jlcont/baiexecutor:040519
+          env:
+            - name: AVAILABILITY_ZONES
+              value: "us-east-1a us-east-1b us-east-1c"
+              # TODO: Uncomment lines below and remove hardcoded value once we sort out why
+              # terraform-outputs doesn't contain this in devo
+#              valueFrom:
+#                configMapKeyRef:
+#                  name: outputs-infrastructure
+#                  key: availability_zones
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: outputs-infrastructure
+                  key: msk_bootstrap_brokers
+            - name: CONSUMER_GROUP_ID
+              value: "executor"
+            - name: CONSUMER_TOPIC
+              value: "BAI_APP_FETCHER"
+            - name: PRODUCER_TOPIC
+              value: "BAI_APP_EXECUTOR"
+            - name: LOGGING_LEVEL
+              value: "INFO"
+      nodeSelector:
+        node.type: bai-services-cheap
+      restartPolicy: Always

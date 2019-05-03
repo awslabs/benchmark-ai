@@ -1,11 +1,5 @@
-import uuid
 from typing import Callable
-
-import toml
-import json
-
-from pytest import fixture
-from bai_kafka_utils.events import FetcherPayload, ExecutorPayload, BenchmarkDoc, BenchmarkEvent, DataSet, BenchmarkJob
+from bai_kafka_utils.events import ExecutorPayload, BenchmarkEvent, BenchmarkJob
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
 from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
 
@@ -22,30 +16,6 @@ kafka_cfg = KafkaServiceConfig(
 )
 
 consumer, producer = create_kafka_consumer_producer(kafka_cfg, ExecutorPayload)
-
-
-@fixture
-def benchmark_event(shared_datadir):
-    descriptor_path = str(shared_datadir / "hello-world.toml")
-    descriptor_as_dict = toml.load(descriptor_path)
-    doc = BenchmarkDoc(
-        contents=json.dumps(descriptor_as_dict),
-        md5='MD5',
-        doc='doc'
-    )
-
-    payload = FetcherPayload(toml=doc,
-                             data_sets=[])
-
-    return BenchmarkEvent(request_id=uuid.uuid4().hex,
-                          message_id="MESSAGE_ID",
-                          client_id="CLIENT_ID",
-                          client_version="CLIENT_VERSION",
-                          client_user="CLIENT_USER",
-                          authenticated=False,
-                          date=42,
-                          visited=[],
-                          payload=payload)
 
 
 def get_message_is_the_response(src_event: BenchmarkEvent) -> Callable[[BenchmarkEvent], bool]:
@@ -80,9 +50,6 @@ def test_producer(benchmark_event):
 
     filter_event = get_message_is_the_response(benchmark_event)
     is_expected_event = get_event_equals(expected_event)
-
-    # HACK to compare all fields of the events except the kubernetes yaml
-    # expected_event.payload.job.k8s_yaml = received_event.payload.job.k8s_yaml
 
     while True:
         records = consumer.poll(POLL_TIMEOUT_MS)

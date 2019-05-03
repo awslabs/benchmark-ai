@@ -39,6 +39,10 @@ class ExecutorEventHandler(KafkaServiceCallback):
     def _kubernetes_apply(self, yaml):
         cmd = ["kubectl", "apply", "--kubeconfig", self.executor_config.kubeconfig, "-f", "-"]
         logger.info(f"Applying yaml file using ${' '.join(cmd)}")
+
+        # Shelling out this command because the kubernetes python client does not have a good way to
+        # call kubectl apply -f my_config.yaml (https://github.com/kubernetes-client/python/issues/387)
+        # https://github.com/kubernetes-client/python/pull/655 - CRDs not supported
         result = subprocess.check_output(cmd, input=yaml.encode(DEFAULT_ENCODING))
         logger.info(f"Response from kubectl: {result}")  # TODO: Do something with this response?
 

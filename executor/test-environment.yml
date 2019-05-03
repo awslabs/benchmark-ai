@@ -7,3 +7,4 @@ dependencies:
   - mock
   - pytest-mock
   - pytest-datadir
+  - pytest-regressions

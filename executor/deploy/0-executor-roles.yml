@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: fetcher-dispatcher
+  name: executor
 ---
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: fetcher-dispatcher
+  name: executor
   namespace: default
 rules:
 - apiGroups: ["","batch"]
@@ -16,12 +16,12 @@ rules:
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: fetcher-dispatcher-pod-status-binding
+  name: executor-pod-status-binding
 subjects:
 - kind: ServiceAccount
-  name: fetcher-dispatcher
+  name: executor
   namespace: default
 roleRef:
   kind: Role
-  name: fetcher-dispatcher
+  name: executor
   apiGroup: rbac.authorization.k8s.io

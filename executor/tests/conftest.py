@@ -1,11 +1,13 @@
+import json
 import textwrap
+import uuid
+
 import toml
 import pytest
 
-from bai_kafka_utils.events import DataSet
+from bai_kafka_utils.events import DataSet, BenchmarkDoc, FetcherPayload, BenchmarkEvent
 from transpiler.descriptor import Descriptor
 from transpiler.bai_knowledge import EnvironmentInfo
-from executor.args import get_args
 from transpiler.config import DescriptorConfig, BaiConfig
 
 
@@ -49,6 +51,12 @@ def fetched_data_sources(base_data_sources):
 
 
 @pytest.fixture
+def config_args(shared_datadir):
+    required_args = "--descriptor=descriptor.toml --availability-zones=us-east-1a us-east-1b us-east-1c --kubeconfig=kubeconfig/path"
+    return f'{required_args} -c {str(shared_datadir / "default_config.yaml")}'
+
+
+@pytest.fixture
 def descriptor_config():
     config_values = {'valid_strategies': ["single_node", "horovod"]}
 
@@ -57,8 +65,7 @@ def descriptor_config():
 
 @pytest.fixture
 def bai_config():
-    return BaiConfig(shared_memory_vol="dshm",
-                     puller_mount_chmod="700",
+    return BaiConfig(puller_mount_chmod="700",
                      puller_s3_region="s3_region",
                      puller_docker_image="test/docker:image")
 
@@ -89,3 +96,27 @@ def descriptor(descriptor_config, base_data_sources):
         src = '{base_data_sources[1]['src']}'
         path = '{base_data_sources[1]['path']}'
     """)), descriptor_config)
+
+
+@pytest.fixture
+def benchmark_event(shared_datadir):
+    descriptor_path = str(shared_datadir / "hello-world.toml")
+    descriptor_as_dict = toml.load(descriptor_path)
+    doc = BenchmarkDoc(
+        contents=json.dumps(descriptor_as_dict),
+        md5='MD5',
+        doc='doc'
+    )
+
+    payload = FetcherPayload(toml=doc,
+                             data_sets=[])
+
+    return BenchmarkEvent(request_id=uuid.uuid4().hex,
+                          message_id="MESSAGE_ID",
+                          client_id="CLIENT_ID",
+                          client_version="CLIENT_VERSION",
+                          client_user="CLIENT_USER",
+                          authenticated=False,
+                          date=42,
+                          visited=[],
+                          payload=payload)

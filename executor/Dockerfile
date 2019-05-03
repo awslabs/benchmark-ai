@@ -10,8 +10,6 @@ RUN conda env create -f environment.yml -p /opt/executor
 #Very frequent changes
 COPY src /data/executor/src
 
-ENTRYPOINT [ "/bin/bash", "-c" ]
-
 RUN [ "/opt/executor/bin/python3", "setup.py", "install" ]
 
-CMD [ "/opt/executor/bin/executor" ]
+ENTRYPOINT [ "/opt/executor/bin/executor" ]

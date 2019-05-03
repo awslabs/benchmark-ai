@@ -18,9 +18,9 @@ def get_args(argv):
     parser.add('-c', '--my-config', required=False, is_config_file=True,
                help='Config file path')
 
-    parser.add_argument('--availability-zones', nargs='+',
-                        help='All the availability zones which the benchmark can run',
-                        required=True)
+    parser.add('--availability-zones', nargs='+',
+               env_var='AVAILABILITY_ZONES',
+               help='All the availability zones which the benchmark can run')
 
     parser.add('--transpiler-puller-mount-chmod',
                env_var='TRANSPILER_PULLER_MOUNT_CHMOD',
