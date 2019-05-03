@@ -19,9 +19,10 @@ LINT = $(CONDA_RUN) flake8
 clean:
 	rm -rf build/
 	rm -rf dist/
-	rm -rf **/*.egg-info
+	find . -name '*.egg-info' -exec rm -fr {} +
 	rm -rf htmlcov
 	rm -rf .pytest_cache
+	find . -name '__pycache__' -exec rm -fr {} +
 	rm -f .coverage
 
 #Things to run before - extendable
