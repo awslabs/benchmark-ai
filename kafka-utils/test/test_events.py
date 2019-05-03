@@ -17,13 +17,7 @@ def base_event_as_dict():
         "authenticated": True,
         "date": 150000,
         "visited": [],
-        "payload": {
-            "toml": {
-                "contents": {"name": "doc"},
-                "md5": "md5",
-                "doc": "dst"
-            }
-        }
+        "payload": {"toml": {"contents": {"name": "doc"}, "md5": "md5", "doc": "dst"}},
     }
 
 
@@ -68,8 +62,14 @@ def test_fetcher_event(base_event_as_dict):
 
 def test_executor_event(base_event_as_dict):
     executor_event_as_dict = base_event_as_dict
-    executor_event_as_dict["payload"]["data_sets"] = [{"src": "http://foo.com", "md5": "None", "dst": "None"}]
-    executor_event_as_dict["payload"]["job"] = {"id": "job_id", "status": "status", "k8s_yaml": "yaml_file"}
+    executor_event_as_dict["payload"]["data_sets"] = [
+        {"src": "http://foo.com", "md5": "None", "dst": "None"}
+    ]
+    executor_event_as_dict["payload"]["job"] = {
+        "id": "job_id",
+        "status": "status",
+        "k8s_yaml": "yaml_file",
+    }
 
     event_as_json_string = json.dumps(executor_event_as_dict)
 

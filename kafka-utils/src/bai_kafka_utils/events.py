@@ -74,4 +74,5 @@ def make_benchmark_event(payload_type: Type[BenchmarkPayload]):
     @dataclass
     class BenchmarkEventWithPayload(BenchmarkEvent):
         payload: payload_type
+
     return BenchmarkEventWithPayload
