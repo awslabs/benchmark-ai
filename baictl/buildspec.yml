@@ -2,4 +2,5 @@ version: 0.2
 phases:
   build:
     commands:
-      - echo 'Hello build'
+      - cd baictl
+      - make
