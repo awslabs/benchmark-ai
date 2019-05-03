@@ -1,7 +1,6 @@
 import uuid
 from typing import Callable
 
-import mock
 import toml
 import json
 
@@ -69,8 +68,7 @@ def get_event_equals(src_event: BenchmarkEvent) -> Callable[[BenchmarkEvent], bo
     return same_event
 
 
-@mock.patch('transpiler.bai_knowledge.uuid.UUID', return_value=JOB_ID)
-def test_producer(mock_uuid, benchmark_event):
+def test_producer(benchmark_event):
     expected_job = BenchmarkJob(
         id=JOB_ID,
         status='SUBMITTED',
@@ -92,4 +90,5 @@ def test_producer(mock_uuid, benchmark_event):
             for msg in recs:
                 if filter_event(msg.value):
                     assert is_expected_event(msg.value)
+                    consumer.close()
                     return

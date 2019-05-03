@@ -1,6 +1,7 @@
 import copy
-import json
 import dataclasses
+
+from dacite import from_dict
 from dataclasses import dataclass
 from dataclasses_json import dataclass_json
 from typing import Dict, List, Optional, Type, Any
@@ -52,9 +53,9 @@ class ExecutorPayload(FetcherPayload):
 
     @classmethod
     def from_fetcher_payload(cls, payload, job: BenchmarkJob):
-        payload_as_dict = dataclasses.asdict(payload)
+        payload_as_dict = dataclasses.asdict(copy.deepcopy(payload))
         payload_as_dict['job'] = job
-        return cls(**payload_as_dict)
+        return from_dict(data_class=cls, data=payload_as_dict)
 
 
 @dataclass_json
@@ -82,7 +83,7 @@ class BenchmarkEvent:
     def from_event_new_payload(cls, benchmark_event, payload: BenchmarkPayload):
         event_as_dict = dataclasses.asdict(benchmark_event)
         event_as_dict['payload'] = payload
-        return cls(**event_as_dict)
+        return from_dict(data_class=BenchmarkEvent, data=event_as_dict)
 
 
 def __make_benchmark_event(payload_type: Type):
