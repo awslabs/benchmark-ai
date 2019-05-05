@@ -79,6 +79,7 @@ variable "benchmark_workers_instance_types" {
     "p3.2xlarge",
     "p3.8xlarge",
     "p3.16xlarge",
+    "p3dn.24xlarge"
   ]
 }
 
