@@ -1,7 +1,6 @@
 variable "region" {
+  default = "eu-west-1"
 }
-
-variable "data_dir" {}
 
 variable "prefix_list_ids" {
   type        = "list"
@@ -79,6 +78,7 @@ variable "benchmark_workers_instance_types" {
     "p3.2xlarge",
     "p3.8xlarge",
     "p3.16xlarge",
+    "p3dn.24xlarge"
   ]
 }
 
