@@ -1,4 +1,5 @@
 import json
+import os
 from dataclasses import dataclass, field
 
 from configargparse import ArgParser
@@ -59,7 +60,7 @@ def get_fetcher_service_config(args) -> FetcherServiceConfig:
 
     parser.add_argument("--fetcher-job-namespace", env_var="FETCHER_JOB_NAMESPACE", required=False, default="default")
 
-    parsed_args, _ = parser.parse_known_args(args)
+    parsed_args, _ = parser.parse_known_args(args, env_vars=os.environ)
     return FetcherServiceConfig(
         zookeeper_ensemble_hosts=parsed_args.zookeeper_ensemble_hosts,
         s3_data_set_bucket=parsed_args.s3_data_set_bucket,

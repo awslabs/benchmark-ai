@@ -1,5 +1,5 @@
 import argparse
-
+import os
 from configargparse import ArgParser
 
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
@@ -7,7 +7,7 @@ from bai_kafka_utils.kafka_service import KafkaServiceConfig
 
 def get_kafka_service_config(program_name: str, cmd_args: str) -> KafkaServiceConfig:
     parser = create_kafka_service_parser(program_name)
-    args, _ = parser.parse_known_args(cmd_args)
+    args, _ = parser.parse_known_args(cmd_args, env_vars=os.environ)
     return KafkaServiceConfig(
         consumer_topic=args.consumer_topic,
         producer_topic=args.producer_topic,
