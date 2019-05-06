@@ -1,0 +1,9 @@
+#Hard-coded names. Invent a smarter way to do it ASAP
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: outputs-infrastructure
+  namespace: default
+data:
+  msk_bootstrap_brokers: kafka-0.kafka-service.default.svc.cluster.local:9092
+  data_pull_s3: some_s3
