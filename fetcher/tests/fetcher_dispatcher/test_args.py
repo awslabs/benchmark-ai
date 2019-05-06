@@ -12,13 +12,22 @@ MOCK_KUBECONFIG = "/path/kubeconfig"
 
 MOCK_PULL_POLICY = "Always"
 
+MOCK_RESTART_POLICY = "Never"
+
+MOCK_NAMESPACE = "internal_namespace"
+
+MOCK_TTL = 42
+
 ALL_ARGS = (
     f"--s3-data-set-bucket={MOCK_S3_BUCKET} "
     f"--fetcher-job-image={MOCK_DOCKER_IMAGE} "
     f"--zookeeper-ensemble-hosts={MOCK_ZOOKEEPER_ENSEMBLE} "
     f"--kubeconfig={MOCK_KUBECONFIG} "
     '--fetcher-job-node-selector={"node.type":"foo"} '
-    f"--fetcher-job-pull-policy={MOCK_PULL_POLICY}"
+    f"--fetcher-job-pull-policy={MOCK_PULL_POLICY} "
+    f"--fetcher-job-ttl={MOCK_TTL} "
+    f"--fetcher-job-restart-policy={MOCK_RESTART_POLICY} "
+    f"--fetcher-job-namespace={MOCK_NAMESPACE} "
 )
 
 EXPECTED_CFG = FetcherServiceConfig(
@@ -26,7 +35,12 @@ EXPECTED_CFG = FetcherServiceConfig(
     s3_data_set_bucket=MOCK_S3_BUCKET,
     kubeconfig=MOCK_KUBECONFIG,
     fetcher_job=FetcherJobConfig(
-        node_selector=EXPECTED_NODE_SELECTOR, image=MOCK_DOCKER_IMAGE, pull_policy=MOCK_PULL_POLICY
+        node_selector=EXPECTED_NODE_SELECTOR,
+        image=MOCK_DOCKER_IMAGE,
+        pull_policy=MOCK_PULL_POLICY,
+        namespace=MOCK_NAMESPACE,
+        restart_policy=MOCK_RESTART_POLICY,
+        ttl=MOCK_TTL,
     ),
 )
 
