@@ -28,5 +28,8 @@ WORKDIR /work/baictl
 
 RUN /opt/conda/bin/conda env update
 
-ENTRYPOINT [ "/opt/conda/bin/conda", "run", "-n", "baictl", "./baictl" ]
+ENV PATH /opt/conda/envs/baictl/bin:$PATH
+RUN /bin/bash -c "source /opt/conda/bin/activate baictl"
+
+ENTRYPOINT [ "./baictl" ]
 CMD [ "--help" ]
