@@ -54,7 +54,7 @@ class ExecutorPayload(FetcherPayload):
     @classmethod
     def from_fetcher_payload(cls, payload, job: BenchmarkJob):
         payload_as_dict = dataclasses.asdict(copy.deepcopy(payload))
-        payload_as_dict['job'] = job
+        payload_as_dict["job"] = job
         return from_dict(data_class=ExecutorPayload, data=payload_as_dict)
 
 
@@ -82,7 +82,7 @@ class BenchmarkEvent:
     @classmethod
     def from_event_new_payload(cls, benchmark_event, payload: BenchmarkPayload):
         event_as_dict = dataclasses.asdict(benchmark_event)
-        event_as_dict['payload'] = payload
+        event_as_dict["payload"] = payload
         return from_dict(data_class=BenchmarkEvent, data=event_as_dict)
 
 

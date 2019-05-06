@@ -28,7 +28,7 @@ spec:
               topologyKey: kubernetes.io/hostname
       containers:
         - name: executor
-          image: jlcont/baiexecutor:040519
+          image: jlcont/baiexecutor:050519
           env:
             - name: AVAILABILITY_ZONES
               value:
