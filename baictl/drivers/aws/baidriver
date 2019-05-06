@@ -40,7 +40,6 @@ EOF
 
 create_infra() {
     local cluster_name=""
-    local region=${default_region}
     local prefix_list_id=""
     local validate=true
 
@@ -63,6 +62,7 @@ create_infra() {
 
     #Temporary behavior
     [ -z "$prefix_list_id" ] && printf "Missing required argument --aws-prefix-list-id\n" && return 1
+    [ -z "$region" ] && printf "Missing required argument --aws-region\n" && return 1
 
     _install_msk_aware_terraform_plugin || return 1
 
@@ -116,7 +116,7 @@ _initialize_terraform_backend(){
             printf "S3 bucket in $data_dir/backend.tfvars already exists. Only creating backend.tfvars file\n"
         else
             printf "Creating bootstrap S3 bucket...\n"
-            aws s3 mb s3://${bucket}  --region ${region} || return 1
+            aws s3 mb s3://${bucket} --region ${region} || return 1
         fi
         cat <<-END > ${data_dir}/backend.tfvars
         bucket="${bucket}"
@@ -225,7 +225,6 @@ _install_zookeeper(){
 }
 
 destroy_infra() {
-    local region=$default_region
     for arg in "$@"; do
         case "${arg}" in
         --aws-region=*)
@@ -236,7 +235,11 @@ destroy_infra() {
 
     cd $terraform_dir
 
-    [ -n "$region" ] && vars="${vars} -var region=${region}"
+    if [ -n "$region" ]; then
+        vars="${vars} -var region=${region}"
+    else
+        printf "Missing required argument --aws-region\n" && return 1
+    fi
 
     _initialize_terraform_backend ${region} || return 1
     terraform destroy -auto-approve ${vars}
