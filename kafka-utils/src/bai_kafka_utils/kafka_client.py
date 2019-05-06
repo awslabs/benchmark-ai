@@ -1,8 +1,8 @@
 import logging
+from typing import List, Type, Tuple
 
 import kafka
 from kafka import KafkaConsumer, KafkaProducer
-from typing import List, Type, Tuple
 
 from bai_kafka_utils.events import BenchmarkEvent
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
@@ -16,16 +16,20 @@ class WrongBenchmarkEventTypeException(Exception):
 
 
 # args from kafka
-def create_kafka_consumer_producer(kafka_cfg: KafkaServiceConfig, event_type: Type[BenchmarkEvent]) \
-        -> Tuple[KafkaConsumer, KafkaProducer]:
-    return create_kafka_consumer(kafka_cfg.bootstrap_servers, kafka_cfg.consumer_group_id, kafka_cfg.consumer_topic,
-                                 event_type), create_kafka_producer(kafka_cfg.bootstrap_servers)
+def create_kafka_consumer_producer(
+        kafka_cfg: KafkaServiceConfig, event_type: Type[BenchmarkEvent]
+) -> Tuple[KafkaConsumer, KafkaProducer]:
+    return (
+        create_kafka_consumer(
+            kafka_cfg.bootstrap_servers, kafka_cfg.consumer_group_id, kafka_cfg.consumer_topic, event_type
+        ),
+        create_kafka_producer(kafka_cfg.bootstrap_servers),
+    )
 
 
-def create_kafka_consumer(bootstrap_servers: List[str],
-                          group_id: str,
-                          topic: str,
-                          event_type: Type[BenchmarkEvent]) -> kafka.KafkaConsumer:
+def create_kafka_consumer(
+        bootstrap_servers: List[str], group_id: str, topic: str, event_type: Type[BenchmarkEvent]
+) -> kafka.KafkaConsumer:
     if not issubclass(event_type, BenchmarkEvent):
         raise WrongBenchmarkEventTypeException(f"{str(event_type)} is not a valid benchmark type")
 
@@ -40,12 +44,12 @@ def create_kafka_consumer(bootstrap_servers: List[str],
             logger.exception("Failed to deserialize %s", msg_value)
             return None
 
-    return kafka.KafkaConsumer(topic, bootstrap_servers=bootstrap_servers, group_id=group_id,
-                               value_deserializer=json_deserializer)
+    return kafka.KafkaConsumer(
+        topic, bootstrap_servers=bootstrap_servers, group_id=group_id, value_deserializer=json_deserializer
+    )
 
 
-def create_kafka_producer(
-        bootstrap_servers: List[str]) -> kafka.KafkaProducer:
+def create_kafka_producer(bootstrap_servers: List[str]) -> kafka.KafkaProducer:
     def json_serializer(msg_value):
         return msg_value.to_json().encode(DEFAULT_ENCODING)
 

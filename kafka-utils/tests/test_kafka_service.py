@@ -1,15 +1,15 @@
 import collections
 import copy
-from dataclasses import dataclass
-
-import pytest
 import re
 import time
 import uuid
-from kafka import KafkaConsumer, KafkaProducer
-from pytest import fixture
+from dataclasses import dataclass
 from typing import Optional
 from unittest.mock import MagicMock, Mock, patch
+
+import pytest
+from kafka import KafkaConsumer, KafkaProducer
+from pytest import fixture
 
 from bai_kafka_utils.events import BenchmarkPayload, BenchmarkEvent, BenchmarkDoc, VisitedService
 from bai_kafka_utils.kafka_service import KafkaService, KafkaServiceCallback
@@ -20,7 +20,7 @@ SOME_KEY = "SOME_KEY"
 
 MOCK_UUID = "4B545FB7-66B6-4C24-A681-7F1625313257"
 
-PRODUCER_TOPIC = 'OUT_TOPIC'
+PRODUCER_TOPIC = "OUT_TOPIC"
 
 SERVICE_NAME = "FAKE_SERVICE"
 
@@ -29,7 +29,7 @@ VERSION = "1.0"
 VISIT_TIME = 123
 VISIT_TIME_MS = VISIT_TIME * 1000
 
-CONSUMER_TOPIC = 'IN_TOPIC'
+CONSUMER_TOPIC = "IN_TOPIC"
 
 
 @dataclass
@@ -45,18 +45,24 @@ MockConsumerRecord = collections.namedtuple("FakeConsumerRecord", ["key", "value
 def benchmark_event():
     doc = BenchmarkDoc({"var": "val"}, "var = val", MOCK_MD5)
     payload = MockBenchmarkPayload(foo="FOO", bar=42, toml=doc)
-    return BenchmarkEvent(action_id="ACTION_ID", message_id="MESSAGE_ID", client_id="CLIENT_ID",
-                          client_version="CLIENT_VERSION", client_username="CLIENT_USER", authenticated=False,
-                          tstamp=42, visited=[],
-                          payload=payload)
+    return BenchmarkEvent(
+        action_id="ACTION_ID",
+        message_id="MESSAGE_ID",
+        client_id="CLIENT_ID",
+        client_version="CLIENT_VERSION",
+        client_username="CLIENT_USER",
+        authenticated=False,
+        tstamp=42,
+        visited=[],
+        payload=payload,
+    )
 
 
 @fixture
 def kafka_consumer(benchmark_event: BenchmarkEvent):
     consumer = MagicMock(spec=KafkaConsumer)
 
-    consumer.poll = Mock(return_value={CONSUMER_TOPIC: [
-        MockConsumerRecord(value=benchmark_event, key=SOME_KEY)]})
+    consumer.poll = Mock(return_value={CONSUMER_TOPIC: [MockConsumerRecord(value=benchmark_event, key=SOME_KEY)]})
     return consumer
 
 
@@ -65,8 +71,14 @@ def kafka_consumer_with_invalid_message():
     consumer = MagicMock(spec=KafkaConsumer)
 
     # Add a good one to allow the stop handler to do it's job
-    consumer.poll = Mock(return_value={CONSUMER_TOPIC: [MockConsumerRecord(value=None, key=SOME_KEY),
-                                                        MockConsumerRecord(value=benchmark_event, key=SOME_KEY)]})
+    consumer.poll = Mock(
+        return_value={
+            CONSUMER_TOPIC: [
+                MockConsumerRecord(value=None, key=SOME_KEY),
+                MockConsumerRecord(value=benchmark_event, key=SOME_KEY),
+            ]
+        }
+    )
     return consumer
 
 
@@ -78,29 +90,31 @@ def kafka_producer():
 @fixture
 def simple_kafka_service(kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer):
     callbacks = []
-    kafka_service = KafkaService(SERVICE_NAME, VERSION, PRODUCER_TOPIC, callbacks, kafka_consumer,
-                                 kafka_producer)
+    kafka_service = KafkaService(SERVICE_NAME, VERSION, PRODUCER_TOPIC, callbacks, kafka_consumer, kafka_producer)
     return kafka_service
 
 
 def test_dont_add_to_running(simple_kafka_service: KafkaService):
     simple_kafka_service._running = True
-    with pytest.raises(KafkaService.LoopAlreadyRunningException,
-                       match=re.escape(KafkaService._CANNOT_UPDATE_CALLBACKS)):
+    with pytest.raises(
+            KafkaService.LoopAlreadyRunningException, match=re.escape(KafkaService._CANNOT_UPDATE_CALLBACKS)
+    ):
         simple_kafka_service.add_callback(MagicMock(spec=KafkaServiceCallback))
 
 
 def test_dont_remove_from_running(simple_kafka_service: KafkaService):
     simple_kafka_service._running = True
-    with pytest.raises(KafkaService.LoopAlreadyRunningException,
-                       match=re.escape(KafkaService._CANNOT_UPDATE_CALLBACKS)):
+    with pytest.raises(
+            KafkaService.LoopAlreadyRunningException, match=re.escape(KafkaService._CANNOT_UPDATE_CALLBACKS)
+    ):
         simple_kafka_service.remove_callback(MagicMock(spec=KafkaServiceCallback))
 
 
 def test_kafka_service_started_twice(simple_kafka_service: KafkaService):
     simple_kafka_service._running = True
-    with pytest.raises(KafkaService.LoopAlreadyRunningException,
-                       match=re.escape(KafkaService._LOOP_IS_ALREADY_RUNNING)):
+    with pytest.raises(
+            KafkaService.LoopAlreadyRunningException, match=re.escape(KafkaService._LOOP_IS_ALREADY_RUNNING)
+    ):
         simple_kafka_service.run_loop()
 
 
@@ -113,8 +127,7 @@ def test_kafka_service_stop_before_run(simple_kafka_service: KafkaService):
 def test_invalid_message_ignored(kafka_consumer_with_invalid_message: KafkaConsumer, kafka_producer: KafkaProducer):
     mock_callback = Mock(spec=KafkaServiceCallback)
 
-    kafka_service = _create_kafka_service([mock_callback],
-                                          kafka_consumer_with_invalid_message, kafka_producer)
+    kafka_service = _create_kafka_service([mock_callback], kafka_consumer_with_invalid_message, kafka_producer)
     kafka_service.run_loop()
 
     # Nothing done for broken message
@@ -159,8 +172,10 @@ def test_immutable_callbacks(kafka_consumer: KafkaConsumer, kafka_producer: Kafk
 # The patched objects are passed in the reverse order
 @patch.object(time, "time")
 @patch.object(uuid, "uuid4")
-def test_message_sent(mock_uuid4, mock_time, kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer,
-                      benchmark_event: BenchmarkEvent):
+def test_message_sent(
+        mock_uuid4, mock_time, kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer,
+        benchmark_event: BenchmarkEvent
+):
     result_event = copy.deepcopy(benchmark_event)
     expected_event = copy.deepcopy(result_event)
 
@@ -189,7 +204,6 @@ def _create_kafka_service(callbacks, kafka_consumer, kafka_producer):
         def cleanup(self):
             pass
 
-    kafka_service = KafkaService(SERVICE_NAME, VERSION, PRODUCER_TOPIC, callbacks, kafka_consumer,
-                                 kafka_producer)
+    kafka_service = KafkaService(SERVICE_NAME, VERSION, PRODUCER_TOPIC, callbacks, kafka_consumer, kafka_producer)
     kafka_service.add_callback(StopKafkaServiceCallback())
     return kafka_service

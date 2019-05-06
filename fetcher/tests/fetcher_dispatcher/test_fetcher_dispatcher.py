@@ -52,14 +52,22 @@ def benchmark_event_without_datasets(benchmark_doc: BenchmarkDoc) -> BenchmarkEv
 
 
 def get_benchmark_event(payload):
-    return BenchmarkEvent(action_id="ACTION_ID", message_id="MESSAGE_ID", client_id="CLIENT_ID",
-                          client_version="CLIENT_VERSION", client_username="CLIENT_USER", authenticated=False,
-                          tstamp=42, visited=[],
-                          payload=payload)
+    return BenchmarkEvent(
+        action_id="ACTION_ID",
+        message_id="MESSAGE_ID",
+        client_id="CLIENT_ID",
+        client_version="CLIENT_VERSION",
+        client_username="CLIENT_USER",
+        authenticated=False,
+        tstamp=42,
+        visited=[],
+        payload=payload,
+    )
 
 
-def test_fetcher_event_handler_fetch(data_set_manager: DataSetManager, benchmark_event_with_datasets: BenchmarkEvent,
-                                     kafka_service: KafkaService):
+def test_fetcher_event_handler_fetch(
+        data_set_manager: DataSetManager, benchmark_event_with_datasets: BenchmarkEvent, kafka_service: KafkaService
+):
     fetcher_callback = FetcherEventHandler(data_set_manager, S3_BUCKET)
     event_to_send_sync = fetcher_callback.handle_event(benchmark_event_with_datasets, kafka_service)
 
@@ -77,9 +85,9 @@ def test_fetcher_event_handler_fetch(data_set_manager: DataSetManager, benchmark
     kafka_service.send_event.assert_called_once()
 
 
-def test_fetcher_event_handler_nothing_to_do(data_set_manager: DataSetManager,
-                                             benchmark_event_without_datasets: BenchmarkEvent,
-                                             kafka_service: KafkaService):
+def test_fetcher_event_handler_nothing_to_do(
+        data_set_manager: DataSetManager, benchmark_event_without_datasets: BenchmarkEvent, kafka_service: KafkaService
+):
     fetcher_callback = FetcherEventHandler(data_set_manager, S3_BUCKET)
     event_to_send_sync = fetcher_callback.handle_event(benchmark_event_without_datasets, kafka_service)
     assert event_to_send_sync == benchmark_event_without_datasets
@@ -111,11 +119,18 @@ def test_create_fetcher_dispatcher(mockKafkaConsumer, mockKafkaProducer, mock_cr
     mock_data_set_manager = MagicMock(spec=DataSetManager)
     mock_create_data_set_manager.return_value = mock_data_set_manager
 
-    common_cfg = KafkaServiceConfig(consumer_topic=CONSUMER_TOPIC, producer_topic=PRODUCER_TOPIC,
-                                    bootstrap_servers=BOOTSTRAP_SERVERS,
-                                    logging_level=LOGGING_LEVEL)
-    fetcher_cfg = FetcherServiceConfig(zookeeper_ensemble_hosts=ZOOKEEPER_ENSEMBLE_HOSTS, s3_data_set_bucket=S3_BUCKET,
-                                       fetcher_job_image=FETCHER_JOB_IMAGE, fetcher_job_node_selector={})
+    common_cfg = KafkaServiceConfig(
+        consumer_topic=CONSUMER_TOPIC,
+        producer_topic=PRODUCER_TOPIC,
+        bootstrap_servers=BOOTSTRAP_SERVERS,
+        logging_level=LOGGING_LEVEL,
+    )
+    fetcher_cfg = FetcherServiceConfig(
+        zookeeper_ensemble_hosts=ZOOKEEPER_ENSEMBLE_HOSTS,
+        s3_data_set_bucket=S3_BUCKET,
+        fetcher_job_image=FETCHER_JOB_IMAGE,
+        fetcher_job_node_selector={},
+    )
     fetcher_service = create_fetcher_dispatcher(common_cfg, fetcher_cfg)
 
     mockKafkaConsumer.assert_called_once()

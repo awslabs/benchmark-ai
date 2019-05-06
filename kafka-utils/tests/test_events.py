@@ -2,8 +2,15 @@ import json
 
 import pytest
 
-from bai_kafka_utils.events import DataSet, FetcherPayload, ExecutorPayload, BenchmarkDoc, \
-    VisitedService, FetcherBenchmarkEvent, ExecutorBenchmarkEvent
+from bai_kafka_utils.events import (
+    DataSet,
+    FetcherPayload,
+    ExecutorPayload,
+    BenchmarkDoc,
+    VisitedService,
+    FetcherBenchmarkEvent,
+    ExecutorBenchmarkEvent,
+)
 
 
 @pytest.fixture
@@ -17,13 +24,7 @@ def base_event_as_dict():
         "authenticated": True,
         "tstamp": 150000,
         "visited": [],
-        "payload": {
-            "toml": {
-                "contents": {"name": "doc"},
-                "sha1": "sha1",
-                "doc": "dst"
-            }
-        }
+        "payload": {"toml": {"contents": {"name": "doc"}, "sha1": "sha1", "doc": "dst"}},
     }
 
 
@@ -55,17 +56,17 @@ def test_data_set_dont_fail_unknown_fields():
 
 # This was seen in the wild!
 def test_crazy_json():
-    json = '{"toml":{"contents": {"name": "doc"},"sha1": "sha1","doc": "dst"}, ' \
-           '"datasets" : [ [ {"src" : "s3://bucket/imagenet/train"}, { } ] ]}'
+    json = (
+        '{"toml":{"contents": {"name": "doc"},"sha1": "sha1","doc": "dst"}, '
+        '"datasets" : [ [ {"src" : "s3://bucket/imagenet/train"}, { } ] ]}'
+    )
     with pytest.raises(TypeError):
         FetcherPayload.from_json(json)
 
 
 def test_fetcher_event(base_event_as_dict):
     fetcher_event_as_dict = base_event_as_dict
-    fetcher_event_as_dict["payload"]["datasets"] = [
-        {"src": "http://foo.com", "md5": "None", "dst": "None"}
-    ]
+    fetcher_event_as_dict["payload"]["datasets"] = [{"src": "http://foo.com", "md5": "None", "dst": "None"}]
     event_as_json_string = json.dumps(fetcher_event_as_dict)
 
     event = FetcherBenchmarkEvent.from_json(event_as_json_string)
@@ -90,24 +91,25 @@ def test_executor_event(base_event_as_dict):
 
 
 def test_benchmark_doc_all():
-    json = '{"contents":{"foo":"bar"},' \
-           ' "verified": false, "descriptor_filename":"foo.toml", "sha1":"SHA1", "doc":"BODY"}'
+    json = (
+        '{"contents":{"foo":"bar"},'
+        ' "verified": false, "descriptor_filename":"foo.toml", "sha1":"SHA1", "doc":"BODY"}'
+    )
     benchmark_doc = BenchmarkDoc.from_json(json)
-    expected_doc = \
-        BenchmarkDoc(contents={"foo": "bar"}, verified=False, descriptor_filename="foo.toml", sha1="SHA1", doc="BODY")
+    expected_doc = BenchmarkDoc(
+        contents={"foo": "bar"}, verified=False, descriptor_filename="foo.toml", sha1="SHA1", doc="BODY"
+    )
     assert benchmark_doc == expected_doc
 
 
 def test_benchmark_doc_missing_sha1():
-    json = '{"contents":{"foo":"bar"},' \
-           ' "verified": false, "descriptor_filename":"foo.toml", "doc":"BODY"}'
+    json = '{"contents":{"foo":"bar"},' ' "verified": false, "descriptor_filename":"foo.toml", "doc":"BODY"}'
     with pytest.raises(KeyError):
         BenchmarkDoc.from_json(json)
 
 
 def test_benchmark_doc_missing_optional():
-    json = '{"contents":{"foo":"bar"},' \
-           ' "sha1":"SHA1", "doc":"BODY"}'
+    json = '{"contents":{"foo":"bar"},' ' "sha1":"SHA1", "doc":"BODY"}'
     benchmark_doc = BenchmarkDoc.from_json(json)
     assert benchmark_doc == BenchmarkDoc(contents={"foo": "bar"}, sha1="SHA1", doc="BODY")
 
@@ -122,7 +124,7 @@ def test_invalid_payload_type(base_event_as_dict):
     assert e.match("dataset")
 
 
-BIG_JSON = '''{
+BIG_JSON = """{
                "date": "Thu May 02 16:15:42 UTC 2019",
                "authenticated": false,
                "payload": {
@@ -198,48 +200,37 @@ BIG_JSON = '''{
                "client_sha1": "c05467317b6765535f1ec60f0aee812d39b35dd2",
                "client_id": "97e7eb322342626974fb171fc5793514b0aea789",
                "client_version": "0.1.0-481dad2"
-           }'''
+           }"""
 
-EXPECTED_CONTENTS = {"spec_version": "0.1.0", "data": {
-    "sources": [{"path": "~/data/tf-imagenet/", "uri": "s3://bucket/imagenet/train"},
-                {"path": "~/data/tf-imagenet/", "uri": "s3://bucket/imagenet/validation"}], "id": "imagenet"},
-                     "env": {"privileged": False,
-                             "extended_shm": True,
-                             "docker_image": "user/repo:tag"},
-                     "info": {
-                         "task_name": "Example benchmark",
-                         "scheduling": "single_run",
-                         "description": " Full job description."},
-                     "hardware": {
-                         "distributed": {
-                             "num_instances": 3},
-                         "strategy": "horovod",
-                         "instance_type": "p3.8xlarge"},
-                     "ml": {
-                         "args": "--model=resnet50_v2 --batch-size=32",
-                         "benchmark_code": "python /root/train.sh"}}
+EXPECTED_CONTENTS = {
+    "spec_version": "0.1.0",
+    "data": {
+        "sources": [
+            {"path": "~/data/tf-imagenet/", "uri": "s3://bucket/imagenet/train"},
+            {"path": "~/data/tf-imagenet/", "uri": "s3://bucket/imagenet/validation"},
+        ],
+        "id": "imagenet",
+    },
+    "env": {"privileged": False, "extended_shm": True, "docker_image": "user/repo:tag"},
+    "info": {"task_name": "Example benchmark", "scheduling": "single_run", "description": " Full job description."},
+    "hardware": {"distributed": {"num_instances": 3}, "strategy": "horovod", "instance_type": "p3.8xlarge"},
+    "ml": {"args": "--model=resnet50_v2 --batch-size=32", "benchmark_code": "python /root/train.sh"},
+}
 
-EXPECTED_DOC = BenchmarkDoc(doc="IyBCZW5jaG1hcYS90Zi1pbWFnZW5ldC8iCg==",
-                            sha1="be60cb85620fa041c1bfabd9a9b1c8c1d6be1c78", contents=EXPECTED_CONTENTS, verified=True,
-                            descriptor_filename="example_descriptor2.toml")
+EXPECTED_DOC = BenchmarkDoc(
+    doc="IyBCZW5jaG1hcYS90Zi1pbWFnZW5ldC8iCg==",
+    sha1="be60cb85620fa041c1bfabd9a9b1c8c1d6be1c78",
+    contents=EXPECTED_CONTENTS,
+    verified=True,
+    descriptor_filename="example_descriptor2.toml",
+)
 
 EXPECTED_VISITED = [
-    VisitedService(
-        svc="baictl-client",
-        tstamp="@@TSTAMP@@",
-        version="0.1.0-481dad2"
-    ),
-    VisitedService(
-        svc="bai-bff",
-        tstamp=1556814924121,
-        version="0.0.2"
-    )
+    VisitedService(svc="baictl-client", tstamp="@@TSTAMP@@", version="0.1.0-481dad2"),
+    VisitedService(svc="bai-bff", tstamp=1556814924121, version="0.0.2"),
 ]
 
-EXPECTED_DATASETS = [
-    DataSet("s3://bucket/imagenet/train"),
-    DataSet("s3://bucket/imagenet/validation")
-]
+EXPECTED_DATASETS = [DataSet("s3://bucket/imagenet/train"), DataSet("s3://bucket/imagenet/validation")]
 
 EXPECTED_EVENT = FetcherBenchmarkEvent(
     action_id="ffea52eb-c24b-4dd0-b32e-61230db34ad5",
@@ -250,8 +241,7 @@ EXPECTED_EVENT = FetcherBenchmarkEvent(
     authenticated=False,
     tstamp=1556814924121,
     visited=EXPECTED_VISITED,
-    payload=FetcherPayload(datasets=EXPECTED_DATASETS,
-                           toml=EXPECTED_DOC)
+    payload=FetcherPayload(datasets=EXPECTED_DATASETS, toml=EXPECTED_DOC),
 )
 
 

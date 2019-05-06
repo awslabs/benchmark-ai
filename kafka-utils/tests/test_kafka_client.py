@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import patch, MagicMock, ANY
+
+import pytest
 
 import bai_kafka_utils
 from bai_kafka_utils.events import BenchmarkEvent, BenchmarkPayload
@@ -17,8 +18,9 @@ WRONG_SCHEMA_JSON = '{"foo":"bar"}'.encode(DEFAULT_ENCODING)
 @patch.object(bai_kafka_utils.kafka_client.kafka, "KafkaConsumer")
 def test_kafka_consumer_pass_through(mockKafkaConsumer):
     create_kafka_consumer(BOOTSTRAP_SERVERS, GROUP_ID, TOPIC, BenchmarkEvent)
-    mockKafkaConsumer.assert_called_with(TOPIC, bootstrap_servers=BOOTSTRAP_SERVERS, group_id=GROUP_ID,
-                                         value_deserializer=ANY)
+    mockKafkaConsumer.assert_called_with(
+        TOPIC, bootstrap_servers=BOOTSTRAP_SERVERS, group_id=GROUP_ID, value_deserializer=ANY
+    )
 
 
 @patch.object(bai_kafka_utils.kafka_client.kafka, "KafkaConsumer")
