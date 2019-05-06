@@ -419,17 +419,18 @@ run_benchmark() {
     [ -z "$descriptor" ] && printf "Missing required argument --descriptor\n" && return 1
 
     (
-    local bash_src=$(readlink -f ${BASH_SOURCE})
-    local src_dir=$(dirname "${bash_src}")
+        local bash_src=$(readlink -f ${BASH_SOURCE})
+        local src_dir=$(dirname "${bash_src}")
 
-    export PYTHONPATH=${src_dir}/../../descriptor-file/src:${src_dir}/../../../kafka-utils/src
+        export PYTHONPATH=${src_dir}/../../descriptor-file/src:${src_dir}/../../../kafka-utils/src
 
-    cd $terraform_dir > /dev/null
-    local azs=$(terraform output -json --state=${terraform_state} availability_zones | jq -r '.value | join(" ")')
+        pushd ${terraform_dir} > /dev/null
+        local azs=$(terraform output -json --state=${terraform_state} availability_zones | jq -r '.value | join(" ")')
+        popd
 
-    [ -z "${azs}" ] && printf "Availability zones could not be identified from terraform state %s\n" "${terraform_state}" && return 1
+        [ -z "${azs}" ] && printf "Availability zones could not be identified from terraform state %s\n" "${terraform_state}" && return 1
 
-    python3 ${src_dir}/../../descriptor-file/src/transpiler/__main__.py $(pwd)/$descriptor --availability-zones ${azs} | $kubectl apply -f -
+        python3 ${src_dir}/../../descriptor-file/src/transpiler/__main__.py ${descriptor} --availability-zones ${azs} | ${kubectl} apply -f -
     )
 }
 
