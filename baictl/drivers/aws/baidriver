@@ -236,7 +236,7 @@ destroy_infra() {
     cd $terraform_dir
 
     if [ -n "$region" ]; then
-        vars="${vars} -var region=${region} -var data_dir=${data_dir}"
+        vars="${vars} -var region=${region}"
     else
         printf "Missing required argument --aws-region\n" && return 1
     fi
