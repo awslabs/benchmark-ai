@@ -26,11 +26,11 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.labels['mpi_role_type']
-        image: test/docker:image
+        image: stsukrov/puller
         args:
-        - s3_region
+        - eu-west-1
         - puller-data
-        - object-name/dir,700,p0:object-name/dir,700,p0
+        - object-name/dir,777,p0:object-name/dir,777,p0
         volumeMounts:
         - name: p0
           mountPath: /data/p0

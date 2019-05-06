@@ -14,6 +14,7 @@ dependencies:
   - ConfigArgParse >= 0.13
   - python-crontab >= 2.3
   - flake8
+  - pip
   - pip:
     - dataclasses-json >= 0.2
     - dacite

@@ -14,15 +14,13 @@ def main(argv=None):
     descriptor_data = toml.load(input.descriptor)
 
     # TODO: Pass this as an argument
-    fetched_data_sources = descriptor_data.get('data', {}).get('sources', [])
+    fetched_data_sources = descriptor_data.get("data", {}).get("sources", [])
 
-    yaml_string, _ = create_job_yaml_spec(descriptor_data,
-                                          transpiler_config,
-                                          fetched_data_sources)
+    yaml_string, _ = create_job_yaml_spec(descriptor_data, transpiler_config, fetched_data_sources)
 
     if input.filename:
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        with open(os.path.join(current_dir, input.filename), 'w') as f:
+        with open(os.path.join(current_dir, input.filename), "w") as f:
             f.write(yaml_string)
     else:
         print(yaml_string)
@@ -31,17 +29,13 @@ def main(argv=None):
 def get_input_args(argv):
     parser = ArgumentParser()
 
-    parser.add_argument('--descriptor',
-                        help='Relative path to descriptor file',
-                        required=True)
+    parser.add_argument("--descriptor", help="Relative path to descriptor file", required=True)
 
-    parser.add_argument('-f', '--filename',
-                        help='Output to file. If not specified, output to stdout',
-                        default=None)
+    parser.add_argument("-f", "--filename", help="Output to file. If not specified, output to stdout", default=None)
 
     parsed_args, _ = parser.parse_known_args(argv)
     return parsed_args
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

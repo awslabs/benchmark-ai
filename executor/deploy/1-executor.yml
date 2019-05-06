@@ -31,13 +31,11 @@ spec:
           image: jlcont/baiexecutor:040519
           env:
             - name: AVAILABILITY_ZONES
-              value: "us-east-1a us-east-1b us-east-1c"
-              # TODO: Uncomment lines below and remove hardcoded value once we sort out why
-              # terraform-outputs doesn't contain this in devo
-#              valueFrom:
-#                configMapKeyRef:
-#                  name: outputs-infrastructure
-#                  key: availability_zones
+              value:
+              valueFrom:
+                configMapKeyRef:
+                  name: outputs-infrastructure
+                  key: availability_zones
             - name: KAFKA_BOOTSTRAP_SERVERS
               valueFrom:
                 configMapKeyRef:

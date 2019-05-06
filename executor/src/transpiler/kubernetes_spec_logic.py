@@ -55,6 +55,7 @@ class KubernetesRootObjectHelper:
     The yaml file is loaded/dumped using RoundTripLoader and RoundTripDumper to preserve the order of fields.
     While it doesn't break anything, it keeps the generated yaml closer to the input template.
     """
+
     def __init__(self, contents: str):
         """
         :param contents: The parsed YAML contents of a full Kubernetes object, as a Dict
@@ -64,12 +65,12 @@ class KubernetesRootObjectHelper:
 
         # TODO: Improve generalization here
         for d in docs:
-            if d['kind'] == 'ConfigMap':
+            if d["kind"] == "ConfigMap":
                 self.config_maps.append(addict.Dict(d))
-            elif d['kind'] in ['Job', 'MPIJob']:
+            elif d["kind"] in ["Job", "MPIJob"]:
                 self._root = addict.Dict(d)
             else:
-                raise ValueError("Kubernetes yaml object is of an unsupported kind type: {}".format(d['kind']))
+                raise ValueError("Kubernetes yaml object is of an unsupported kind type: {}".format(d["kind"]))
 
         self._validate()
 
@@ -96,7 +97,7 @@ class KubernetesRootObjectHelper:
         elif self._root.spec.jobTemplate:
             return self._root.spec.jobTemplate.spec
         else:
-            raise KeyError(f'Cannot find pod spec. root object is {self._root}')
+            raise KeyError(f"Cannot find pod spec. root object is {self._root}")
 
     def find_container(self, container_name: str) -> Container:
         """
@@ -110,10 +111,11 @@ class KubernetesRootObjectHelper:
         for container in itertools.chain(containers, init_containers):
             if container.name == container_name:
                 return container
-        raise ValueError("Container {} not found. Available containers are: {}".format(
-            container_name,
-            [c.name for c in itertools.chain(containers, init_containers)]
-        ))
+        raise ValueError(
+            "Container {} not found. Available containers are: {}".format(
+                container_name, [c.name for c in itertools.chain(containers, init_containers)]
+            )
+        )
 
     def remove_container(self, container_name: str):
         """
@@ -130,31 +132,31 @@ class KubernetesRootObjectHelper:
                     container_list.remove(container)
                     return
 
-        raise ValueError("Container {} not found. Available containers are: {}".format(
-            container_name,
-            [c.name for c in itertools.chain(containers, init_containers)]
-        ))
+        raise ValueError(
+            "Container {} not found. Available containers are: {}".format(
+                container_name, [c.name for c in itertools.chain(containers, init_containers)]
+            )
+        )
 
     def find_config_map(self, name) -> ConfigMap:
         for cm in self.config_maps:
             if cm.metadata.name == name:
                 return cm
-        raise ValueError("ConfigMap {} not found. Available ones are: {}".format(
-            name,
-            [cm.metadata.name for cm in self.config_maps]
-        ))
+        raise ValueError(
+            "ConfigMap {} not found. Available ones are: {}".format(name, [cm.metadata.name for cm in self.config_maps])
+        )
 
     def to_cronjob(self, scheduling: str):
         """
         Turns a Job YAML spec into a CronJob one.
         :param scheduling: cron expression indicating when the job is supposed to run
         """
-        if self._root.kind == 'Job':
+        if self._root.kind == "Job":
             # TODO: move this values to config file when PR112 is merged
-            self._root.apiVersion = 'batch/v1beta1'
-            self._root.kind = 'CronJob'
+            self._root.apiVersion = "batch/v1beta1"
+            self._root.kind = "CronJob"
             self._root.spec.schedule = scheduling
-            self._root.spec.jobTemplate = self._root.spec.pop('template')
+            self._root.spec.jobTemplate = self._root.spec.pop("template")
         else:
             raise ValueError(f"Error converting to CronJob. Root is of kind {self._root.kind} (expected 'Job')")
 

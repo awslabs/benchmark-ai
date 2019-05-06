@@ -1,4 +1,3 @@
-import json
 import textwrap
 import uuid
 
@@ -31,9 +30,7 @@ def base_data_sources():
 
 @pytest.fixture
 def bai_environment_info():
-    return EnvironmentInfo(
-        availability_zones=["us-east-1a", "us-east-1b", "us-east-1c"]
-    )
+    return EnvironmentInfo(availability_zones=["us-east-1a", "us-east-1b", "us-east-1c"])
 
 
 @pytest.fixture
@@ -41,38 +38,34 @@ def fetched_data_sources(base_data_sources):
     sources = []
 
     for source in base_data_sources:
-        sources.append(DataSet(
-            src=source['src'],
-            md5=source['md5'],
-            dst=source['puller_uri'],
-        ))
-
+        sources.append(DataSet(src=source["src"], md5=source["md5"], dst=source["puller_uri"]))
     return sources
 
 
 @pytest.fixture
 def config_args(shared_datadir):
-    required_args = "--descriptor=descriptor.toml --availability-zones=us-east-1a us-east-1b us-east-1c --kubeconfig=kubeconfig/path"
+    required_args = "--descriptor=descriptor.toml --availability-zones=us-east-1a,us-east-1b,us-east-1c --kubeconfig=kubeconfig/path"
     return f'{required_args} -c {str(shared_datadir / "default_config.yaml")}'
 
 
 @pytest.fixture
 def descriptor_config():
-    config_values = {'valid_strategies': ["single_node", "horovod"]}
+    config_values = {"valid_strategies": ["single_node", "horovod"]}
 
     return DescriptorConfig(**config_values)
 
 
 @pytest.fixture
 def bai_config():
-    return BaiConfig(puller_mount_chmod="700",
-                     puller_s3_region="s3_region",
-                     puller_docker_image="test/docker:image")
+    return BaiConfig(puller_mount_chmod="700", puller_s3_region="s3_region", puller_docker_image="test/docker:image")
 
 
 @pytest.fixture
 def descriptor(descriptor_config, base_data_sources):
-    return Descriptor(toml.loads(textwrap.dedent(f"""\
+    return Descriptor(
+        toml.loads(
+            textwrap.dedent(
+                f"""\
         spec_version = '0.1.0'
         [info]
         task_name = 'Title'
@@ -95,28 +88,29 @@ def descriptor(descriptor_config, base_data_sources):
         [[data.sources]]
         src = '{base_data_sources[1]['src']}'
         path = '{base_data_sources[1]['path']}'
-    """)), descriptor_config)
+    """
+            )
+        ),
+        descriptor_config,
+    )
 
 
 @pytest.fixture
 def benchmark_event(shared_datadir):
     descriptor_path = str(shared_datadir / "hello-world.toml")
     descriptor_as_dict = toml.load(descriptor_path)
-    doc = BenchmarkDoc(
-        contents=json.dumps(descriptor_as_dict),
-        md5='MD5',
-        doc='doc'
+    doc = BenchmarkDoc(contents=descriptor_as_dict, sha1="SHA1", doc="doc")
+
+    payload = FetcherPayload(toml=doc, datasets=[])
+
+    return BenchmarkEvent(
+        action_id=uuid.uuid4().hex,
+        message_id="MESSAGE_ID",
+        client_id="CLIENT_ID",
+        client_version="CLIENT_VERSION",
+        client_username="client_username",
+        authenticated=False,
+        tstamp=42,
+        visited=[],
+        payload=payload,
     )
-
-    payload = FetcherPayload(toml=doc,
-                             data_sets=[])
-
-    return BenchmarkEvent(request_id=uuid.uuid4().hex,
-                          message_id="MESSAGE_ID",
-                          client_id="CLIENT_ID",
-                          client_version="CLIENT_VERSION",
-                          client_user="CLIENT_USER",
-                          authenticated=False,
-                          date=42,
-                          visited=[],
-                          payload=payload)

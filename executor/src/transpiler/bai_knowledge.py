@@ -21,14 +21,14 @@ class BaiKubernetesObjectBuilder:
     """
 
     def __init__(
-            self,
-            descriptor: Descriptor,
-            config: BaiConfig,
-            data_sources: List[BaiDataSource],
-            config_template: ConfigTemplate,
-            *,
-            environment_info: EnvironmentInfo,
-            random_object: random.Random = None
+        self,
+        descriptor: Descriptor,
+        config: BaiConfig,
+        data_sources: List[BaiDataSource],
+        config_template: ConfigTemplate,
+        *,
+        environment_info: EnvironmentInfo,
+        random_object: random.Random = None,
     ):
         """
         Reads the values from the descriptor file into a settings dictionary
@@ -51,14 +51,11 @@ class BaiKubernetesObjectBuilder:
         availability_zone = random_object.choice(environment_info.availability_zones)
 
         config_template.feed(vars(self.descriptor))
-        config_template.feed({
-            "job_id": self.job_id,
-            "availability_zone": availability_zone,
-        })
+        config_template.feed({"job_id": self.job_id, "availability_zone": availability_zone})
         self.root = config_template.build()
         self.add_volumes(data_sources)
 
-        if descriptor.scheduling != 'single_run':
+        if descriptor.scheduling != "single_run":
             self.root.to_cronjob(descriptor.scheduling)
 
     def add_volumes(self, data_sources: List[BaiDataSource]):
@@ -78,14 +75,12 @@ class BaiKubernetesObjectBuilder:
         pod_spec_volumes = self.root.get_pod_spec().volumes
         container_volume_mounts = self.root.find_container("benchmark").volumeMounts
 
-        shared_memory_vol = 'dshm'
+        shared_memory_vol = "dshm"
 
-        shm_vol = Volume(name=shared_memory_vol,
-                         emptyDir=EmptyDirVolumeSource(medium="Memory"))
+        shm_vol = Volume(name=shared_memory_vol, emptyDir=EmptyDirVolumeSource(medium="Memory"))
         pod_spec_volumes.append(shm_vol)
 
-        shm_vol_mount = VolumeMount(name=shared_memory_vol,
-                                    mountPath='/dev/shm')
+        shm_vol_mount = VolumeMount(name=shared_memory_vol, mountPath="/dev/shm")
         container_volume_mounts.append(shm_vol_mount)
 
     def dump_yaml_string(self):
@@ -99,7 +94,7 @@ class BaiKubernetesObjectBuilder:
         If a benchmark command was specified, command and args are inserted in the container's command field.
         If only args are provided, they are inserted in the container's args field.
         """
-        benchmark_container = self.root.find_container('benchmark')
+        benchmark_container = self.root.find_container("benchmark")
 
         def split_args(command: str) -> List[str]:
             if not command:
@@ -110,15 +105,15 @@ class BaiKubernetesObjectBuilder:
             cmd = split_args(self.descriptor.benchmark_code)
             args = split_args(self.descriptor.ml_args)
             benchmark_container.command = cmd + args
-            benchmark_container.pop('args', None)
+            benchmark_container.pop("args", None)
 
         elif self.descriptor.ml_args:
             benchmark_container.args = split_args(self.descriptor.ml_args)
-            benchmark_container.pop('command', None)
+            benchmark_container.pop("command", None)
 
         else:
-            benchmark_container.pop('command', None)
-            benchmark_container.pop('args', None)
+            benchmark_container.pop("command", None)
+            benchmark_container.pop("args", None)
 
     # TODO: Move this method into the Kubernetes object
     def add_benchmark_cmd_to_config_map(self):
@@ -132,7 +127,7 @@ class BaiKubernetesObjectBuilder:
             # implemented
             benchmark_cmd = yaml.scalarstring.PreservedScalarString(benchmark_cmd)
 
-            entrypoint_config_map = self.root.find_config_map(f'entrypoint-{self.job_id}')
+            entrypoint_config_map = self.root.find_config_map(f"entrypoint-{self.job_id}")
             entrypoint_config_map.data.entrypoint = benchmark_cmd
 
         # If no benchmark_code is specified, we don't need to use the configmap as entrypoint
@@ -150,10 +145,9 @@ class BaiKubernetesObjectBuilder:
         data_vols = {}
 
         for idx, dest in enumerate(destination_paths):
-            name = 'p' + str(idx)
-            puller_path = f'/data/{name}'
-            data_vols[dest] = {'name': name,
-                               'puller_path': puller_path}
+            name = "p" + str(idx)
+            puller_path = f"/data/{name}"
+            data_vols[dest] = {"name": name, "puller_path": puller_path}
 
         return data_vols
 
@@ -161,17 +155,16 @@ class BaiKubernetesObjectBuilder:
         volumes = []
 
         for vol in data_volumes.values():
-            volumes.append(Volume(name=vol['name'],
-                                  hostPath=HostPath(path=f'/{vol["name"]}',
-                                                    type='DirectoryOrCreate')))
+            volumes.append(
+                Volume(name=vol["name"], hostPath=HostPath(path=f'/{vol["name"]}', type="DirectoryOrCreate"))
+            )
         return volumes
 
     def _get_container_volume_mounts(self, data_volumes) -> List[VolumeMount]:
         vol_mounts = []
 
         for dest_path, vol in data_volumes.items():
-            vol_mounts.append(VolumeMount(name=vol['name'],
-                                          mountPath=dest_path))
+            vol_mounts.append(VolumeMount(name=vol["name"], mountPath=dest_path))
         return vol_mounts
 
     def _update_data_puller(self, data_volumes, data_sources: List[BaiDataSource]):
@@ -189,12 +182,11 @@ class BaiKubernetesObjectBuilder:
         for s in data_sources:
             s3_objects.append(
                 "{object},{chmod},{path_name}".format(
-                    object=s.object,
-                    chmod=self.config.puller_mount_chmod,
-                    path_name=data_volumes[s.path]['name'])
+                    object=s.object, chmod=self.config.puller_mount_chmod, path_name=data_volumes[s.path]["name"]
+                )
             )
 
-        puller_args = [self.config.puller_s3_region, data_sources[0].bucket, ':'.join(s3_objects)]
+        puller_args = [self.config.puller_s3_region, data_sources[0].bucket, ":".join(s3_objects)]
 
         vol_mounts = self._get_puller_volume_mounts(data_volumes)
         data_puller.image = self.config.puller_docker_image
@@ -208,25 +200,25 @@ class BaiKubernetesObjectBuilder:
         vol_mounts = []
 
         for vol in data_volumes.values():
-            vol_mounts.append(VolumeMount(name=vol['name'],
-                                          mountPath=vol['puller_path']))
+            vol_mounts.append(VolumeMount(name=vol["name"], mountPath=vol["puller_path"]))
 
         return vol_mounts
 
 
-def create_bai_data_sources(fetched_data_sources: List[DataSet],
-                            descriptor: Descriptor) -> List[BaiDataSource]:
+def create_bai_data_sources(fetched_data_sources: List[DataSet], descriptor: Descriptor) -> List[BaiDataSource]:
     def find_destination_path(fetched_source: DataSet) -> str:
-        return descriptor.find_data_source(fetched_source.src)['path']
+        return descriptor.find_data_source(fetched_source.src)["path"]
 
     return [BaiDataSource(fetched, find_destination_path(fetched)) for fetched in fetched_data_sources]
 
 
-def create_bai_k8s_builder(descriptor: Descriptor,
-                           bai_config: BaiConfig,
-                           fetched_data_sources: List[DataSet],
-                           environment_info: EnvironmentInfo,
-                           extra_bai_config_args=None) -> BaiKubernetesObjectBuilder:
+def create_bai_k8s_builder(
+    descriptor: Descriptor,
+    bai_config: BaiConfig,
+    fetched_data_sources: List[DataSet],
+    environment_info: EnvironmentInfo,
+    extra_bai_config_args=None,
+) -> BaiKubernetesObjectBuilder:
     """
     Builds a BaiKubernetesObjectBuilder object
     :param descriptor: The descriptor.
@@ -236,10 +228,7 @@ def create_bai_k8s_builder(descriptor: Descriptor,
     :param extra_bai_config_args: An optional Dict which will be forwarded to the `BaiConfig` object created.
     :return:
     """
-    template_files = {
-        'single_node': "job_single_node.yaml",
-        'horovod': "mpi_job_horovod.yaml",
-    }
+    template_files = {"single_node": "job_single_node.yaml", "horovod": "mpi_job_horovod.yaml"}
 
     if extra_bai_config_args is None:
         extra_bai_config_args = {}
@@ -252,16 +241,18 @@ def create_bai_k8s_builder(descriptor: Descriptor,
     config_template = ConfigTemplate(contents)
     bai_data_sources = create_bai_data_sources(fetched_data_sources, descriptor)
 
-    bai_k8s_builder = BaiKubernetesObjectBuilder(descriptor,
-                                                 bai_config,
-                                                 bai_data_sources,
-                                                 config_template,
-                                                 environment_info=environment_info,
-                                                 **extra_bai_config_args)
+    bai_k8s_builder = BaiKubernetesObjectBuilder(
+        descriptor,
+        bai_config,
+        bai_data_sources,
+        config_template,
+        environment_info=environment_info,
+        **extra_bai_config_args,
+    )
 
-    if descriptor.strategy == 'single_node':
+    if descriptor.strategy == "single_node":
         bai_k8s_builder.add_benchmark_cmd_to_container()
-    elif descriptor.strategy == 'horovod':
+    elif descriptor.strategy == "horovod":
         bai_k8s_builder.add_benchmark_cmd_to_config_map()
     else:
         raise ValueError("Unsupported configuration in descriptor file")
@@ -269,22 +260,26 @@ def create_bai_k8s_builder(descriptor: Descriptor,
     return bai_k8s_builder
 
 
-def create_job_yaml_spec(descriptor_contents: Dict,
-                         transpiler_config: ExecutorConfig,
-                         fetched_data_sources: List[DataSet],
-                         extra_bai_config_args=None) -> Tuple[str, str]:
+def create_job_yaml_spec(
+    descriptor_contents: Dict,
+    transpiler_config: ExecutorConfig,
+    fetched_data_sources: List[DataSet],
+    extra_bai_config_args=None,
+) -> Tuple[str, str]:
     """
     Creates the YAML spec file corresponding to a descriptor passed as parameter
     :param descriptor_contents: dict containing the parsed descriptor
     :param transpiler_config: configuration for the transpiler
     :param fetched_data_sources: list of fetched data sources, as generated by the fetcher.
     :param extra_bai_config_args: An optional Dict which will be forwarded to the `BaiConfig` object created.
-    :return: Tuple with (job_id, yaml string for the given descriptor)
+    :return: Tuple with (yaml string for the given descriptor, job_id)
     """
     descriptor = Descriptor(descriptor_contents, transpiler_config.descriptor_config)
-    bai_k8s_builder = create_bai_k8s_builder(descriptor,
-                                             transpiler_config.bai_config,
-                                             fetched_data_sources,
-                                             environment_info=transpiler_config.environment_info,
-                                             extra_bai_config_args=extra_bai_config_args)
+    bai_k8s_builder = create_bai_k8s_builder(
+        descriptor,
+        transpiler_config.bai_config,
+        fetched_data_sources,
+        environment_info=transpiler_config.environment_info,
+        extra_bai_config_args=extra_bai_config_args,
+    )
     return bai_k8s_builder.dump_yaml_string(), bai_k8s_builder.job_id

@@ -32,9 +32,7 @@ class BaiDataSource:
     object: str
     path: str
 
-    def __init__(self,
-                 fetched_data_source: DataSet,
-                 path: str):
+    def __init__(self, fetched_data_source: DataSet, path: str):
         parsed_uri = urlparse(fetched_data_source.dst)
         self.src = fetched_data_source.src
         self.scheme = parsed_uri.scheme
@@ -42,6 +40,7 @@ class BaiDataSource:
         self.object = parsed_uri.path[1:]
         self.path = path
 
-        if self.scheme.lower() != 's3':
-            raise ValueError(f'Unexpected scheme in data source src: {self.scheme}.'
-                             f' Fetched dataset is {fetched_data_source}')
+        if self.scheme.lower() != "s3":
+            raise ValueError(
+                f"Unexpected scheme in data source src: {self.scheme}." f" Fetched dataset is {fetched_data_source}"
+            )

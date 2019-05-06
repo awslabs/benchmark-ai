@@ -55,7 +55,7 @@ class ExecutorPayload(FetcherPayload):
     def from_fetcher_payload(cls, payload, job: BenchmarkJob):
         payload_as_dict = dataclasses.asdict(copy.deepcopy(payload))
         payload_as_dict['job'] = job
-        return from_dict(data_class=cls, data=payload_as_dict)
+        return from_dict(data_class=ExecutorPayload, data=payload_as_dict)
 
 
 @dataclass_json

@@ -7,7 +7,9 @@ from transpiler.kubernetes_spec_logic import KubernetesRootObjectHelper
 
 @pytest.fixture
 def k8s_job():
-    return KubernetesRootObjectHelper(textwrap.dedent("""\
+    return KubernetesRootObjectHelper(
+        textwrap.dedent(
+            """\
         apiVersion: batch/v1
         kind: Job
         metadata:
@@ -38,7 +40,9 @@ def k8s_job():
               restartPolicy: Never
               volumes: {}
           backoffLimit: 4
-    """))
+    """
+        )
+    )
 
 
 def test_build_job(k8s_job):
@@ -63,7 +67,9 @@ def test_get_pod_spec(k8s_job):
 
 def test_build_job_without_pod():
     with pytest.raises(ValueError) as e:
-        KubernetesRootObjectHelper(textwrap.dedent("""\
+        KubernetesRootObjectHelper(
+            textwrap.dedent(
+                """\
             apiVersion: batch/v1
             kind: Job
             metadata:
@@ -74,31 +80,41 @@ def test_build_job_without_pod():
                   labels:
                     app: benchmark-ai
               backoffLimit: 4
-        """))
+        """
+            )
+        )
     assert e.match("Pod not found at yaml definition of the Kubernetes object")
 
 
 def test_build_job_where_pod_does_not_have_containers():
     with pytest.raises(ValueError) as e:
-        KubernetesRootObjectHelper(textwrap.dedent("""\
+        KubernetesRootObjectHelper(
+            textwrap.dedent(
+                """\
             apiVersion: batch/v1
             kind: Job
             spec:
               template:
                 spec:
                   containers: {}
-        """))
+        """
+            )
+        )
     assert e.match("A Pod must have at least 1 container on its definition")
 
 
 def test_build_job_without_spec():
     with pytest.raises(ValueError) as e:
-        KubernetesRootObjectHelper(textwrap.dedent("""\
+        KubernetesRootObjectHelper(
+            textwrap.dedent(
+                """\
             apiVersion: batch/v1
             kind: Job
             metadata:
               name: job-id
-        """))
+        """
+            )
+        )
     assert e.match("Spec of root object not found at yaml definition of the Kubernetes object")
 
 
@@ -114,7 +130,9 @@ def test_adds_placeholder_fields():
     For each container:
     - volumeMounts
     """
-    k8s_job = KubernetesRootObjectHelper(textwrap.dedent("""\
+    k8s_job = KubernetesRootObjectHelper(
+        textwrap.dedent(
+            """\
         apiVersion: batch/v1
         kind: Job
         spec:
@@ -123,18 +141,20 @@ def test_adds_placeholder_fields():
               containers:
               - name: benchmark
                 image: my-docker-image
-    """))
+    """
+        )
+    )
     assert k8s_job.get_pod_spec().volumes == []
     assert k8s_job.get_pod_spec().initContainers == []
     assert k8s_job.find_container("benchmark").volumeMounts == []
 
 
 def test_job_to_cronjob(k8s_job):
-    schedule = '@hourly'
+    schedule = "@hourly"
     k8s_job.to_cronjob(schedule)
     # TODO: Take this values from the config file
-    assert k8s_job._root.apiVersion == 'batch/v1beta1'
-    assert k8s_job._root.kind == 'CronJob'
+    assert k8s_job._root.apiVersion == "batch/v1beta1"
+    assert k8s_job._root.kind == "CronJob"
     assert k8s_job._root.spec.schedule == schedule
-    assert 'jobTemplate' in k8s_job._root.spec
-    assert 'template' not in k8s_job._root.spec
+    assert "jobTemplate" in k8s_job._root.spec
+    assert "template" not in k8s_job._root.spec
