@@ -5,19 +5,14 @@ from bai_kafka_utils.events import BenchmarkEvent, FetcherBenchmarkEvent
 from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
 from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService, KafkaServiceConfig
 from fetcher_dispatcher import SERVICE_NAME, __version__
-from fetcher_dispatcher.args import FetcherServiceConfig
+from fetcher_dispatcher.args import FetcherServiceConfig, FetcherJobConfig
 from fetcher_dispatcher.data_set_manager import DataSet, DataSetManager
 from fetcher_dispatcher.data_set_pull import get_dataset_dst
 from fetcher_dispatcher.kubernetes_client import KubernetesDispatcher
 
-
-def create_data_set_manager(
-    zookeeper_ensemble_hosts: str, kubeconfig: str, fetcher_job_image: str, fetcher_node_selector: dict
-):
+def create_data_set_manager(zookeeper_ensemble_hosts: str, kubeconfig: str, fetcher_job: FetcherJobConfig):
     zk_client = KazooClient(zookeeper_ensemble_hosts)
-    job_dispatcher = KubernetesDispatcher(
-        kubeconfig, fetcher_job_image, zookeeper_ensemble_hosts, fetcher_node_selector
-    )
+    job_dispatcher = KubernetesDispatcher(kubeconfig, zookeeper_ensemble_hosts, fetcher_job)
 
     return DataSetManager(zk_client, job_dispatcher)
 
@@ -64,10 +59,7 @@ class FetcherEventHandler(KafkaServiceCallback):
 
 def create_fetcher_dispatcher(common_kafka_cfg: KafkaServiceConfig, fetcher_cfg: FetcherServiceConfig) -> KafkaService:
     data_set_mgr = create_data_set_manager(
-        fetcher_cfg.zookeeper_ensemble_hosts,
-        fetcher_cfg.kubeconfig,
-        fetcher_cfg.fetcher_job_image,
-        fetcher_cfg.fetcher_job_node_selector,
+        fetcher_cfg.zookeeper_ensemble_hosts, fetcher_cfg.kubeconfig, fetcher_cfg.fetcher_job
     )
     data_set_mgr.start()
 

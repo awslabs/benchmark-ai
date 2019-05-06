@@ -8,11 +8,17 @@ from fetcher_dispatcher import SERVICE_NAME
 
 
 @dataclass
+class FetcherJobConfig:
+    image: str
+    pull_policy: Optional[str] = None
+    node_selector: Dict[str, str] = field(default_factory=dict)
+
+
+@dataclass
 class FetcherServiceConfig:
     zookeeper_ensemble_hosts: str
     s3_data_set_bucket: str
-    fetcher_job_image: str
-    fetcher_job_node_selector: Dict[str, str] = field(default_factory=dict)
+    fetcher_job: FetcherJobConfig
     kubeconfig: Optional[str] = None
 
 
@@ -30,11 +36,22 @@ def get_fetcher_service_config(args) -> FetcherServiceConfig:
 
     parser.add_argument("--fetcher-job-node-selector", env_var="FETCHER_NODE_SELECTOR", type=json.loads, default={})
 
+    parser.add_argument(
+        "--fetcher-job-pull-policy",
+        env_var="FETCHER_PULL_POLICY",
+        required=False,
+        # Default is complicated - Always if not tag, IfNotPresent - otherwise
+        choices=["Always", "Never", "IfNotPresent"],
+    )
+
     parsed_args, _ = parser.parse_known_args(args)
     return FetcherServiceConfig(
         zookeeper_ensemble_hosts=parsed_args.zookeeper_ensemble_hosts,
         s3_data_set_bucket=parsed_args.s3_data_set_bucket,
         kubeconfig=parsed_args.kubeconfig,
-        fetcher_job_image=parsed_args.fetcher_job_image,
-        fetcher_job_node_selector=parsed_args.fetcher_job_node_selector,
+        fetcher_job=FetcherJobConfig(
+            image=parsed_args.fetcher_job_image,
+            node_selector=parsed_args.fetcher_job_node_selector,
+            pull_policy=parsed_args.fetcher_job_pull_policy,
+        ),
     )

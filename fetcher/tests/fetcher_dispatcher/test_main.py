@@ -3,7 +3,7 @@ from unittest.mock import patch
 # Regression test
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
 from fetcher_dispatcher import fetcher_dispatcher
-from fetcher_dispatcher.args import FetcherServiceConfig
+from fetcher_dispatcher.args import FetcherServiceConfig, FetcherJobConfig
 
 BOOTSTRAP_SERVERS = ["K1", "K2"]
 
@@ -48,7 +48,9 @@ def test_main(mock_create_fetcher_dispatcher):
     fetcher_dispatcher_cfg = FetcherServiceConfig(
         zookeeper_ensemble_hosts=ZOOKEEPER_ENSEMBLE_HOSTS,
         s3_data_set_bucket=S3_DATA_SET_BUCKET,
-        fetcher_job_image=FETCHER_JOB_IMAGE,
+        fetcher_job=FetcherJobConfig(image=FETCHER_JOB_IMAGE),
     )
 
-    mock_create_fetcher_dispatcher.assert_called_with(expected_common_kafka_cfg, fetcher_dispatcher_cfg)
+    mock_create_fetcher_dispatcher.assert_called_with(
+        expected_common_kafka_cfg, fetcher_dispatcher_cfg
+    )

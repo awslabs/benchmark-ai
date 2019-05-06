@@ -1,13 +1,21 @@
 import kafka
+from kazoo.client import KazooClient
+
+from fetcher_dispatcher.fetcher_dispatcher import (
+    create_data_set_manager,
+    FetcherEventHandler,
+    create_fetcher_dispatcher,
+)
+from fetcher_dispatcher.kubernetes_client import KubernetesDispatcher
 from pytest import fixture
 from unittest.mock import MagicMock, patch
 
 from bai_kafka_utils.events import BenchmarkDoc, BenchmarkEvent, FetcherPayload, DataSet
 from bai_kafka_utils.kafka_service import KafkaService, KafkaServiceConfig
 from fetcher_dispatcher import fetcher_dispatcher
-from fetcher_dispatcher.args import FetcherServiceConfig
+from fetcher_dispatcher.args import FetcherServiceConfig, FetcherJobConfig
 from fetcher_dispatcher.data_set_manager import DataSetManager
-from fetcher_dispatcher.fetcher_dispatcher import FetcherEventHandler, create_fetcher_dispatcher
+
 
 FETCHER_JOB_IMAGE = "job/image"
 
@@ -22,6 +30,10 @@ PRODUCER_TOPIC = "OUT_TOPIC"
 CONSUMER_TOPIC = "IN_TOPIC"
 
 S3_BUCKET = "some_bucket"
+
+KUBECONFIG = "path/cfg"
+
+FETCHER_JOB_CONFIG = FetcherJobConfig(image=FETCHER_JOB_IMAGE)
 
 
 @fixture
@@ -41,7 +53,9 @@ def benchmark_doc() -> BenchmarkDoc:
 
 @fixture
 def benchmark_event_with_datasets(benchmark_doc: BenchmarkDoc) -> BenchmarkEvent:
-    payload = FetcherPayload(toml=benchmark_doc, datasets=[DataSet(src="src1"), DataSet(src="src2")])
+    payload = FetcherPayload(
+        toml=benchmark_doc, datasets=[DataSet(src="src1"), DataSet(src="src2")]
+    )
     return get_benchmark_event(payload)
 
 
@@ -66,15 +80,21 @@ def get_benchmark_event(payload):
 
 
 def test_fetcher_event_handler_fetch(
-    data_set_manager: DataSetManager, benchmark_event_with_datasets: BenchmarkEvent, kafka_service: KafkaService
+    data_set_manager: DataSetManager,
+    benchmark_event_with_datasets: BenchmarkEvent,
+    kafka_service: KafkaService,
 ):
     fetcher_callback = FetcherEventHandler(data_set_manager, S3_BUCKET)
-    event_to_send_sync = fetcher_callback.handle_event(benchmark_event_with_datasets, kafka_service)
+    event_to_send_sync = fetcher_callback.handle_event(
+        benchmark_event_with_datasets, kafka_service
+    )
 
     # Nothing to send immediately
     assert not event_to_send_sync
     # All datasets fetched
-    assert data_set_manager.fetch.call_count == len(benchmark_event_with_datasets.payload.datasets)
+    assert data_set_manager.fetch.call_count == len(
+        benchmark_event_with_datasets.payload.datasets
+    )
     # Nothing yet sent
     kafka_service.send_event.assert_not_called()
 
@@ -86,10 +106,14 @@ def test_fetcher_event_handler_fetch(
 
 
 def test_fetcher_event_handler_nothing_to_do(
-    data_set_manager: DataSetManager, benchmark_event_without_datasets: BenchmarkEvent, kafka_service: KafkaService
+    data_set_manager: DataSetManager,
+    benchmark_event_without_datasets: BenchmarkEvent,
+    kafka_service: KafkaService,
 ):
     fetcher_callback = FetcherEventHandler(data_set_manager, S3_BUCKET)
-    event_to_send_sync = fetcher_callback.handle_event(benchmark_event_without_datasets, kafka_service)
+    event_to_send_sync = fetcher_callback.handle_event(
+        benchmark_event_without_datasets, kafka_service
+    )
     assert event_to_send_sync == benchmark_event_without_datasets
 
 
@@ -115,7 +139,10 @@ def test_fetcher_cleanup(data_set_manager: DataSetManager):
 @patch.object(fetcher_dispatcher, "create_data_set_manager")
 @patch.object(kafka, "KafkaProducer")
 @patch.object(kafka, "KafkaConsumer")
-def test_create_fetcher_dispatcher(mockKafkaConsumer, mockKafkaProducer, mock_create_data_set_manager):
+def test_create_fetcher_dispatcher(
+    mockKafkaConsumer, mockKafkaProducer, mock_create_data_set_manager
+):
+
     mock_data_set_manager = MagicMock(spec=DataSetManager)
     mock_create_data_set_manager.return_value = mock_data_set_manager
 
@@ -128,8 +155,7 @@ def test_create_fetcher_dispatcher(mockKafkaConsumer, mockKafkaProducer, mock_cr
     fetcher_cfg = FetcherServiceConfig(
         zookeeper_ensemble_hosts=ZOOKEEPER_ENSEMBLE_HOSTS,
         s3_data_set_bucket=S3_BUCKET,
-        fetcher_job_image=FETCHER_JOB_IMAGE,
-        fetcher_job_node_selector={},
+        fetcher_job=FetcherJobConfig(image=FETCHER_JOB_IMAGE),
     )
     fetcher_service = create_fetcher_dispatcher(common_cfg, fetcher_cfg)
 
@@ -139,3 +165,25 @@ def test_create_fetcher_dispatcher(mockKafkaConsumer, mockKafkaProducer, mock_cr
     mock_data_set_manager.start.assert_called_once()
 
     assert fetcher_service
+
+
+@patch.object(fetcher_dispatcher, "DataSetManager")
+@patch.object(fetcher_dispatcher, "KubernetesDispatcher")
+@patch.object(fetcher_dispatcher, "KazooClient")
+def test_create_data_set_manager(
+    mockKazooClient, mockKubernetesDispatcher, mockDataSetManager
+):
+    mock_zk_client = MagicMock(spec=KazooClient)
+    mock_job_dispatcher = MagicMock(spec=KubernetesDispatcher)
+
+    mockKazooClient.return_value = mock_zk_client
+    mockKubernetesDispatcher.return_value = mock_job_dispatcher
+
+    create_data_set_manager(ZOOKEEPER_ENSEMBLE_HOSTS, KUBECONFIG, FETCHER_JOB_CONFIG)
+
+    mockKazooClient.assert_called_with(ZOOKEEPER_ENSEMBLE_HOSTS)
+    mockKubernetesDispatcher.assert_called_with(
+        KUBECONFIG, ZOOKEEPER_ENSEMBLE_HOSTS, FETCHER_JOB_CONFIG
+    )
+
+    mockDataSetManager.assert_called_with(mock_zk_client, mock_job_dispatcher)
