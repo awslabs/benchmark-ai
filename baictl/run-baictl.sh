@@ -26,7 +26,7 @@ docker push 094741945095.dkr.ecr.us-west-2.amazonaws.com/benchmark-ai/aws-baictl
 
 # Create run-once task
 # TODO: Retrieve these values dynamically
-aws ecs run-task --cluster baictl-ecs-cluster --launch-type FARGATE --task-definition arn:aws:ecs:us-west-2:094741945095:task-definition/baictl:2 --network-configuration '{"awsvpcConfiguration":{"subnets":["subnet-0a6f397572fca14ab","subnet-032ea0be3d6f34b65"],"securityGroups":["sg-0dd8c65166734f4fd"],"assignPublicIp":"ENABLED"}}'
+aws ecs run-task --cluster baictl-ecs-cluster --launch-type FARGATE --task-definition arn:aws:ecs:us-west-2:094741945095:task-definition/baictl:3 --network-configuration '{"awsvpcConfiguration":{"subnets":["subnet-0a6f397572fca14ab","subnet-032ea0be3d6f34b65"],"securityGroups":["sg-0dd8c65166734f4fd"],"assignPublicIp":"ENABLED"}}'
 # Stream logs ?
 
 # TODO: Ask whether CloudFormation stack should be destroyed again
