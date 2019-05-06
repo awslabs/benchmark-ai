@@ -9,6 +9,8 @@ variable "projects" {
     "kafka-utils",
     "puller",
     "reports",
+    "executor",
+    "watcher",
   ]
 }
 

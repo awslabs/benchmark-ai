@@ -35,16 +35,16 @@ class DataSetManager:
         logger.info("Fetch request %s", data_set)
 
         zk_node_path = self._get_node_path(data_set)
-        logger.debug("zk_node_path=%s", zk_node_path)
+        logger.info("zk_node_path=%s", zk_node_path)
 
         try:
             self._zk.create(zk_node_path, FetchState.STATE_RUNNING, makepath=True)
 
-            logger.debug("Node lock %s acquired", zk_node_path)
+            logger.info("Node lock %s acquired", zk_node_path)
 
             self._data_set_dispatcher(data_set, zk_node_path)
         except NodeExistsError:
-            logger.debug("Node %s already exists", zk_node_path)
+            logger.info("Node %s already exists", zk_node_path)
 
         self.__handle_node_state(zk_node_path, on_done, data_set)
 

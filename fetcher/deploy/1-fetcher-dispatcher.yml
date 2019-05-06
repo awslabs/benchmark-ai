@@ -6,7 +6,7 @@ metadata:
     app: benchmark-ai
 spec:
   selector:
-    matchLabels:
+   matchLabels:
       app: benchmark-ai
   replicas: 3
   template:
@@ -55,7 +55,7 @@ spec:
               value: BAI_APP_FETCHER
             - name: LOGGING_LEVEL
               value: INFO
-            - name: FETCHER_NODE_SELECTOR
+            - name: FETCHER_JOB_NODE_SELECTOR
               value: '{"node.type":"bai-services-network"}'
       nodeSelector:
         node.type: bai-services-cheap
