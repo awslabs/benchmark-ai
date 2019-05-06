@@ -16,25 +16,20 @@ spec:
         service: watcher
     spec:
       serviceAccountName: watcher
-#      affinity:
-#        podAntiAffinity:
-#          requiredDuringSchedulingIgnoredDuringExecution:
-#            - labelSelector:
-#                matchExpressions:
-#                  - key: service
-#                    operator: In
-#                    values:
-#                      - watcher
-#              topologyKey: kubernetes.io/hostname
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: service
+                    operator: In
+                    values:
+                      - watcher
+              topologyKey: kubernetes.io/hostname
       containers:
         - name: watcher
           image: edisongustavo/watcher
           env:
-            - name: ZOOKEEPER_ENSEMBLE_HOSTS
-              valueFrom:
-                configMapKeyRef:
-                  name: zookeeper
-                  key: connect
             - name: KAFKA_BOOTSTRAP_SERVERS
               valueFrom:
                 configMapKeyRef:
