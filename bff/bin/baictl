@@ -1,0 +1,300 @@
+#!/bin/bash
+
+DEBUG=${DEBUG:-0}
+VERBOSE=${VERBOSE:-0}
+
+declare -r VERSION="0.1.0-481dad2"
+declare -r SERVICE_NAME="baictl-client"
+declare -r MY_SHA1=$(sha1sum ${0} | awk '{print $1}')
+declare -r BAICTL_HOME=${HOME}/.baictl
+declare -r BAICTL_HISTORY=${BAICTL_HOME}/history
+declare -r BAICTL_ACTION_IDS=${BAICTL_HOME}/action_ids
+declare -r BAICTL_SERVICE_ENDPOINT_CONFIG=${BAICTL_HOME}/service_endpoint
+
+banner() {
+    printf '
+\033[01;31m _             _        _    _
+| |           (_)      | |  | |
+| |__    __ _  _   ___ | |_ | |\033[0m
+\033[01;33m|  _ \  / _` || | / __|| __|| |
+| |_) || (_| || || (__ | |_ | |\033[0m
+\033[01;32m|_.__/  \__,_||_| \___| \__||_|\033[0m
+
+(v%s)
+-------------------------
+AWS: \033[01;33mB\033[0menchmark \033[01;33mAI\033[0m \033[01;33mC\033[0mon\033[01;33mt\033[0mro\033[01;33ml\033[0m
+-------------------------
+
+Brought to you by the cool peeps of the  MXNet-Berlin Team
+' "${VERSION}"
+}
+
+usage() {
+    printf '
+usage:
+
+This is the command-line, client-side interface to the Bechmark AI service...
+
+ > %s --submit  <descriptor file> : Returns an "action id" if submission successful
+          --status   <action id>   : displays a report of the current status
+          --results  <action id>   : displays results report of completed jobs
+          --last-action-id     : displays the last action id from a valid submission
+          --abort    <action id>   : cancels the current in progress submission
+          --check-version          : checks to see if the version you are running is the latest posted
+          --upgrade                : fetches latest version of this tool [%s]
+          --sync-version           : synchronized this tool with that of the service endpoint
+          --register <hostname|IP and PORT of bai service> | Ex: bai.aws.amazon.com:7100
+          --unregister             : clears service endpoint from configuration
+          --show-registered-service-endpoint : The hostname|IP:PORT of bai service you are using
+          --help                   : (this output)
+
+' "${0##*/}" "${0##*/}"
+    exit 0
+}
+
+check_tools() {
+    local num_missing_tools=0
+    if type uuidgen  >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "uuidgen"; (( num_missing_tools++ ));fi
+    if type sha1sum  >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "sha1sum"; (( num_missing_tools++ ));fi
+    if type whoami   >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "whoami"; (( num_missing_tools++ ));fi
+    if type hostname >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "hostname"; (( num_missing_tools++ ));fi
+    if type date     >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "date"; (( num_missing_tools++ ));fi
+    if type base64   >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "base64"; (( num_missing_tools++ ));fi
+    if type curl     >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "curl"; (( num_missing_tools++ ));fi
+    if type jq       >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "jq"; (( num_missing_tools++ ));fi
+    echo
+    if (( num_missing_tools > 0 )); then
+        printf "\033[01;31m [ERROR:] \033[0m you just install the required prerequisite tool(s)/command(s) to use %s. bye...\n" "${0##*/}"
+        echo
+        ((DEBUG)) && exit ${num_missing_tools}
+    fi
+}
+
+_setup() {
+    mkdir -p "${BAICTL_HOME}"
+    touch "${BAICTL_HOME}/action_ids"
+    touch "${BAICTL_HOME}/history"
+    touch "${BAICTL_HOME}/service_endpoint"
+}
+
+_construct_endpoint_URL() {
+    printf "http://%s" "$(cat "${BAICTL_SERVICE_ENDPOINT_CONFIG}")"
+}
+
+ping_service_endpoint() {
+    show_registered_service_endpoint && curl -I $(_construct_endpoint_URL)
+}
+
+register_service_endpoint() {
+    local service_endpoint=${1:?"register() -> You MUST supply the service endpoint hostname|IP and PORT"}
+    #TODO - Do basic sanity checking on format and then write it to file;
+
+    echo "${service_endpoint}" > "${BAICTL_SERVICE_ENDPOINT_CONFIG}"
+}
+
+unregister_service_endpoint() {
+    cat /dev/null > "${BAICTL_SERVICE_ENDPOINT_CONFIG}"
+}
+
+show_registered_service_endpoint() {
+    local current_service_endpoint=$(cat "${BAICTL_SERVICE_ENDPOINT_CONFIG}")
+    if [[ -n "${current_service_endpoint}" ]]; then
+        printf "Currently service endpoint is: [\033[01;33m%s\033[0m] \n" "$current_service_endpoint"
+        return 0
+    else
+        printf "
+\033[01;31m[WARNING]\033[0m You do not have a service endpoint registered!!
+          Please do so.  (use --register to set one)\n\n";
+        return 1
+    fi
+}
+
+check_version() {
+    echo "+"; #TODO - make this check against the service's supported version
+}
+
+upgrade() {
+    #TODO - upgrading this tool itself...
+    #TODO - implement how to upgrade to the version supported by the service directly?
+    printf "Sync'ing versions with that of the current service endpoint [\033[01;33m%s\033[0m] \n" "$current_service_endpoint"
+    echo "Implement me!!!!!"
+}
+
+sync_version() {
+    #TODO - implement how to upgrade to the version supported by the service directly?
+    printf "Sync'ing versions with that of the current service endpoint [\033[01;33m%s\033[0m] \n" "$current_service_endpoint"
+    echo "Implement me!!!!!"
+}
+
+_generate_submit_event() {
+    local descriptor_filename=${1?"generate_submit_event() -> You MUST supply a descriptor file as first argument"}
+    local event=$(cat <<-EOF
+{
+    "message_id" : "$(uuidgen)",
+    "client_id"  : "$(sha1sum <<<$(whoami)+$(hostname) | awk '{print $1}')",
+    "client_version" : "${VERSION}",
+    "client_sha1"    : "${MY_SHA1}",
+    "client_username" : "$(whoami)",
+    "date" : "$(date -u +"%a %b %d %H:%M:%S %Z %Y")",
+    "visited"  : [{"svc" : "${SERVICE_NAME}", "tstamp" : "@@TSTAMP@@", "version" :"${VERSION}"}],
+    "payload"  : {
+        "toml" : {
+            "descriptor_filename" : "${descriptor_filename##*/}",
+            "sha1" : "$(sha1sum ${descriptor_filename} | awk '{print $1}')",
+            "doc"  : "$(base64  ${descriptor_filename})"
+        }
+    }
+}
+EOF
+          )
+    jq '.' <<< ${event}
+}
+
+submit() {
+    local descriptor_filename=${1?"submit() -> You MUST supply a descriptor file as first argument"}
+    local current_service_endpoint=$(cat ${BAICTL_SERVICE_ENDPOINT_CONFIG} | tail -n 1)
+
+    if [[ -z "${current_service_endpoint}" ]]; then
+        printf "
+\033[01;31m[WARNING]\033[0m You do not have a service endpoint registered.
+          Please do so.  (see --register flag)
+          using localhost, port 8080\n\n";
+        current_service_endpoint="localhost:8080"
+    fi
+
+    local data=$(_generate_submit_event ${descriptor_filename})
+    if [[ -n "${data}" ]]; then
+        cmd="curl -s -X POST -H Content-Type: application/json -d '"${data}"' http://"${current_service_endpoint}"/api/job/descriptor"
+        ((VERBOSE)) && echo ${cmd}
+        ${cmd} |tee -a ${BAICTL_ACTION_IDS}
+    else
+        printf '\033[01;31m[ERROR]\033[0m No data to send.\n\n'
+        exit 1
+    fi
+}
+
+get_last_action_id() {
+    local last_action_id=$(cat ${BAICTL_ACTION_IDS} | tail -n 1 | awk '{print $1}')
+    printf "[\033[01;33m%s\033[0m] \n" "$last_action_id"
+}
+
+get_submission_status() {
+    local action_id=${1:?"get_submission_status() -> You MUST provie the action_id returned by the initial submission"}
+    ((VERBOSE)) && echo "get_submission_status ${action_id}"
+    #TODO - implement me
+    echo "(implement me)"
+}
+
+get_results() {
+    local action_id=${1:?"get_results() -> You MUST provide the action_id returned by the initial submission"}
+    ((VERBOSE)) && echo "get_results ${action_id}"
+    #TODO - implement me
+    echo "(implement me)"
+}
+
+abort_submission() {
+    local action_id=${1:?"abort_submission() -> You MUST provide the action_id returned by the initial submission"}
+    ((VERBOSE)) && echo "abort submisson ${action_id}"
+    #TODO - implement me
+    echo "(implement me)"
+}
+
+
+
+main() {
+    banner
+    check_tools
+    _setup
+
+    local SUBMIT=0;
+    local descriptor_filename=""
+
+        while [ -n "$1" ]; do
+    #echo "arg ${i} = $1"
+            local unshift=0
+            case $1 in
+                --verbose | -vv)
+                    shift
+                    VERBOSE=1
+                    ;;
+                --debug | -dbg)
+                    shift
+                    DEBUG=1
+                    ;;
+                --submit)
+                    shift
+                    ((SUBMIT++))
+                    descriptor_filename="${1}"
+                    ;;
+                --status)
+                    shift
+                    get_submission_status ${1} ; shift
+                    ;;
+                --results)
+                    shift
+                    get_results ${1} ; shift
+                    ;;
+                --last-action-id)
+                    shift
+                    get_last_action_id
+                    exit $?
+                    ;;
+                --abort)
+                    shift
+                    abort_submission ${1} ; shift
+                    ;;
+                --check-prerequisites) # hidden option
+                    shift
+                    check_tools
+                    exit $?
+                    ;;
+                --check-version)
+                    shift
+                    check_version
+                    exit $?
+                    ;;
+                --upgrade)
+                    shift
+                    upgrade
+                    ;;
+                --sync-version)
+                    shift
+                    ;;
+                --register)
+                    shift
+                    register_service_endpoint ${1}
+                    ;;
+                --ping-service-endpoint)
+                    shift
+                    ping_service_endpoint
+                    exit $?
+                    ;;
+                --unregister)
+                    shift
+                    unregister_service_endpoint
+                    exit 0
+                    ;;
+                --show-registered-service-endpoint)
+                    shift
+                    show_registered_service_endpoint
+                    ;;
+                --help | -h)
+                    shift
+                    usage
+                    ;;
+                --banner) #"hidden" option
+                    shift
+                    banner
+                    exit $?
+                    ;;
+                *)
+                    shift
+                    echo "Unknown flag $1"
+                    ;;
+            esac
+            ((!unshift)) && shift
+        done
+        ((SUBMIT)) && submit "${descriptor_filename}"
+}
+
+main "$@"
