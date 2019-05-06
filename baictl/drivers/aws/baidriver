@@ -161,7 +161,7 @@ _create_kafka_topics(){
     local bastion_pem_filename=$(echo $outputs | jq -r '.bastion_pem_filename.value')
     local bastion_public_ip=$(echo $outputs | jq -r '.bastion_public_ip.value')
 
-    local kafka_topics=("BAI_APP_BFF" "BAI_APP_FETCHER" "BAI_APP_EXECUTOR" "BAI_SYS_BFF" "BAI_SYS_FETCHER" "BAI_SYS_EXECUTOR" "CMD_SUBMIT" "CMD_RETURN")
+    local kafka_topics=("BAI_APP_BFF" "BAI_APP_FETCHER" "BAI_APP_EXECUTOR" "BAI_SYS_BFF" "BAI_SYS_FETCHER" "BAI_SYS_EXECUTOR" "BAI_SYS_STATUS" "CMD_SUBMIT" "CMD_RETURN")
 
     printf "Creating Kafka Topics...\n"
     for topic in "${kafka_topics[@]}"; do
@@ -300,7 +300,7 @@ __validate_kafka_topics(){
     local bastion_public_ip=$(echo $outputs | jq -r '.bastion_public_ip.value')
 
     local result=$(ssh -i ${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no -o LogLevel=QUIET "/snap/bin/kafka.topics --list --zookeeper $msk_zookeeper_connect")
-    local kafka_topics=("BAI_APP_BFF" "BAI_APP_FETCHER" "BAI_APP_EXECUTOR" "BAI_SYS_BFF" "BAI_SYS_FETCHER" "BAI_SYS_EXECUTOR" "CMD_SUBMIT" "CMD_RETURN")
+    local kafka_topics=("BAI_APP_BFF" "BAI_APP_FETCHER" "BAI_APP_EXECUTOR" "BAI_SYS_BFF" "BAI_SYS_FETCHER" "BAI_SYS_EXECUTOR" "BAI_SYS_STATUS" "CMD_SUBMIT" "CMD_RETURN")
 
     for topic in "${kafka_topics[@]}"; do
         echo $result | grep $topic > /dev/null || return 1
