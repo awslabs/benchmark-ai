@@ -4,7 +4,7 @@ Resources:
   BaictlImageRepository: 
     Type: "AWS::ECR::Repository"
     Properties: 
-      RepositoryName: !Sub "benchmark-ai/aws-baictl-${AWS::StackName}"
+      RepositoryName: !Sub "benchmark-ai/baictl"
   
   FargateCluster:
     Type: "AWS::ECS::Cluster"
@@ -151,6 +151,18 @@ Outputs:
   #EcrImagePath:
   #  Description: "ECR image path holding the image that ECS is going to run"
   #  Value: !Select [0, !Ref TaskDefinition.ContainerDefinitions]
-  EcrImagePath:
-    Description: "ECR image path holding the image that ECS is going to run"
+  TaskDefinition:
+    Description: "ECS Task definition"
     Value: !Ref TaskDefinition
+
+  PublicSubnetOneArn:
+    Description: "Public Subnet One ARN"
+    Value: !Ref PublicSubnetOne
+
+  PublicSubnetTwoArn:
+    Description: "Public Subnet Two ARN"
+    Value: !Ref PublicSubnetTwo
+
+  VpcDefaultSecurityGroupArn:
+    Value: !GetAtt VPC.DefaultSecurityGroup
+
