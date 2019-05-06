@@ -97,7 +97,7 @@ def simple_kafka_service(kafka_consumer: KafkaConsumer, kafka_producer: KafkaPro
 def test_dont_add_to_running(simple_kafka_service: KafkaService):
     simple_kafka_service._running = True
     with pytest.raises(
-            KafkaService.LoopAlreadyRunningException, match=re.escape(KafkaService._CANNOT_UPDATE_CALLBACKS)
+        KafkaService.LoopAlreadyRunningException, match=re.escape(KafkaService._CANNOT_UPDATE_CALLBACKS)
     ):
         simple_kafka_service.add_callback(MagicMock(spec=KafkaServiceCallback))
 
@@ -105,7 +105,7 @@ def test_dont_add_to_running(simple_kafka_service: KafkaService):
 def test_dont_remove_from_running(simple_kafka_service: KafkaService):
     simple_kafka_service._running = True
     with pytest.raises(
-            KafkaService.LoopAlreadyRunningException, match=re.escape(KafkaService._CANNOT_UPDATE_CALLBACKS)
+        KafkaService.LoopAlreadyRunningException, match=re.escape(KafkaService._CANNOT_UPDATE_CALLBACKS)
     ):
         simple_kafka_service.remove_callback(MagicMock(spec=KafkaServiceCallback))
 
@@ -113,7 +113,7 @@ def test_dont_remove_from_running(simple_kafka_service: KafkaService):
 def test_kafka_service_started_twice(simple_kafka_service: KafkaService):
     simple_kafka_service._running = True
     with pytest.raises(
-            KafkaService.LoopAlreadyRunningException, match=re.escape(KafkaService._LOOP_IS_ALREADY_RUNNING)
+        KafkaService.LoopAlreadyRunningException, match=re.escape(KafkaService._LOOP_IS_ALREADY_RUNNING)
     ):
         simple_kafka_service.run_loop()
 
@@ -173,8 +173,7 @@ def test_immutable_callbacks(kafka_consumer: KafkaConsumer, kafka_producer: Kafk
 @patch.object(time, "time")
 @patch.object(uuid, "uuid4")
 def test_message_sent(
-        mock_uuid4, mock_time, kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer,
-        benchmark_event: BenchmarkEvent
+    mock_uuid4, mock_time, kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer, benchmark_event: BenchmarkEvent
 ):
     result_event = copy.deepcopy(benchmark_event)
     expected_event = copy.deepcopy(result_event)

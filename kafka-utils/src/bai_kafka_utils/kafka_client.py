@@ -17,7 +17,7 @@ class WrongBenchmarkEventTypeException(Exception):
 
 # args from kafka
 def create_kafka_consumer_producer(
-        kafka_cfg: KafkaServiceConfig, event_type: Type[BenchmarkEvent]
+    kafka_cfg: KafkaServiceConfig, event_type: Type[BenchmarkEvent]
 ) -> Tuple[KafkaConsumer, KafkaProducer]:
     return (
         create_kafka_consumer(
@@ -28,7 +28,7 @@ def create_kafka_consumer_producer(
 
 
 def create_kafka_consumer(
-        bootstrap_servers: List[str], group_id: str, topic: str, event_type: Type[BenchmarkEvent]
+    bootstrap_servers: List[str], group_id: str, topic: str, event_type: Type[BenchmarkEvent]
 ) -> kafka.KafkaConsumer:
     if not issubclass(event_type, BenchmarkEvent):
         raise WrongBenchmarkEventTypeException(f"{str(event_type)} is not a valid benchmark type")
