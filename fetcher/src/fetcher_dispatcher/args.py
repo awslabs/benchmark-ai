@@ -30,32 +30,17 @@ class FetcherServiceConfig:
 def get_fetcher_service_config(args) -> FetcherServiceConfig:
     parser = ArgParser(auto_env_var_prefix="", prog=SERVICE_NAME)
 
-    parser.add_argument(
-        "--zookeeper-ensemble-hosts",
-        env_var="ZOOKEEPER_ENSEMBLE_HOSTS",
-        default="localhost:2181",
-    )
+    parser.add_argument("--zookeeper-ensemble-hosts", env_var="ZOOKEEPER_ENSEMBLE_HOSTS", default="localhost:2181")
 
-    parser.add_argument(
-        "--s3-data-set-bucket", env_var="S3_DATASET_BUCKET", required=True
-    )
+    parser.add_argument("--s3-data-set-bucket", env_var="S3_DATASET_BUCKET", required=True)
 
     parser.add_argument("--kubeconfig", env_var="KUBECONFIG")
 
-    parser.add_argument(
-        "--fetcher-job-image", env_var="FETCHER_JOB_IMAGE", required=True
-    )
+    parser.add_argument("--fetcher-job-image", env_var="FETCHER_JOB_IMAGE", required=True)
 
-    parser.add_argument(
-        "--fetcher-job-ttl", env_var="FETCHER_JOB_TTL", type=int, required=False
-    )
+    parser.add_argument("--fetcher-job-ttl", env_var="FETCHER_JOB_TTL", type=int, required=False)
 
-    parser.add_argument(
-        "--fetcher-job-node-selector",
-        env_var="FETCHER_JOB_NODE_SELECTOR",
-        type=json.loads,
-        default={},
-    )
+    parser.add_argument("--fetcher-job-node-selector", env_var="FETCHER_JOB_NODE_SELECTOR", type=json.loads, default={})
 
     parser.add_argument(
         "--fetcher-job-pull-policy",
@@ -73,12 +58,7 @@ def get_fetcher_service_config(args) -> FetcherServiceConfig:
         default="OnFailure",
     )
 
-    parser.add_argument(
-        "--fetcher-job-namespace",
-        env_var="FETCHER_JOB_NAMESPACE",
-        required=False,
-        default="default",
-    )
+    parser.add_argument("--fetcher-job-namespace", env_var="FETCHER_JOB_NAMESPACE", required=False, default="default")
 
     parsed_args, _ = parser.parse_known_args(args, env_vars=os.environ)
     return FetcherServiceConfig(
