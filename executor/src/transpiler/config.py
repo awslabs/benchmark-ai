@@ -22,6 +22,7 @@ class EnvironmentInfo:
     Holds information on the environment that BAI is running.
     It is meant to aid in making decisions on how to run the benchmarks.
     """
+
     availability_zones: List[str]
 
 

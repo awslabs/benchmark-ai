@@ -1,12 +1,15 @@
 import subprocess
 import logging
 
+from dacite import WrongTypeError
+
 from executor import SERVICE_NAME, __version__
 from executor.config import ExecutorConfig
 from transpiler.bai_knowledge import create_job_yaml_spec
 from bai_kafka_utils.events import BenchmarkEvent, FetcherBenchmarkEvent, ExecutorPayload, BenchmarkJob
 from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
-from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService, KafkaServiceConfig
+from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService, KafkaServiceConfig, \
+    KafkaServiceCallbackException
 from bai_kafka_utils.utils import DEFAULT_ENCODING
 
 logger = logging.getLogger(SERVICE_NAME)
@@ -26,17 +29,22 @@ class ExecutorEventHandler(KafkaServiceCallback):
 
         job = BenchmarkJob(id=job_id, status="SUBMITTED", k8s_yaml=yaml)
 
-        result_payload = ExecutorPayload.from_fetcher_payload(event.payload, job)
-        return BenchmarkEvent.from_event_new_payload(event, result_payload)
+        try:
+            result_payload = ExecutorPayload.from_fetcher_payload(event.payload, job)
+            result_event = BenchmarkEvent.from_event_new_payload(event, result_payload)
+        except WrongTypeError as e:
+            logging.exception("Data type problem in the received event")
+            raise KafkaServiceCallbackException(str(e))
+        return result_event
 
     def _kubernetes_apply(self, yaml):
         # Shelling out this command because the kubernetes python client does not have a good way to
         # call kubectl apply -f my_config.yaml (https://github.com/kubernetes-client/python/issues/387)
         # Specially https://github.com/kubernetes-client/python/pull/655 - CRDs not supported
-        cmd = ["kubectl", "apply", "--kubeconfig", self.executor_config.kubeconfig, "-f", "-"]
+        cmd = [self.executor_config.kubectl, "apply", "-f", "-"]
 
         try:
-            logger.info(f"Applying yaml file using ${' '.join(cmd)}")
+            logger.info(f"Applying yaml file using command: {cmd}")
             subprocess.check_output(cmd, input=yaml.encode(DEFAULT_ENCODING))
             logger.info(f"Job submitted with yaml: \n {yaml}")
         except subprocess.CalledProcessError as e:

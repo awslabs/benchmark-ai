@@ -8,7 +8,7 @@ from executor.config import ExecutorConfig
 
 def get_args(argv):
     def list_str(values):
-        return values.split(',')
+        return values.split(",")
 
     base_dir = os.path.abspath(os.path.dirname(__file__))
     config_file = os.path.join(base_dir, "default_config.yaml")
@@ -57,7 +57,9 @@ def get_args(argv):
         help="List of valid strategies such as single_node or horovod",
     )
 
-    parser.add("--kubeconfig", env_var="KUBECONFIG", help="Kubeconfig option for kubectl")
+    parser.add("--kubectl",
+               env_var="KUBECTL",
+               help="Path to kubectl in the deployment pod")
 
     parsed_args, _ = parser.parse_known_args(argv)
     return parsed_args
@@ -79,7 +81,7 @@ def create_executor_config(argv):
     args = get_args(argv)
     environment_info = EnvironmentInfo(availability_zones=args.availability_zones)
     return ExecutorConfig(
-        kubeconfig=args.kubeconfig,
+        kubectl=args.kubectl,
         descriptor_config=create_descriptor_config(args),
         bai_config=create_bai_config(args),
         environment_info=environment_info,

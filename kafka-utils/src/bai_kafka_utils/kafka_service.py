@@ -125,7 +125,6 @@ class KafkaService:
         event_to_send = dataclasses.replace(event, message_id=str(uuid.uuid4()), visited=add_self_to_visited(event))
 
         logger.info(f"Sending {event_to_send} -> {topic}")
-
         self._producer.send(topic, value=event_to_send)
 
     @property

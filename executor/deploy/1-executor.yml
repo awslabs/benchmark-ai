@@ -26,29 +26,46 @@ spec:
                     values:
                       - executor
               topologyKey: kubernetes.io/hostname
+      initContainers:
+        - name: kubectl-delivery
+          image: mpioperator/kubectl-delivery:0.1.0
+          env:
+          - name: TARGET_DIR
+            value: "/tmp/kubectl"
+          volumeMounts:
+          - mountPath: /tmp
+            name: kubectl
       containers:
         - name: executor
-          image: jlcont/baiexecutor:050519
+          image: jlcont/baiexecutor:090519
           env:
-            - name: AVAILABILITY_ZONES
-              value:
-              valueFrom:
-                configMapKeyRef:
-                  name: outputs-infrastructure
-                  key: availability_zones
-            - name: KAFKA_BOOTSTRAP_SERVERS
-              valueFrom:
-                configMapKeyRef:
-                  name: outputs-infrastructure
-                  key: msk_bootstrap_brokers
-            - name: CONSUMER_GROUP_ID
-              value: "executor"
-            - name: CONSUMER_TOPIC
-              value: "BAI_APP_FETCHER"
-            - name: PRODUCER_TOPIC
-              value: "BAI_APP_EXECUTOR"
-            - name: LOGGING_LEVEL
-              value: "INFO"
+          - name: AVAILABILITY_ZONES
+            value:
+            valueFrom:
+              configMapKeyRef:
+                name: outputs-infrastructure
+                key: availability_zones
+          - name: KAFKA_BOOTSTRAP_SERVERS
+            valueFrom:
+              configMapKeyRef:
+                name: outputs-infrastructure
+                key: msk_bootstrap_brokers
+          - name: CONSUMER_GROUP_ID
+            value: "executor"
+          - name: CONSUMER_TOPIC
+            value: "BAI_APP_FETCHER"
+          - name: PRODUCER_TOPIC
+            value: "BAI_APP_EXECUTOR"
+          - name: LOGGING_LEVEL
+            value: "INFO"
+          - name: KUBECTL
+            value: "/kubectl/kubectl"
+          volumeMounts:
+            - mountPath: /kubectl
+              name: kubectl
       nodeSelector:
         node.type: bai-services-cheap
       restartPolicy: Always
+      volumes:
+        - name: kubectl
+          emptyDir: {}

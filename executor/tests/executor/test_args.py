@@ -47,7 +47,7 @@ def test_create_transpiler_config(config_args):
         descriptor_config=expected_descriptor_config,
         bai_config=expected_bai_config,
         environment_info=expected_environment_info,
-        kubeconfig=args.kubeconfig,
+        kubectl=args.kubectl,
     )
 
     assert transpiler_config == expected_transpiler_config

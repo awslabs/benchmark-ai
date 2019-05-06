@@ -44,7 +44,9 @@ def fetched_data_sources(base_data_sources):
 
 @pytest.fixture
 def config_args(shared_datadir):
-    required_args = "--descriptor=descriptor.toml --availability-zones=us-east-1a,us-east-1b,us-east-1c --kubeconfig=kubeconfig/path"
+    required_args = (
+        "--descriptor=descriptor.toml --availability-zones=us-east-1a,us-east-1b,us-east-1c --kubectl=kubectl/path"
+    )
     return f'{required_args} -c {str(shared_datadir / "default_config.yaml")}'
 
 
