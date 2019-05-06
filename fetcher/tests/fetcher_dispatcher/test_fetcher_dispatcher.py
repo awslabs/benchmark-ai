@@ -66,7 +66,7 @@ def get_benchmark_event(payload):
 
 
 def test_fetcher_event_handler_fetch(
-        data_set_manager: DataSetManager, benchmark_event_with_datasets: BenchmarkEvent, kafka_service: KafkaService
+    data_set_manager: DataSetManager, benchmark_event_with_datasets: BenchmarkEvent, kafka_service: KafkaService
 ):
     fetcher_callback = FetcherEventHandler(data_set_manager, S3_BUCKET)
     event_to_send_sync = fetcher_callback.handle_event(benchmark_event_with_datasets, kafka_service)
@@ -86,7 +86,7 @@ def test_fetcher_event_handler_fetch(
 
 
 def test_fetcher_event_handler_nothing_to_do(
-        data_set_manager: DataSetManager, benchmark_event_without_datasets: BenchmarkEvent, kafka_service: KafkaService
+    data_set_manager: DataSetManager, benchmark_event_without_datasets: BenchmarkEvent, kafka_service: KafkaService
 ):
     fetcher_callback = FetcherEventHandler(data_set_manager, S3_BUCKET)
     event_to_send_sync = fetcher_callback.handle_event(benchmark_event_without_datasets, kafka_service)
