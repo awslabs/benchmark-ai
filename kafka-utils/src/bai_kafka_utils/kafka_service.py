@@ -43,14 +43,15 @@ class KafkaService:
     class LoopNotRunningException(Exception):
         pass
 
-    def __init__(self,
-                 name: str,
-                 version: str,
-                 producer_topic: str,
-                 callbacks: List[KafkaServiceCallback],
-                 kafka_consumer: KafkaConsumer,
-                 kafka_producer: KafkaProducer
-                 ):
+    def __init__(
+        self,
+        name: str,
+        version: str,
+        producer_topic: str,
+        callbacks: List[KafkaServiceCallback],
+        kafka_consumer: KafkaConsumer,
+        kafka_producer: KafkaProducer,
+    ):
 
         self._producer_topic = producer_topic
         self._producer = kafka_producer
@@ -94,9 +95,7 @@ class KafkaService:
 
         def add_self_to_visited(event):
             current_tims_ms = time.time() * 1000
-            entry = VisitedService(self.name,
-                                   current_tims_ms,
-                                   self.version)
+            entry = VisitedService(self.name, current_tims_ms, self.version)
             event.visited.append(entry)
 
         # Message ID is unique per message
@@ -105,8 +104,7 @@ class KafkaService:
 
         logger.info(f"Sending {event} -> {self._producer_topic}")
 
-        self._producer.send(self._producer_topic,
-                            value=event)
+        self._producer.send(self._producer_topic, value=event)
 
     @property
     def running(self) -> bool:

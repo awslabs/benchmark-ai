@@ -10,13 +10,12 @@ import kazoo.client
 
 
 def s3_to_s3_deep(src_bucket, src_key, dst_bucket, dst_key):
-    s3 = boto3.resource('s3')
+    s3 = boto3.resource("s3")
     old_bucket = s3.Bucket(src_bucket)
     new_bucket = s3.Bucket(dst_bucket)
 
     for obj in old_bucket.objects.filter(Prefix=src_key):
-        old_source = {'Bucket': src_bucket,
-                      'Key': obj.key}
+        old_source = {"Bucket": src_bucket, "Key": obj.key}
         # replace the prefix
         new_key = obj.key.replace(src_key, dst_key)
         new_obj = new_bucket.Object(new_key)
@@ -68,13 +67,13 @@ def http_to_s3(src: str, dst: str):
 
         fp.seek(0)
         print("Start upload")
-        boto3.client('s3').upload_fileobj(fp, bucket, key)
+        boto3.client("s3").upload_fileobj(fp, bucket, key)
         print("End upload")
 
 
-STATE_RUNNING = "RUNNING".encode('utf-8')
-STATE_DONE = "DONE".encode('utf-8')
-STATE_FAILED = "FAILED".encode('utf-8')
+STATE_RUNNING = "RUNNING".encode("utf-8")
+STATE_DONE = "DONE".encode("utf-8")
+STATE_FAILED = "FAILED".encode("utf-8")
 
 
 # Current version doesn't stream - we create temporary files.
@@ -99,21 +98,17 @@ def update_zk_node(zk_node_path):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Downloads the dataset from http/ftp/s3 to internal s3')
+    parser = argparse.ArgumentParser(description="Downloads the dataset from http/ftp/s3 to internal s3")
 
-    parser.add_argument('--src', required=True,
-                        help='Source', default=None)
-    parser.add_argument('--dst', metavar='dst', required=True,
-                        help='Destination', default=None)
-    parser.add_argument('--md5',
-                        help='MD5 hash', default=None)
-    parser.add_argument('--zk-node-path',
-                        help='Zookeeper node to update', default=None)
+    parser.add_argument("--src", required=True, help="Source", default=None)
+    parser.add_argument("--dst", metavar="dst", required=True, help="Destination", default=None)
+    parser.add_argument("--md5", help="MD5 hash", default=None)
+    parser.add_argument("--zk-node-path", help="Zookeeper node to update", default=None)
 
     args = parser.parse_args()
 
     fetch(args)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

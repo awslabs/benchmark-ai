@@ -37,10 +37,7 @@ id = "mnist"
 # Make an entry for each with the same format as the ones below.
 [[data.sources]]
 # Data download URI.
-# UNTIL THE DATA FETCHER IS READY: THIS URI HAS TO POINT TO DATA PRESENT IN YOUR
-# DATA-PULL S3 BUCKET
-# aws s3 sync s3://mlperf-data-mxnet-berlin/mnist s3://data-pull-<YOUR-BAI-ID>/mnist
-uri = "s3://data-pull-0a28164314634bd6/mnist"
+src = "s3://mlperf-data-mxnet-berlin/mnist"
 # Path where the dataset is stored in the container FS
 path = "/data/mnist"
 

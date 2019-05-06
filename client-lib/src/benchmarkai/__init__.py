@@ -1,6 +1,7 @@
 import json
 import os
 import six
+
 if six.PY2:
     from collections import Mapping
 else:
@@ -18,6 +19,7 @@ def _sleep(seconds):
     # a debugger is attached then this method is called by many other modules. Having a separate method makes it easier
     # to get the right results when debugging.
     import time
+
     time.sleep(seconds)
 
 
@@ -37,15 +39,19 @@ def _getfifo():
             # Other process has not created the FIFO yet. This should NOT usually happen.
             # This situation arises if the benchmark (this process) called emit() before the other process was able to
             # create the fifo.
-            print("[benchmark ai] DEBUG - Other process has NOT created the FIFO yet,"
-                  " sleeping for %f seconds" % step_time)
+            print(
+                "[benchmark ai] DEBUG - Other process has NOT created the FIFO yet,"
+                " sleeping for %f seconds" % step_time
+            )
             _sleep(step_time)
             waited += step_time
 
         import io
+
         __fifo = io.open(pathname, "w")
 
         import atexit
+
         atexit.register(__fifo.close)
     return __fifo
 

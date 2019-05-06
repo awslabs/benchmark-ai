@@ -29,5 +29,5 @@ def test_descriptor_config(descriptor_config):
 
 
 def test_find_data_source(descriptor, base_data_sources):
-    source = descriptor.find_data_source(base_data_sources[0]['uri'])
+    source = descriptor.find_data_source(base_data_sources[0]['src'])
     assert source['path'] == base_data_sources[0]['path']

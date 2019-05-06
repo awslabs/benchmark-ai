@@ -29,8 +29,5 @@ def get_input(argv) -> InputValue:
             backend_args[argname] = value
 
     return InputValue(
-        backend=args.backend,
-        backend_args=backend_args,
-        pod_name=args.pod_name,
-        pod_namespace=args.pod_namespace,
+        backend=args.backend, backend_args=backend_args, pod_name=args.pod_name, pod_namespace=args.pod_namespace
     )

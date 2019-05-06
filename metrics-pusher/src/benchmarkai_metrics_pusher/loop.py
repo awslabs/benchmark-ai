@@ -59,6 +59,7 @@ def start_loop(metrics_pusher_input):
         pass
 
     try:
+
         def stop_loop(signum, frame):
             # An exception is being used as flow control here. The reason is because when opening a FIFO it blocks
             # while both sides haven't opened it yet.

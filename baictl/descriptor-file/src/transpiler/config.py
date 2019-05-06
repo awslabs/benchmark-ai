@@ -35,5 +35,5 @@ class BaiDataSource:
         self.path = path
 
         if self.scheme.lower() != 's3':
-            raise ValueError(f'Unexpected scheme in data source uri: {self.scheme}.'
+            raise ValueError(f'Unexpected scheme in data source src: {self.scheme}.'
                              f' Fetched dataset is {fetched_data_source}')

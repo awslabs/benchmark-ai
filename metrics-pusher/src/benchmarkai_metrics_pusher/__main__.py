@@ -9,15 +9,9 @@ def main(argv=None):
     import sys
 
     # Configure logging
-    logging_streams = {
-        "stdout": sys.stdout,
-        "stderr": sys.stderr
-    }
+    logging_streams = {"stdout": sys.stdout, "stderr": sys.stderr}
     stream = logging_streams[os.environ.get("LOGGING_STREAM", "stderr").lower()]
-    logging.basicConfig(
-        stream=stream,
-        level=os.environ.get("LOGGING_LEVEL", "INFO").upper(),
-    )
+    logging.basicConfig(stream=stream, level=os.environ.get("LOGGING_LEVEL", "INFO").upper())
 
     # Start the app
     logger = logging.getLogger("metrics-pusher")
@@ -25,11 +19,13 @@ def main(argv=None):
     logger.info("Starting app")
 
     from benchmarkai_metrics_pusher.input_values import get_input
+
     metrics_pusher_input = get_input(argv)
     logger.info("Input is %s", metrics_pusher_input)
 
     # Start the loop
     from benchmarkai_metrics_pusher.loop import start_loop
+
     start_loop(metrics_pusher_input)
 
 

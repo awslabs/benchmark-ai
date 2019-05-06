@@ -10,6 +10,7 @@ from benchmarkai_metrics_pusher import listen_to_fifo_and_emit_metrics
 @contextmanager
 def create_mock_for_get_fifo_from_string(string):
     from io import StringIO
+
     real_stream = StringIO(string)
     mocked_stream = mock.MagicMock(wraps=real_stream)
 

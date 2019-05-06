@@ -40,8 +40,9 @@ class KubernetesDispatcher:
         env_list = [kubernetes.client.V1EnvVar(name="ZOOKEEPER_ENSEMBLE_HOSTS", value=self.zk_ensemble)]
 
         container = kubernetes.client.V1Container(name="downloader", image=self.job_image, args=job_args, env=env_list)
-        template.template.spec = kubernetes.client.V1PodSpec(containers=[container], restart_policy='Never',
-                                                             node_selector=self.node_selector)
+        template.template.spec = kubernetes.client.V1PodSpec(
+            containers=[container], restart_policy="Never", node_selector=self.node_selector
+        )
         # And finally we can create our V1JobSpec!
         download_job.spec = kubernetes.client.V1JobSpec(ttl_seconds_after_finished=600, template=template.template)
 
