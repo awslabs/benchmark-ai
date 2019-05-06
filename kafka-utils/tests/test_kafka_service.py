@@ -46,13 +46,13 @@ def benchmark_event():
     doc = BenchmarkDoc({"var": "val"}, "var = val", MOCK_MD5)
     payload = MockBenchmarkPayload(foo="FOO", bar=42, toml=doc)
     return BenchmarkEvent(
-        request_id="REQUEST_ID",
+        action_id="ACTION_ID",
         message_id="MESSAGE_ID",
         client_id="CLIENT_ID",
         client_version="CLIENT_VERSION",
-        client_user="CLIENT_USER",
+        client_username="CLIENT_USER",
         authenticated=False,
-        date=42,
+        tstamp=42,
         visited=[],
         payload=payload,
     )
@@ -182,7 +182,7 @@ def test_message_sent(
     mock_time.return_value = VISIT_TIME
 
     expected_event.message_id = str(mock_uuid4())
-    expected_event.visited.append(VisitedService(SERVICE_NAME, timestamp=VISIT_TIME_MS, version=VERSION))
+    expected_event.visited.append(VisitedService(SERVICE_NAME, tstamp=VISIT_TIME_MS, version=VERSION))
 
     mock_callback = Mock(spec=KafkaServiceCallback)
     mock_callback.handle_event = Mock(return_value=result_event)

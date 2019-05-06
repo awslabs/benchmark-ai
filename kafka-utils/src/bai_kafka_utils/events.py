@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from dataclasses_json import dataclass_json
-from typing import Dict, List, Optional, Type
+from typing import Dict, List, Optional, Type, Any
 
 
 @dataclass_json
@@ -15,9 +15,12 @@ class DataSet:
 @dataclass_json
 @dataclass
 class BenchmarkDoc:
-    contents: Dict[str, str]
+    # descriptor_filename: str
+    contents: Dict[str, Any]
     doc: str
-    md5: str
+    sha1: str
+    descriptor_filename: Optional[str] = None
+    verified: Optional[bool] = False
 
 
 @dataclass_json
@@ -38,7 +41,7 @@ class BenchmarkPayload:
 @dataclass_json
 @dataclass
 class FetcherPayload(BenchmarkPayload):
-    data_sets: List[DataSet]
+    datasets: List[DataSet]
 
 
 @dataclass_json
@@ -50,29 +53,34 @@ class ExecutorPayload(BenchmarkPayload):
 @dataclass_json
 @dataclass
 class VisitedService:
-    service: str
-    timestamp: int
+    svc: str
+    tstamp: int
     version: str
 
 
 @dataclass_json
 @dataclass
 class BenchmarkEvent:
-    request_id: str
+    action_id: str
     message_id: str
     client_id: str
     client_version: str
-    client_user: str
+    client_username: str
     authenticated: bool
-    date: int
+    tstamp: int
     visited: List[VisitedService]
     payload: BenchmarkPayload
 
 
-def make_benchmark_event(payload_type: Type[BenchmarkPayload]):
+def __make_benchmark_event(payload_type: Type[BenchmarkPayload]):
     @dataclass_json
     @dataclass
     class BenchmarkEventWithPayload(BenchmarkEvent):
         payload: payload_type
 
     return BenchmarkEventWithPayload
+
+
+FetcherBenchmarkEvent = __make_benchmark_event(FetcherPayload)
+
+ExecutorBenchmarkEvent = __make_benchmark_event(ExecutorPayload)

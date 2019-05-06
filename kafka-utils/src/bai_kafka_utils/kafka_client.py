@@ -1,37 +1,46 @@
 import logging
-from json import JSONDecodeError
 from typing import List, Type, Tuple
 
 import kafka
 from kafka import KafkaConsumer, KafkaProducer
 
-from bai_kafka_utils.events import make_benchmark_event, BenchmarkPayload
+from bai_kafka_utils.events import BenchmarkEvent
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
 from bai_kafka_utils.utils import DEFAULT_ENCODING
 
 logger = logging.getLogger(__name__)
 
 
+class WrongBenchmarkEventTypeException(Exception):
+    pass
+
+
 # args from kafka
 def create_kafka_consumer_producer(
-    kafka_cfg: KafkaServiceConfig, payload_type: Type[BenchmarkPayload]
+    kafka_cfg: KafkaServiceConfig, event_type: Type[BenchmarkEvent]
 ) -> Tuple[KafkaConsumer, KafkaProducer]:
     return (
         create_kafka_consumer(
-            kafka_cfg.bootstrap_servers, kafka_cfg.consumer_group_id, kafka_cfg.consumer_topic, payload_type
+            kafka_cfg.bootstrap_servers, kafka_cfg.consumer_group_id, kafka_cfg.consumer_topic, event_type
         ),
         create_kafka_producer(kafka_cfg.bootstrap_servers),
     )
 
 
 def create_kafka_consumer(
-    bootstrap_servers: List[str], group_id: str, topic: str, payload_type: Type[BenchmarkPayload]
+    bootstrap_servers: List[str], group_id: str, topic: str, event_type: Type[BenchmarkEvent]
 ) -> kafka.KafkaConsumer:
+    if not issubclass(event_type, BenchmarkEvent):
+        raise WrongBenchmarkEventTypeException(f"{str(event_type)} is not a valid benchmark type")
+
     def json_deserializer(msg_value):
         try:
 
-            return make_benchmark_event(payload_type).from_json(msg_value.decode(DEFAULT_ENCODING))
-        except JSONDecodeError:
+            return event_type.from_json(msg_value.decode(DEFAULT_ENCODING))
+        # Our json deserializer can raise anything - constructor can raise anything).
+        # Handling JsonDecodeError and KeyError is not enough
+        # For example TypeError is possible as well. So let's play safe.
+        except Exception:
             logger.exception("Failed to deserialize %s", msg_value)
             return None
 
