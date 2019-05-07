@@ -1,5 +1,4 @@
 import os
-import json
 import configargparse
 
 from transpiler.config import DescriptorConfig, BaiConfig, EnvironmentInfo
@@ -51,7 +50,7 @@ def get_args(argv):
 
     parser.add(
         "--transpiler-valid-strategies",
-        type=json.loads,
+        type=list_str,
         env_var="TRANSPILER_VALID_STRATEGIES",
         dest="valid_strategies",
         help="List of valid strategies such as single_node or horovod",

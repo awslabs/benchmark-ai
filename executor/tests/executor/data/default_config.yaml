@@ -3,4 +3,4 @@ transpiler_puller_s3_region: eu-west-1
 transpiler_puller_docker_image: stsukrov/s3dataprovider
 
 # descriptor config
-transpiler_valid_strategies: '["single_node", "horovod"]'
+transpiler_valid_strategies: single_node,horovod

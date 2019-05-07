@@ -32,8 +32,8 @@ def test_create_bai_config(config_args):
     assert bai_config == expected_config
 
 
-def test_create_transpiler_config(config_args):
-    transpiler_config = create_executor_config(config_args)
+def test_create_executor_config(config_args):
+    executor_config = create_executor_config(config_args)
 
     args = get_args(config_args)
     expected_descriptor_config = DescriptorConfig(valid_strategies=args.valid_strategies)
@@ -43,11 +43,11 @@ def test_create_transpiler_config(config_args):
         puller_s3_region=args.puller_s3_region,
     )
     expected_environment_info = EnvironmentInfo(availability_zones=args.availability_zones)
-    expected_transpiler_config = ExecutorConfig(
+    expected_executor_config = ExecutorConfig(
         descriptor_config=expected_descriptor_config,
         bai_config=expected_bai_config,
         environment_info=expected_environment_info,
         kubectl=args.kubectl,
     )
 
-    assert transpiler_config == expected_transpiler_config
+    assert executor_config == expected_executor_config
