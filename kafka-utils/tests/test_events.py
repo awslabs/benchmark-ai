@@ -121,7 +121,3 @@ def test_invalid_payload_type(base_event_as_dict):
         event_type.from_json(event_as_json_string)
     # Missing required dataset
     assert e.match("dataset")
-
-
-
-

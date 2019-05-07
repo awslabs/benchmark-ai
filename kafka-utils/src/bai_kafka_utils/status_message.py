@@ -11,8 +11,5 @@ def create_status_message_event(event: BenchmarkEvent, msg: str) -> StatusMessag
         authenticated=event.authenticated,
         tstamp=event.tstamp,
         payload=StatusMessagePayload(msg),
-        visited = []
+        visited=[],
     )
-
-
-
