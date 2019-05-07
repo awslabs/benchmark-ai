@@ -23,7 +23,9 @@ RUN /opt/conda/bin/conda config --add channels conda-forge && \
 ######################
 # Baictl environment #
 ######################
-COPY . /work/baictl
+COPY baictl /work/baictl
+COPY metrics-pusher /work/metrics-pusher
+
 WORKDIR /work/baictl
 
 RUN /opt/conda/bin/conda env update
