@@ -239,6 +239,8 @@ destroy_infra() {
         printf "Missing required argument --aws-region\n" && return 1
     fi
 
+    _install_msk_aware_terraform_plugin || return 1
+
     _initialize_terraform_backend ${region} || return 1
     terraform destroy -auto-approve ${vars}
 }
