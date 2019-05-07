@@ -2,3 +2,4 @@
 run-baictl.sh
 cf-baictl-ecs.yml
 Dockerfile
+.terraform
