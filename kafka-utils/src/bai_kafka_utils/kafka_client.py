@@ -35,7 +35,6 @@ def create_kafka_consumer(
 
     def json_deserializer(msg_value):
         try:
-
             return event_type.from_json(msg_value.decode(DEFAULT_ENCODING))
         # Our json deserializer can raise anything - constructor can raise anything).
         # Handling JsonDecodeError and KeyError is not enough

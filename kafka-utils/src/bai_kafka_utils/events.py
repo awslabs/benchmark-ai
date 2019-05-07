@@ -1,7 +1,10 @@
-from dataclasses import dataclass
-from typing import Dict, List, Optional, Type, Any
+import copy
+import dataclasses
 
+from dacite import from_dict
+from dataclasses import dataclass
 from dataclasses_json import dataclass_json
+from typing import List, Optional, Type, Dict, Any
 
 
 @dataclass_json
@@ -15,7 +18,6 @@ class DataSet:
 @dataclass_json
 @dataclass
 class BenchmarkDoc:
-    # descriptor_filename: str
     contents: Dict[str, Any]
     doc: str
     sha1: str
@@ -46,8 +48,14 @@ class FetcherPayload(BenchmarkPayload):
 
 @dataclass_json
 @dataclass
-class ExecutorPayload(BenchmarkPayload):
+class ExecutorPayload(FetcherPayload):
     job: BenchmarkJob
+
+    @classmethod
+    def from_fetcher_payload(cls, payload, job: BenchmarkJob):
+        payload_as_dict = dataclasses.asdict(copy.deepcopy(payload))
+        payload_as_dict["job"] = job
+        return from_dict(data_class=ExecutorPayload, data=payload_as_dict)
 
 
 @dataclass_json
@@ -70,6 +78,10 @@ class BenchmarkEvent:
     tstamp: int
     visited: List[VisitedService]
     payload: Any
+
+    @classmethod
+    def from_event_new_payload(cls, benchmark_event, payload: BenchmarkPayload):
+        return dataclasses.replace(benchmark_event, payload=payload)
 
 
 def __make_benchmark_event(payload_type: Type):
