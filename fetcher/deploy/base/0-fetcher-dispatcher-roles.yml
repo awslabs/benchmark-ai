@@ -9,18 +9,18 @@ metadata:
   name: fetcher-dispatcher
   namespace: default
 rules:
-  - apiGroups: ["","batch"]
-    resources: ["jobs"]
-    verbs: ["create"]
+- apiGroups: ["","batch"]
+  resources: ["jobs"]
+  verbs: ["create"]
 ---
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: fetcher-dispatcher-pod-status-binding
 subjects:
-  - kind: ServiceAccount
-    name: fetcher-dispatcher
-    namespace: default
+- kind: ServiceAccount
+  name: fetcher-dispatcher
+  namespace: default
 roleRef:
   kind: Role
   name: fetcher-dispatcher
