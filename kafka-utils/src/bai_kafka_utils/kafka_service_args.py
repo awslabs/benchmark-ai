@@ -1,5 +1,6 @@
 import argparse
 import os
+
 from configargparse import ArgParser
 
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
@@ -14,6 +15,7 @@ def get_kafka_service_config(program_name: str, cmd_args: str) -> KafkaServiceCo
         consumer_group_id=args.consumer_group_id,
         bootstrap_servers=args.bootstrap_servers,
         logging_level=args.logging_level,
+        status_topic=args.status_topic,
     )
 
 
@@ -39,6 +41,8 @@ def create_kafka_service_parser(program_name: str) -> ArgParser:
     )
 
     parser.add_argument("--consumer-group-id", env_var="CONSUMER_GROUP_ID")
+
+    parser.add_argument("--status-topic", env_var="STATUS_TOPIC", required=False)
 
     parser.add_argument("--logging-level", env_var="LOGGING_LEVEL", default="INFO")
 

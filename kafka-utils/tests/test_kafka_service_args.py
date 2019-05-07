@@ -9,6 +9,7 @@ MOCK_KAFKA1 = "kafka1:9092"
 MOCK_KAFKA2 = "kafka2:9092"
 MOCK_PRODUCER_TOPIC = "OUT_TOPIC"
 MOCK_CONSUMER_TOPIC = "IN_TOPIC"
+MOCK_STATUS_TOPIC = "STATUS_TOPIC"
 
 MOCK_KAFKA_BOOTSTRAP_SERVERS = [MOCK_KAFKA1, MOCK_KAFKA2]
 
@@ -16,6 +17,7 @@ ARGS = f"""--bootstrap-servers={MOCK_KAFKA1},{MOCK_KAFKA2}
     --consumer-group-id={MOCK_CONSUMER_GROUP_ID}
     --consumer-topic={MOCK_CONSUMER_TOPIC}
     --producer-topic={MOCK_PRODUCER_TOPIC}
+    --status-topic={MOCK_STATUS_TOPIC}
     --logging-level={LOGGING_LEVEL}"""
 
 EXPECTED_CONFIG = KafkaServiceConfig(
@@ -24,6 +26,7 @@ EXPECTED_CONFIG = KafkaServiceConfig(
     consumer_topic=MOCK_CONSUMER_TOPIC,
     logging_level=LOGGING_LEVEL,
     producer_topic=MOCK_PRODUCER_TOPIC,
+    status_topic=MOCK_STATUS_TOPIC,
 )
 
 

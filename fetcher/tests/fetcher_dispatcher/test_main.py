@@ -2,10 +2,8 @@ from unittest.mock import patch
 
 # Regression test
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
-
 from fetcher_dispatcher import fetcher_dispatcher, args
 from fetcher_dispatcher.args import FetcherServiceConfig, FetcherJobConfig
-
 
 BOOTSTRAP_SERVERS = ["K1", "K2"]
 
@@ -29,6 +27,8 @@ DEFAULT_NAMESPACE = "default"
 
 DEFAULT_RESTART_POLICY = "OnFailure"
 
+STATUS_TOPIC = "STATUS"
+
 
 @patch.object(args.os, "environ")
 @patch.object(fetcher_dispatcher, "create_fetcher_dispatcher")
@@ -42,7 +42,8 @@ def test_main(mock_create_fetcher_dispatcher, mock):
         f"--s3-data-set-bucket {S3_DATA_SET_BUCKET} "
         f"--bootstrap-servers {BOOTSTRAP_SERVERS_ARG} "
         f"--logging-level {LOGGING_LEVEL} "
-        f"--fetcher-job-image {FETCHER_JOB_IMAGE}"
+        f"--fetcher-job-image {FETCHER_JOB_IMAGE} " 
+        f"--status-topic {STATUS_TOPIC}"
     )
 
     expected_common_kafka_cfg = KafkaServiceConfig(
@@ -50,6 +51,7 @@ def test_main(mock_create_fetcher_dispatcher, mock):
         producer_topic=PRODUCER_TOPIC,
         bootstrap_servers=BOOTSTRAP_SERVERS,
         logging_level=LOGGING_LEVEL,
+        status_topic=STATUS_TOPIC
     )
 
     fetcher_dispatcher_cfg = FetcherServiceConfig(
