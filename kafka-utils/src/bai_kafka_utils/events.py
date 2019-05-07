@@ -81,9 +81,7 @@ class BenchmarkEvent:
 
     @classmethod
     def from_event_new_payload(cls, benchmark_event, payload: BenchmarkPayload):
-        event_as_dict = dataclasses.asdict(benchmark_event)
-        event_as_dict["payload"] = payload
-        return from_dict(data_class=BenchmarkEvent, data=event_as_dict)
+        return dataclasses.replace(benchmark_event, payload=payload)
 
 
 def __make_benchmark_event(payload_type: Type):
