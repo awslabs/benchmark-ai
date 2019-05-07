@@ -17,8 +17,6 @@ kafka_cfg = KafkaServiceConfig(
     logging_level="INFO",
 )
 
-consumer, producer = create_kafka_consumer_producer(kafka_cfg, ExecutorBenchmarkEvent)
-
 
 def get_message_is_the_response(src_event: BenchmarkEvent) -> Callable[[BenchmarkEvent], bool]:
     def filter_event(event: BenchmarkEvent) -> bool:
@@ -44,6 +42,8 @@ def get_event_equals(src_event: BenchmarkEvent) -> Callable[[BenchmarkEvent], bo
     reason="This test requires the executor service to be running on your machine, along with Kafka, ZK, etc"
 )
 def test_producer(benchmark_event):
+    consumer, producer = create_kafka_consumer_producer(kafka_cfg, ExecutorBenchmarkEvent)
+
     expected_job = BenchmarkJob(id=JOB_ID, status="SUBMITTED", k8s_yaml="")
     expected_payload = ExecutorPayload.from_fetcher_payload(benchmark_event.payload, job=expected_job)
     expected_event = BenchmarkEvent.from_event_new_payload(benchmark_event, expected_payload)
