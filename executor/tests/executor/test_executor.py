@@ -23,6 +23,7 @@ MOCK_KAFKA_BOOTSTRAP_SERVERS = [MOCK_KAFKA1, MOCK_KAFKA2]
 
 JOB_ID = "728ff542-b332-4520-bb2e-51d5e32cfc0a"
 
+
 @fixture
 def kafka_service() -> KafkaService:
     return MagicMock(spec=KafkaService)
@@ -65,7 +66,11 @@ def benchmark_event_without_data_sets(benchmark_doc: BenchmarkDoc) -> BenchmarkE
 @mock.patch("executor.executor.subprocess.check_output")
 @mock.patch("executor.executor.create_job_yaml_spec", return_value=(JOB_ID, "yaml_spec"))
 def test_executor_event_handler_handle_event(
-    mock_create_yaml, mock_check_output, benchmark_event_with_data_sets: BenchmarkEvent, kafka_service: KafkaService, config_args
+    mock_create_yaml,
+    mock_check_output,
+    benchmark_event_with_data_sets: BenchmarkEvent,
+    kafka_service: KafkaService,
+    config_args,
 ):
     config = create_executor_config(config_args)
     executor_callback = ExecutorEventHandler(config)
@@ -75,7 +80,6 @@ def test_executor_event_handler_handle_event(
     mock_create_yaml.assert_called_once()
     mock_check_output.assert_called_once()
     assert event_to_send.action_id == benchmark_event_with_data_sets.action_id
-
 
 
 @mock.patch("executor.executor.subprocess.check_output")

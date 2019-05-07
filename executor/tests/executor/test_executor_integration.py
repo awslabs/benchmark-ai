@@ -40,7 +40,9 @@ def get_event_equals(src_event: BenchmarkEvent) -> Callable[[BenchmarkEvent], bo
     return same_event
 
 
-@pytest.mark.skip(reason="This test requires the executor service to be running on your machine, along with Kafka, ZK, etc")
+@pytest.mark.skip(
+    reason="This test requires the executor service to be running on your machine, along with Kafka, ZK, etc"
+)
 def test_producer(benchmark_event):
     expected_job = BenchmarkJob(id=JOB_ID, status="SUBMITTED", k8s_yaml="")
     expected_payload = ExecutorPayload.from_fetcher_payload(benchmark_event.payload, job=expected_job)

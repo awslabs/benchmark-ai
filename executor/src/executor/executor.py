@@ -8,8 +8,12 @@ from executor.config import ExecutorConfig
 from transpiler.bai_knowledge import create_job_yaml_spec
 from bai_kafka_utils.events import BenchmarkEvent, FetcherBenchmarkEvent, ExecutorPayload, BenchmarkJob
 from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
-from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService, KafkaServiceConfig, \
-    KafkaServiceCallbackException
+from bai_kafka_utils.kafka_service import (
+    KafkaServiceCallback,
+    KafkaService,
+    KafkaServiceConfig,
+    KafkaServiceCallbackException,
+)
 from bai_kafka_utils.utils import DEFAULT_ENCODING
 
 logger = logging.getLogger(SERVICE_NAME)

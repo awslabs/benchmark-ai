@@ -56,9 +56,7 @@ def get_args(argv):
         help="List of valid strategies such as single_node or horovod",
     )
 
-    parser.add("--kubectl",
-               env_var="KUBECTL",
-               help="Path to kubectl in the deployment pod")
+    parser.add("--kubectl", env_var="KUBECTL", help="Path to kubectl in the deployment pod")
 
     parsed_args, _ = parser.parse_known_args(argv)
     return parsed_args
