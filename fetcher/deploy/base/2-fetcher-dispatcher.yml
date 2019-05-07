@@ -8,7 +8,7 @@ spec:
   selector:
    matchLabels:
       app: benchmark-ai
-  replicas: 3
+  replicas: 1
   template:
     metadata:
       labels:
@@ -31,7 +31,15 @@ spec:
           image: stsukrov/fetcher-dispatcher
           env:
             - name: FETCHER_JOB_IMAGE
-              value: stsukrov/datafetcher
+              valueFrom:
+                configMapKeyRef:
+                  name: fetcher-dispatcher
+                  key: job_image
+            - name: FETCHER_JOB_PULL_POLICY
+              valueFrom:
+                configMapKeyRef:
+                  name: fetcher-dispatcher
+                  key: pull_policy
             - name: S3_DATASET_BUCKET
               valueFrom:
                 configMapKeyRef:
@@ -48,15 +56,27 @@ spec:
                   name: outputs-infrastructure
                   key: msk_bootstrap_brokers
             - name: CONSUMER_GROUP_ID
-              value: fetcher-dispatcher
+              valueFrom:
+                configMapKeyRef:
+                  name: fetcher-dispatcher
+                  key: consumer_group_id
             - name: CONSUMER_TOPIC
-              value: BAI_APP_BFF
+              valueFrom:
+                configMapKeyRef:
+                  name: fetcher-dispatcher
+                  key: consumer_topic
             - name: PRODUCER_TOPIC
-              value: BAI_APP_FETCHER
+              valueFrom:
+                configMapKeyRef:
+                  name: fetcher-dispatcher
+                  key: producer_topic
             - name: LOGGING_LEVEL
               value: INFO
             - name: FETCHER_JOB_NODE_SELECTOR
-              value: '{"node.type":"bai-services-network"}'
+              valueFrom:
+                configMapKeyRef:
+                  name: fetcher-dispatcher
+                  key: job_node_selector
       nodeSelector:
         node.type: bai-services-cheap
       restartPolicy: Always
