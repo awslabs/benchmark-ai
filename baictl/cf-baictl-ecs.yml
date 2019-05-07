@@ -1,0 +1,156 @@
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  
+  BaictlImageRepository: 
+    Type: "AWS::ECR::Repository"
+    Properties: 
+      RepositoryName: !Sub "benchmark-ai/aws-baictl-${AWS::StackName}"
+  
+  FargateCluster:
+    Type: "AWS::ECS::Cluster"
+    Properties:
+      ClusterName: !Sub ${AWS::StackName}-cluster
+
+  BaictlLogGroup:
+    Type: "AWS::Logs::LogGroup"
+    Properties: 
+      LogGroupName: !Sub ${AWS::StackName}-baictl
+      RetentionInDays: 1
+  
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: baictl
+      Cpu: 256
+      Memory: 512
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn: !Ref TaskExecutionRole
+      TaskRoleArn: !Ref TaskRole
+      ContainerDefinitions:
+        - Name: baictl
+          Cpu: 256
+          Memory: 512
+          Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${BaictlImageRepository}:latest
+          Command: 
+          - 'create'
+          - 'infra'
+          Environment:
+            - Name: TESTNAME
+              Value: TESTVALUE
+
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref BaictlLogGroup
+              awslogs-region: !Ref 'AWS::Region'
+              awslogs-stream-prefix: 'baictl'
+
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      CidrBlock: '10.0.0.0/16'
+
+  PublicSubnetOne:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select 
+        - 0
+        - !GetAZs 
+          Ref: 'AWS::Region'
+      VpcId: !Ref VPC
+      CidrBlock: '10.0.0.0/24'
+      MapPublicIpOnLaunch: false
+  
+  PublicSubnetTwo:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select 
+        - 1
+        - !GetAZs 
+          Ref: 'AWS::Region'
+      VpcId: !Ref 'VPC'
+      CidrBlock: '10.0.1.0/24'
+      MapPublicIpOnLaunch: false
+        
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+
+  GatewayAttachement:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref 'VPC'
+      InternetGatewayId: !Ref 'InternetGateway'
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref 'VPC'
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: GatewayAttachement
+    Properties:
+      RouteTableId: !Ref 'PublicRouteTable'
+      DestinationCidrBlock: '0.0.0.0/0'
+      GatewayId: !Ref 'InternetGateway'
+
+  PublicSubnetOneRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnetOne
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnetTwoRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnetTwo
+      RouteTableId: !Ref PublicRouteTable
+          
+  TaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ecs-tasks.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Path: /
+      Policies:
+        - PolicyName: AmazonECSTaskExecutionRolePolicy
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                - 'ecr:GetAuthorizationToken'
+                - 'ecr:BatchCheckLayerAvailability'
+                - 'ecr:GetDownloadUrlForLayer'
+                - 'ecr:BatchGetImage'
+
+                - 'logs:CreateLogStream'
+                - 'logs:PutLogEvents'
+              Resource: '*'
+
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ecs-tasks.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Path: /
+
+
+Outputs:
+  #EcrImagePath:
+  #  Description: "ECR image path holding the image that ECS is going to run"
+  #  Value: !Select [0, !Ref TaskDefinition.ContainerDefinitions]
+  EcrImagePath:
+    Description: "ECR image path holding the image that ECS is going to run"
+    Value: !Ref TaskDefinition

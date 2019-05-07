@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: watcher
+  labels:
+    app: benchmark-ai
+spec:
+  selector:
+    matchLabels:
+      app: benchmark-ai
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: benchmark-ai
+        service: watcher
+    spec:
+      serviceAccountName: watcher
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: service
+                    operator: In
+                    values:
+                      - watcher
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: watcher
+          image: edisongustavo/watcher
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: outputs-infrastructure
+                  key: msk_bootstrap_brokers
+            - name: CONSUMER_GROUP_ID
+              value: watcher
+            - name: CONSUMER_TOPIC
+              value: BAI_APP_BFF
+            - name: PRODUCER_TOPIC
+              value: BAI_APP_FETCHER
+            - name: LOGGING_LEVEL
+              value: INFO
+      nodeSelector:
+        node.type: bai-services-cheap
+      restartPolicy: Always

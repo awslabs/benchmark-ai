@@ -94,7 +94,7 @@ class KafkaService:
         """
 
         def add_self_to_visited(event):
-            current_tims_ms = time.time() * 1000
+            current_tims_ms = int(time.time() * 1000)
             entry = VisitedService(self.name, current_tims_ms, self.version)
             event.visited.append(entry)
 

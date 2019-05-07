@@ -40,7 +40,6 @@ EOF
 
 create_infra() {
     local cluster_name=""
-    local region=${default_region}
     local prefix_list_id=""
     local validate=true
 
@@ -63,6 +62,7 @@ create_infra() {
 
     #Temporary behavior
     [ -z "$prefix_list_id" ] && printf "Missing required argument --aws-prefix-list-id\n" && return 1
+    [ -z "$region" ] && printf "Missing required argument --aws-region\n" && return 1
 
     _install_msk_aware_terraform_plugin || return 1
 
@@ -116,7 +116,7 @@ _initialize_terraform_backend(){
             printf "S3 bucket in $data_dir/backend.tfvars already exists. Only creating backend.tfvars file\n"
         else
             printf "Creating bootstrap S3 bucket...\n"
-            aws s3 mb s3://${bucket}  --region ${region} || return 1
+            aws s3 mb s3://${bucket} --region ${region} || return 1
         fi
         cat <<-END > ${data_dir}/backend.tfvars
         bucket="${bucket}"
@@ -160,8 +160,6 @@ _create_kafka_topics(){
     local msk_zookeeper_connect=$(echo $outputs | jq -r '.msk_zookeeper_connect.value')
     local bastion_pem_filename=$(echo $outputs | jq -r '.bastion_pem_filename.value')
     local bastion_public_ip=$(echo $outputs | jq -r '.bastion_public_ip.value')
-
-    local kafka_topics=("BAI_APP_BFF" "BAI_APP_FETCHER" "BAI_APP_EXECUTOR" "BAI_SYS_BFF" "BAI_SYS_FETCHER" "BAI_SYS_EXECUTOR" "CMD_SUBMIT" "CMD_RETURN")
 
     printf "Creating Kafka Topics...\n"
     for topic in "${kafka_topics[@]}"; do
@@ -225,7 +223,6 @@ _install_zookeeper(){
 }
 
 destroy_infra() {
-    local region=$default_region
     for arg in "$@"; do
         case "${arg}" in
         --aws-region=*)
@@ -236,7 +233,11 @@ destroy_infra() {
 
     cd $terraform_dir
 
-    [ -n "$region" ] && vars="${vars} -var region=${region}"
+    if [ -n "$region" ]; then
+        vars="${vars} -var region=${region} -var data_dir=${data_dir}"
+    else
+        printf "Missing required argument --aws-region\n" && return 1
+    fi
 
     _initialize_terraform_backend ${region} || return 1
     terraform destroy -auto-approve ${vars}
@@ -297,7 +298,6 @@ __validate_kafka_topics(){
     local bastion_public_ip=$(echo $outputs | jq -r '.bastion_public_ip.value')
 
     local result=$(ssh -i ${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no -o LogLevel=QUIET "/snap/bin/kafka.topics --list --zookeeper $msk_zookeeper_connect")
-    local kafka_topics=("BAI_APP_BFF" "BAI_APP_FETCHER" "BAI_APP_EXECUTOR" "BAI_SYS_BFF" "BAI_SYS_FETCHER" "BAI_SYS_EXECUTOR" "CMD_SUBMIT" "CMD_RETURN")
 
     for topic in "${kafka_topics[@]}"; do
         echo $result | grep $topic > /dev/null || return 1
@@ -419,17 +419,18 @@ run_benchmark() {
     [ -z "$descriptor" ] && printf "Missing required argument --descriptor\n" && return 1
 
     (
-    local bash_src=$(readlink -f ${BASH_SOURCE})
-    local src_dir=$(dirname "${bash_src}")
+        local bash_src=$(readlink -f ${BASH_SOURCE})
+        local src_dir=$(dirname "${bash_src}")
 
-    export PYTHONPATH=${src_dir}/../../descriptor-file/src:${src_dir}/../../../kafka-utils/src
+        export PYTHONPATH=${src_dir}/../../descriptor-file/src:${src_dir}/../../../kafka-utils/src
 
-    cd $terraform_dir > /dev/null
-    local azs=$(terraform output -json --state=${terraform_state} availability_zones | jq -r '.value | join(" ")')
+        pushd ${terraform_dir} > /dev/null
+        local azs=$(terraform output -json --state=${terraform_state} availability_zones | jq -r '.value | join(" ")')
+        popd
 
-    [ -z "${azs}" ] && printf "Availability zones could not be identified from terraform state %s\n" "${terraform_state}" && return 1
+        [ -z "${azs}" ] && printf "Availability zones could not be identified from terraform state %s\n" "${terraform_state}" && return 1
 
-    python3 ${src_dir}/../../descriptor-file/src/transpiler/__main__.py $(pwd)/$descriptor --availability-zones ${azs} | $kubectl apply -f -
+        python3 ${src_dir}/../../descriptor-file/src/transpiler/__main__.py ${descriptor} --availability-zones ${azs} | ${kubectl} apply -f -
     )
 }
 
@@ -502,6 +503,8 @@ terraform_plan=$(realpath $terraform_plan)
 
 project_dir=$(realpath $(dirname $BASH_SOURCE)/../../..)
 k8s_deploy_dir=$(realpath $(dirname $BASH_SOURCE))/deploy
+
+kafka_topics=("BAI_APP_BFF" "BAI_APP_FETCHER" "BAI_APP_EXECUTOR" "BAI_SYS_BFF" "BAI_SYS_FETCHER" "BAI_SYS_EXECUTOR" "BAI_SYS_STATUS" "CMD_SUBMIT" "CMD_RETURN")
 
 readonly kubeflow_namespace=kubeflow
 

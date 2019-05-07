@@ -2,7 +2,11 @@
 
 print_usage_and_exit(){
     printf "Usage: baictl [verb] [object] [options]\n"
-    exit 1
+    if [[ $verb == "--help" ]]; then
+      exit 0
+    else
+      exit 1
+    fi
 }
 
 all_args="$@"
@@ -21,7 +25,6 @@ fi
 verbose=""
 just_help=""
 data_dir=${HOME}/bai
-default_region="eu-west-1"
 
 for arg in "$@"
 do
