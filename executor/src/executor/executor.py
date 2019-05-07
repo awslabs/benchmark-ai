@@ -49,7 +49,8 @@ class ExecutorEventHandler(KafkaServiceCallback):
 
         try:
             logger.info(f"Applying yaml file using command: {cmd}")
-            subprocess.check_output(cmd, input=yaml.encode(DEFAULT_ENCODING))
+            result = subprocess.check_output(cmd, input=yaml.encode(DEFAULT_ENCODING))
+            logger.info(f"Kubectl output: {result}")
             logger.info(f"Job submitted with yaml: \n {yaml}")
         except subprocess.CalledProcessError as e:
             logger.exception(f"Error executing benchmark: {str(e)}")
