@@ -11,6 +11,11 @@ from bai_kafka_utils.utils import DEFAULT_ENCODING
 logger = logging.getLogger(__name__)
 
 
+# Time before a consumer or producer closes if the topics it is subscribed to are idle.
+# Setting it to -1 disables the behavior so they never close.
+MAX_IDLE_TIME_MS = -1
+
+
 class WrongBenchmarkEventTypeException(Exception):
     pass
 
@@ -44,7 +49,11 @@ def create_kafka_consumer(
             return None
 
     return kafka.KafkaConsumer(
-        topic, bootstrap_servers=bootstrap_servers, group_id=group_id, value_deserializer=json_deserializer
+        topic,
+        bootstrap_servers=bootstrap_servers,
+        group_id=group_id,
+        value_deserializer=json_deserializer,
+        connections_max_idle_ms=MAX_IDLE_TIME_MS,
     )
 
 
@@ -52,4 +61,6 @@ def create_kafka_producer(bootstrap_servers: List[str]) -> kafka.KafkaProducer:
     def json_serializer(msg_value):
         return msg_value.to_json().encode(DEFAULT_ENCODING)
 
-    return kafka.KafkaProducer(bootstrap_servers=bootstrap_servers, value_serializer=json_serializer)
+    return kafka.KafkaProducer(
+        bootstrap_servers=bootstrap_servers, value_serializer=json_serializer, connections_max_idle_ms=MAX_IDLE_TIME_MS
+    )
