@@ -24,7 +24,7 @@ STATUS_EVENT_JSON = """
 {
   "message_id": "MESSAGE_ID",
   "client_id":  "CLIENT_ID",
-  "action_id":  "ACTION_ID", 
+  "action_id":  "ACTION_ID",
   "tstamp": 1554901873677 ,
   "client_username": "vasya",
   "client_version": "1.0",
