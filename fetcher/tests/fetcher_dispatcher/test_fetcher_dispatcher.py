@@ -1,12 +1,5 @@
 import kafka
 from kazoo.client import KazooClient
-
-from fetcher_dispatcher.fetcher_dispatcher import (
-    create_data_set_manager,
-    FetcherEventHandler,
-    create_fetcher_dispatcher,
-)
-from fetcher_dispatcher.kubernetes_client import KubernetesDispatcher
 from pytest import fixture
 from unittest.mock import MagicMock, patch
 
@@ -15,7 +8,12 @@ from bai_kafka_utils.kafka_service import KafkaService, KafkaServiceConfig
 from fetcher_dispatcher import fetcher_dispatcher
 from fetcher_dispatcher.args import FetcherServiceConfig, FetcherJobConfig
 from fetcher_dispatcher.data_set_manager import DataSetManager
-
+from fetcher_dispatcher.fetcher_dispatcher import (
+    create_data_set_manager,
+    FetcherEventHandler,
+    create_fetcher_dispatcher,
+)
+from fetcher_dispatcher.kubernetes_client import KubernetesDispatcher
 
 FETCHER_JOB_IMAGE = "job/image"
 
@@ -97,6 +95,11 @@ def test_fetcher_event_handler_fetch(
     simulate_fetched_datasets(data_set_manager)
 
     kafka_service.send_event.assert_called_once()
+    # One for every data set. One as header, one as footer
+    assert (
+        kafka_service.send_status_message_event.call_count
+        == 2 * len(benchmark_event_with_datasets.payload.datasets) + 1 + 1
+    )
 
 
 def test_fetcher_event_handler_nothing_to_do(
@@ -105,6 +108,9 @@ def test_fetcher_event_handler_nothing_to_do(
     fetcher_callback = FetcherEventHandler(data_set_manager, S3_BUCKET)
     event_to_send_sync = fetcher_callback.handle_event(benchmark_event_without_datasets, kafka_service)
     assert event_to_send_sync == benchmark_event_without_datasets
+
+    # 1 call to notify, that nothing to do
+    kafka_service.send_status_message_event.assert_called_once()
 
 
 def validate_populated_dst(benchmark_event):

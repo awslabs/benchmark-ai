@@ -1,7 +1,7 @@
 from dataclasses import dataclass
+from typing import Dict, List, Optional, Type, Any
 
 from dataclasses_json import dataclass_json
-from typing import Dict, List, Optional, Type, Any
 
 
 @dataclass_json
@@ -69,10 +69,10 @@ class BenchmarkEvent:
     authenticated: bool
     tstamp: int
     visited: List[VisitedService]
-    payload: BenchmarkPayload
+    payload: Any
 
 
-def __make_benchmark_event(payload_type: Type[BenchmarkPayload]):
+def __make_benchmark_event(payload_type: Type):
     @dataclass_json
     @dataclass
     class BenchmarkEventWithPayload(BenchmarkEvent):
@@ -81,6 +81,14 @@ def __make_benchmark_event(payload_type: Type[BenchmarkPayload]):
     return BenchmarkEventWithPayload
 
 
+@dataclass
+@dataclass_json
+class StatusMessagePayload:
+    message: str
+
+
 FetcherBenchmarkEvent = __make_benchmark_event(FetcherPayload)
 
 ExecutorBenchmarkEvent = __make_benchmark_event(ExecutorPayload)
+
+StatusMessageBenchmarkEvent = __make_benchmark_event(StatusMessagePayload)

@@ -28,14 +28,21 @@ class FetcherEventHandler(KafkaServiceCallback):
             return event.payload.datasets
 
         def execute(task: DataSet, callback) -> None:
+
             task.dst = get_dataset_dst(task.src, self.s3_data_set_bucket)
+
+            kafka_service.send_status_message_event(event, f"Dataset {task} sent to fetch")
 
             self.data_set_mgr.fetch(task, callback)
 
         def execute_all(tasks: List[DataSet], callback: Callable) -> None:
+            kafka_service.send_status_message_event(event, "Start fetching datasets")
+
             pending = list(tasks)
 
             def on_done(data_set: DataSet):
+                kafka_service.send_status_message_event(event, f"Dataset {data_set} processed")
+
                 pending.remove(data_set)
                 if not pending:
                     callback()
@@ -47,10 +54,12 @@ class FetcherEventHandler(KafkaServiceCallback):
         tasks = list(filter(lambda t: not t.dst, tasks))
 
         if not tasks:
+            kafka_service.send_status_message_event(event, "Nothing to fetch")
             return event
 
         def on_all_done():
-            return kafka_service.send_event(event)
+            kafka_service.send_event(event)
+            kafka_service.send_status_message_event(event, "All data sets processed")
 
         execute_all(tasks, on_all_done)
 
@@ -68,4 +77,12 @@ def create_fetcher_dispatcher(common_kafka_cfg: KafkaServiceConfig, fetcher_cfg:
 
     consumer, producer = create_kafka_consumer_producer(common_kafka_cfg, FetcherBenchmarkEvent)
 
-    return KafkaService(SERVICE_NAME, __version__, common_kafka_cfg.producer_topic, callbacks, consumer, producer)
+    return KafkaService(
+        SERVICE_NAME,
+        __version__,
+        common_kafka_cfg.producer_topic,
+        callbacks,
+        consumer,
+        producer,
+        common_kafka_cfg.status_topic,
+    )
