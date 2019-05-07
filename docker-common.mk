@@ -22,5 +22,10 @@ docker_publish: docker_package
 
 deploy: publish k8s_deploy
 
+undeploy: k8s_undeploy
+
 k8s_deploy:
 	$(KUBECTL) apply -f ./deploy $(KUBECTL_FLAGS)
+
+k8s_undeploy:
+	$(KUBECTL) delete -f ./deploy $(KUBECTL_FLAGS)

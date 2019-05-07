@@ -54,7 +54,7 @@ kind: Pod
 metadata:
   labels:
     app: zookeeper
-  name: alt-zookeeper
+  name: client-zookeeper
 spec:
   containers:
     - name: zookeeper
