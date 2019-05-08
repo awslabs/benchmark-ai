@@ -4,7 +4,7 @@ data:
   consumer_group_id: fetcher-dispatcher
   consumer_topic: BAI_APP_BFF
   producer_topic: BAI_APP_FETCHER
-  status_topic: BAI_SYS_STATUS
+  status_topic: BAI_APP_STATUS
   job_node_selector: '{"node.type":"bai-services-network"}'
   job_image: stsukrov/datafetcher
   pull_policy: Always
