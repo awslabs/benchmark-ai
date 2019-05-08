@@ -49,7 +49,7 @@ class WatchJobsEventHandler(KafkaServiceCallback):
             job_id,
             notify_job_status,
             kubernetes_client=kubernetes_client,
-            kubernetes_namespace=self.config.kubernetes_namespace,
+            kubernetes_namespace=self.config.kubernetes_namespace_of_running_jobs,
         )
         self.watchers[job_id] = watcher
         watcher.start()
