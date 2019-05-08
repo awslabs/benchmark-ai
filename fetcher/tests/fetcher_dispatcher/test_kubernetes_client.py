@@ -1,4 +1,7 @@
+import dataclasses
+
 import kubernetes
+import pytest
 from kubernetes.client import V1Job
 from pytest import fixture
 from unittest.mock import patch, MagicMock
@@ -9,6 +12,7 @@ from fetcher_dispatcher.args import FetcherJobConfig
 from fetcher_dispatcher.kubernetes_client import KubernetesDispatcher
 
 DATA_SET = DataSet(src="http://some.com/src", dst="s3://bucket/dst/")
+DATA_SET_WITH_MD5 = dataclasses.replace(DATA_SET, md5="42")
 
 ZK_NODE_PATH = "datasets/zk_path"
 
@@ -64,7 +68,7 @@ def original_kubernetes_client():
     return kubernetes.client
 
 
-def validate_namespaced_job(namespace: str, job: V1Job):
+def validate_namespaced_job(namespace: str, job: V1Job, data_set: DataSet):
     assert namespace == NAMESPACE
 
     metadata: kubernetes.client.V1ObjectMeta = job.metadata
@@ -82,13 +86,19 @@ def validate_namespaced_job(namespace: str, job: V1Job):
     container = pod_spec.containers[0]
     assert container.image_pull_policy == PULL_POLICY
     assert container.image == FETCHER_JOB_IMAGE
-    assert container.args == ["--src", DATA_SET.src, "--dst", DATA_SET.dst, "--zk-node-path", ZK_NODE_PATH]
+
+    expected_args = ["--src", data_set.src, "--dst", data_set.dst, "--zk-node-path", ZK_NODE_PATH]
+    if data_set.md5:
+        expected_args += ["--md5", data_set.md5]
+
+    assert container.args == expected_args
     assert kubernetes.client.V1EnvVar(name="ZOOKEEPER_ENSEMBLE_HOSTS", value=ZOOKEEPER_ENSEMBLE_HOSTS) in container.env
 
 
 @patch.object(kubernetes_client.kubernetes, "config")
 @patch.object(kubernetes_client.kubernetes.client, "BatchV1Api")
-def test_call_dispatcher(mockBatchV1Api, mock_config):
+@pytest.mark.parametrize("data_set", [DATA_SET, DATA_SET_WITH_MD5])
+def test_call_dispatcher(mockBatchV1Api, mock_config, data_set):
     mock_batch_api_instance = MagicMock()
 
     mockBatchV1Api.return_value = mock_batch_api_instance
@@ -97,7 +107,7 @@ def test_call_dispatcher(mockBatchV1Api, mock_config):
         zk_ensemble=ZOOKEEPER_ENSEMBLE_HOSTS, kubeconfig=None, fetcher_job=FETCHER_JOB_CONFIG
     )
 
-    kubernetes_dispatcher(DATA_SET, ZK_NODE_PATH)
+    kubernetes_dispatcher(data_set, ZK_NODE_PATH)
     mock_batch_api_instance.create_namespaced_job.assert_called_once()
 
     job_args = mock_batch_api_instance.create_namespaced_job.call_args[0]
@@ -105,4 +115,4 @@ def test_call_dispatcher(mockBatchV1Api, mock_config):
     namespace = job_args[0]
     job = job_args[1]
 
-    validate_namespaced_job(namespace, job)
+    validate_namespaced_job(namespace, job, data_set)
