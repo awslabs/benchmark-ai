@@ -2,7 +2,7 @@ ENV_NAME = watcher
 
 include ../python-common.mk
 
-DOCKER_IMAGE_TAG=edisongustavo/bai-watcher
+PROJECT=watcher
 
 include ../docker-common.mk
 

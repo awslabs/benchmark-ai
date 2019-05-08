@@ -2,7 +2,7 @@ ENV_NAME = fetcher
 
 include ../python-common.mk
 
-DOCKER_IMAGE_TAG=stsukrov/fetcher-dispatcher
+PROJECT=fetcher-dispatcher
 
 include ../docker-common.mk
 

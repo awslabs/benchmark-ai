@@ -2,7 +2,7 @@ ENV_NAME = executor
 
 include ../python-common.mk
 
-DOCKER_IMAGE_TAG=jlcont/baiexecutor
+PROJECT=executor
 
 include ../docker-common.mk
 

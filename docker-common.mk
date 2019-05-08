@@ -3,7 +3,13 @@ DEPLOY_ENV_NAME = deploy-$(ENV_NAME)
 DEPLOY_CONDA_RUN = conda run --name $(DEPLOY_ENV_NAME)
 KUBECTL = $(DEPLOY_CONDA_RUN) kubectl
 
-#package is a high level commandm while docker_package can be executed separately
+DOCKERHUB_ORG = benchmarkai
+DOCKER_REPOSITORY = $(DOCKERHUB_ORG)/$(PROJECT)
+
+COMMIT_SHORT_HASH := $(shell git rev-parse --short HEAD)
+DOCKER_IMAGE_TAG = $(DOCKER_REPOSITORY):$(COMMIT_SHORT_HASH)
+
+# package is a high level command while docker_package can be executed separately
 package: build docker_package
 
 _pre_docker_package::
@@ -20,7 +26,11 @@ docker_package: _post_docker_package
 publish: package docker_publish
 
 docker_publish: docker_package
+	echo "Publishing ($(DOCKER_IMAGE_TAG))"
 	$(DOCKER) push $(DOCKER_IMAGE_TAG)
+    # Always push to latest as well as the generated tag
+	$(DOCKER) tag $(DOCKER_IMAGE_TAG) $(DOCKER_REPOSITORY)
+	$(DOCKER) push $(DOCKER_REPOSITORY)
 
 _deploy_venv:
 	conda env update --file ../deploy-environment.yml --prune --name $(DEPLOY_ENV_NAME)
