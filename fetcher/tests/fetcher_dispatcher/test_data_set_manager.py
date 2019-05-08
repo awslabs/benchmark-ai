@@ -5,8 +5,12 @@ import pytest
 from kazoo.client import KazooClient
 
 from bai_kafka_utils.events import DataSet
+from benchmarkai_fetcher_job.states import FetcherResult, FetcherStatus
 from fetcher_dispatcher.data_set_manager import DataSetManager, DataSetDispatcher, DataSetOnDone
-from fetcher_dispatcher.fetch_state import FetchState
+
+DST = "s3://bucker/datasets.key"
+
+SRC = "http://imagenet.org/bigdata.zip"
 
 SOME_PATH = "/some/path"
 
@@ -20,46 +24,72 @@ def zoo_keeper_client() -> KazooClient:
     return mock.Mock()
 
 
+def _mock_result_binary(status: FetcherStatus, msg: str = None):
+    return FetcherResult(status, msg).to_binary()
+
+
+BIN_RESULT_RUNNING = _mock_result_binary(FetcherStatus.RUNNING)
+BIN_RESULT_PENDING = _mock_result_binary(FetcherStatus.PENDING)
+BIN_RESULT_DONE = _mock_result_binary(FetcherStatus.DONE)
+
+
+ERROR_MESSAGE = "Error"
+
+
+BIN_RESULT_FAILED = _mock_result_binary(FetcherStatus.FAILED, ERROR_MESSAGE)
+
+
 def _mock_running_node():
-    return mock.Mock(side_effect=[[FetchState.STATE_RUNNING], [FetchState.STATE_DONE]])
+    return mock.Mock(side_effect=[[BIN_RESULT_RUNNING], [BIN_RESULT_DONE]])
 
 
 def _mock_done_node():
-    return mock.Mock(side_effect=[[FetchState.STATE_DONE]])
+    return mock.Mock(side_effect=[[BIN_RESULT_DONE]])
+
+
+def _mock_failed_node():
+    return mock.Mock(side_effect=[[BIN_RESULT_FAILED]])
 
 
 def _mock_existing_node():
     return mock.Mock(side_effect=kazoo.exceptions.NodeExistsError())
 
 
+def _zoo_keeper_client_with_node(_node_mock):
+    zoo_keeper_client = mock.MagicMock()
+    zoo_keeper_client.get = _node_mock
+    return zoo_keeper_client
+
+
+def _zoo_keeper_client_with_existing_node(_node_mock):
+    zoo_keeper_client = _zoo_keeper_client_with_node(_node_mock)
+    zoo_keeper_client.create = _mock_existing_node()
+    return zoo_keeper_client
+
+
 @pytest.fixture
 def zoo_keeper_client_with_done_node() -> KazooClient:
-    zoo_keeper_client = mock.MagicMock()
-    zoo_keeper_client.get = _mock_done_node()
-    return zoo_keeper_client
+    return _zoo_keeper_client_with_node(_mock_done_node())
+
+
+@pytest.fixture
+def zoo_keeper_client_with_failed_node() -> KazooClient:
+    return _zoo_keeper_client_with_node(_mock_failed_node())
 
 
 @pytest.fixture
 def zoo_keeper_client_with_running_node() -> KazooClient:
-    zoo_keeper_client = mock.MagicMock()
-    zoo_keeper_client.get = _mock_running_node()
-    return zoo_keeper_client
+    return _zoo_keeper_client_with_node(_mock_running_node())
 
 
 @pytest.fixture
 def zoo_keeper_client_with_running_node_that_exists() -> KazooClient:
-    zoo_keeper_client = mock.MagicMock()
-    zoo_keeper_client.get = _mock_running_node()
-    zoo_keeper_client.create = _mock_existing_node()
-    return zoo_keeper_client
+    return _zoo_keeper_client_with_existing_node(_mock_running_node())
 
 
 @pytest.fixture
 def zoo_keeper_client_with_done_node_that_exists() -> KazooClient:
-    zoo_keeper_client = mock.MagicMock()
-    zoo_keeper_client.get = _mock_done_node()
-    zoo_keeper_client.create = _mock_existing_node()
-    return zoo_keeper_client
+    return _zoo_keeper_client_with_existing_node(_mock_done_node())
 
 
 @pytest.fixture
@@ -75,7 +105,7 @@ def data_set_manager(zoo_keeper_client: KazooClient, kubernetes_job_starter: Dat
 
 @pytest.fixture
 def some_data_set() -> DataSet:
-    return DataSet("http://imagenet.org/bigdata.zip")
+    return DataSet(src=SRC, dst=DST)
 
 
 def test_pass_through_start(zoo_keeper_client: KazooClient, kubernetes_job_starter: DataSetDispatcher):
@@ -100,7 +130,20 @@ def test_first_fast_success(
     data_set_manager.fetch(some_data_set, on_done)
 
     assert kubernetes_job_starter.called
-    assert on_done.called
+    on_done.assert_called_with(DataSet(src=SRC, dst=DST, status=str(FetcherStatus.DONE)))
+
+
+def test_first_fast_failed(
+    zoo_keeper_client_with_failed_node: KazooClient, some_data_set: DataSet, kubernetes_job_starter: DataSetDispatcher
+):
+    data_set_manager = DataSetManager(zoo_keeper_client_with_failed_node, kubernetes_job_starter, data_set_to_path)
+
+    on_done = mock.MagicMock()
+
+    data_set_manager.fetch(some_data_set, on_done)
+
+    assert kubernetes_job_starter.called
+    on_done.assert_called_with(DataSet(src=SRC, status=str(FetcherStatus.FAILED), message=ERROR_MESSAGE))
 
 
 def test_first_wait_success(

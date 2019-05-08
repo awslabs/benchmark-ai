@@ -1,41 +1,7 @@
 version: 0.2
 
-#env:
-  #variables:
-     # key: "value"
-     # key: "value"
-  #parameter-store:
-     # key: "value"
-     # key: "value"
-
 phases:
-  #install:
-    #commands:
-      # - command
-      # - command
-#  pre_build:
-#    commands:
-#      -
   build:
     commands:
       - cd fetcher-job
-      - conda env update -f environment.yml -n fetcher-job
-      - conda env update -f test-environment.yml -n fetcher-job
-      - conda run -n fetcher-job python setup.py install
-      - conda run -n fetcher-job pytest tests
-      # - command
-      # - command
-  #post_build:
-    #commands:
-      # - command
-      # - command
-#artifacts:
-  #files:
-    # - location
-    # - location
-  #name: $(date +%Y-%m-%d)
-  #discard-paths: yes
-  #base-directory: location
-#cache:
-  #paths:
-    # - paths
+      - make

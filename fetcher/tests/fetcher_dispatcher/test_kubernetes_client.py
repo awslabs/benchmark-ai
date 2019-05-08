@@ -1,15 +1,12 @@
 import kubernetes
 from kubernetes.client import V1Job
 from pytest import fixture
+from unittest.mock import patch, MagicMock
 
 from bai_kafka_utils.events import DataSet
-
 from fetcher_dispatcher import kubernetes_client
-
 from fetcher_dispatcher.args import FetcherJobConfig
 from fetcher_dispatcher.kubernetes_client import KubernetesDispatcher
-
-from unittest.mock import patch, MagicMock
 
 DATA_SET = DataSet(src="http://some.com/src", dst="s3://bucket/dst/")
 

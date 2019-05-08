@@ -6,9 +6,8 @@ from kazoo.exceptions import NodeExistsError
 from typing import Callable
 
 from bai_kafka_utils.events import DataSet
-from fetcher_dispatcher.fetch_state import FetchState
 from bai_kafka_utils.utils import md5sum
-
+from benchmarkai_fetcher_job.states import FetcherResult, FetcherStatus
 
 DataSetDispatcher = Callable[[DataSet, str], None]
 NodePathSource = Callable[[DataSet], str]
@@ -38,7 +37,7 @@ class DataSetManager:
         logger.info("zk_node_path=%s", zk_node_path)
 
         try:
-            self._zk.create(zk_node_path, FetchState.STATE_RUNNING, makepath=True)
+            self._zk.create(zk_node_path, FetcherResult(FetcherStatus.PENDING), makepath=True)
 
             logger.info("Node lock %s acquired", zk_node_path)
 
@@ -58,7 +57,16 @@ class DataSetManager:
             self.__on_zk_changed(evt, on_done, data_set)
 
         node_data = self._zk.get(zk_node_path, _on_zk_changed)
-        if node_data[0] == FetchState.STATE_DONE:
+
+        result: FetcherResult = FetcherResult.from_binary(node_data[0])
+
+        if result.status.final:
+            data_set.status = str(result.status)
+
+            if result.status == FetcherStatus.FAILED:
+                data_set.message = result.message
+                data_set.dst = None
+
             on_done(data_set)
 
     def stop(self) -> None:

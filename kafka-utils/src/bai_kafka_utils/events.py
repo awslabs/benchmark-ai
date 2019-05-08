@@ -13,6 +13,8 @@ class DataSet:
     src: str
     md5: Optional[str] = None
     dst: Optional[str] = None
+    status: Optional[str] = None
+    message: Optional[str] = None
 
 
 @dataclass_json
