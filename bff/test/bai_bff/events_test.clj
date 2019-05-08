@@ -44,6 +44,89 @@
                      :doc
                      "IyBCZW5jaG1hcmtBSSBtZXRhCnNwZWNfdmVyc2lvbiA9ICIwLjEuMCIKCiMgVGhlc2UgZmllbGRzIGRvbid0IGhhdmUgYW55IGltcGFjdCBvbiB0aGUgam9iIHRvIHJ1biwgdGhleSBjb250YWluCiMgbWVyZWx5IGluZm9ybWF0aXZlIGRhdGEgc28gdGhlIGJlbmNobWFyayBjYW4gYmUgY2F0ZWdvcml6ZWQgd2hlbiBkaXNwbGF5ZWQKIyBpbiB0aGUgZGFzaGJvYXJkLgpbaW5mb10KdGFza19uYW1lID0gIkhlbGxvIHdvcmxkIgpkZXNjcmlwdGlvbiA9ICIiIiBcCiAgICBBIGhlbGxvIHdvcmxkIGV4YW1wbGUgb2YgdXNpbmcgQmVuY2htYXJrIEFJXAogICAgIiIiCgojIDEuIEhhcmR3YXJlCltoYXJkd2FyZV0KaW5zdGFuY2VfdHlwZSA9ICJ0My5zbWFsbCIKc3RyYXRlZ3kgPSAic2luZ2xlX25vZGUiCgojIDIuIEVudmlyb25tZW50CltlbnZdCiMgRG9ja2VyIGh1YiA8aHViLXVzZXI+LzxyZXBvLW5hbWU+Ojx0YWc+IApkb2NrZXJfaW1hZ2UgPSAiZWRpc29uZ3VzdGF2by9iYWktYmVuY2htYXJrcy1oZWxsby13b3JsZDpsYXRlc3QiCgojIDMuIE1hY2hpbmUgbGVhcm5pbmcgcmVsYXRlZCBzZXR0aW5nczogCiMgZGF0YXNldCwgYmVuY2htYXJrIGNvZGUgYW5kIHBhcmFtZXRlcnMgaXQgdGFrZXMKW21sXQpiZW5jaG1hcmtfY29kZSA9ICJweXRob24zIGhlbGxvLXdvcmxkLnB5IgoKIyA0LiBPdXRwdXQKW291dHB1dF0KIyBEZWZpbmUgd2hpY2ggbWV0cmljcyB3aWxsIGJlIHRyYWNrZWQgaW4gdGhpcyBiZW5jaG1hcmsKbWV0cmljcyA9IFsidGhyb3VnaHB1dCIsICJ0aW1lIl0K"}}})
 
+(defn uuid [] (str (java.util.UUID/randomUUID)))
+(defn time-millis [] (System/currentTimeMillis))
+
+(def status-event {
+                   :message_id (uuid)
+                   :client_id  "062fa85c-06fa-43ae-9ccf-e2aa6dd22562-"
+                   :action_id  "b3e3be6e-c6da-487c-9ba9-f500c255ec7c"
+                   :date (time-millis)
+                   :visited [{:svc "baictl", :tstamp "1554901873677", :version "v0.1.0-481dad1"}],
+                   :payload {
+                             :message "some string of status"
+                             },
+                   })
+
+(def status-event2 {
+                    :message_id (uuid)
+                    :client_id  "062fa85c-06fa-43ae-9ccf-e2aa6dd22562"
+                    :action_id  "b3e3be6e-c6da-487c-9ba9-f500c255ec7c"
+                    :date (time-millis)
+                    :visited [{:svc "baictl", :tstamp "1554901873677", :version "v0.1.0-481dad1"}],
+                    :payload {
+                              :message "some string of status, son"
+                              },
+                    })
+
+(def status-event-bad {
+                       :message_id (uuid)
+                       :action_id  "b3e3be6e-c6da-487c-9ba9-f500c255ec7c"
+                       :date (time-millis)
+                       :visited [{:svc "baictl", :tstamp "1554901873677", :version "v0.1.0-481dad1"}],
+                       :payload {
+                                 :message "some string of status, son"
+                                 },
+                       })
+
+(def store-entry {
+                  :client_id "062fa85c-06fa-43ae-9ccf-e2aa6dd22562"
+                  :action_id  "b3e3be6e-c6da-487c-9ba9-f500c255ec7c"
+                  :status [{
+                            :message_id (uuid)
+                            :client_id  "062fa85c-06fa-43ae-9ccf-e2aa6dd22562"
+                            :action_id  "b3e3be6e-c6da-487c-9ba9-f500c255ec7c"
+                            :date (time-millis)
+                            :visited [{:svc "baictl", :tstamp "1554901873677", :version "v0.1.0-481dad1"}],
+                            :payload {
+                                      :message "some string of status"
+                                      },
+                            },
+                           {
+                            :message_id (uuid)
+                            :client_id "062fa85c-06fa-43ae-9ccf-e2aa6dd22562"
+                            :action_id  "b3e3be6e-c6da-487c-9ba9-f500c255ec7c"
+                            :date (time-millis)
+                            :visited [{:svc "baictl", :tstamp "1554901873677", :version "v0.1.0-481dad1"}],
+                            :payload {
+                                      :message "some string of status, son"
+                                      },
+                            }
+                           ]
+                  })
+
+(defn store-status [store event]
+  (let [{:keys [client_id action_id]} event]
+    (if (not-any? nil? '(client_id action_id))
+      (assoc-in store (mapv keyword [client_id action_id]) (into [] (remove nil? (conj [] (some-> store (get (keyword client_id)) (get (keyword action_id))) event))))
+      store)))
+
+(defn update-status-store [store event]
+  (if (nil? event)
+    store
+    (let [{:keys [client_id action_id]} event
+          [client-key action-key] (mapv keyword [client_id action_id])]
+      (if (every? identity '(client-key action-key))
+        (try
+          (assoc-in store [client-key action-key] (into [] (flatten (remove nil? (conj [] (some-> store client-key action-key) event)))))
+          (catch NullPointerException e
+            (.getMessage e)
+            store))
+        store))))
+
+
+
+
 (deftest a-test
   (testing "FIXME, I fail."
     (is (not= 0 1))))
