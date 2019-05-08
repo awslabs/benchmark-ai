@@ -32,7 +32,7 @@ ZK_CLI=zkCli.sh
 
 if [[ ${SRC} == *"delay"* ]]; then
     echo "Simulating delay"
-    sleeep 30s
+    sleep 30s
 fi
 
 RESULT="DONE"
