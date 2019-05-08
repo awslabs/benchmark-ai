@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+# This script allows to run baictl in a remote fashion by running all commands within an ECS
+# cluster. It is designed in an atomic and idemptoent way that allows to interrupt the execution on your local
+# computer at any point in time without resisting in data loss or similar non-recoverable states.
+# Please don't forget to install the python requirements.txt before running this script.
+
 import boto3
 import botocore
 import os
@@ -76,6 +81,9 @@ def build_docker_image(docker_cli, docker_registry):
         docker_registry.replace("https://", "") + "/" + DOCKER_IMAGE_TAG + ":latest"
     )
 
+    # TODO: Allow to use --cache-from to speed up this process bu using a prebuild remote image. It's important
+    # that we don't entirely rely on the remote image since it's possible that the local code is different from the
+    # public image (aka when we want to test local changes). --cache-from gives the best of both worlds.
     output = docker_cli.build(
         path=os.path.split(os.path.realpath(__file__))[0], tag=docker_tag, decode=True
     )
