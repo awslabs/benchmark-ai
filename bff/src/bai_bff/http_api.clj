@@ -1,6 +1,6 @@
 (ns bai-bff.http-api
   (:require [bai-bff.core :refer :all]
-            [bai-bff.events :refer :all]
+            [bai-bff.events :as events]
             [bai-bff.services.eventbus :as eventbus]
             [clojure.pprint :refer :all]
             [clojure.java.io :as io]
@@ -57,7 +57,7 @@
        (str "<hr><CENTER><h1> BAI-BFF HTTP Service API (v"VERSION")</h1><a href=\"http://foobar.com/api\">docs</a></CENTER><hr>"))
   (context "/api/job" []
            (defroutes job-routes
-             (GET  "/" [] (response nil #_(get-all-jobs))) ;;TODO - remove this in production...? implement me
+             (GET  "/" [] (response (eventbus/get-all-jobs))) ;;TODO - remove this in production...? implement me
              (POST "/" {body :body :as request} (post-proc-results (log/info (pprint request)) #_(create-job body)));TODO - implement me
              (POST "/descriptor" {body :body :as request} ((fn [request body]
                                                              (try
@@ -67,7 +67,7 @@
                                                                  (log/debug "Body recieved is")
                                                                  (log/debug body-string)
                                                                  (log/debug "message body is now an event...")
-                                                                 (let [event (message->event
+                                                                 (let [event (events/message->event
                                                                               request
                                                                               (json/parse-string body-string true))
                                                                        json-event (json/generate-string event {:pretty true})]
@@ -78,10 +78,14 @@
                                                                (catch Exception e
                                                                  (log/error "Could Not Parse Descriptor Input")
                                                                  (bad-request "Could Not Parse Submitted Descriptor")))) request body))
-             (context "/:action-id" [action-id]
-                      (defroutes job-routes
-                        (GET    "/status" [] (post-proc-results  (log/info "/status") #_(get-job-status action-id))) ;TODO - implement me
-                        (DELETE "/" [] (post-proc-results (log/info "delete-job") #_(delete-job action-id)))))))        ;TODO - implement me
+             (context "/:client-id" [client-id]
+                      (defroutes client-routes
+                        (GET    "/" [] (post-proc-results (eventbus/get-all-client-jobs client-id)))
+                        (DELETE "/" [] (post-proc-results (log/info "delete-client-jobs... [NOT]") #_(delete-job action-id))))
+                      (context "/:action-id" [action-id]
+                               (defroutes action-routes
+                                 (GET    "/" [] (post-proc-results (eventbus/get-all-client-jobs-for-action client-id action-id)))
+                                 (DELETE "/" [] (post-proc-results (log/info "delete-job")#_(delete-job action-id)))))) )) ;TODO - implement me
   (ANY "*" []
        (route/not-found (slurp (io/resource "404.html")))))
 

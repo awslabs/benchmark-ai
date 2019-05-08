@@ -9,14 +9,15 @@
   (:require [bai-bff.core :refer :all]
             [bai-bff.services.sinks.kafka-sink     :refer [create-kafka-sink-service]]
             [bai-bff.services.sources.kafka-source :refer [create-kafka-source-service]]
-            [bai-bff.services.eventbus             :refer [create-eventbus-service]]
+            [bai-bff.services.eventbus   :as bus   :refer [create-eventbus-service]]
             [bai-bff.services.endpoints            :refer [create-endpoints-service]]
             [environ.core :refer [env]]
+            [clojure.string :refer [trim]]
             [taoensso.timbre :as log])
   (:gen-class))
 
 ;; #{:trace :debug :info :warn :error :fatal :report}
-(log/set-level! (keyword (env :logging-level)))
+(log/set-level! (keyword (trim ^String(env :logging-level "info"))))
 
 (defn create-services
   ([] (create-services {}))
@@ -30,7 +31,7 @@
           endpoints-fn    create-endpoints-service}}]
    (let [eventbus       (eventbus-fn)
          kafka-sink     (kafka-sink-fn)
-         kafka-source   (kafka-source-fn (fn [events] (log/trace (str "Got something: "events)) true)) ; <-- TODO: story for event reception TBD <= here to be annoyingly obvious
+         kafka-source   (kafka-source-fn bus/process-status-records) ; <-- TODO: story for event reception TBD <= here to be annoyingly obvious
          endpoints      (endpoints-fn)]
      {:eventbus      eventbus
       :kafka-sink    kafka-sink

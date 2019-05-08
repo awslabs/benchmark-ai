@@ -136,7 +136,7 @@ _generate_submit_event() {
     "client_sha1"    : "${MY_SHA1}",
     "client_username" : "$(whoami)",
     "date" : "$(date -u +"%a %b %d %H:%M:%S %Z %Y")",
-    "visited"  : [{"svc" : "${SERVICE_NAME}", "tstamp" : "@@TSTAMP@@", "version" :"${VERSION}"}],
+    "visited"  : [{"svc" : "${SERVICE_NAME}", "tstamp" : 1557150931877, "version" :"${VERSION}"}],
     "payload"  : {
         "toml" : {
             "descriptor_filename" : "${descriptor_filename##*/}",
