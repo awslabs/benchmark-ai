@@ -1,5 +1,5 @@
 import kafka
-import mock
+from unittest import mock
 
 from pytest import fixture
 from unittest.mock import MagicMock, patch

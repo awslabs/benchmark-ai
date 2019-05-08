@@ -1,4 +1,4 @@
-import mock
+from unittest import mock
 
 from transpiler.config import DescriptorConfig, BaiConfig, EnvironmentInfo
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
