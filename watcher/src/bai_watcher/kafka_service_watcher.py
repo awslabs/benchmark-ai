@@ -1,4 +1,4 @@
-import dataclasses
+import copy
 import logging
 
 import kubernetes
@@ -22,7 +22,7 @@ class WatchJobsEventHandler(KafkaServiceCallback):
         self.kubernetes_clients = {"single-node": kubernetes.client.BatchV1Api()}
 
     def handle_event(self, event: ExecutorBenchmarkEvent, kafka_service: KafkaService):
-        output_event = dataclasses.replace(event)
+        output_event = copy.deepcopy(event)
 
         def notify_job_status(job_id, job_status: KubernetesJobStatus):
             # This method is called at each thread (not the Main Thread)
