@@ -62,4 +62,3 @@ path = "/root/data/tf-imagenet"
 src = "s3://mlperf-data-mxnet-berlin/imagenet/raw/validation-480px"
 # Path where the dataset is stored in the container FS
 path = "/root/data/tf-imagenet"
-
