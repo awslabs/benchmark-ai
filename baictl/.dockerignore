@@ -1,5 +1,5 @@
 *~
-run-baictl.sh
-cf-baictl-ecs.yml
+cfn-baictl-ecs.yml
 Dockerfile
 .terraform
+remote-baictl.py
