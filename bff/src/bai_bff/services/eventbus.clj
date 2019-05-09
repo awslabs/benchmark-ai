@@ -64,7 +64,7 @@
     store
     (let [{:keys [client_id action_id]} event
           [client-key action-key] (mapv keyword [client_id action_id])]
-      (if (every? identity '(client-key action-key))
+      (if (and client-key action-key)
         (try
           (assoc-in store [client-key action-key] (into [] (flatten (remove nil? (conj [] (some-> store client-key action-key) event)))))
           (catch NullPointerException e
