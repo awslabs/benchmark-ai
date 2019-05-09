@@ -13,9 +13,7 @@ import base64
 import logging
 
 DOCKER_IMAGE_TAG = "benchmark-ai/baictl"
-CLOUDFORMATION_YAML_PATH = os.path.join(
-    os.path.split(os.path.realpath(__file__))[0], "cfn-baictl-ecs.yml"
-)
+CLOUDFORMATION_YAML_PATH = os.path.join(os.path.split(os.path.realpath(__file__))[0], "cfn-baictl-ecs.yml")
 
 
 def main():
@@ -23,13 +21,9 @@ def main():
 
     boto_session = request_aws_credentials()
     docker_cli, docker_registry = login_ecr(boto_session=boto_session)
-    docker_tag = build_docker_image(
-        docker_cli=docker_cli, docker_registry=docker_registry
-    )
+    docker_tag = build_docker_image(docker_cli=docker_cli, docker_registry=docker_registry)
     cloudformation_output = execute_cloudformation_deployment(
-        stack_name="baictl-ecs",
-        boto_session=boto_session,
-        cloudformation_yaml_path=CLOUDFORMATION_YAML_PATH,
+        stack_name="baictl-ecs", boto_session=boto_session, cloudformation_yaml_path=CLOUDFORMATION_YAML_PATH
     )
     publish_docker_image(docker_cli=docker_cli, docker_tag=docker_tag)
     run_ecs_task(boto_session=boto_session, cloudformation_output=cloudformation_output)
@@ -64,11 +58,7 @@ def request_aws_credentials():
 def login_ecr(boto_session):
     client = boto_session.client("ecr")
     response = client.get_authorization_token()
-    username, password = (
-        base64.b64decode(response["authorizationData"][0]["authorizationToken"])
-        .decode()
-        .split(":")
-    )
+    username, password = base64.b64decode(response["authorizationData"][0]["authorizationToken"]).decode().split(":")
     endpoint = response["authorizationData"][0]["proxyEndpoint"]
     cli = docker.from_env()
     cli.login(username=username, password=password, registry=endpoint)
@@ -77,16 +67,12 @@ def login_ecr(boto_session):
 
 
 def build_docker_image(docker_cli, docker_registry):
-    docker_tag = (
-        docker_registry.replace("https://", "") + "/" + DOCKER_IMAGE_TAG + ":latest"
-    )
+    docker_tag = docker_registry.replace("https://", "") + "/" + DOCKER_IMAGE_TAG + ":latest"
 
     # TODO: Allow to use --cache-from to speed up this process bu using a prebuild remote image. It's important
     # that we don't entirely rely on the remote image since it's possible that the local code is different from the
     # public image (aka when we want to test local changes). --cache-from gives the best of both worlds.
-    output = docker_cli.build(
-        path=os.path.split(os.path.realpath(__file__))[0], tag=docker_tag, decode=True
-    )
+    output = docker_cli.build(path=os.path.split(os.path.realpath(__file__))[0], tag=docker_tag, decode=True)
     logging.debug("Docker build output:")
     for line in output:
         logging.debug(line["stream"])
@@ -94,9 +80,7 @@ def build_docker_image(docker_cli, docker_registry):
     return docker_tag
 
 
-def execute_cloudformation_deployment(
-    stack_name, boto_session, cloudformation_yaml_path
-):
+def execute_cloudformation_deployment(stack_name, boto_session, cloudformation_yaml_path):
     """
     Deploy the passed CloudFormation stack
     :param stack_name: Stack name
@@ -118,15 +102,9 @@ def execute_cloudformation_deployment(
     cloudformation_client = boto_session.client("cloudformation")
     with open(cloudformation_yaml_path, "r") as file:
         cloudformation_yaml = file.read()
-        params = {
-            "StackName": stack_name,
-            "TemplateBody": cloudformation_yaml,
-            "Capabilities": ["CAPABILITY_IAM"],
-        }
+        params = {"StackName": stack_name, "TemplateBody": cloudformation_yaml, "Capabilities": ["CAPABILITY_IAM"]}
         try:
-            if _cloudformation_stack_exists(
-                cloudformation_client=cloudformation_client, stack_name=stack_name
-            ):
+            if _cloudformation_stack_exists(cloudformation_client=cloudformation_client, stack_name=stack_name):
                 logging.info("Updating CloudFormation stack: %s", stack_name)
                 cloudformation_client.update_stack(**params)
                 waiter = cloudformation_client.get_waiter("stack_update_complete")
@@ -145,9 +123,7 @@ def execute_cloudformation_deployment(
                 raise
 
     return convert_clouformation_output(
-        cloudformation_client.describe_stacks(StackName=stack_name)["Stacks"][0][
-            "Outputs"
-        ]
+        cloudformation_client.describe_stacks(StackName=stack_name)["Stacks"][0]["Outputs"]
     )
 
 
@@ -183,10 +159,7 @@ def run_ecs_task(boto_session, cloudformation_output):
         launchType="FARGATE",
         networkConfiguration={
             "awsvpcConfiguration": {
-                "subnets": [
-                    cloudformation_output["PublicSubnetOneArn"],
-                    cloudformation_output["PublicSubnetTwoArn"],
-                ],
+                "subnets": [cloudformation_output["PublicSubnetOneArn"], cloudformation_output["PublicSubnetTwoArn"]],
                 "securityGroups": [cloudformation_output["VpcDefaultSecurityGroupArn"]],
                 "assignPublicIp": "ENABLED",
             }
