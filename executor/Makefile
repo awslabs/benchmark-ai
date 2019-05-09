@@ -10,6 +10,3 @@ STAGE ?= devo
 
 _post_venv::
 	$(PIP) install -r requirements.txt
-
-_docker_package:
-	$(DOCKER) build .. -f ../Dockerfile-executor -t $(DOCKER_IMAGE_TAG)

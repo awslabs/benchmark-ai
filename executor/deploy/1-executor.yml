@@ -37,7 +37,7 @@ spec:
             name: kubectl
       containers:
         - name: executor
-          image: jlcont/baiexecutor:090519
+          image: @@DOCKER_IMAGE@@
           env:
           - name: AVAILABILITY_ZONES
             value:

@@ -11,9 +11,6 @@ STAGE ?= devo
 _post_venv::
 	$(PIP) install -r requirements.txt
 
-_docker_package:
-	$(DOCKER) build .. -f ../Dockerfile-fetcher -t $(DOCKER_IMAGE_TAG)
-
 # Overrides how to deploy to Kubernetes because fetcher is using a poor man's version of Kustomize. Until we adopt it
 # properly this is good enough.
 override define fn_k8s_deploy
