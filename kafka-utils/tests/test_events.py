@@ -1,5 +1,6 @@
 import json
 
+import dacite
 import pytest
 
 from bai_kafka_utils.events import (
@@ -9,6 +10,8 @@ from bai_kafka_utils.events import (
     BenchmarkDoc,
     FetcherBenchmarkEvent,
     ExecutorBenchmarkEvent,
+    create_from_object,
+    BenchmarkEvent,
 )
 
 
@@ -25,6 +28,11 @@ def base_event_as_dict():
         "visited": [],
         "payload": {"toml": {"contents": {"name": "doc"}, "sha1": "sha1", "doc": "dst"}},
     }
+
+
+@pytest.fixture
+def base_event(base_event_as_dict):
+    return BenchmarkEvent.from_json(json.dumps(base_event_as_dict))
 
 
 @pytest.fixture
@@ -77,14 +85,13 @@ def test_fetcher_event(base_event_as_dict):
 def test_executor_event(base_event_as_dict):
     executor_event_as_dict = base_event_as_dict
     executor_event_as_dict["payload"]["datasets"] = [{"src": "http://foo.com", "md5": "None", "dst": "None"}]
-    executor_event_as_dict["payload"]["job"] = {"id": "job_id", "status": "status", "k8s_yaml": "yaml_file"}
+    executor_event_as_dict["payload"]["job"] = {"id": "job_id", "k8s_yaml": "yaml_file"}
 
     event_as_json_string = json.dumps(executor_event_as_dict)
 
     event = ExecutorBenchmarkEvent.from_json(event_as_json_string)
     assert type(event.payload) == ExecutorPayload
     assert event.payload.job.id == "job_id"
-    assert event.payload.job.status == "status"
     assert event.payload.job.k8s_yaml == "yaml_file"
     assert event.payload.job.output is None
 
@@ -121,3 +128,25 @@ def test_invalid_payload_type(base_event_as_dict):
         event_type.from_json(event_as_json_string)
     # Missing required dataset
     assert e.match("dataset")
+
+
+def test_create_from_object(base_event_as_dict):
+    event = BenchmarkEvent.from_json(json.dumps(base_event_as_dict))
+    obj = create_from_object(FetcherBenchmarkEvent, event, payload=FetcherPayload(toml="", datasets=[]))
+    assert type(obj) == FetcherBenchmarkEvent
+    assert obj.action_id == event.action_id
+
+
+def test_create_from_object_when_desired_class_is_not_a_dataclass(base_event):
+    with pytest.raises(ValueError):
+        create_from_object(object, base_event)
+
+
+def test_create_from_object_when_input_object_is_not_a_dataclass():
+    with pytest.raises(ValueError):
+        create_from_object(FetcherBenchmarkEvent, object())
+
+
+def test_create_from_object_when_specifying_field_with_wrong_type(base_event):
+    with pytest.raises(dacite.WrongTypeError):
+        create_from_object(FetcherBenchmarkEvent, base_event, payload="payload")
