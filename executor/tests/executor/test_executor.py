@@ -93,8 +93,10 @@ def test_executor_event_handler_k8s_apply(mock_check_output, config_args):
     expected_args = [config.kubectl, "apply", "-f", "-"]
 
     mock_check_output.assert_called_once()
-    assert mock_check_output.call_args.args[0] == expected_args
-    assert mock_check_output.call_args.kwargs == {"input": yaml.encode(DEFAULT_ENCODING)}
+    # https://docs.python.org/3/library/unittest.mock.html#unittest.mock.Mock.call_args
+    args, kwargs = mock_check_output.call_args
+    assert args[0] == expected_args
+    assert kwargs == {"input": yaml.encode(DEFAULT_ENCODING)}
 
 
 @patch.object(kafka, "KafkaProducer")
