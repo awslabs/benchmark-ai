@@ -138,17 +138,18 @@ END
 
 _install_msk_aware_terraform_plugin(){
     # Get Kafka AWS binary and put it in terraform plugins directory
+    local plugin_zip="terraform-provider-aws_v2.4.0.zip"
     local plugin_name="terraform-provider-aws_v2.4.0"
     local kernel=$(uname | awk '{print tolower($0)}')
-    local s3_key=s3://benchmark-ai/${kernel}/${plugin_name}
+    local plugin_url="https://chancebair.github.io/terraform-msk-binaries/${kernel}/${plugin_zip}"
     if [[ ! -f ~/.terraform.d/plugins/${plugin_name} ]] ; then
         printf 'Downloading MSK-aware aws terraform plugin binary...\n'
         mkdir -p ~/.terraform.d/plugins
-        if aws s3 cp "$s3_key" ~/.terraform.d/plugins; then
+        if wget -P ~/.terraform.d/plugins ${plugin_url} ; then
+            unzip ~/.terraform.d/plugins/${plugin_zip} -d ~/.terraform.d/plugins/
             chmod +x ~/.terraform.d/plugins/${plugin_name}
         else
-            CANONICAL_ID=$(aws s3api list-buckets --output json | jq --raw-output  '.Owner.ID')
-            printf "Please add your account ID: %s RO permissions to %s in mxnet-edge-bln account\n" "$CANONICAL_ID" "${s3_key}"
+            printf "Failed to download MSK plugin zip file from $plugin_url\n"
             return 1
         fi
     fi
