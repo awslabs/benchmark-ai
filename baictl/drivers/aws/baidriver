@@ -66,8 +66,6 @@ create_infra() {
 
     _install_msk_aware_terraform_plugin || return 1
 
-    exit
-
     cd $terraform_dir
 
     local vars=""
