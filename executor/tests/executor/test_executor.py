@@ -3,7 +3,14 @@ from unittest import mock
 
 from pytest import fixture
 from unittest.mock import MagicMock, patch
-from bai_kafka_utils.events import BenchmarkDoc, BenchmarkEvent, FetcherPayload, DataSet
+from bai_kafka_utils.events import (
+    BenchmarkDoc,
+    BenchmarkEvent,
+    FetcherPayload,
+    DataSet,
+    create_from_object,
+    FetcherBenchmarkEvent,
+)
 from bai_kafka_utils.kafka_service import KafkaService, KafkaServiceConfig
 from bai_kafka_utils.utils import DEFAULT_ENCODING
 from executor.args import create_executor_config
@@ -34,7 +41,8 @@ def benchmark_doc() -> BenchmarkDoc:
     return BenchmarkDoc({"var": "val"}, "var = val", sha1="123")
 
 
-def get_benchmark_event(payload):
+@fixture
+def benchmark_event():
     return BenchmarkEvent(
         action_id="action_id",
         message_id="MESSAGE_ID",
@@ -44,23 +52,23 @@ def get_benchmark_event(payload):
         authenticated=False,
         tstamp=42,
         visited=[],
-        payload=payload,
+        payload=None,
     )
 
 
 @fixture
-def benchmark_event_with_data_sets(benchmark_doc: BenchmarkDoc) -> BenchmarkEvent:
+def benchmark_event_with_data_sets(benchmark_event, benchmark_doc: BenchmarkDoc) -> FetcherBenchmarkEvent:
     payload = FetcherPayload(
         toml=benchmark_doc,
         datasets=[DataSet(src="src1", dst="s3://bucket/object"), DataSet(src="src2", dst="s3://bucket/object2")],
     )
-    return get_benchmark_event(payload)
+    return create_from_object(FetcherBenchmarkEvent, benchmark_event, payload=payload)
 
 
 @fixture
-def benchmark_event_without_data_sets(benchmark_doc: BenchmarkDoc) -> BenchmarkEvent:
+def benchmark_event_without_data_sets(benchmark_event, benchmark_doc: BenchmarkDoc) -> FetcherBenchmarkEvent:
     payload = FetcherPayload(toml=benchmark_doc, datasets=[])
-    return get_benchmark_event(payload)
+    return create_from_object(FetcherBenchmarkEvent, benchmark_event, payload=payload)
 
 
 @mock.patch("executor.executor.subprocess.check_output")
@@ -68,7 +76,7 @@ def benchmark_event_without_data_sets(benchmark_doc: BenchmarkDoc) -> BenchmarkE
 def test_executor_event_handler_handle_event(
     mock_create_yaml,
     mock_check_output,
-    benchmark_event_with_data_sets: BenchmarkEvent,
+    benchmark_event_with_data_sets: FetcherBenchmarkEvent,
     kafka_service: KafkaService,
     config_args,
 ):
