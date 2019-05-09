@@ -1,0 +1,20 @@
+#!/bin/bash
+
+#Configuration
+export ENVIRONMENT=${ENVIRONMENT:="test"}
+export LOGGING_LEVEL=${LOGGING_LEVEL:="info"}
+
+#Endpoints Server
+export SVC_PORT=${SVC_PORT:=8080}
+export ENDPOINTS_PORT=${ENDPOINTS_PORT:=${SVC_PORT}}
+
+export JARFILE="target/bai-bff-*-standalone.jar"
+
+echo "ENVIRONMENT = ${ENVIRONMENT}"
+echo "LOGGING_LEVEL = ${LOGGING_LEVEL}"
+echo "SVC_PORT = ${SVC_PORT}"
+echo "ENDPOINTS_PORT = ${ENDPOINTS_PORT}"
+
+cmd="java -jar ${JARFILE}"
+echo ${cmd}
+$cmd
