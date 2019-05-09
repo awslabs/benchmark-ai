@@ -11,9 +11,15 @@ import pytest
 from kafka import KafkaConsumer, KafkaProducer
 from pytest import fixture
 
-from bai_kafka_utils.events import BenchmarkPayload, BenchmarkEvent, BenchmarkDoc, VisitedService
+from bai_kafka_utils.events import (
+    BenchmarkPayload,
+    BenchmarkEvent,
+    BenchmarkDoc,
+    VisitedService,
+    StatusMessageBenchmarkEvent,
+    Status,
+)
 from bai_kafka_utils.kafka_service import KafkaService, KafkaServiceCallback
-from bai_kafka_utils.status_message import create_status_message_event
 
 MOCK_MD5 = "12819821982918921"
 
@@ -224,7 +230,7 @@ def _create_kafka_service(callbacks, kafka_consumer, kafka_producer):
 
 class StatusMessageSenderCallback(KafkaServiceCallback):
     def handle_event(self, event: BenchmarkEvent, kafka_service: KafkaService) -> Optional[BenchmarkEvent]:
-        kafka_service.send_status_message_event(event, STATUS_MESSAGE)
+        kafka_service.send_status_message_event(event, Status.RUNNING, STATUS_MESSAGE)
         return None
 
     def cleanup(self):
@@ -244,7 +250,9 @@ def test_status_message_sent(
     kafka_service = _create_kafka_service([status_callback], kafka_consumer, kafka_producer)
     kafka_service.run_loop()
 
-    expected_status_event = create_status_message_event(benchmark_event, STATUS_MESSAGE)
+    expected_status_event = StatusMessageBenchmarkEvent.create_from_event(
+        Status.RUNNING, STATUS_MESSAGE, benchmark_event
+    )
 
     mock_message_before_send(expected_status_event, mock_uuid4)
 

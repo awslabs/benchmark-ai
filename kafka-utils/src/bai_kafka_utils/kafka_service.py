@@ -9,8 +9,7 @@ from typing import List, Optional
 
 from kafka import KafkaProducer, KafkaConsumer
 
-from bai_kafka_utils.events import BenchmarkEvent, VisitedService
-from bai_kafka_utils.status_message import create_status_message_event
+from bai_kafka_utils.events import BenchmarkEvent, VisitedService, Status, StatusMessageBenchmarkEvent
 
 logger = logging.getLogger(__name__)
 
@@ -91,13 +90,14 @@ class KafkaService:
         logger.info(f"Got event {event}")
         return callback.handle_event(event, self)
 
-    def send_status_message_event(self, handled_event: BenchmarkEvent, msg: str):
+    def send_status_message_event(self, handled_event: BenchmarkEvent, status: Status, msg: str):
         """
         Utility method for sending status message events.
+        :param status: status of the event
         :param handled_event: value of the message to send
         :param msg: Message to send
         """
-        status_event = create_status_message_event(handled_event, msg)
+        status_event = StatusMessageBenchmarkEvent.create_from_event(status, msg, handled_event)
 
         if not self._status_topic:
             logger.info(f"No status topic specified. Losing event: {status_event}")
