@@ -71,7 +71,7 @@
                                                                               request
                                                                               (json/parse-string body-string true))
                                                                        json-event (json/generate-string event {:pretty true})]
-                                                                   (log/info event)
+                                                                   (log/debug event)
                                                                    (log/info json-event)
                                                                    (>!! @eventbus/send-event-channel-atom [(:client_id event) json-event])
                                                                    (created (:action_id event))))
