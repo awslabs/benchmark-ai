@@ -98,7 +98,7 @@ data "template_file" "ssh_config" {
   }
 }
 resource "local_file" "ssh_config" {
-  sensitive_content  = "${data.template_file.ssh_config.rendered}"
+  content  = "${data.template_file.ssh_config.rendered}"
   filename = "${var.data_dir}/ssh-config"
 }
 

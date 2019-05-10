@@ -9,6 +9,6 @@ data "template_file" "fluentd-daemonset" {
 }
 
 resource "local_file" "fluentd-daemonset" {
-  sensitive_content  = "${data.template_file.fluentd-daemonset.rendered}"
+  content  = "${data.template_file.fluentd-daemonset.rendered}"
   filename = "${var.data_dir}/fluentd-daemonset.yaml"
 }
