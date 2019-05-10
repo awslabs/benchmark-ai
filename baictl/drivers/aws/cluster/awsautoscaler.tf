@@ -8,6 +8,6 @@ data "template_file" "autoscaler_deployment" {
 }
 
 resource "local_file" "update_autoscaler" {
-  content  = "${data.template_file.autoscaler_deployment.rendered}"
+  sensitive_content = "${data.template_file.autoscaler_deployment.rendered}"
   filename = "${var.data_dir}/autoscaler-deployment.yaml"
 }
