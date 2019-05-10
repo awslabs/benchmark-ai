@@ -9,7 +9,7 @@ resource "aws_key_pair" "bastion_key" {
 }
 
 resource "local_file" "bastion_privatekey_pem" {
-  content  = "${tls_private_key.bastion_private_key.private_key_pem}"
+  sensitve_content  = "${tls_private_key.bastion_private_key.private_key_pem}"
   filename = "${var.data_dir}/bastion_private.pem"
   provisioner "local-exec" {
     # HACK while Terraform does not have a proper way to set file permissions: https://github.com/terraform-providers/terraform-provider-local/issues/19
