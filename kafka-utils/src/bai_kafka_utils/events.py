@@ -62,6 +62,7 @@ class VisitedService:
     svc: str
     tstamp: int
     version: str
+    node: Optional[str] = None
 
 
 @dataclass_json

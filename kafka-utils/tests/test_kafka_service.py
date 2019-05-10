@@ -5,7 +5,7 @@ import time
 import uuid
 from dataclasses import dataclass
 from typing import Optional
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from kafka import KafkaConsumer, KafkaProducer
@@ -30,6 +30,8 @@ MOCK_UUID = "4B545FB7-66B6-4C24-A681-7F1625313257"
 PRODUCER_TOPIC = "OUT_TOPIC"
 
 SERVICE_NAME = "FAKE_SERVICE"
+
+SERVICE_POD = "fake-service-pod"
 
 VERSION = "1.0"
 
@@ -184,12 +186,13 @@ def test_immutable_callbacks(kafka_consumer: KafkaConsumer, kafka_producer: Kafk
     assert not mock_callback_added_later.cleanup.called
 
 
-# The patched objects are passed in the reverse order
-@patch.object(time, "time")
-@patch.object(uuid, "uuid4")
 def test_message_sent(
-    mock_uuid4, mock_time, kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer, benchmark_event: BenchmarkEvent
+    mocker, kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer, benchmark_event: BenchmarkEvent
 ):
+    mock_time = mocker.patch.object(time, "time")
+    mock_uuid4 = mocker.patch.object(uuid, "uuid4")
+    mocker.patch.dict("bai_kafka_utils.kafka_service.os.environ", {"HOSTNAME": SERVICE_POD})
+
     result_event = copy.deepcopy(benchmark_event)
     expected_event = copy.deepcopy(result_event)
 
@@ -237,12 +240,13 @@ class StatusMessageSenderCallback(KafkaServiceCallback):
         pass
 
 
-# The patched objects are passed in the reverse order
-@patch.object(time, "time")
-@patch.object(uuid, "uuid4")
 def test_status_message_sent(
-    mock_uuid4, mock_time, kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer, benchmark_event: BenchmarkEvent
+    mocker, kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer, benchmark_event: BenchmarkEvent
 ):
+    mock_time = mocker.patch.object(time, "time")
+    mock_uuid4 = mocker.patch.object(uuid, "uuid4")
+    mocker.patch.dict("bai_kafka_utils.kafka_service.os.environ", {"HOSTNAME": SERVICE_POD})
+
     status_callback = StatusMessageSenderCallback()
 
     mock_time_and_uuid(mock_time, mock_uuid4)
@@ -261,4 +265,4 @@ def test_status_message_sent(
 
 def mock_message_before_send(status_event, mock_uuid4):
     status_event.message_id = str(mock_uuid4())
-    status_event.visited.append(VisitedService(SERVICE_NAME, tstamp=VISIT_TIME_MS, version=VERSION))
+    status_event.visited.append(VisitedService(SERVICE_NAME, tstamp=VISIT_TIME_MS, version=VERSION, node=SERVICE_POD))
