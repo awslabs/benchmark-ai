@@ -11,7 +11,9 @@ import os
 import docker
 import base64
 import logging
+import config
 
+CFN_SPLIT_STRING = "|||"
 DOCKER_IMAGE_TAG = "benchmark-ai/baictl"
 CLOUDFORMATION_YAML_PATH = os.path.join(os.path.split(os.path.realpath(__file__))[0], "cfn-baictl-ecs.yml")
 
@@ -19,18 +21,37 @@ CLOUDFORMATION_YAML_PATH = os.path.join(os.path.split(os.path.realpath(__file__)
 def main():
     logging.getLogger().setLevel(logging.DEBUG)
 
-    boto_session = request_aws_credentials()
+    config = load_config("config.yml")
+
+    boto_session = request_aws_credentials(aws_region=config.get_aws_region())
     docker_cli, docker_registry = login_ecr(boto_session=boto_session)
     docker_tag = build_docker_image(docker_cli=docker_cli, docker_registry=docker_registry)
     cloudformation_output = execute_cloudformation_deployment(
-        stack_name="baictl-ecs", boto_session=boto_session, cloudformation_yaml_path=CLOUDFORMATION_YAML_PATH
+        stack_name="baictl-ecs",
+        boto_session=boto_session,
+        cloudformation_yaml_path=CLOUDFORMATION_YAML_PATH,
+        baictl_command=generate_baictl_command(config),
     )
-    publish_docker_image(docker_cli=docker_cli, docker_tag=docker_tag)
+    docker_cli, docker_registry = login_ecr(boto_session=boto_session)
+    publish_docker_image(docker_cli=docker_cli, docker_tag=docker_tag, docker_registry=docker_registry)
     run_ecs_task(boto_session=boto_session, cloudformation_output=cloudformation_output)
     destroy_cloudformation()
 
 
-def request_aws_credentials():
+def load_config(path):
+    return config.Config(path)
+
+
+def generate_baictl_command(config):
+    return [
+        "create",
+        "infra",
+        "--aws-prefix-list-id=" + config.get_aws_prefix_lists(),
+        "--aws-region=" + config.get_aws_region(),
+    ]
+
+
+def request_aws_credentials(aws_region):
     # This allows to pick up an AWS_PROFILE and AWS_REGION from the env-var and present it to the user so they only have to press
     # enter instead of having to type it in all the time - just a convenience thingy
     env_aws_profile = os.environ["AWS_PROFILE"] if "AWS_PROFILE" in os.environ else None
@@ -42,15 +63,6 @@ def request_aws_credentials():
     if aws_profile == "":
         aws_profile = env_aws_profile
 
-    env_aws_region = os.environ["AWS_REGION"] if "AWS_REGION" in os.environ else None
-    aws_region = input(
-        "Please enter the AWS_REGION name [Default: {}]: {}".format(
-            env_aws_region, env_aws_region if env_aws_region else ""
-        )
-    )
-    if aws_region == "":
-        aws_region = env_aws_region
-
     boto_session = boto3.Session(profile_name=aws_profile, region_name=aws_region)
     return boto_session
 
@@ -61,7 +73,11 @@ def login_ecr(boto_session):
     username, password = base64.b64decode(response["authorizationData"][0]["authorizationToken"]).decode().split(":")
     endpoint = response["authorizationData"][0]["proxyEndpoint"]
     cli = docker.from_env()
-    cli.login(username=username, password=password, registry=endpoint)
+    result = cli.login(username=username, password=password, registry=endpoint)
+    if result["Status"] != "Login Succeeded":
+        logging.error("Error logging in to Docker registry")
+        logging.error(result)
+        raise Exception(result)
 
     return cli, endpoint
 
@@ -72,20 +88,29 @@ def build_docker_image(docker_cli, docker_registry):
     # TODO: Allow to use --cache-from to speed up this process bu using a prebuild remote image. It's important
     # that we don't entirely rely on the remote image since it's possible that the local code is different from the
     # public image (aka when we want to test local changes). --cache-from gives the best of both worlds.
-    output = docker_cli.build(path=os.path.split(os.path.realpath(__file__))[0], tag=docker_tag, decode=True)
+    output = docker_cli.build(
+        path=os.path.dirname(os.path.split(os.path.realpath(__file__))[0]),  # Context is ../cwd
+        tag=docker_tag,
+        dockerfile=os.path.join(os.path.split(os.path.realpath(__file__))[0], "Dockerfile-baictl"),
+        decode=True,
+    )
     logging.debug("Docker build output:")
     for line in output:
-        logging.debug(line["stream"])
-
+        try:
+            logging.debug(line["stream"])
+        except KeyError as e:
+            logging.exception(e)
+            raise e
     return docker_tag
 
 
-def execute_cloudformation_deployment(stack_name, boto_session, cloudformation_yaml_path):
+def execute_cloudformation_deployment(stack_name, boto_session, cloudformation_yaml_path, baictl_command):
     """
     Deploy the passed CloudFormation stack
     :param stack_name: Stack name
     :param boto_session: Boto3 session
     :param cloudformation_yaml_path: Cloudformation template yaml path
+    :param baictl_command: List of commands to run. e.g. ['create', 'infra']
     """
 
     def convert_clouformation_output(output):
@@ -102,7 +127,20 @@ def execute_cloudformation_deployment(stack_name, boto_session, cloudformation_y
     cloudformation_client = boto_session.client("cloudformation")
     with open(cloudformation_yaml_path, "r") as file:
         cloudformation_yaml = file.read()
-        params = {"StackName": stack_name, "TemplateBody": cloudformation_yaml, "Capabilities": ["CAPABILITY_IAM"]}
+        params = {
+            "StackName": stack_name,
+            "TemplateBody": cloudformation_yaml,
+            "Capabilities": ["CAPABILITY_IAM"],
+            "Parameters": [
+                {
+                    "ParameterKey": "CommandToExecute",
+                    "ParameterValue": CFN_SPLIT_STRING.join(
+                        baictl_command
+                    ),  # CloudFormation doesn't support List of Strings..
+                    "UsePreviousValue": False,
+                }
+            ],
+        }
         try:
             if _cloudformation_stack_exists(cloudformation_client=cloudformation_client, stack_name=stack_name):
                 logging.info("Updating CloudFormation stack: %s", stack_name)
@@ -144,10 +182,20 @@ def _cloudformation_stack_exists(cloudformation_client, stack_name):
     return False
 
 
-def publish_docker_image(docker_cli, docker_tag):
-    output = docker_cli.push(docker_tag, stream=True, decode=True)
+def publish_docker_image(docker_cli, docker_tag, docker_registry):
+    output = docker_cli.push(
+        docker_tag,
+        stream=True,
+        decode=True,
+        # The docker cli is not smart enough to distinguish between https:// as prefix for the registry and without
+        # https, so we have to do it manually...
+        auth_config=docker_cli._auth_configs[docker_registry],
+    )
     for line in output:
         logging.debug(line)
+        if "errorDetail" in line:
+            logging.error("Error during docker push:" + line["errorDetail"]["message"])
+            raise Exception(line["errorDetail"]["message"])
 
 
 def run_ecs_task(boto_session, cloudformation_output):

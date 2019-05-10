@@ -1,0 +1,9 @@
+*~
+baictl/cfn-baictl-ecs.yml
+baictl/Dockerfile-baictl
+.terraform
+.DS_Store
+.flake8
+.git
+.gitmodules
+baictl/remote-baictl.py

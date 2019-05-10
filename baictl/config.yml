@@ -1,0 +1,2 @@
+aws_prefix_lists: 'test'
+aws_region: 'us-west-2'

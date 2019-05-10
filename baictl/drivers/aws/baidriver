@@ -145,7 +145,7 @@ _install_msk_aware_terraform_plugin(){
     if [[ ! -f ~/.terraform.d/plugins/${plugin_name} ]] ; then
         printf 'Downloading MSK-aware aws terraform plugin binary...\n'
         mkdir -p ~/.terraform.d/plugins
-        if wget -P ~/.terraform.d/plugins ${plugin_url} ; then
+        if wget -nv -P ~/.terraform.d/plugins ${plugin_url} ; then
             unzip ~/.terraform.d/plugins/${plugin_zip} -d ~/.terraform.d/plugins/
             chmod +x ~/.terraform.d/plugins/${plugin_name}
         else
