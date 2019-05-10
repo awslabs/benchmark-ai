@@ -1,9 +1,8 @@
-import copy
 import logging
 
 import kubernetes
 
-from bai_kafka_utils.events import ExecutorBenchmarkEvent
+from bai_kafka_utils.events import ExecutorBenchmarkEvent, Status
 from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
 from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService, KafkaServiceConfig
 from bai_watcher import SERVICE_NAME, __version__
@@ -22,15 +21,24 @@ class WatchJobsEventHandler(KafkaServiceCallback):
         self.kubernetes_clients = {"single-node": kubernetes.client.BatchV1Api()}
 
     def handle_event(self, event: ExecutorBenchmarkEvent, kafka_service: KafkaService):
-        output_event = copy.deepcopy(event)
-
         def notify_job_status(job_id, job_status: KubernetesJobStatus):
             # This method is called at each thread (not the Main Thread)
             logger.info(f"Job '{job_id}'' has status '{job_status}'")
 
-            if job_status:
-                output_event.payload.job.status = str(job_status.value)
-                kafka_service.send_event(output_event)
+            if job_status is None:
+                # Job does not exist, it might have been already deleted by the collector, we can safely ignore this
+                # status
+                pass
+            elif job_status == KubernetesJobStatus.FAILED:
+                kafka_service.send_status_message_event(event, Status.FAILED, "Job failed")
+            elif job_status == KubernetesJobStatus.RUNNING:
+                kafka_service.send_status_message_event(event, Status.RUNNING, "Job is running")
+            elif job_status == KubernetesJobStatus.SUCCEEDED:
+                kafka_service.send_status_message_event(event, Status.SUCCEEDED, "Job finished with success")
+
+            else:
+                raise ValueError(f"Unknown status: {job_status}")
+
             if job_status != KubernetesJobStatus.RUNNING:
                 del self.watchers[job_id]
                 logger.info(f"Job {job_id} is not being watched anymore")
