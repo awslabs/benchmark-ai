@@ -1,3 +1,4 @@
+import itertools
 import logging
 import time
 from enum import Enum
@@ -33,7 +34,7 @@ def load_kubernetes_config(kubeconfig=None):
         kubernetes.config.load_incluster_config()
 
 
-class K8SJobWatcher:
+class KubernetesJobWatcher:
     def __init__(self, job_id, callback, *, kubernetes_namespace, kubernetes_client):
         self.job_id = job_id
         self.callback = callback
@@ -76,8 +77,8 @@ class K8SJobWatcher:
         )
 
     def _thread_run_loop(self):
-        self._running = True
-        while self._running:
+        # Use itertools.count() so that tests can mock the infinite loop
+        for _ in itertools.count():
             status = self.get_status()
             stop_watching = self.callback(self.job_id, status)
             if stop_watching:
