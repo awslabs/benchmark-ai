@@ -1,4 +1,4 @@
-(ns bai-client.utils)
+(ns bai-client.utils.emoji)
 
 ;; Resources...
 ;; (format "Smile! %c" (int 0x1F64C))
@@ -10,30 +10,30 @@
 
 (def smile (apply str (Character/toChars 129315)))
 
-(def starting (apply str (Character/toChars 129315)))
-(def okay     (apply str (Character/toChars 0x2705)))
-(def fail     (apply str (Character/toChars 0x1F4A3)))
-(def error    (apply str (Character/toChars 0x1F525)))
-(def warning  (apply str (Character/toChars 0x1F525)))
+(def emoji-starting (apply str (Character/toChars 129315)))
+(def emoji-okay     (apply str (Character/toChars 0x2705)))
+(def emoji-fail     (apply str (Character/toChars 0x1F4A3)))
+(def emoji-error    (apply str (Character/toChars 0x1F525)))
+(def emoji-warning  (apply str (Character/toChars 0x1F525)))
 
 ;; BFF
-(def connected    (apply str (Character/toChars 129315)))
-(def disconnected (apply str (Character/toChars 129315)))
-(def submitted    (apply str (Character/toChars 129315)))
-(def received     (apply str (Character/toChars 129315)))
-(def rejected     (apply str (Character/toChars 0x274C)))
-(def action-id    (apply str (Character/toChars 129315)))
+(def emoji-connected    (apply str (Character/toChars 129315)))
+(def emoji-disconnected (apply str (Character/toChars 129315)))
+(def emoji-submitted    (apply str (Character/toChars 129315)))
+(def emoji-received     (apply str (Character/toChars 129315)))
+(def emoji-rejected     (apply str (Character/toChars 0x274C)))
+(def emoji-action-id    (apply str (Character/toChars 129315)))
 
 ;; Fetcher
-(def got_info    (apply str (Character/toChars 0x1F44D)))
-(def fetching    (apply str (Character/toChars 0x1F436)))
-(def downloading (apply str (Character/toChars 129315)))
-(def completed   (apply str (Character/toChars 0x1F44D)))
+(def emoji-got-info    (apply str (Character/toChars 0x1F44D)))
+(def emoji-fetching    (apply str (Character/toChars 0x1F436)))
+(def emoji-downloading (apply str (Character/toChars 129315)))
+(def emoji-completed   (apply str (Character/toChars 0x1F44D)))
 
 ;; Executor
-(def executing   (apply str (Character/toChars 129315)))
-(def in-progress (apply str (Character/toChars 0x1F3C3)))
-(def exec-done   (apply str (Character/toChars 0x2705)))
+(def emoji-executing   (apply str (Character/toChars 129315)))
+(def emoji-in-progress (apply str (Character/toChars 0x1F3C3)))
+(def emoji-exec-done   (apply str (Character/toChars 0x2705)))
 
 (defn unicode-to-string
   "Turns a hex unicode symbol into a string.
