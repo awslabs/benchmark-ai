@@ -29,6 +29,13 @@ resource "aws_security_group" "ssh-access-rules" {
     prefix_list_ids = "${var.prefix_list_ids}"
   }
 
+  ingress {
+    from_port       = 22
+    to_port         = 22
+    protocol        = "tcp"
+    cidr_blocks =   "${var.ssh_access_cidr_blocks}"
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
