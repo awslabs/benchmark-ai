@@ -8,7 +8,7 @@ from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
 from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService, KafkaServiceConfig
 from bai_watcher import SERVICE_NAME, __version__
 from bai_watcher.args import WatcherServiceConfig
-from bai_watcher.kubernetes_job_watcher import K8SJobWatcher, KubernetesJobStatus, load_kubernetes_config
+from bai_watcher.kubernetes_job_watcher import KubernetesJobWatcher, KubernetesJobStatus, load_kubernetes_config
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class WatchJobsEventHandler(KafkaServiceCallback):
 
         logger.info("Starting to watch the job '%s'", job_id)
         kubernetes_client = self.kubernetes_clients["single-node"]
-        watcher = K8SJobWatcher(
+        watcher = KubernetesJobWatcher(
             job_id,
             notify_job_status,
             kubernetes_client=kubernetes_client,
