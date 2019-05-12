@@ -22,7 +22,7 @@
   :target-path "@@TARGET_PATH@@"
   :omit-source true
   :jar-exclusions [#"(?:^|/).git/"]
-  :aot [@@MAIN@@]
+  :aot :all
   :main @@MAIN@@
   :manifest {"Organization" "@@ORGANIZATION@@"
              "Author" "@@AUTHOR@@"

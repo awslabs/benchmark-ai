@@ -1,21 +1,22 @@
 (ns bai-client.app
   (:require [clojure.tools.cli :refer [parse-opts]]
             [clojure.pprint :refer :all]
+            [clojure.string :as string]
             [clojure.core.async :as async]
             [clojure.java.io :as io]
             [clojure.java.shell :only [sh]]
-            [environ.core :refer [env]]
-            [org.httpkit.client :as http]
-            [clojure.string :as string]
-            [digest]
             [clojure.data.codec.base64 :as b64]
             [cheshire.core :as json]
-            [taoensso.timbre :as log])
+            [digest]
+            [environ.core :refer [env]]
+            [org.httpkit.client :as http]
+            [taoensso.timbre :as log]
+            [toml.core :as toml])
   (:import (java.net InetAddress))
   (:gen-class))
 
 (defonce version "v0.0.1")
-(log/set-level! (keyword (string/trim ^String(env :logging-level "trace"))))
+(log/set-level! (keyword (string/trim ^String(env :logging-level "warn"))))
 
 ;; ------
 ;; Utility Functions...
@@ -71,7 +72,23 @@
 (defn submit
   "Submits the specified descriptor input to Benchmark AI (Anubis) to execute"
   [options]
-  (log/trace "submit called with: "options))
+  (log/trace "submit called with: "options)
+  (let [cli-options [["-f" "--filename <descriptor file>" "Path to TOML Descriptor file"]
+                     ["-h" "--help" "This message"]]
+        {:keys [options arguments errors summary] :as all} (parse-opts options cli-options :in-order true)
+        filename (:filename options)
+        event (gen-submit-event)]
+    (log/trace (str "parsed options for submit:\n"all))
+    (if (or (empty? options) (:help options))
+      (do
+        (println)
+        (println summary)
+        (println)
+        (System/exit 0)))
+
+    (printf "Loading descriptor file: %s\n" filename)
+    ;TODO: fill in the payload section of the event
+    ))
 
 (defn sync!
   "Synchronize the local datastore with the state in Anubis"
@@ -90,11 +107,11 @@
   [;; First three strings describe a short-option, long-option with optional
    ;; example argument description, and a description. All three are optional
    ;; and positional.
-   [nil "--port <PORT>" "Anubis service port number"
-    :default 8505
+   ["-P" "--port <PORT>" "Anubis service port number"
+    :default 8080
     :parse-fn #(Integer/parseInt %)
     :validate [#(< 0 % 0x10000) "Must be a number between 0 and 65536"]]
-   [nil "--hostname <HOSTNAME>" "Anubis service hostname (or IP)"
+   ["-H" "--hostname <HOSTNAME>" "Anubis service hostname (or IP)"
     :default (InetAddress/getByName "localhost")
     ;; Specify a string to output in the default column in the options summary
     ;; if the default value's string representation is very ugly
@@ -180,7 +197,12 @@
   (println msg)
   (System/exit status))
 
+(defn initialize
+  "Make sure that we have our environment and directory set up..."
+  [])
+
 (defn -main [& args]
+  (initialize)
   (let [{:keys [action options exit-message ok?]} (validate-args args)]
     (if exit-message
       (exit (if ok? 0 1) exit-message)

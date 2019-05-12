@@ -84,9 +84,12 @@ $(MAIN_CLASS_FILE): project.clj $(CLJ_FILES)
 	$(LEIN) compile
 	@touch $@
 
+gen-native-image: compile
+
+
 build: compile dist
 test: unit-test integration-test docs
-package: build-deploy-container
+package: gen-native-image #build-deploy-container
 publish: publish-deploy-container
 
 all: build test package #publish
