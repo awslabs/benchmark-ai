@@ -6,7 +6,7 @@ from benchmarkai_fetcher_job.s3_utils import S3Object
 def s3_to_s3_deep(src: S3Object, dst: S3Object):
     s3 = boto3.resource("s3")
     old_bucket = s3.Bucket(src.bucket)
-    new_bucket = s3.Bucket(src.bucket)
+    new_bucket = s3.Bucket(dst.bucket)
 
     for obj in old_bucket.objects.filter(Prefix=src.key):
         old_source = {"Bucket": src.bucket, "Key": obj.key}

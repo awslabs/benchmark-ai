@@ -10,7 +10,7 @@ from fetcher_dispatcher.data_set_manager import DataSetManager, DataSetDispatche
 
 DST = "s3://bucker/datasets.key"
 
-SRC = "http://imagenet.org/bigdata.zip"
+SRC = "http://nowhere.com/very-bigdata.zip"
 
 SOME_PATH = "/some/path"
 

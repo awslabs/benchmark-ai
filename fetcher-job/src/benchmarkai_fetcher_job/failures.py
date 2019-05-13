@@ -16,3 +16,11 @@ class HttpClientError(UnRetryableError):
 
 class HttpServerError(RetryableError):
     pass
+
+
+# Any curl exceptions that was before HTTP was properly established.
+# DNS is mostly unretryable.
+# Cannot connect - probably is.
+# TODO - investigate later
+class CurlError(UnRetryableError):
+    pass

@@ -3,30 +3,30 @@ from pytest import fixture
 from typing import TextIO
 from unittest.mock import Mock
 
-from benchmarkai_fetcher_job.failures import InvalidDigestException
-from benchmarkai_fetcher_job.md5sum import md5sum, validate_md5
+from benchmarkai_fetcher_job.md5sum import calculate_md5_and_etag, DigestPair
 
-FOO_MD5 = "acbd18db4cc2f85cedef654fccc4a4d8"
+SMALL_MD5 = "acbd18db4cc2f85cedef654fccc4a4d8"
 
-DATA = b"foo"
+BIG_MD5 = "3858f62230ac3c915f300c664312c63f"
+
+BIG_ETAG = "0105fcbc9eea8193de8e1834677b6c6b-2"
+
+SMALL_DATA = b"foo"
+
+ADDITIONAL_DATA = b"bar"
+
+CHUNK_SIZE = 2
 
 
-@fixture
-def mock_file():
+@pytest.mark.parametrize(
+    ["file_reads", "expected_digest_pair"],
+    [
+        ([SMALL_DATA, b""], DigestPair(SMALL_MD5, SMALL_MD5)),
+        ([SMALL_DATA, ADDITIONAL_DATA, b""], DigestPair(BIG_MD5, BIG_ETAG)),
+    ],
+)
+def test_calculate_md5_and_etag_mult_chunks(file_reads, expected_digest_pair):
     mock_file = Mock(spec=TextIO)
-    # Empty binstr to signal EOF
-    mock_file.read.side_effect = [DATA, b""]
-    return mock_file
+    mock_file.read.side_effect = file_reads
 
-
-def test_md5(mock_file):
-    assert FOO_MD5 == md5sum(mock_file)
-
-
-def test_validate(mock_file):
-    validate_md5(mock_file, FOO_MD5)
-
-
-def test_validate_fail(mock_file):
-    with pytest.raises(InvalidDigestException):
-        validate_md5(mock_file, "corrupted")
+    assert expected_digest_pair == calculate_md5_and_etag(mock_file, CHUNK_SIZE)

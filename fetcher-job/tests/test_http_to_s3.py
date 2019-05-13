@@ -8,6 +8,7 @@ from unittest.mock import Mock, patch, MagicMock
 import benchmarkai_fetcher_job
 from benchmarkai_fetcher_job.failures import HttpServerError, HttpClientError
 from benchmarkai_fetcher_job.http_to_s3 import http_to_s3
+from benchmarkai_fetcher_job.md5sum import DigestPair
 from benchmarkai_fetcher_job.s3_utils import S3Object
 
 S3DST = S3Object("bucket", "key")
@@ -18,6 +19,7 @@ DST = "s3://bucket/key"
 
 MD5 = "42"
 
+ETAG = "42"
 
 @fixture
 def mock_curl(mocker):
@@ -57,25 +59,54 @@ def mock_temp_file(mocker):
     return mock_file
 
 
-@patch.object(benchmarkai_fetcher_job.http_to_s3, "upload_to_s3")
-@patch.object(benchmarkai_fetcher_job.http_to_s3, "validate_md5")
-def test_success(mock_validate_md5, mock_upload_to_s3, mock_temp_file, mock_curl_with_success):
+@patch.object(benchmarkai_fetcher_job.http_to_s3, "check_s3_for_etag", autospec=True)
+@patch.object(benchmarkai_fetcher_job.http_to_s3, "check_s3_for_md5", autospec=True)
+@patch.object(benchmarkai_fetcher_job.http_to_s3, "upload_to_s3", autospec=True)
+@patch.object(benchmarkai_fetcher_job.http_to_s3, "update_s3_hash_tagging", autospec=True)
+@patch.object(benchmarkai_fetcher_job.http_to_s3, "calculate_md5_and_etag", autospec=True)
+def test_success(
+    mock_calculate_md5_and_etag,
+    mock_update_s3_hash_tagging,
+    mock_upload_to_s3,
+    mock_check_s3_for_md5,
+    mock_check_s3_for_etag,
+    mock_temp_file,
+    mock_curl_with_success,
+):
+    mock_check_s3_for_md5.return_value = False
+    mock_check_s3_for_etag.return_value = False
+    mock_calculate_md5_and_etag.return_value = DigestPair(MD5, ETAG)
+
     http_to_s3(SRC, DST)
 
+    mock_check_s3_for_md5.assert_not_called()
     mock_upload_to_s3.assert_called_with(mock_temp_file, S3DST)
-    mock_validate_md5.assert_not_called()
-
-    mock_temp_file.seek.assert_called_once()
+    mock_calculate_md5_and_etag.assert_called_with(mock_temp_file)
 
 
-@patch.object(benchmarkai_fetcher_job.http_to_s3, "upload_to_s3")
-@patch.object(benchmarkai_fetcher_job.http_to_s3, "validate_md5")
-def test_success_with_md5(mock_validate_md5, mock_upload_to_s3, mock_temp_file, mock_curl_with_success):
+@patch.object(benchmarkai_fetcher_job.http_to_s3, "check_s3_for_etag", autospec=True)
+@patch.object(benchmarkai_fetcher_job.http_to_s3, "check_s3_for_md5", autospec=True)
+@patch.object(benchmarkai_fetcher_job.http_to_s3, "upload_to_s3", autospec=True)
+@patch.object(benchmarkai_fetcher_job.http_to_s3, "update_s3_hash_tagging", autospec=True)
+@patch.object(benchmarkai_fetcher_job.http_to_s3, "calculate_md5_and_etag", autospec=True)
+def test_success_with_md5(
+    mock_calculate_md5_and_etag,
+    mock_update_s3_hash_tagging,
+    mock_upload_to_s3,
+    mock_check_s3_for_md5,
+    mock_check_s3_for_etag,
+    mock_temp_file,
+    mock_curl_with_success,
+):
+    mock_check_s3_for_md5.return_value = False
+    mock_check_s3_for_etag.return_value = False
+    mock_calculate_md5_and_etag.return_value = DigestPair(MD5, ETAG)
+
     http_to_s3(SRC, DST, MD5)
 
+    mock_check_s3_for_md5.assert_called_with(S3DST, MD5)
     mock_upload_to_s3.assert_called_with(mock_temp_file, S3DST)
-    mock_validate_md5.assert_called_with(mock_temp_file, MD5)
-    assert mock_temp_file.seek.call_count == 2
+    mock_calculate_md5_and_etag.assert_called_with(mock_temp_file)
 
 
 def test_server_error(mock_curl_with_server_error):
