@@ -1,0 +1,6 @@
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - kubernetes >= 1.13  # For `kubectl`
+  - aws-iam-authenticator >=1.11
