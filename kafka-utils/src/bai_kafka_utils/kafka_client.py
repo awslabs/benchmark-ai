@@ -48,11 +48,22 @@ def create_kafka_consumer(
             logger.exception("Failed to deserialize %s", msg_value)
             return None
 
+    def key_deserializer(key: bytes):
+        try:
+            return key.decode(DEFAULT_ENCODING)
+        # Our json deserializer can raise anything - constructor can raise anything).
+        # Handling JsonDecodeError and KeyError is not enough
+        # For example TypeError is possible as well. So let's play safe.
+        except Exception:
+            logger.exception("Failed to deserialize key %s", key)
+            return None
+
     return kafka.KafkaConsumer(
         topic,
         bootstrap_servers=bootstrap_servers,
         group_id=group_id,
         value_deserializer=json_deserializer,
+        key_deserializer=key_deserializer,
         connections_max_idle_ms=MAX_IDLE_TIME_MS,
     )
 
@@ -65,6 +76,5 @@ def create_kafka_producer(bootstrap_servers: List[str]) -> kafka.KafkaProducer:
         bootstrap_servers=bootstrap_servers,
         value_serializer=json_serializer,
         connections_max_idle_ms=MAX_IDLE_TIME_MS,
-        # We use alphanum client id as a key - no characters outside of ASCII expected
         key_serializer=str.encode,
     )

@@ -1,3 +1,4 @@
+from pytest import fixture
 from unittest.mock import patch, MagicMock, ANY
 
 import pytest
@@ -12,6 +13,12 @@ from bai_kafka_utils.kafka_client import (
 )
 from bai_kafka_utils.utils import DEFAULT_ENCODING
 
+ILLEGAL_UTF8_KEY = b"\xc3\x28"
+
+CLIENT_ID_SERIALIZED = b"AA"
+
+CLIENT_ID = "AA"
+
 BOOTSTRAP_SERVERS = ["kafka_node"]
 TOPIC = "TOPIC"
 GROUP_ID = "GROUP_ID"
@@ -20,45 +27,83 @@ INVALID_JSON = "INVALID".encode(DEFAULT_ENCODING)
 WRONG_SCHEMA_JSON = '{"foo":"bar"}'.encode(DEFAULT_ENCODING)
 
 
-@patch.object(bai_kafka_utils.kafka_client.kafka, "KafkaConsumer")
-def test_kafka_consumer_pass_through(mockKafkaConsumer):
+@fixture
+def mock_kafka_consumer(mocker):
+    return mocker.patch.object(bai_kafka_utils.kafka_client.kafka, "KafkaConsumer")
+
+
+@fixture
+def mock_kafka_producer(mocker):
+    return mocker.patch.object(bai_kafka_utils.kafka_client.kafka, "KafkaProducer")
+
+
+def test_kafka_consumer_pass_through(mock_kafka_consumer):
     create_kafka_consumer(BOOTSTRAP_SERVERS, GROUP_ID, TOPIC, BenchmarkEvent)
-    mockKafkaConsumer.assert_called_with(
+    mock_kafka_consumer.assert_called_with(
         TOPIC,
         bootstrap_servers=BOOTSTRAP_SERVERS,
         group_id=GROUP_ID,
         value_deserializer=ANY,
+        key_deserializer=ANY,
         connections_max_idle_ms=MAX_IDLE_TIME_MS,
     )
 
 
-@patch.object(bai_kafka_utils.kafka_client.kafka, "KafkaConsumer")
-def test_kafka_consumer_handles_invalid_format(mockKafkaConsumer):
+def test_kafka_consumer_handles_invalid_format(mock_kafka_consumer):
     create_kafka_consumer(BOOTSTRAP_SERVERS, GROUP_ID, TOPIC, BenchmarkEvent)
-    deserializer = get_deserializer(mockKafkaConsumer)
+    deserializer = get_deserializer(mock_kafka_consumer)
 
     res = deserializer(INVALID_JSON)
     assert not res
 
 
-@patch.object(bai_kafka_utils.kafka_client.kafka, "KafkaConsumer")
-def test_kafka_consumer_handles_wrong_schema(mockKafkaConsumer):
+def test_kafka_consumer_handles_wrong_schema(mock_kafka_consumer):
     create_kafka_consumer(BOOTSTRAP_SERVERS, GROUP_ID, TOPIC, BenchmarkEvent)
-    deserializer = get_deserializer(mockKafkaConsumer)
+    deserializer = get_deserializer(mock_kafka_consumer)
 
     res = deserializer(WRONG_SCHEMA_JSON)
     assert not res
 
 
-@patch.object(bai_kafka_utils.kafka_client.kafka, "KafkaProducer")
-def test_kafka_producer_pass_through(mockKafkaProducer):
+def test_kafka_key_deserializer(mock_kafka_consumer):
+    create_kafka_consumer(BOOTSTRAP_SERVERS, GROUP_ID, TOPIC, BenchmarkEvent)
+    key_deserializer = get_key_deserializer(mock_kafka_consumer)
+
+    assert CLIENT_ID == key_deserializer(CLIENT_ID_SERIALIZED)
+
+
+def test_kafka_key_deserializer_invalid_value(mock_kafka_consumer):
+    create_kafka_consumer(BOOTSTRAP_SERVERS, GROUP_ID, TOPIC, BenchmarkEvent)
+    key_deserializer = get_key_deserializer(mock_kafka_consumer)
+
+    assert not key_deserializer(ILLEGAL_UTF8_KEY)
+
+
+def test_kafka_key_deserializer_serializer(mock_kafka_consumer, mock_kafka_producer):
+    create_kafka_consumer(BOOTSTRAP_SERVERS, GROUP_ID, TOPIC, BenchmarkEvent)
     create_kafka_producer(BOOTSTRAP_SERVERS)
-    mockKafkaProducer.assert_called_with(
+
+    key_deserializer = get_key_deserializer(mock_kafka_consumer)
+    key_serializer = get_key_serializer(mock_kafka_producer)
+
+    assert CLIENT_ID == key_deserializer(key_serializer(CLIENT_ID))
+
+
+def test_kafka_producer_pass_through(mock_kafka_producer):
+    create_kafka_producer(BOOTSTRAP_SERVERS)
+    mock_kafka_producer.assert_called_with(
         bootstrap_servers=BOOTSTRAP_SERVERS,
         value_serializer=ANY,
         key_serializer=ANY,
         connections_max_idle_ms=MAX_IDLE_TIME_MS,
     )
+
+
+def test_kafka_key_serializer(mock_kafka_producer):
+    create_kafka_producer(BOOTSTRAP_SERVERS)
+    key_serializer = get_key_serializer(mock_kafka_producer)
+
+    assert CLIENT_ID_SERIALIZED == key_serializer(CLIENT_ID)
 
 
 def test_wrong_event_type():
@@ -69,3 +114,13 @@ def test_wrong_event_type():
 def get_deserializer(mock: MagicMock):
     kwargs = mock.call_args[1]
     return kwargs["value_deserializer"]
+
+
+def get_key_serializer(mock: MagicMock):
+    kwargs = mock.call_args[1]
+    return kwargs["key_serializer"]
+
+
+def get_key_deserializer(mock: MagicMock):
+    kwargs = mock.call_args[1]
+    return kwargs["key_deserializer"]
