@@ -98,6 +98,7 @@ class Status(Enum):
     ERROR = "ERROR"
     INITIALIZING = "INITIALIZING"
     SUCCEEDED = "SUCCEEDED"
+    SUBMITTED = "SUBMITTED"
 
 
 @dataclass_json
@@ -107,7 +108,7 @@ class StatusMessageBenchmarkEvent(BenchmarkEvent):
     Status events represent what the user will receive as the status of their benchmark.
 
     The messages should be thought to be "user-friendly" as to give insight to the user on what is happening inside BAI
-    regarding his benchmark.
+    regarding her benchmark.
     """
 
     message: str

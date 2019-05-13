@@ -1,5 +1,6 @@
 import subprocess
 import logging
+from typing import Tuple
 
 from dacite import WrongTypeError
 
@@ -12,6 +13,7 @@ from bai_kafka_utils.events import (
     BenchmarkJob,
     ExecutorBenchmarkEvent,
     create_from_object,
+    Status,
 )
 from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
 from bai_kafka_utils.kafka_service import (
@@ -35,19 +37,18 @@ class ExecutorEventHandler(KafkaServiceCallback):
 
         yaml, job_id = create_job_yaml_spec(descriptor_contents, self.executor_config, fetched_data_sources)
 
-        self._kubernetes_apply(yaml)
+        job_is_submitted, output = self._kubernetes_apply(yaml)
 
-        job = BenchmarkJob(id=job_id, k8s_yaml=yaml)
+        if job_is_submitted:
+            response_event = self._create_response_event(event, job_id, yaml)
+            kafka_service.send_status_message_event(
+                response_event, Status.SUBMITTED, f"Benchmark successfully submitted with job id {job_id}"
+            )
+            return response_event
+        else:
+            kafka_service.send_status_message_event(event, Status.ERROR, output)
 
-        try:
-            result_payload = ExecutorPayload.create_from_fetcher_payload(event.payload, job)
-            result_event = create_from_object(ExecutorBenchmarkEvent, event, payload=result_payload)
-        except WrongTypeError as e:
-            logging.exception("Data type problem in the received event")
-            raise KafkaServiceCallbackException(str(e))
-        return result_event
-
-    def _kubernetes_apply(self, yaml):
+    def _kubernetes_apply(self, yaml: str) -> Tuple[bool, str]:
         # Shelling out this command because the kubernetes python client does not have a good way to
         # call kubectl apply -f my_config.yaml (https://github.com/kubernetes-client/python/issues/387)
         # Specially https://github.com/kubernetes-client/python/pull/655 - CRDs not supported
@@ -58,8 +59,19 @@ class ExecutorEventHandler(KafkaServiceCallback):
             result = subprocess.check_output(cmd, input=yaml.encode(DEFAULT_ENCODING))
             logger.info(f"Kubectl output: {result}")
             logger.info(f"Job submitted with yaml: \n {yaml}")
+            return True, result
         except subprocess.CalledProcessError as e:
             logger.exception(f"Error executing benchmark: {str(e)}")
+            return False, e.output()
+
+    def _create_response_event(self, input_event: FetcherBenchmarkEvent, job_id: str, yaml: str):
+        try:
+            job = BenchmarkJob(id=job_id, k8s_yaml=yaml)
+            response_payload = ExecutorPayload.create_from_fetcher_payload(input_event.payload, job)
+            return create_from_object(ExecutorBenchmarkEvent, input_event, payload=response_payload)
+        except WrongTypeError as e:
+            logging.exception("Data type problem in the received event")
+            raise KafkaServiceCallbackException(str(e))
 
     def cleanup(self):
         pass
@@ -74,5 +86,12 @@ def create_executor(common_kafka_cfg: KafkaServiceConfig, executor_config: Execu
     pod_name = get_pod_name()
 
     return KafkaService(
-        SERVICE_NAME, __version__, common_kafka_cfg.producer_topic, callbacks, consumer, producer, pod_name
+        SERVICE_NAME,
+        __version__,
+        common_kafka_cfg.producer_topic,
+        callbacks,
+        consumer,
+        producer,
+        pod_name,
+        status_topic=common_kafka_cfg.status_topic,
     )
