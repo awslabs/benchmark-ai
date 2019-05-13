@@ -15,7 +15,13 @@
   (:import (java.net InetAddress))
   (:gen-class))
 
-(defonce version "v0.0.1")
+(defonce VERSION "v0.0.1")
+(defonce SERVICE-NAME "bai-client")
+(defonce BAI_HOME (str(:home env)"/.bai"))
+(defonce BAI_HISTORY (str BAI_HOME"/history"))
+(defonce BAI_ACTION_IDS (str BAI_HOME"/action_ids"))
+(defonce BAI_SERVICE_ENDPOINT_CONFIG (str BAI_HOME"/service/endpoint"))
+
 (log/set-level! (keyword (string/trim ^String(env :logging-level "warn"))))
 
 ;; ------
@@ -24,21 +30,35 @@
 
 (defn uuid [] (str (java.util.UUID/randomUUID)))
 
-(defn gen-submit-event []
+(defn lines [n filename]
+  (with-open [rdr (io/reader filename)]
+    (doall (take n (line-seq rdr)))))
+
+(defn- get-descriptor-info [descriptor-filename]
+  (let [sha1 (digest/sha1 (slurp descriptor-filename))
+        doc (apply str (map char (b64/encode (.getBytes (slurp descriptor-filename)))))
+        info-map {:toml {:descriptor_filename descriptor-filename
+                         :sha1 sha1
+                         :doc doc}}]
+
+    info-map))
+
+(defn- get-client-sha1 []
+  ;; TODO: Need to figure out how to get the sha for the current running code.
+  "123")
+
+(defn- gen-submit-event [descriptor-filename]
   (log/trace "generating submission event...")
-  (let [event {:message_id (uuid)
-               :client_id ""
-               :client_version ""
-               :client_sha1 ""
-               :date ""
-               :visted [{:svc ""
-                         :tstamp ""
-                         :version ""}]
-               :payload {:toml {:descriptor_filename ""
-                                :sha1 ""
-                                :doc ""
-                                }}}]
-    event))
+  (let [tstamp (System/currentTimeMillis)
+        event {:message_id (uuid)
+               :client_id (digest/md5 (str (:user-name env) (-> (InetAddress/getLocalHost) .getHostName)))
+               :client_version VERSION
+               :client_sha1 (get-client-sha1)
+               :date (java.util.Date. tstamp)
+               :visted [{:svc SERVICE-NAME
+                         :tstamp tstamp
+                         :version VERSION}]}]
+    (assoc-in event [:payload] (get-descriptor-info descriptor-filename))))
 
 ;; ------
 ;; Actions
@@ -75,9 +95,8 @@
   (log/trace "submit called with: "options)
   (let [cli-options [["-f" "--filename <descriptor file>" "Path to TOML Descriptor file"]
                      ["-h" "--help" "This message"]]
-        {:keys [options arguments errors summary] :as all} (parse-opts options cli-options :in-order true)
-        filename (:filename options)
-        event (gen-submit-event)]
+        {:keys [options arguments errors summary] :as all} (parse-opts options cli-options :in-order true)]
+
     (log/trace (str "parsed options for submit:\n"all))
     (if (or (empty? options) (:help options))
       (do
@@ -86,9 +105,22 @@
         (println)
         (System/exit 0)))
 
-    (printf "Loading descriptor file: %s\n" filename)
-    ;TODO: fill in the payload section of the event
-    ))
+    (printf "Loading descriptor file: %s\n" (:filename options))
+
+    (try
+      (let [filename (:filename options)
+            event (gen-submit-event filename)
+            json-event (json/generate-string event)]
+        (log/debug json-event)
+        json-event
+
+        @(http/put "http://"(lines 1 BAI_SERVICE_ENDPOINT_CONFIG)"/api/job/descriptor"
+                  {:body json-event
+                   :headers {"Content-Type" "application/json"}}))
+
+      (catch java.io.FileNotFoundException e
+        (log/error (.getMessage e))
+        (System/exit 1)))))
 
 (defn sync!
   "Synchronize the local datastore with the state in Anubis"
