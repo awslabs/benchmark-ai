@@ -31,7 +31,7 @@ PRODUCER_TOPIC = "OUT_TOPIC"
 
 SERVICE_NAME = "FAKE_SERVICE"
 
-SERVICE_POD = "fake-service-pod"
+POD_NAME = "POD_NAME"
 
 VERSION = "1.0"
 
@@ -103,7 +103,9 @@ def kafka_producer():
 @fixture
 def simple_kafka_service(kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer):
     callbacks = []
-    kafka_service = KafkaService(SERVICE_NAME, VERSION, PRODUCER_TOPIC, callbacks, kafka_consumer, kafka_producer)
+    kafka_service = KafkaService(
+        SERVICE_NAME, VERSION, PRODUCER_TOPIC, callbacks, kafka_consumer, kafka_producer, POD_NAME
+    )
     return kafka_service
 
 
@@ -191,7 +193,6 @@ def test_message_sent(
 ):
     mock_time = mocker.patch.object(time, "time")
     mock_uuid4 = mocker.patch.object(uuid, "uuid4")
-    mocker.patch.dict("bai_kafka_utils.kafka_service.os.environ", {"HOSTNAME": SERVICE_POD})
 
     result_event = copy.deepcopy(benchmark_event)
     expected_event = copy.deepcopy(result_event)
@@ -225,7 +226,7 @@ def _create_kafka_service(callbacks, kafka_consumer, kafka_producer):
             pass
 
     kafka_service = KafkaService(
-        SERVICE_NAME, VERSION, PRODUCER_TOPIC, callbacks, kafka_consumer, kafka_producer, STATUS_TOPIC
+        SERVICE_NAME, VERSION, PRODUCER_TOPIC, callbacks, kafka_consumer, kafka_producer, POD_NAME, STATUS_TOPIC
     )
     kafka_service.add_callback(StopKafkaServiceCallback())
     return kafka_service
@@ -245,7 +246,6 @@ def test_status_message_sent(
 ):
     mock_time = mocker.patch.object(time, "time")
     mock_uuid4 = mocker.patch.object(uuid, "uuid4")
-    mocker.patch.dict("bai_kafka_utils.kafka_service.os.environ", {"HOSTNAME": SERVICE_POD})
 
     status_callback = StatusMessageSenderCallback()
 
@@ -265,4 +265,4 @@ def test_status_message_sent(
 
 def mock_message_before_send(status_event, mock_uuid4):
     status_event.message_id = str(mock_uuid4())
-    status_event.visited.append(VisitedService(SERVICE_NAME, tstamp=VISIT_TIME_MS, version=VERSION, node=SERVICE_POD))
+    status_event.visited.append(VisitedService(SERVICE_NAME, tstamp=VISIT_TIME_MS, version=VERSION, node=POD_NAME))

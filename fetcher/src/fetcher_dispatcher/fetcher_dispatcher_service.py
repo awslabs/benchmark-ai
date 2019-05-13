@@ -4,6 +4,7 @@ from typing import List, Callable
 from bai_kafka_utils.events import FetcherBenchmarkEvent, Status
 from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
 from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService, KafkaServiceConfig
+from bai_kafka_utils.utils import get_pod_name
 from fetcher_dispatcher import SERVICE_NAME, __version__
 from fetcher_dispatcher.args import FetcherServiceConfig, FetcherJobConfig
 from fetcher_dispatcher.data_set_manager import DataSet, DataSetManager
@@ -77,6 +78,8 @@ def create_fetcher_dispatcher(common_kafka_cfg: KafkaServiceConfig, fetcher_cfg:
 
     consumer, producer = create_kafka_consumer_producer(common_kafka_cfg, FetcherBenchmarkEvent)
 
+    pod_name = get_pod_name()
+
     return KafkaService(
         SERVICE_NAME,
         __version__,
@@ -84,5 +87,6 @@ def create_fetcher_dispatcher(common_kafka_cfg: KafkaServiceConfig, fetcher_cfg:
         callbacks,
         consumer,
         producer,
+        pod_name,
         common_kafka_cfg.status_topic,
     )

@@ -1,7 +1,6 @@
 import abc
 import dataclasses
 import logging
-import os
 import time
 import uuid
 from dataclasses import dataclass
@@ -54,6 +53,7 @@ class KafkaService:
         callbacks: List[KafkaServiceCallback],
         kafka_consumer: KafkaConsumer,
         kafka_producer: KafkaProducer,
+        pod_name: str,
         status_topic: Optional[str] = None,
     ):
 
@@ -63,8 +63,7 @@ class KafkaService:
         self._status_topic = status_topic
         self.name = name
         self.version = version
-
-        self.pod_name = os.environ.get("HOSTNAME", self.name)
+        self.pod_name = pod_name
 
         # Immutability helps us to avoid nasty bugs.
         self._callbacks = list(callbacks)

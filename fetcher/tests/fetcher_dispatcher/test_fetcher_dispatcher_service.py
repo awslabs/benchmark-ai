@@ -30,6 +30,8 @@ PRODUCER_TOPIC = "OUT_TOPIC"
 
 CONSUMER_TOPIC = "IN_TOPIC"
 
+POD_NAME = "POD_NAME"
+
 S3_BUCKET = "some_bucket"
 
 KUBECONFIG = "path/cfg"
@@ -55,6 +57,7 @@ def kafka_service(mocker) -> KafkaService:
         callbacks=[],
         kafka_consumer=mocker.MagicMock(spec=KafkaConsumer, autospec=True),
         kafka_producer=mocker.MagicMock(spec=KafkaProducer, autospec=True),
+        pod_name=POD_NAME,
         status_topic="STATUS_TOPIC",
     )
     mocker.spy(kafka_service, "send_status_message_event")

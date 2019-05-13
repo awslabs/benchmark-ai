@@ -20,7 +20,7 @@ from bai_kafka_utils.kafka_service import (
     KafkaServiceConfig,
     KafkaServiceCallbackException,
 )
-from bai_kafka_utils.utils import DEFAULT_ENCODING
+from bai_kafka_utils.utils import DEFAULT_ENCODING, get_pod_name
 
 logger = logging.getLogger(SERVICE_NAME)
 
@@ -71,4 +71,8 @@ def create_executor(common_kafka_cfg: KafkaServiceConfig, executor_config: Execu
 
     consumer, producer = create_kafka_consumer_producer(common_kafka_cfg, FetcherBenchmarkEvent)
 
-    return KafkaService(SERVICE_NAME, __version__, common_kafka_cfg.producer_topic, callbacks, consumer, producer)
+    pod_name = get_pod_name()
+
+    return KafkaService(
+        SERVICE_NAME, __version__, common_kafka_cfg.producer_topic, callbacks, consumer, producer, pod_name
+    )
