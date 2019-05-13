@@ -1,5 +1,5 @@
 from kazoo.client import KazooClient
-from unittest.mock import patch, Mock
+from unittest.mock import patch, create_autospec
 
 from benchmarkai_fetcher_job import zk_client
 from benchmarkai_fetcher_job.states import FetcherStatus, FetcherResult
@@ -12,7 +12,7 @@ ZK_ENSEMBLE = "Z1"
 
 @patch.object(zk_client, "KazooClient")
 def test_update_zk_node(mockKazooClient):
-    mock_zk_client = mockKazooClient.return_value = Mock(spec=KazooClient)
+    mock_zk_client = mockKazooClient.return_value = create_autospec(KazooClient)
 
     update_zk_node(ZK_NODE_PATH, ZK_ENSEMBLE, FETCHER_RESULT)
 

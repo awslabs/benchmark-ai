@@ -1,7 +1,7 @@
 import pytest
 from pytest import fixture
 from typing import TextIO
-from unittest.mock import Mock
+from unittest.mock import Mock, create_autospec
 
 from benchmarkai_fetcher_job.md5sum import calculate_md5_and_etag, DigestPair
 
@@ -26,7 +26,7 @@ CHUNK_SIZE = 2
     ],
 )
 def test_calculate_md5_and_etag_mult_chunks(file_reads, expected_digest_pair):
-    mock_file = Mock(spec=TextIO)
+    mock_file = create_autospec(TextIO)
     mock_file.read.side_effect = file_reads
 
     assert expected_digest_pair == calculate_md5_and_etag(mock_file, CHUNK_SIZE)
