@@ -69,9 +69,12 @@ def create_kafka_producer(bootstrap_servers: List[str]) -> kafka.KafkaProducer:
     def json_serializer(msg_value):
         return msg_value.to_json().encode(DEFAULT_ENCODING)
 
+    def key_serializer(key: str):
+        return key.encode(DEFAULT_ENCODING)
+
     return kafka.KafkaProducer(
         bootstrap_servers=bootstrap_servers,
         value_serializer=json_serializer,
         connections_max_idle_ms=MAX_IDLE_TIME_MS,
-        key_serializer=str.encode,
+        key_serializer=key_serializer,
     )
