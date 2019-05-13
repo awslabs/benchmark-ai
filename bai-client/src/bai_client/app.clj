@@ -20,7 +20,10 @@
 (defonce BAI_HOME (str(:home env)"/.bai"))
 (defonce BAI_HISTORY (str BAI_HOME"/history"))
 (defonce BAI_ACTION_IDS (str BAI_HOME"/action_ids"))
-(defonce BAI_SERVICE_ENDPOINT_CONFIG (str BAI_HOME"/service/endpoint"))
+(defonce BAI_SERVICE_ENDPOINT_CONFIG (str BAI_HOME"/service_endpoint"))
+
+(def overrides (atom {}))
+(def config    (atom {}))
 
 (log/set-level! (keyword (string/trim ^String(env :logging-level "warn"))))
 
@@ -114,7 +117,7 @@
         (log/debug json-event)
         json-event
 
-        @(http/put "http://"(lines 1 BAI_SERVICE_ENDPOINT_CONFIG)"/api/job/descriptor"
+        @(http/put "http://localhost:8080/api/job/descriptor"
                   {:body json-event
                    :headers {"Content-Type" "application/json"}}))
 
@@ -212,6 +215,13 @@
       2 (log/set-level! :debug)
         (log/set-level! :trace))
 
+    (try
+      (let [[hostname port] (rest (re-matches #"(.*):(.*)" (string/trim (slurp BAI_SERVICE_ENDPOINT_CONFIG))))]
+        (if hostname (swap! config assoc-in [:hostname] hostname))
+        (if port     (swap! config assoc-in [:port] port))
+        (log/debug "Loaded registered hostname "(:hostname @config)" and port: "(:port @config)))
+      (catch Exception e (log/debug (.getMessage e))))
+
     (cond
       (:help options) {:exit-message (usage summary) :ok? true}
       errors          {:exit-message (error-msg errors)}
@@ -229,12 +239,15 @@
   (println msg)
   (System/exit status))
 
-(defn initialize
+(defn initialize-config-files
   "Make sure that we have our environment and directory set up..."
-  [])
+  []
+  (if (.exists (io/file BAI_HISTORY))    (log/trace "History file... ") (do (io/make-parents BAI_HISTORY) (spit BAI_HISTORY nil)))
+  (if (.exists (io/file BAI_ACTION_IDS)) (log/trace "Action file... ") (do (io/make-parents BAI_ACTION_IDS) (spit BAI_ACTION_IDS nil)))
+  (if (.exists (io/file BAI_SERVICE_ENDPOINT_CONFIG)) (log/trace "Endpoint file... ") (do (io/make-parents BAI_SERVICE_ENDPOINT_CONFIG) (spit BAI_SERVICE_ENDPOINT_CONFIG nil))))
 
 (defn -main [& args]
-  (initialize)
+  (initialize-config-files)
   (let [{:keys [action options exit-message ok?]} (validate-args args)]
     (if exit-message
       (exit (if ok? 0 1) exit-message)
