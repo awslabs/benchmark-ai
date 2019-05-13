@@ -1,8 +1,8 @@
 import logging
-from typing import List, Type, Tuple
 
 import kafka
 from kafka import KafkaConsumer, KafkaProducer
+from typing import List, Type, Tuple
 
 from bai_kafka_utils.events import BenchmarkEvent
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
@@ -41,6 +41,9 @@ def create_kafka_consumer(
     def json_deserializer(msg_value):
         try:
             return event_type.from_json(msg_value.decode(DEFAULT_ENCODING))
+        # Our json deserializer can raise anything - constructor can raise anything).
+        # Handling JsonDecodeError and KeyError is not enough
+        # For example TypeError is possible as well. So let's play safe.
         except Exception:
             logger.exception("Failed to deserialize %s", msg_value)
             return None
@@ -48,9 +51,6 @@ def create_kafka_consumer(
     def key_deserializer(key: bytes):
         try:
             return key.decode(DEFAULT_ENCODING)
-        # Our json deserializer can raise anything - constructor can raise anything).
-        # Handling JsonDecodeError and KeyError is not enough
-        # For example TypeError is possible as well. So let's play safe.
         except Exception:
             logger.exception("Failed to deserialize key %s", key)
             return None
