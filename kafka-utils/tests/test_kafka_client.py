@@ -1,7 +1,6 @@
-from pytest import fixture
-from unittest.mock import patch, MagicMock, ANY
-
 import pytest
+from pytest import fixture
+from unittest.mock import MagicMock, ANY
 
 import bai_kafka_utils
 from bai_kafka_utils.events import BenchmarkEvent, BenchmarkPayload
