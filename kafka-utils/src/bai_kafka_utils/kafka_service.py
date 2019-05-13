@@ -123,9 +123,10 @@ class KafkaService:
             return res
 
         event_to_send = dataclasses.replace(event, message_id=str(uuid.uuid4()), visited=add_self_to_visited(event))
+        event_key = event_to_send.client_id
 
         logger.info(f"Sending {event_to_send} -> {topic}")
-        self._producer.send(topic, value=event_to_send)
+        self._producer.send(topic, value=event_to_send, key=event_key)
 
     @property
     def running(self) -> bool:

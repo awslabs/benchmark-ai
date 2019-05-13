@@ -54,7 +54,10 @@ def test_kafka_consumer_handles_wrong_schema(mockKafkaConsumer):
 def test_kafka_producer_pass_through(mockKafkaProducer):
     create_kafka_producer(BOOTSTRAP_SERVERS)
     mockKafkaProducer.assert_called_with(
-        bootstrap_servers=BOOTSTRAP_SERVERS, value_serializer=ANY, connections_max_idle_ms=MAX_IDLE_TIME_MS
+        bootstrap_servers=BOOTSTRAP_SERVERS,
+        value_serializer=ANY,
+        key_serializer=ANY,
+        connections_max_idle_ms=MAX_IDLE_TIME_MS,
     )
 
 
