@@ -162,11 +162,6 @@ resource "aws_codebuild_webhook" "ci-unit-tests" {
   project_name = "${element(aws_codebuild_project.ci-unit-tests.*.name, count.index)}"
 }
 
-resource "aws_codebuild_webhook" "ci-unit-tests-master" {
-  count = "${length(var.projects)}"
-  project_name = "${element(aws_codebuild_project.ci-unit-tests-master.*.name, count.index)}"
-}
-
 locals {
   filter_groups_prs = [
     {
@@ -199,14 +194,22 @@ resource "null_resource" "ci-unit-tests-filter" {
   }
 }
 
-resource "null_resource" "ci-unit-tests-master-filter" {
-  count = "${length(var.projects)}"
-  provisioner "local-exec" {
-    command = "aws --region ${var.region} codebuild update-webhook --project-name ${self.triggers.project_name} --filter-groups '[${self.triggers.filter_groups}]'"
-  }
+// TODO: Enable webhooks for the `master` branch again. Right now we're hitting Github's limit of 20 webhooks, so they
+// are disabled for now. A good alternative would be to use CodePipeline for master, since we probably want to have it
+// deploying the latest changes from master as well.
 
-  triggers {
-    project_name = "${element(aws_codebuild_webhook.ci-unit-tests-master.*.project_name, count.index)}"
-    filter_groups = "${jsonencode(local.filter_groups_master)}"
-  }
-}
+//resource "aws_codebuild_webhook" "ci-unit-tests-master" {
+//  count = "${length(var.projects)}"
+//  project_name = "${element(aws_codebuild_project.ci-unit-tests-master.*.name, count.index)}"
+//}
+//resource "null_resource" "ci-unit-tests-master-filter" {
+//  count = "${length(var.projects)}"
+//  provisioner "local-exec" {
+//    command = "aws --region ${var.region} codebuild update-webhook --project-name ${self.triggers.project_name} --filter-groups '[${self.triggers.filter_groups}]'"
+//  }
+//
+//  triggers {
+//    project_name = "${element(aws_codebuild_webhook.ci-unit-tests-master.*.project_name, count.index)}"
+//    filter_groups = "${jsonencode(local.filter_groups_master)}"
+//  }
+//}
