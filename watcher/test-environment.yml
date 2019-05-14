@@ -6,3 +6,4 @@ dependencies:
   - pytest
   - pytest-mock
   - pytest-cov
+  - pytest-datadir
