@@ -98,7 +98,7 @@ resource "aws_codebuild_project" "ci-unit-tests" {
 
   environment {
     compute_type                = "BUILD_GENERAL1_SMALL"
-    image                       = "${var.ci_docker_image}"
+    image                       = "${lookup(var.ci_docker_image, element(var.projects, count.index), var.ci_docker_image["default"])}"
     type                        = "LINUX_CONTAINER"
   }
 
@@ -135,7 +135,7 @@ resource "aws_codebuild_project" "ci-unit-tests-master" {
 
   environment {
     compute_type                = "BUILD_GENERAL1_SMALL"
-    image                       = "${var.ci_docker_image}"
+    image                       = "${lookup(var.ci_docker_image, element(var.projects, count.index), var.ci_docker_image["default"])}"
     type                        = "LINUX_CONTAINER"
   }
 
