@@ -149,7 +149,6 @@ Resources:
             Service: [ecs-tasks.amazonaws.com]
           Action: ['sts:AssumeRole']
       Policies:
-        # Full admin access, love it...
         # There's no definitive list of required permissions and there is no reliable way to get them either.
         # https://github.com/hashicorp/terraform/issues/2834
         - PolicyName: EcsBaictlFullAdminAccess

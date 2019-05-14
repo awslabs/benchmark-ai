@@ -28,7 +28,7 @@ def main():
     parser.add_argument("mode", help="create or destroy", nargs="?", choices=("create", "destroy"))
     args = parser.parse_args()
 
-    if args.mode != "create" and args.mode != "destroy":
+    if not args.mode:
         raise ValueError('Please pass either "create" or "destroy".')
 
     config = load_config(CONFIG_YAML_PATH)
