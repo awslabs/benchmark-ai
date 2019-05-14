@@ -109,7 +109,7 @@ def test_thread_run_loop_when_callback_returns_false_will_not_end_loop(k8s_job_w
 
 
 def mock_loop_dependencies(k8s_job_watcher, mocker, *, iterations, kubernetes_job_status):
-    mocker.patch("itertools.count", return_value=[0] * iterations)  # 2 iterations
+    mocker.patch("itertools.count", return_value=[0] * iterations)
     mock_time_sleep = mocker.patch("time.sleep")
     mock_job_status(k8s_job_watcher.kubernetes_client, kubernetes_job_status)
     return mock_time_sleep
