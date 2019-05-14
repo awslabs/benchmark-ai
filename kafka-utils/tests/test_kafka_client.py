@@ -62,18 +62,14 @@ def test_kafka_consumer_handles_wrong_schema(mock_kafka_consumer):
     assert deserializer(WRONG_SCHEMA_JSON) is None
 
 
-def test_kafka_key_deserializer(mock_kafka_consumer):
+@pytest.mark.parametrize(
+    "serialized_key, expected_key", [(CLIENT_ID_SERIALIZED, CLIENT_ID), (None, None), (ILLEGAL_UTF8_KEY, None)]
+)
+def test_kafka_key_deserializer(mock_kafka_consumer, serialized_key, expected_key):
     create_kafka_consumer(BOOTSTRAP_SERVERS, GROUP_ID, TOPIC, BenchmarkEvent)
     key_deserializer = get_key_deserializer(mock_kafka_consumer)
 
-    assert CLIENT_ID == key_deserializer(CLIENT_ID_SERIALIZED)
-
-
-def test_kafka_key_deserializer_invalid_value(mock_kafka_consumer):
-    create_kafka_consumer(BOOTSTRAP_SERVERS, GROUP_ID, TOPIC, BenchmarkEvent)
-    key_deserializer = get_key_deserializer(mock_kafka_consumer)
-
-    assert key_deserializer(ILLEGAL_UTF8_KEY) is None
+    assert expected_key == key_deserializer(serialized_key)
 
 
 def test_kafka_key_deserializer_serializer(mock_kafka_consumer, mock_kafka_producer):
