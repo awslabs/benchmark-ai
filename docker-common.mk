@@ -30,10 +30,18 @@ deploy: publish k8s_deploy
 
 undeploy: k8s_undeploy
 
-k8s_deploy: _deploy_venv _k8s_deploy
-_k8s_deploy:
+#---------------------
+# K8S deploy/undeploy
+#---------------------
+define fn_k8s_deploy
 	$(KUBECTL) apply -f ./deploy $(KUBECTL_FLAGS)
+endef
 
-k8s_undeploy: _deploy_venv _k8s_undeploy
-_k8s_undeploy:
+define fn_k8s_undeploy
 	$(KUBECTL) delete -f ./deploy $(KUBECTL_FLAGS)
+endef
+
+k8s_deploy: _deploy_venv
+	$(call fn_k8s_deploy)
+k8s_undeploy: _deploy_venv
+	$(call fn_k8s_undeploy)
