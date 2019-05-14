@@ -53,6 +53,7 @@ class KafkaService:
         callbacks: List[KafkaServiceCallback],
         kafka_consumer: KafkaConsumer,
         kafka_producer: KafkaProducer,
+        pod_name: str,
         status_topic: Optional[str] = None,
     ):
 
@@ -62,6 +63,8 @@ class KafkaService:
         self._status_topic = status_topic
         self.name = name
         self.version = version
+        self.pod_name = pod_name
+
         # Immutability helps us to avoid nasty bugs.
         self._callbacks = list(callbacks)
         self._running = False
@@ -117,7 +120,7 @@ class KafkaService:
 
         def add_self_to_visited(event):
             current_time_ms = int(time.time() * 1000)
-            entry = VisitedService(self.name, current_time_ms, self.version)
+            entry = VisitedService(self.name, current_time_ms, self.version, self.pod_name)
             res = list(event.visited)
             res.append(entry)
             return res

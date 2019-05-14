@@ -19,7 +19,7 @@ FETCHER_EVENT = FetcherBenchmarkEvent(
     client_username="bellgav",
     authenticated=False,
     tstamp=1556814924121,
-    visited=[VisitedService(svc="some", tstamp=1556814924121, version="1.0")],
+    visited=[VisitedService(svc="some", tstamp=1556814924121, version="1.0", node=None)],
     payload=FETCHER_PAYLOAD,
 )
 
@@ -35,7 +35,7 @@ STATUS_EVENT_JSON = (
   "authenticated": true,
   "message": "Some fancy string as message",
   "status": "RUNNING",
-  "visited": [{"svc":"baictl", "tstamp":"1554901873677", "version":"v0.1.0-481dad1"}],
+  "visited": [{"node":"POD_NAME", "svc":"baictl", "tstamp":"1554901873677", "version":"v0.1.0-481dad1"}],
   "payload": %s
 }
 """
@@ -52,7 +52,7 @@ STATUS_EVENT = StatusMessageBenchmarkEvent(
     client_username="vasya",
     authenticated=True,
     tstamp=1554901873677,
-    visited=[VisitedService(svc="baictl", tstamp="1554901873677", version="v0.1.0-481dad1")],
+    visited=[VisitedService(svc="baictl", tstamp="1554901873677", version="v0.1.0-481dad1", node="POD_NAME")],
     status=Status.RUNNING,
     message=MESSAGE,
     payload=dataclasses.asdict(FETCHER_PAYLOAD),

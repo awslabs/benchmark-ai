@@ -1,5 +1,6 @@
 import encodings
 import hashlib
+import platform
 import random
 import string
 
@@ -14,3 +15,7 @@ def md5sum(str_to_hash: str, encoding: str = DEFAULT_ENCODING):
     md5hash = hashlib.md5()
     md5hash.update(str_to_hash.encode(encoding))
     return md5hash.hexdigest()
+
+
+def get_pod_name():
+    return platform.node()
