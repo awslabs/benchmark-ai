@@ -21,6 +21,8 @@ from bai_kafka_utils.events import (
 )
 from bai_kafka_utils.kafka_service import KafkaService, KafkaServiceCallback
 
+CLIENT_ID = "CLIENT_ID"
+
 MOCK_MD5 = "12819821982918921"
 
 SOME_KEY = "SOME_KEY"
@@ -61,7 +63,7 @@ def benchmark_event():
     return BenchmarkEvent(
         action_id="ACTION_ID",
         message_id="MESSAGE_ID",
-        client_id="CLIENT_ID",
+        client_id=CLIENT_ID,
         client_version="CLIENT_VERSION",
         client_username="CLIENT_USER",
         authenticated=False,
@@ -207,7 +209,7 @@ def test_message_sent(
     kafka_service = _create_kafka_service([mock_callback], kafka_consumer, kafka_producer)
     kafka_service.run_loop()
 
-    kafka_producer.send.assert_called_with(PRODUCER_TOPIC, value=expected_event)
+    kafka_producer.send.assert_called_with(PRODUCER_TOPIC, value=expected_event, key=CLIENT_ID)
 
 
 def mock_time_and_uuid(mock_time, mock_uuid4):
@@ -260,7 +262,7 @@ def test_status_message_sent(
 
     mock_message_before_send(expected_status_event, mock_uuid4)
 
-    kafka_producer.send.assert_called_with(STATUS_TOPIC, value=expected_status_event)
+    kafka_producer.send.assert_called_with(STATUS_TOPIC, value=expected_status_event, key=CLIENT_ID)
 
 
 def mock_message_before_send(status_event, mock_uuid4):
