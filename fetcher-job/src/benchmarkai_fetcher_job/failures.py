@@ -6,7 +6,7 @@ class RetryableError(Exception):
     pass
 
 
-class InvalidDigestException(UnRetryableError):
+class InvalidDigestError(UnRetryableError):
     pass
 
 
