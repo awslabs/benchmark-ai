@@ -438,7 +438,7 @@ run_benchmark() {
 
         [ -z "${azs}" ] && printf "Availability zones could not be identified from terraform state %s\n" "${terraform_state}" && return 1
 
-        python3 ${src_dir}/../../descriptor-file/src/transpiler/__main__.py ${descriptor} --availability-zones ${azs} | ${kubectl} apply -f -
+        python3 ${src_dir}/../../../executor/src/transpiler/__main__.py --descriptor ${descriptor} --availability-zones ${azs} | ${kubectl} apply -f -
     )
 }
 
