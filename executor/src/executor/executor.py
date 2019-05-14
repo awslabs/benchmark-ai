@@ -42,7 +42,7 @@ class ExecutorEventHandler(KafkaServiceCallback):
         if job_is_submitted:
             response_event = self._create_response_event(event, job_id, yaml)
             kafka_service.send_status_message_event(
-                response_event, Status.SUBMITTED, f"Benchmark successfully submitted with job id {job_id}"
+                response_event, Status.SUCCEEDED, f"Benchmark successfully submitted with job id {job_id}"
             )
             return response_event
         else:

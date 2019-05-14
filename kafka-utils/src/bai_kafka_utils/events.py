@@ -92,13 +92,60 @@ class ExecutorBenchmarkEvent(BenchmarkEvent):
 
 
 class Status(Enum):
+    """
+    The items of this Status enum translate into the status of the job of a specific "sub-section" of the pipeline.
+
+    For example: (this is not supposed to be a documentation on how services are behaving, it's just an example)
+
+        Let's say the full pipeline for jobs look like this:
+
+            BFF => Fetcher => Executor => Watcher
+
+        Then user "Joe" submits a benchmark:
+
+            => First service: `BFF`
+
+            1.1 - starts processing the request:
+                    - sends the status message: PENDING
+            1.2 - done processing the request
+                    - sends the status message: SUCCEEDED
+
+            => Next service: `Fetcher`
+
+            2.1 - starts processing the request:
+                    - sends the status message: PENDING
+            2.2 - done downloading all files:
+                    - sends the status message: SUCCEEDED
+
+            => Next service: `Executor`
+
+            3.1 - starts processing the request:
+                    - sends the status message: PENDING
+            3.2 - done processing the request:
+                    - sends the status message: SUCCEEDED
+
+            => Next service: `Watcher`
+
+            4.1 - starts processing the request:
+                    - sends the status message: PENDING
+            4.2 - notices that Kubernetes needs to spawn nodes:
+                    - sends the status message: INITIALIZING
+            4.3 - notices that the Pods are all executing the `init` containers:
+                    - sends the status message: INITIALIZING
+            4.4 - notices that the benchmark container at the Pods are all running:
+                    - sends the status message: RUNNING
+            4.5 - done processing the request:
+                    - sends the status message: SUCCEEDED
+
+    As can be noticed, each "service" will have its own notion of what each of these STATUS values mean.
+    """
+
     PENDING = "PENDING"
     RUNNING = "RUNNING"
     FAILED = "FAILED"
     ERROR = "ERROR"
     INITIALIZING = "INITIALIZING"
     SUCCEEDED = "SUCCEEDED"
-    SUBMITTED = "SUBMITTED"
 
 
 @dataclass_json
