@@ -52,16 +52,14 @@ def test_kafka_consumer_handles_invalid_format(mock_kafka_consumer):
     create_kafka_consumer(BOOTSTRAP_SERVERS, GROUP_ID, TOPIC, BenchmarkEvent)
     deserializer = get_deserializer(mock_kafka_consumer)
 
-    res = deserializer(INVALID_JSON)
-    assert not res
+    assert deserializer(INVALID_JSON) is None
 
 
 def test_kafka_consumer_handles_wrong_schema(mock_kafka_consumer):
     create_kafka_consumer(BOOTSTRAP_SERVERS, GROUP_ID, TOPIC, BenchmarkEvent)
     deserializer = get_deserializer(mock_kafka_consumer)
 
-    res = deserializer(WRONG_SCHEMA_JSON)
-    assert not res
+    assert deserializer(WRONG_SCHEMA_JSON) is None
 
 
 def test_kafka_key_deserializer(mock_kafka_consumer):
@@ -75,7 +73,7 @@ def test_kafka_key_deserializer_invalid_value(mock_kafka_consumer):
     create_kafka_consumer(BOOTSTRAP_SERVERS, GROUP_ID, TOPIC, BenchmarkEvent)
     key_deserializer = get_key_deserializer(mock_kafka_consumer)
 
-    assert not key_deserializer(ILLEGAL_UTF8_KEY)
+    assert key_deserializer(ILLEGAL_UTF8_KEY) is None
 
 
 def test_kafka_key_deserializer_serializer(mock_kafka_consumer, mock_kafka_producer):
@@ -111,15 +109,15 @@ def test_wrong_event_type():
 
 
 def get_deserializer(mock: MagicMock):
-    kwargs = mock.call_args[1]
+    _, kwargs = mock.call_args
     return kwargs["value_deserializer"]
 
 
 def get_key_serializer(mock: MagicMock):
-    kwargs = mock.call_args[1]
+    _, kwargs = mock.call_args
     return kwargs["key_serializer"]
 
 
 def get_key_deserializer(mock: MagicMock):
-    kwargs = mock.call_args[1]
+    _, kwargs = mock.call_args
     return kwargs["key_deserializer"]
