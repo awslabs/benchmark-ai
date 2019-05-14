@@ -18,6 +18,7 @@ import argparse
 CFN_SPLIT_STRING = "|||"
 DOCKER_IMAGE_TAG = "benchmark-ai/baictl"
 CLOUDFORMATION_YAML_PATH = os.path.join(os.path.split(os.path.realpath(__file__))[0], "cfn-baictl-ecs.yml")
+CONFIG_YAML_PATH = os.path.join(os.path.split(os.path.realpath(__file__))[0], "config.yml")
 
 
 def main():
@@ -30,7 +31,7 @@ def main():
     if args.mode != "create" and args.mode != "destroy":
         raise ValueError('Please pass either "create" or "destroy".')
 
-    config = load_config("config.yml")
+    config = load_config(CONFIG_YAML_PATH)
 
     boto_session = request_aws_credentials(aws_region=config.get_aws_region())
     docker_cli, docker_registry = login_ecr(boto_session=boto_session)
