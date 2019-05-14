@@ -11,8 +11,7 @@ import os
 import docker
 import base64
 import logging
-import config
-import argparse
+import configargparse
 
 
 CFN_SPLIT_STRING = "|||"
@@ -24,23 +23,38 @@ CONFIG_YAML_PATH = os.path.join(os.path.split(os.path.realpath(__file__))[0], "c
 def main():
     logging.getLogger().setLevel(logging.DEBUG)
 
-    parser = argparse.ArgumentParser(description="Run baictl create/destroy infra remotely")
-    parser.add_argument("mode", help="create or destroy", nargs="?", choices=("create", "destroy"))
+    parser = configargparse.ArgParser(
+        default_config_files=[CONFIG_YAML_PATH], config_file_parser_class=configargparse.YAMLConfigFileParser
+    )
+    parser.add("-c", "--config", required=False, is_config_file=True, help="config file path")
+    parser.add(
+        "-pl",
+        "--aws_prefix_lists",
+        required=True,
+        help="AWS Prefix list id to use for whitelisting access to the Bastion host",
+    )
+    parser.add("-r", "--aws_region", env_var="AWS_REGION", required=True, help="AWS Region to deploy in")
+    parser.add(
+        "-p",
+        "--aws_profile",
+        env_var="AWS_PROFILE",
+        required=True,
+        help="AWS CLI Profile containing credentials to use for deployment",
+    )
+    parser.add("mode", help="create or destroy", nargs="?", choices=("create", "destroy"))
     args = parser.parse_args()
 
     if not args.mode:
         raise ValueError('Please pass either "create" or "destroy".')
 
-    config = load_config(CONFIG_YAML_PATH)
-
-    boto_session = request_aws_credentials(aws_region=config.get_aws_region())
+    boto_session = request_aws_credentials(aws_profile=args.aws_profile, aws_region=args.aws_region)
     docker_cli, docker_registry = login_ecr(boto_session=boto_session)
     docker_tag = build_docker_image(docker_cli=docker_cli, docker_registry=docker_registry)
     cloudformation_output = execute_cloudformation_deployment(
         stack_name="baictl-ecs",
         boto_session=boto_session,
         cloudformation_yaml_path=CLOUDFORMATION_YAML_PATH,
-        baictl_command=generate_baictl_command(config=config, mode=args.mode),
+        baictl_command=generate_baictl_command(args=args, mode=args.mode),
     )
     docker_cli, docker_registry = login_ecr(boto_session=boto_session)
     publish_docker_image(docker_cli=docker_cli, docker_tag=docker_tag, docker_registry=docker_registry)
@@ -48,31 +62,16 @@ def main():
     destroy_cloudformation()
 
 
-def load_config(path):
-    return config.Config(path)
-
-
-def generate_baictl_command(config, mode):
+def generate_baictl_command(args, mode):
     return [
         mode,  # create or destroy
         "infra",
-        "--aws-prefix-list-id=" + config.get_aws_prefix_lists(),
-        "--aws-region=" + config.get_aws_region(),
+        "--aws-prefix-list-id=" + args.aws_prefix_lists,
+        "--aws-region=" + args.aws_region,
     ]
 
 
-def request_aws_credentials(aws_region):
-    # This allows to pick up an AWS_PROFILE and AWS_REGION from the env-var and present it to the user so they only have to press
-    # enter instead of having to type it in all the time - just a convenience thingy
-    env_aws_profile = os.environ["AWS_PROFILE"] if "AWS_PROFILE" in os.environ else None
-    aws_profile = input(
-        "Please enter the AWS_PROFILE name [Default: {}]: {}".format(
-            env_aws_profile, env_aws_profile if env_aws_profile else ""
-        )
-    )
-    if aws_profile == "":
-        aws_profile = env_aws_profile
-
+def request_aws_credentials(aws_profile, aws_region):
     boto_session = boto3.Session(profile_name=aws_profile, region_name=aws_region)
     return boto_session
 
