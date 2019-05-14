@@ -21,3 +21,4 @@ dependencies:
     - ConfigArgParse
     - python-crontab
     - dataclasses-json
+    - dacite
