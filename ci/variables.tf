@@ -11,6 +11,7 @@ variable "projects" {
     "reports",
     "executor",
     "watcher",
+    "bff",
   ]
 }
 
