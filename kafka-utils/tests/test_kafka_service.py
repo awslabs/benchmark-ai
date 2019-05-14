@@ -5,15 +5,23 @@ import time
 import uuid
 from dataclasses import dataclass
 from typing import Optional
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from kafka import KafkaConsumer, KafkaProducer
 from pytest import fixture
 
-from bai_kafka_utils.events import BenchmarkPayload, BenchmarkEvent, BenchmarkDoc, VisitedService
+from bai_kafka_utils.events import (
+    BenchmarkPayload,
+    BenchmarkEvent,
+    BenchmarkDoc,
+    VisitedService,
+    StatusMessageBenchmarkEvent,
+    Status,
+)
 from bai_kafka_utils.kafka_service import KafkaService, KafkaServiceCallback
-from bai_kafka_utils.status_message import create_status_message_event
+
+CLIENT_ID = "CLIENT_ID"
 
 MOCK_MD5 = "12819821982918921"
 
@@ -24,6 +32,8 @@ MOCK_UUID = "4B545FB7-66B6-4C24-A681-7F1625313257"
 PRODUCER_TOPIC = "OUT_TOPIC"
 
 SERVICE_NAME = "FAKE_SERVICE"
+
+POD_NAME = "POD_NAME"
 
 VERSION = "1.0"
 
@@ -53,7 +63,7 @@ def benchmark_event():
     return BenchmarkEvent(
         action_id="ACTION_ID",
         message_id="MESSAGE_ID",
-        client_id="CLIENT_ID",
+        client_id=CLIENT_ID,
         client_version="CLIENT_VERSION",
         client_username="CLIENT_USER",
         authenticated=False,
@@ -95,7 +105,9 @@ def kafka_producer():
 @fixture
 def simple_kafka_service(kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer):
     callbacks = []
-    kafka_service = KafkaService(SERVICE_NAME, VERSION, PRODUCER_TOPIC, callbacks, kafka_consumer, kafka_producer)
+    kafka_service = KafkaService(
+        SERVICE_NAME, VERSION, PRODUCER_TOPIC, callbacks, kafka_consumer, kafka_producer, POD_NAME
+    )
     return kafka_service
 
 
@@ -178,12 +190,12 @@ def test_immutable_callbacks(kafka_consumer: KafkaConsumer, kafka_producer: Kafk
     assert not mock_callback_added_later.cleanup.called
 
 
-# The patched objects are passed in the reverse order
-@patch.object(time, "time")
-@patch.object(uuid, "uuid4")
 def test_message_sent(
-    mock_uuid4, mock_time, kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer, benchmark_event: BenchmarkEvent
+    mocker, kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer, benchmark_event: BenchmarkEvent
 ):
+    mock_time = mocker.patch.object(time, "time")
+    mock_uuid4 = mocker.patch.object(uuid, "uuid4")
+
     result_event = copy.deepcopy(benchmark_event)
     expected_event = copy.deepcopy(result_event)
 
@@ -197,7 +209,7 @@ def test_message_sent(
     kafka_service = _create_kafka_service([mock_callback], kafka_consumer, kafka_producer)
     kafka_service.run_loop()
 
-    kafka_producer.send.assert_called_with(PRODUCER_TOPIC, value=expected_event)
+    kafka_producer.send.assert_called_with(PRODUCER_TOPIC, value=expected_event, key=CLIENT_ID)
 
 
 def mock_time_and_uuid(mock_time, mock_uuid4):
@@ -216,7 +228,7 @@ def _create_kafka_service(callbacks, kafka_consumer, kafka_producer):
             pass
 
     kafka_service = KafkaService(
-        SERVICE_NAME, VERSION, PRODUCER_TOPIC, callbacks, kafka_consumer, kafka_producer, STATUS_TOPIC
+        SERVICE_NAME, VERSION, PRODUCER_TOPIC, callbacks, kafka_consumer, kafka_producer, POD_NAME, STATUS_TOPIC
     )
     kafka_service.add_callback(StopKafkaServiceCallback())
     return kafka_service
@@ -224,19 +236,19 @@ def _create_kafka_service(callbacks, kafka_consumer, kafka_producer):
 
 class StatusMessageSenderCallback(KafkaServiceCallback):
     def handle_event(self, event: BenchmarkEvent, kafka_service: KafkaService) -> Optional[BenchmarkEvent]:
-        kafka_service.send_status_message_event(event, STATUS_MESSAGE)
+        kafka_service.send_status_message_event(event, Status.RUNNING, STATUS_MESSAGE)
         return None
 
     def cleanup(self):
         pass
 
 
-# The patched objects are passed in the reverse order
-@patch.object(time, "time")
-@patch.object(uuid, "uuid4")
 def test_status_message_sent(
-    mock_uuid4, mock_time, kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer, benchmark_event: BenchmarkEvent
+    mocker, kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer, benchmark_event: BenchmarkEvent
 ):
+    mock_time = mocker.patch.object(time, "time")
+    mock_uuid4 = mocker.patch.object(uuid, "uuid4")
+
     status_callback = StatusMessageSenderCallback()
 
     mock_time_and_uuid(mock_time, mock_uuid4)
@@ -244,13 +256,15 @@ def test_status_message_sent(
     kafka_service = _create_kafka_service([status_callback], kafka_consumer, kafka_producer)
     kafka_service.run_loop()
 
-    expected_status_event = create_status_message_event(benchmark_event, STATUS_MESSAGE)
+    expected_status_event = StatusMessageBenchmarkEvent.create_from_event(
+        Status.RUNNING, STATUS_MESSAGE, benchmark_event
+    )
 
     mock_message_before_send(expected_status_event, mock_uuid4)
 
-    kafka_producer.send.assert_called_with(STATUS_TOPIC, value=expected_status_event)
+    kafka_producer.send.assert_called_with(STATUS_TOPIC, value=expected_status_event, key=CLIENT_ID)
 
 
 def mock_message_before_send(status_event, mock_uuid4):
     status_event.message_id = str(mock_uuid4())
-    status_event.visited.append(VisitedService(SERVICE_NAME, tstamp=VISIT_TIME_MS, version=VERSION))
+    status_event.visited.append(VisitedService(SERVICE_NAME, tstamp=VISIT_TIME_MS, version=VERSION, node=POD_NAME))

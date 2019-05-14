@@ -32,16 +32,21 @@
                                                             (.put "bootstrap.servers"  (env :kafka-bootstrap-servers))
                                                             (.put "group.id",          (env :kafka-consumer-group-id))
                                                             (.put "auto.offset.reset"  (env :kafka-auto-offset-reset "latest"))
-                                                            (.put "session.timeout.ms" (Integer/parseInt (env :kafka-session-timeout-ms "10000")))
+                                                            (.put "max.poll.interval.ms" (Integer/parseInt (env :kafka-max-poll-interval-ms "300000")))
+                                                            (.put "session.timeout.ms"   (Integer/parseInt (env :kafka-session-timeout-ms "10000")))
                                                             (.put "key.deserializer",  (env :kafka-key-deserializer   "org.apache.kafka.common.serialization.StringDeserializer"))
                                                             (.put "value.deserializer" (env :kafka-value-deserializer "org.apache.kafka.common.serialization.StringDeserializer"))))]
                              (.subscribe consumer [(env :kafka-source-topic)])
                              (while @started?
                                (let [poll-interval (Integer/parseInt (env :kafka-poll-interval-ms))
                                      records (.poll consumer poll-interval)
-                                     events (map (fn [record]
-                                                   (json/decode (.value record) true))
-                                                 (.records records (env :kafka-source-topic)))]
+                                     events (remove nil? (map (fn [record]
+                                                               (try
+                                                                 (json/decode (.value record) true)
+                                                                 (catch Exception e
+                                                                   (log/warn (str "Could not decode ingress message: " (.getMessage e)))
+                                                                   nil))) ;<-- TODO instrument to prometheus for example
+                                                             (.records records (env :kafka-source-topic))))]
                                         ; XXX: do this with a value.deserializer
                                  (when-not (false? (process-records-fn events)) ;;TODO; (zoiks) - replace this process-records-fn with putting events on the @receive-events-channel-atom channel
                                         ; XXX: Add telemetry

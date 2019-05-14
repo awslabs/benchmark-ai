@@ -42,7 +42,7 @@ def create_kafka_service_parser(program_name: str) -> ArgParser:
 
     parser.add_argument("--consumer-group-id", env_var="CONSUMER_GROUP_ID")
 
-    parser.add_argument("--status-topic", env_var="STATUS_TOPIC", required=False)
+    parser.add_argument("--status-topic", env_var="STATUS_TOPIC", default="BAI_APP_STATUS")
 
     parser.add_argument("--logging-level", env_var="LOGGING_LEVEL", default="INFO")
 

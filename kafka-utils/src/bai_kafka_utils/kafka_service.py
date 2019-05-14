@@ -9,8 +9,7 @@ from typing import List, Optional
 
 from kafka import KafkaProducer, KafkaConsumer
 
-from bai_kafka_utils.events import BenchmarkEvent, VisitedService
-from bai_kafka_utils.status_message import create_status_message_event
+from bai_kafka_utils.events import BenchmarkEvent, VisitedService, Status, StatusMessageBenchmarkEvent
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +53,7 @@ class KafkaService:
         callbacks: List[KafkaServiceCallback],
         kafka_consumer: KafkaConsumer,
         kafka_producer: KafkaProducer,
+        pod_name: str,
         status_topic: Optional[str] = None,
     ):
 
@@ -63,6 +63,8 @@ class KafkaService:
         self._status_topic = status_topic
         self.name = name
         self.version = version
+        self.pod_name = pod_name
+
         # Immutability helps us to avoid nasty bugs.
         self._callbacks = list(callbacks)
         self._running = False
@@ -91,13 +93,14 @@ class KafkaService:
         logger.info(f"Got event {event}")
         return callback.handle_event(event, self)
 
-    def send_status_message_event(self, handled_event: BenchmarkEvent, msg: str):
+    def send_status_message_event(self, handled_event: BenchmarkEvent, status: Status, msg: str):
         """
         Utility method for sending status message events.
+        :param status: status of the event
         :param handled_event: value of the message to send
         :param msg: Message to send
         """
-        status_event = create_status_message_event(handled_event, msg)
+        status_event = StatusMessageBenchmarkEvent.create_from_event(status, msg, handled_event)
 
         if not self._status_topic:
             logger.info(f"No status topic specified. Losing event: {status_event}")
@@ -117,15 +120,16 @@ class KafkaService:
 
         def add_self_to_visited(event):
             current_time_ms = int(time.time() * 1000)
-            entry = VisitedService(self.name, current_time_ms, self.version)
+            entry = VisitedService(self.name, current_time_ms, self.version, self.pod_name)
             res = list(event.visited)
             res.append(entry)
             return res
 
         event_to_send = dataclasses.replace(event, message_id=str(uuid.uuid4()), visited=add_self_to_visited(event))
+        event_key = event_to_send.client_id
 
         logger.info(f"Sending {event_to_send} -> {topic}")
-        self._producer.send(topic, value=event_to_send)
+        self._producer.send(topic, value=event_to_send, key=event_key)
 
     @property
     def running(self) -> bool:

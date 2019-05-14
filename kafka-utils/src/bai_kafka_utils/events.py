@@ -1,10 +1,11 @@
-import copy
 import dataclasses
+from enum import Enum
 
-from dacite import from_dict
+import dacite
+
 from dataclasses import dataclass
 from dataclasses_json import dataclass_json
-from typing import List, Optional, Type, Dict, Any
+from typing import List, Optional, Type, Dict, Any, TypeVar
 
 
 @dataclass_json
@@ -31,7 +32,6 @@ class BenchmarkDoc:
 @dataclass
 class BenchmarkJob:
     id: str
-    status: str
     k8s_yaml: str
     output: Optional[str] = None
 
@@ -54,10 +54,8 @@ class ExecutorPayload(FetcherPayload):
     job: BenchmarkJob
 
     @classmethod
-    def from_fetcher_payload(cls, payload, job: BenchmarkJob):
-        payload_as_dict = dataclasses.asdict(copy.deepcopy(payload))
-        payload_as_dict["job"] = job
-        return from_dict(data_class=ExecutorPayload, data=payload_as_dict)
+    def create_from_fetcher_payload(cls, payload: FetcherPayload, job: BenchmarkJob):
+        return create_from_object(ExecutorPayload, payload, job=job)
 
 
 @dataclass_json
@@ -66,6 +64,7 @@ class VisitedService:
     svc: str
     tstamp: int
     version: str
+    node: Optional[str] = None
 
 
 @dataclass_json
@@ -81,28 +80,55 @@ class BenchmarkEvent:
     visited: List[VisitedService]
     payload: Any
 
-    @classmethod
-    def from_event_new_payload(cls, benchmark_event, payload: BenchmarkPayload):
-        return dataclasses.replace(benchmark_event, payload=payload)
 
-
-def __make_benchmark_event(payload_type: Type):
-    @dataclass_json
-    @dataclass
-    class BenchmarkEventWithPayload(BenchmarkEvent):
-        payload: payload_type
-
-    return BenchmarkEventWithPayload
-
-
-@dataclass
 @dataclass_json
-class StatusMessagePayload:
+@dataclass
+class FetcherBenchmarkEvent(BenchmarkEvent):
+    payload: FetcherPayload
+
+
+@dataclass_json
+@dataclass
+class ExecutorBenchmarkEvent(BenchmarkEvent):
+    payload: ExecutorPayload
+
+
+class Status(Enum):
+    PENDING = "PENDING"
+    RUNNING = "RUNNING"
+    FAILED = "FAILED"
+    ERROR = "ERROR"
+    INITIALIZING = "INITIALIZING"
+    SUCCEEDED = "SUCCEEDED"
+
+
+@dataclass_json
+@dataclass
+class StatusMessageBenchmarkEvent(BenchmarkEvent):
+    """
+    Status events represent what the user will receive as the status of their benchmark.
+
+    The messages should be thought to be "user-friendly" as to give insight to the user on what is happening inside BAI
+    regarding his benchmark.
+    """
+
     message: str
+    status: Status
+    payload: Any
+
+    @classmethod
+    def create_from_event(cls, status: Status, message: str, event: BenchmarkEvent):
+        return create_from_object(StatusMessageBenchmarkEvent, event, message=message, status=status)
 
 
-FetcherBenchmarkEvent = __make_benchmark_event(FetcherPayload)
+T = TypeVar("T")
 
-ExecutorBenchmarkEvent = __make_benchmark_event(ExecutorPayload)
 
-StatusMessageBenchmarkEvent = __make_benchmark_event(StatusMessagePayload)
+def create_from_object(desired_class: Type[T], source_object, **overriden_fields) -> T:
+    if not dataclasses.is_dataclass(desired_class):
+        raise ValueError("Desired class is not a dataclass type, its type is {}".format(desired_class))
+    if not dataclasses.is_dataclass(source_object):
+        raise ValueError("Source object is not a dataclass type, its type is {}".format(type(source_object)))
+    data = dataclasses.asdict(source_object)
+    data.update(overriden_fields)
+    return dacite.from_dict(data_class=desired_class, data=data)

@@ -1,14 +1,17 @@
+from typing import List, Type
+from unittest import mock
+
 import kafka
 from kazoo.client import KazooClient
 from pytest import fixture
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, call, ANY
 
-from bai_kafka_utils.events import BenchmarkDoc, BenchmarkEvent, FetcherPayload, DataSet
+from bai_kafka_utils.events import BenchmarkDoc, BenchmarkEvent, FetcherPayload, DataSet, FetcherBenchmarkEvent, Status
 from bai_kafka_utils.kafka_service import KafkaService, KafkaServiceConfig
-from fetcher_dispatcher import fetcher_dispatcher
+from fetcher_dispatcher import fetcher_dispatcher_service
 from fetcher_dispatcher.args import FetcherServiceConfig, FetcherJobConfig
 from fetcher_dispatcher.data_set_manager import DataSetManager
-from fetcher_dispatcher.fetcher_dispatcher import (
+from fetcher_dispatcher.fetcher_dispatcher_service import (
     create_data_set_manager,
     FetcherEventHandler,
     create_fetcher_dispatcher,
@@ -27,6 +30,8 @@ PRODUCER_TOPIC = "OUT_TOPIC"
 
 CONSUMER_TOPIC = "IN_TOPIC"
 
+POD_NAME = "POD_NAME"
+
 S3_BUCKET = "some_bucket"
 
 KUBECONFIG = "path/cfg"
@@ -38,12 +43,26 @@ FETCHER_JOB_CONFIG = FetcherJobConfig(image=FETCHER_JOB_IMAGE, namespace=NAMESPA
 
 @fixture
 def data_set_manager() -> DataSetManager:
-    return MagicMock(spec=DataSetManager)
+    return MagicMock(spec=DataSetManager, autospec=True)
 
 
 @fixture
-def kafka_service() -> KafkaService:
-    return MagicMock(spec=KafkaService)
+def kafka_service(mocker) -> KafkaService:
+    from kafka import KafkaConsumer, KafkaProducer
+
+    kafka_service = KafkaService(
+        name="kafka-service",
+        version="1.0",
+        producer_topic=PRODUCER_TOPIC,
+        callbacks=[],
+        kafka_consumer=mocker.MagicMock(spec=KafkaConsumer, autospec=True),
+        kafka_producer=mocker.MagicMock(spec=KafkaProducer, autospec=True),
+        pod_name=POD_NAME,
+        status_topic="STATUS_TOPIC",
+    )
+    mocker.spy(kafka_service, "send_status_message_event")
+    mocker.spy(kafka_service, "send_event")
+    return kafka_service
 
 
 @fixture
@@ -52,8 +71,13 @@ def benchmark_doc() -> BenchmarkDoc:
 
 
 @fixture
-def benchmark_event_with_datasets(benchmark_doc: BenchmarkDoc) -> BenchmarkEvent:
-    payload = FetcherPayload(toml=benchmark_doc, datasets=[DataSet(src="src1"), DataSet(src="src2")])
+def datasets():
+    return [DataSet(src="src1"), DataSet(src="src2")]
+
+
+@fixture
+def benchmark_event_with_datasets(benchmark_doc: BenchmarkDoc, datasets) -> BenchmarkEvent:
+    payload = FetcherPayload(toml=benchmark_doc, datasets=datasets)
     return get_benchmark_event(payload)
 
 
@@ -63,8 +87,8 @@ def benchmark_event_without_datasets(benchmark_doc: BenchmarkDoc) -> BenchmarkEv
     return get_benchmark_event(payload)
 
 
-def get_benchmark_event(payload):
-    return BenchmarkEvent(
+def get_benchmark_event(payload: FetcherPayload):
+    return FetcherBenchmarkEvent(
         action_id="ACTION_ID",
         message_id="MESSAGE_ID",
         client_id="CLIENT_ID",
@@ -77,8 +101,20 @@ def get_benchmark_event(payload):
     )
 
 
+def collect_send_event_calls(kafka_service: KafkaService, cls: Type[BenchmarkEvent]) -> List[mock._Call]:
+    calls = []
+    for send_event_call in kafka_service.send_event.call_args_list:
+        args, kwargs = send_event_call
+        if isinstance(args[0], cls):
+            calls.append(send_event_call)
+    return calls
+
+
 def test_fetcher_event_handler_fetch(
-    data_set_manager: DataSetManager, benchmark_event_with_datasets: BenchmarkEvent, kafka_service: KafkaService
+    data_set_manager: DataSetManager,
+    benchmark_event_with_datasets: FetcherBenchmarkEvent,
+    kafka_service: KafkaService,
+    datasets,
 ):
     fetcher_callback = FetcherEventHandler(data_set_manager, S3_BUCKET)
     event_to_send_sync = fetcher_callback.handle_event(benchmark_event_with_datasets, kafka_service)
@@ -87,14 +123,24 @@ def test_fetcher_event_handler_fetch(
     assert not event_to_send_sync
     # All datasets fetched
     assert data_set_manager.fetch.call_count == len(benchmark_event_with_datasets.payload.datasets)
-    # Nothing yet sent
-    kafka_service.send_event.assert_not_called()
+    # Nothing yet fetched, but sent for fetching
+    assert collect_send_event_calls(kafka_service, FetcherBenchmarkEvent) == []
+
+    send_status_message_calls = kafka_service.send_status_message_event.call_args_list
+    assert send_status_message_calls[0] == call(ANY, Status.PENDING, "Start fetching datasets")
+    assert send_status_message_calls[1] == call(ANY, Status.PENDING, f"Dataset {datasets[0]} sent to fetch")
+    assert send_status_message_calls[2] == call(ANY, Status.PENDING, f"Dataset {datasets[1]} sent to fetch")
 
     validate_populated_dst(benchmark_event_with_datasets)
 
     simulate_fetched_datasets(data_set_manager)
 
-    kafka_service.send_event.assert_called_once()
+    assert collect_send_event_calls(kafka_service, FetcherBenchmarkEvent) == [call(benchmark_event_with_datasets)]
+
+    send_status_message_calls = kafka_service.send_status_message_event.call_args_list
+    assert send_status_message_calls[3] == call(ANY, Status.PENDING, f"Dataset {datasets[0]} processed")
+    assert send_status_message_calls[4] == call(ANY, Status.PENDING, f"Dataset {datasets[1]} processed")
+    assert send_status_message_calls[5] == call(ANY, Status.SUCCEEDED, "All data sets processed")
     # One for every data set. One as header, one as footer
     assert (
         kafka_service.send_status_message_event.call_count
@@ -110,7 +156,7 @@ def test_fetcher_event_handler_nothing_to_do(
     assert event_to_send_sync == benchmark_event_without_datasets
 
     # 1 call to notify, that nothing to do
-    kafka_service.send_status_message_event.assert_called_once()
+    assert kafka_service.send_status_message_event.call_args_list == [call(ANY, Status.SUCCEEDED, "Nothing to fetch")]
 
 
 def validate_populated_dst(benchmark_event):
@@ -119,8 +165,8 @@ def validate_populated_dst(benchmark_event):
 
 
 def simulate_fetched_datasets(data_set_manager):
-    for call in data_set_manager.fetch.call_args_list:
-        args = call[0]
+    for kall in data_set_manager.fetch.call_args_list:
+        args = kall[0]
         data_set = args[0]
         on_done = args[1]
         on_done(data_set)
@@ -132,7 +178,7 @@ def test_fetcher_cleanup(data_set_manager: DataSetManager):
     data_set_manager.stop.assert_called_once()
 
 
-@patch.object(fetcher_dispatcher, "create_data_set_manager")
+@patch.object(fetcher_dispatcher_service, "create_data_set_manager")
 @patch.object(kafka, "KafkaProducer")
 @patch.object(kafka, "KafkaConsumer")
 def test_create_fetcher_dispatcher(mockKafkaConsumer, mockKafkaProducer, mock_create_data_set_manager):
@@ -161,9 +207,9 @@ def test_create_fetcher_dispatcher(mockKafkaConsumer, mockKafkaProducer, mock_cr
     assert fetcher_service
 
 
-@patch.object(fetcher_dispatcher, "DataSetManager")
-@patch.object(fetcher_dispatcher, "KubernetesDispatcher")
-@patch.object(fetcher_dispatcher, "KazooClient")
+@patch.object(fetcher_dispatcher_service, "DataSetManager")
+@patch.object(fetcher_dispatcher_service, "KubernetesDispatcher")
+@patch.object(fetcher_dispatcher_service, "KazooClient")
 def test_create_data_set_manager(mockKazooClient, mockKubernetesDispatcher, mockDataSetManager):
     mock_zk_client = MagicMock(spec=KazooClient)
     mock_job_dispatcher = MagicMock(spec=KubernetesDispatcher)

@@ -136,7 +136,7 @@ _generate_submit_event() {
     "client_sha1"    : "${MY_SHA1}",
     "client_username" : "$(whoami)",
     "date" : "$(date -u +"%a %b %d %H:%M:%S %Z %Y")",
-    "visited"  : [{"svc" : "${SERVICE_NAME}", "tstamp" : "@@TSTAMP@@", "version" :"${VERSION}"}],
+    "visited"  : [{"svc" : "${SERVICE_NAME}", "tstamp" : 1557150931877, "version" :"${VERSION}"}],
     "payload"  : {
         "toml" : {
             "descriptor_filename" : "${descriptor_filename##*/}",
@@ -166,7 +166,7 @@ submit() {
     if [[ -n "${data}" ]]; then
         cmd="curl -s -X POST -H Content-Type: application/json -d '"${data}"' http://"${current_service_endpoint}"/api/job/descriptor"
         ((VERBOSE)) && echo ${cmd}
-        ${cmd} |tee -a ${BAICTL_ACTION_IDS}
+        eval ${cmd} |tee -a ${BAICTL_ACTION_IDS}
     else
         printf '\033[01;31m[ERROR]\033[0m No data to send.\n\n'
         exit 1

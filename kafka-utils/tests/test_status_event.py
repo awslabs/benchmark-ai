@@ -1,14 +1,17 @@
+import dataclasses
+
 from bai_kafka_utils.events import (
     StatusMessageBenchmarkEvent,
     VisitedService,
-    StatusMessagePayload,
     DataSet,
     FetcherPayload,
     FetcherBenchmarkEvent,
+    Status,
 )
-from bai_kafka_utils.status_message import create_status_message_event
 
-FETCHER_EVENT = EXPECTED_FETCHER_EVENT = FetcherBenchmarkEvent(
+FETCHER_PAYLOAD = FetcherPayload(datasets=[DataSet(src="SRC")], toml=None)
+
+FETCHER_EVENT = FetcherBenchmarkEvent(
     action_id="OTHER_ACTION_ID",
     message_id="OTHER_MESSAGE_ID",
     client_id="OTHER_CLIENT_ID",
@@ -16,11 +19,12 @@ FETCHER_EVENT = EXPECTED_FETCHER_EVENT = FetcherBenchmarkEvent(
     client_username="bellgav",
     authenticated=False,
     tstamp=1556814924121,
-    visited=[VisitedService(svc="some", tstamp=1556814924121, version="1.0")],
-    payload=FetcherPayload(datasets=[DataSet(src="SRC")], toml=None),
+    visited=[VisitedService(svc="some", tstamp=1556814924121, version="1.0", node=None)],
+    payload=FETCHER_PAYLOAD,
 )
 
-STATUS_EVENT_JSON = """
+STATUS_EVENT_JSON = (
+    """
 {
   "message_id": "MESSAGE_ID",
   "client_id":  "CLIENT_ID",
@@ -29,19 +33,18 @@ STATUS_EVENT_JSON = """
   "client_username": "vasya",
   "client_version": "1.0",
   "authenticated": true,
-  "visited": [{"svc":"baictl", "tstamp":"1554901873677", "version":"v0.1.0-481dad1"}],
-    "payload":{
-      "message": "SOME STRING"
-    }
+  "message": "Some fancy string as message",
+  "status": "RUNNING",
+  "visited": [{"node":"POD_NAME", "svc":"baictl", "tstamp":"1554901873677", "version":"v0.1.0-481dad1"}],
+  "payload": %s
 }
 """
+    % FETCHER_PAYLOAD.to_json()
+)
 
-MESSAGE = "SOME STRING"
+MESSAGE = "Some fancy string as message"
 
-EXPECTED_STATUS_MESSAGE_PAYLOAD = StatusMessagePayload(MESSAGE)
-
-
-EXPECTED_STATUS_EVENT = StatusMessageBenchmarkEvent(
+STATUS_EVENT = StatusMessageBenchmarkEvent(
     action_id="ACTION_ID",
     message_id="MESSAGE_ID",
     client_id="CLIENT_ID",
@@ -49,22 +52,36 @@ EXPECTED_STATUS_EVENT = StatusMessageBenchmarkEvent(
     client_username="vasya",
     authenticated=True,
     tstamp=1554901873677,
-    visited=[VisitedService(svc="baictl", tstamp="1554901873677", version="v0.1.0-481dad1")],
-    payload=EXPECTED_STATUS_MESSAGE_PAYLOAD,
+    visited=[VisitedService(svc="baictl", tstamp="1554901873677", version="v0.1.0-481dad1", node="POD_NAME")],
+    status=Status.RUNNING,
+    message=MESSAGE,
+    payload=dataclasses.asdict(FETCHER_PAYLOAD),
 )
 
 
-def test_status_event():
-    assert EXPECTED_STATUS_EVENT == StatusMessageBenchmarkEvent.from_json(STATUS_EVENT_JSON)
+def test_deserialization():
+    deserialized = StatusMessageBenchmarkEvent.from_json(STATUS_EVENT_JSON)
+    assert STATUS_EVENT == deserialized
 
 
-def test_create_one_from_other():
-    event = create_status_message_event(FETCHER_EVENT, MESSAGE)
+def test_serialization():
+    import json
 
+    serialized = json.loads(STATUS_EVENT.to_json())
+    expected = json.loads(STATUS_EVENT_JSON)
+
+    assert serialized == expected
+
+
+def test_create_from_event():
+    event = StatusMessageBenchmarkEvent.create_from_event(Status.RUNNING, MESSAGE, FETCHER_EVENT)
+
+    assert event.status == Status.RUNNING
+    assert event.message == "Some fancy string as message"
     assert event.action_id == FETCHER_EVENT.action_id
     assert event.client_id == FETCHER_EVENT.client_id
     assert event.client_username == FETCHER_EVENT.client_username
     assert event.authenticated == FETCHER_EVENT.authenticated
     assert event.tstamp == FETCHER_EVENT.tstamp
-    assert event.payload == EXPECTED_STATUS_MESSAGE_PAYLOAD
-    assert event.visited == []
+    assert event.payload == dataclasses.asdict(FETCHER_PAYLOAD)
+    assert event.visited == FETCHER_EVENT.visited

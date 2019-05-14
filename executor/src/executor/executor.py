@@ -6,7 +6,13 @@ from dacite import WrongTypeError
 from executor import SERVICE_NAME, __version__
 from executor.config import ExecutorConfig
 from transpiler.bai_knowledge import create_job_yaml_spec
-from bai_kafka_utils.events import BenchmarkEvent, FetcherBenchmarkEvent, ExecutorPayload, BenchmarkJob
+from bai_kafka_utils.events import (
+    FetcherBenchmarkEvent,
+    ExecutorPayload,
+    BenchmarkJob,
+    ExecutorBenchmarkEvent,
+    create_from_object,
+)
 from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
 from bai_kafka_utils.kafka_service import (
     KafkaServiceCallback,
@@ -14,7 +20,7 @@ from bai_kafka_utils.kafka_service import (
     KafkaServiceConfig,
     KafkaServiceCallbackException,
 )
-from bai_kafka_utils.utils import DEFAULT_ENCODING
+from bai_kafka_utils.utils import DEFAULT_ENCODING, get_pod_name
 
 logger = logging.getLogger(SERVICE_NAME)
 
@@ -23,7 +29,7 @@ class ExecutorEventHandler(KafkaServiceCallback):
     def __init__(self, executor_config):
         self.executor_config = executor_config
 
-    def handle_event(self, event: BenchmarkEvent, kafka_service: KafkaService):
+    def handle_event(self, event: FetcherBenchmarkEvent, kafka_service: KafkaService):
         descriptor_contents = event.payload.toml.contents
         fetched_data_sources = event.payload.datasets
 
@@ -31,11 +37,11 @@ class ExecutorEventHandler(KafkaServiceCallback):
 
         self._kubernetes_apply(yaml)
 
-        job = BenchmarkJob(id=job_id, status="SUBMITTED", k8s_yaml=yaml)
+        job = BenchmarkJob(id=job_id, k8s_yaml=yaml)
 
         try:
-            result_payload = ExecutorPayload.from_fetcher_payload(event.payload, job)
-            result_event = BenchmarkEvent.from_event_new_payload(event, result_payload)
+            result_payload = ExecutorPayload.create_from_fetcher_payload(event.payload, job)
+            result_event = create_from_object(ExecutorBenchmarkEvent, event, payload=result_payload)
         except WrongTypeError as e:
             logging.exception("Data type problem in the received event")
             raise KafkaServiceCallbackException(str(e))
@@ -65,4 +71,8 @@ def create_executor(common_kafka_cfg: KafkaServiceConfig, executor_config: Execu
 
     consumer, producer = create_kafka_consumer_producer(common_kafka_cfg, FetcherBenchmarkEvent)
 
-    return KafkaService(SERVICE_NAME, __version__, common_kafka_cfg.producer_topic, callbacks, consumer, producer)
+    pod_name = get_pod_name()
+
+    return KafkaService(
+        SERVICE_NAME, __version__, common_kafka_cfg.producer_topic, callbacks, consumer, producer, pod_name
+    )

@@ -72,12 +72,12 @@ DOCKER_DEV_TEMPLATE := etc/Dockerfile_dev.tmpl
 
 #Run Environment (ref: deploy template and runit script)
 ENVIRONMENT := test
-LOGGING_LEVEL := info
+LOGGING_LEVEL := info #{:trace :debug :info :warn :error :fatal :report}
 SVC_PORT := 8080
 THREAD_POOL_SIZE := 6
 MAX_QUEUE_SIZE := 21
 #KAFKA_BOOTSTRAP_SERVERS #Here only as a note that this is a thing
-KAFKA_SOURCE_TOPIC := CMD_RETURN
+KAFKA_SOURCE_TOPIC := BAI_APP_STATUS
 KAFKA_CONSUMER_GROUP_ID := $(PROJECT)
 KAFKA_POLL_INTERVAL_MS := 500
 KAFKA_SINK_TOPIC := BAI_APP_BFF

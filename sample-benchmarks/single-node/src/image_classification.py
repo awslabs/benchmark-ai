@@ -19,6 +19,7 @@ from __future__ import division
 
 import argparse, time
 import logging
+
 logging.basicConfig(level=logging.INFO)
 
 import numpy as np
@@ -31,45 +32,36 @@ from benchmarkai import emit
 from data import *
 
 # CLI
-parser = argparse.ArgumentParser(description='Train a model for image classification.')
-parser.add_argument('--dataset', type=str, default='mnist',
-                    help='dataset to use. options are mnist, cifar10, and dummy.')
-parser.add_argument('--batch-size', type=int, default=32,
-                    help='training batch size per device (CPU/GPU).')
-parser.add_argument('--gpus', type=int, default=0,
-                    help='number of gpus to use.')
-parser.add_argument('--epochs', type=int, default=3,
-                    help='number of training epochs.')
-parser.add_argument('--lr', type=float, default=0.01,
-                    help='learning rate. default is 0.01.')
-parser.add_argument('--wd', type=float, default=0.0001,
-                    help='weight decay rate. default is 0.0001.')
-parser.add_argument('--seed', type=int, default=123,
-                    help='random seed to use. Default=123.')
-parser.add_argument('--benchmark', action='store_true',
-                    help='whether to run benchmark.')
-parser.add_argument('--mode', type=str,
-                    help='mode in which to train the model. options are symbolic, imperative, hybrid')
-parser.add_argument('--model', type=str, required=True,
-                    help='type of model to use. see vision_model for options.')
-parser.add_argument('--use_thumbnail', action='store_true',
-                    help='use thumbnail or not in resnet. default is false.')
-parser.add_argument('--batch-norm', action='store_true',
-                    help='enable batch normalization or not in vgg. default is false.')
-parser.add_argument('--use-pretrained', action='store_true',
-                    help='enable using pretrained model from gluon.')
-parser.add_argument('--kvstore', type=str, default='device',
-                    help='kvstore to use for trainer/module.')
-parser.add_argument('--dtype', type=str, default='float32',
-                    help='precision: float32 or float16')
-parser.add_argument('--log-interval', type=int, default=50, help='Number of batches to wait before logging.')
+parser = argparse.ArgumentParser(description="Train a model for image classification.")
+parser.add_argument(
+    "--dataset", type=str, default="mnist", help="dataset to use. options are mnist, cifar10, and dummy."
+)
+parser.add_argument("--batch-size", type=int, default=32, help="training batch size per device (CPU/GPU).")
+parser.add_argument("--gpus", type=int, default=0, help="number of gpus to use.")
+parser.add_argument("--epochs", type=int, default=3, help="number of training epochs.")
+parser.add_argument("--lr", type=float, default=0.01, help="learning rate. default is 0.01.")
+parser.add_argument("--wd", type=float, default=0.0001, help="weight decay rate. default is 0.0001.")
+parser.add_argument("--seed", type=int, default=123, help="random seed to use. Default=123.")
+parser.add_argument("--benchmark", action="store_true", help="whether to run benchmark.")
+parser.add_argument(
+    "--mode", type=str, help="mode in which to train the model. options are symbolic, imperative, hybrid"
+)
+parser.add_argument("--model", type=str, required=True, help="type of model to use. see vision_model for options.")
+parser.add_argument("--use_thumbnail", action="store_true", help="use thumbnail or not in resnet. default is false.")
+parser.add_argument(
+    "--batch-norm", action="store_true", help="enable batch normalization or not in vgg. default is false."
+)
+parser.add_argument("--use-pretrained", action="store_true", help="enable using pretrained model from gluon.")
+parser.add_argument("--kvstore", type=str, default="device", help="kvstore to use for trainer/module.")
+parser.add_argument("--dtype", type=str, default="float32", help="precision: float32 or float16")
+parser.add_argument("--log-interval", type=int, default=50, help="Number of batches to wait before logging.")
 opt = parser.parse_args()
 
 print(opt)
 
 mx.random.seed(opt.seed)
 
-dataset_classes = {'mnist': 10, 'cifar10': 10, 'imagenet': 1000, 'dummy': 1000}
+dataset_classes = {"mnist": 10, "cifar10": 10, "imagenet": 1000, "dummy": 1000}
 
 batch_size, dataset, classes = opt.batch_size, opt.dataset, dataset_classes[opt.dataset]
 
@@ -77,7 +69,7 @@ gpus = opt.gpus
 
 if opt.benchmark:
     batch_size = 32
-    dataset = 'dummy'
+    dataset = "dummy"
     classes = 1000
 
 batch_size *= max(1, gpus)
@@ -85,24 +77,24 @@ context = [mx.gpu(i) for i in range(gpus)] if gpus > 0 else [mx.cpu()]
 
 model_name = opt.model
 
-kwargs = {'ctx': context, 'pretrained': opt.use_pretrained, 'classes': classes}
+kwargs = {"ctx": context, "pretrained": opt.use_pretrained, "classes": classes}
 
-if model_name.startswith('resnet'):
-    kwargs['thumbnail'] = opt.use_thumbnail
-elif model_name.startswith('vgg'):
-    kwargs['batch_norm'] = opt.batch_norm
+if model_name.startswith("resnet"):
+    kwargs["thumbnail"] = opt.use_thumbnail
+elif model_name.startswith("vgg"):
+    kwargs["batch_norm"] = opt.batch_norm
 
 net = models.get_model(opt.model, **kwargs)
 
 # get dataset iterators
-if dataset == 'mnist':
+if dataset == "mnist":
     train_data, val_data = mnist_iterator(batch_size, (1, 28, 28))
-elif dataset == 'cifar10':
-    if model_name.startswith('inception'):
+elif dataset == "cifar10":
+    if model_name.startswith("inception"):
         raise ValueError("inception does not support cifar10")
     train_data, val_data = cifar10_iterator(batch_size, (3, 32, 32))
-elif dataset == 'dummy':
-    if model_name.startswith('inception'):
+elif dataset == "dummy":
+    if model_name.startswith("inception"):
         train_data, val_data = dummy_iterator(batch_size, (3, 299, 299))
     else:
         train_data, val_data = dummy_iterator(batch_size, (3, 224, 224))
@@ -116,8 +108,8 @@ def test(ctx, dtype):
         label = gluon.utils.split_and_load(batch.label[0], ctx_list=ctx, batch_axis=0)
         outputs = []
         for x in data:
-            if dtype == 'float16':
-                x = x.astype('float16')
+            if dtype == "float16":
+                x = x.astype("float16")
             outputs.append(net(x))
         metric.update(label, outputs)
     return metric.get()
@@ -127,8 +119,7 @@ def train(epochs, ctx, dtype):
     if isinstance(ctx, mx.Context):
         ctx = [ctx]
     net.initialize(mx.init.Xavier(magnitude=2.24), ctx=ctx)
-    trainer = gluon.Trainer(net.collect_params(), 'sgd', {'learning_rate': opt.lr, 'wd': opt.wd},
-                            kvstore = opt.kvstore)
+    trainer = gluon.Trainer(net.collect_params(), "sgd", {"learning_rate": opt.lr, "wd": opt.wd}, kvstore=opt.kvstore)
     metric = mx.metric.Accuracy()
     loss = gluon.loss.SoftmaxCrossEntropyLoss()
 
@@ -144,8 +135,8 @@ def train(epochs, ctx, dtype):
             Ls = []
             with ag.record():
                 for x, y in zip(data, label):
-                    if dtype == 'float16':
-                        x = x.astype('float16')
+                    if dtype == "float16":
+                        x = x.astype("float16")
                     z = net(x)
                     L = loss(z, y)
                     # store the loss and do backward after we have done forward
@@ -156,44 +147,46 @@ def train(epochs, ctx, dtype):
                     L.backward()
             trainer.step(batch.data[0].shape[0])
             metric.update(label, outputs)
-            if opt.log_interval and not (i+1)%opt.log_interval:
+            if opt.log_interval and not (i + 1) % opt.log_interval:
                 name, acc = metric.get()
-                logging.info('Epoch[%d] Batch [%d]\tSpeed: %f samples/sec\t%s=%f'%(
-                               epoch, i, batch_size/(time.time()-btic), name, acc))
+                logging.info(
+                    "Epoch[%d] Batch [%d]\tSpeed: %f samples/sec\t%s=%f"
+                    % (epoch, i, batch_size / (time.time() - btic), name, acc)
+                )
             btic = time.time()
 
         name, acc = metric.get()
-        logging.info('[Epoch %d] training: %s=%f'%(epoch, name, acc))
-        logging.info('[Epoch %d] time cost: %f'%(epoch, time.time()-tic))
+        logging.info("[Epoch %d] training: %s=%f" % (epoch, name, acc))
+        logging.info("[Epoch %d] time cost: %f" % (epoch, time.time() - tic))
         name, val_acc = test(ctx, dtype)
-        logging.info('[Epoch %d] validation: %s=%f'%(epoch, name, val_acc))
+        logging.info("[Epoch %d] validation: %s=%f" % (epoch, name, val_acc))
 
     name, acc = metric.get()
     emit({name: acc})
-    net.save_params('image-classifier-%s-%d.params'%(opt.model, epochs))
+    net.save_params("image-classifier-%s-%d.params" % (opt.model, epochs))
 
 
-if __name__ == '__main__':
-    if opt.mode == 'symbolic':
-        data = mx.sym.var('data')
-        if opt.dtype == 'float16':
+if __name__ == "__main__":
+    if opt.mode == "symbolic":
+        data = mx.sym.var("data")
+        if opt.dtype == "float16":
             data = mx.sym.Cast(data=data, dtype=np.float16)
             net.cast(np.float16)
         out = net(data)
-        if opt.dtype == 'float16':
+        if opt.dtype == "float16":
             out = mx.sym.Cast(data=out, dtype=np.float32)
-        softmax = mx.sym.SoftmaxOutput(out, name='softmax')
+        softmax = mx.sym.SoftmaxOutput(out, name="softmax")
         mod = mx.mod.Module(softmax, context=[mx.gpu(i) for i in range(gpus)] if gpus > 0 else [mx.cpu()])
         mod.fit(
             train_data,
             val_data,
             num_epoch=opt.epochs,
             kvstore=opt.kvstore,
-            batch_end_callback=mx.callback.Speedometer(batch_size, opt.log_interval)
+            batch_end_callback=mx.callback.Speedometer(batch_size, opt.log_interval),
         )
     else:
-        if opt.dtype == 'float16':
+        if opt.dtype == "float16":
             net.cast(np.float16)
-        if opt.mode == 'hybrid':
+        if opt.mode == "hybrid":
             net.hybridize()
         train(opt.epochs, context, opt.dtype)

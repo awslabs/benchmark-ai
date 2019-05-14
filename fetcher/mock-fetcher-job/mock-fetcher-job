@@ -1,0 +1,49 @@
+#!/bin/bash
+
+#job_args = ["--src", task.src, "--dst", task.dst, "--zk-node-path", zk_node_path]
+
+while [[ -n "$1" ]]; do
+    case $1 in
+        --src)
+            shift
+            SRC="${1}"
+            ;;
+        --dst)
+            shift
+            DST="${1}"
+            ;;
+        --zk-node-path)
+            shift
+            ZK_NODE_PATH="${1}"
+            ;;
+        *)
+            shift
+            echo "Unknown flag $1"
+            ;;
+    esac
+    shift
+done
+
+ZK_CLI=zkCli.sh
+
+[[ -z "$SRC" ]] && echo "--src is required" && exit 1
+[[ -z "$DST" ]] && echo "--dst is required" && exit 1
+[[ -z "$ZOOKEEPER_ENSEMBLE_HOSTS" ]] && echo "ZOOKEEPER_ENSEMBLE_HOSTS environment variable is required" && exit 1
+
+if [[ ${SRC} == *"delay"* ]]; then
+    echo "Simulating delay"
+    sleep 30s
+fi
+
+RESULT="DONE"
+if [[ ${SRC} == *"fail"* ]]; then
+  RESULT="FAILED"
+fi
+
+echo "Reporting download of ${SRC} -> ${DST}:${RESULT}"
+
+if [[ -n "$ZK_NODE_PATH" ]]; then
+    echo "Updating ${ZK_NODE_PATH}"
+    ${ZK_CLI} -server ${ZOOKEEPER_ENSEMBLE_HOSTS} set ${ZK_NODE_PATH} ${RESULT}
+    echo "I'm done"
+fi

@@ -1,8 +1,8 @@
 import logging
-from typing import List, Type, Tuple
 
 import kafka
 from kafka import KafkaConsumer, KafkaProducer
+from typing import List, Type, Tuple
 
 from bai_kafka_utils.events import BenchmarkEvent
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 # Time before a consumer or producer closes if the topics it is subscribed to are idle.
-# Setting it to -1 disables the behavior so they never close.
-MAX_IDLE_TIME_MS = -1
+# Setting to a really high number (3 years) because we don't want it to ever close.
+MAX_IDLE_TIME_MS = 100000000000
 
 
 class WrongBenchmarkEventTypeException(Exception):
@@ -48,11 +48,20 @@ def create_kafka_consumer(
             logger.exception("Failed to deserialize %s", msg_value)
             return None
 
+    # key can be None
+    def key_deserializer(key: bytes):
+        try:
+            return key.decode(DEFAULT_ENCODING) if key is not None else None
+        except UnicodeDecodeError:
+            logger.exception("Failed to deserialize key %s", key)
+            return None
+
     return kafka.KafkaConsumer(
         topic,
         bootstrap_servers=bootstrap_servers,
         group_id=group_id,
         value_deserializer=json_deserializer,
+        key_deserializer=key_deserializer,
         connections_max_idle_ms=MAX_IDLE_TIME_MS,
     )
 
@@ -61,6 +70,12 @@ def create_kafka_producer(bootstrap_servers: List[str]) -> kafka.KafkaProducer:
     def json_serializer(msg_value):
         return msg_value.to_json().encode(DEFAULT_ENCODING)
 
+    def key_serializer(key: str):
+        return key.encode(DEFAULT_ENCODING)
+
     return kafka.KafkaProducer(
-        bootstrap_servers=bootstrap_servers, value_serializer=json_serializer, connections_max_idle_ms=MAX_IDLE_TIME_MS
+        bootstrap_servers=bootstrap_servers,
+        value_serializer=json_serializer,
+        connections_max_idle_ms=MAX_IDLE_TIME_MS,
+        key_serializer=key_serializer,
     )

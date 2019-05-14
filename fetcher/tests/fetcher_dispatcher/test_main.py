@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 # Regression test
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
-from fetcher_dispatcher import fetcher_dispatcher, args
+from fetcher_dispatcher import fetcher_dispatcher_service, args
 from fetcher_dispatcher.args import FetcherServiceConfig, FetcherJobConfig
 
 BOOTSTRAP_SERVERS = ["K1", "K2"]
@@ -31,7 +31,7 @@ STATUS_TOPIC = "STATUS"
 
 
 @patch.object(args.os, "environ")
-@patch.object(fetcher_dispatcher, "create_fetcher_dispatcher")
+@patch.object(fetcher_dispatcher_service, "create_fetcher_dispatcher")
 def test_main(mock_create_fetcher_dispatcher, mock):
     from fetcher_dispatcher.__main__ import main
 

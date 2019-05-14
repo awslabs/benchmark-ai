@@ -1,4 +1,4 @@
-import mock
+from unittest import mock
 
 from transpiler.config import DescriptorConfig, BaiConfig, EnvironmentInfo
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
@@ -10,6 +10,7 @@ KUBECTL = "path/cfg"
 LOGGING_LEVEL = "WARN"
 CONSUMER_TOPIC = "IN"
 PRODUCER_TOPIC = "OUT"
+STATUS_TOPIC = "STATUS_TOPIC"
 BOOTSTRAP_SERVERS_ARG = ",".join(BOOTSTRAP_SERVERS)
 VALID_STRATEGIES = "s1,s2"
 PULLER_MOUNT_CHMOD = "700"
@@ -25,6 +26,7 @@ def test_main(mock_create_executor):
     main(
         f" --consumer-topic {CONSUMER_TOPIC} "
         f" --producer-topic {PRODUCER_TOPIC} "
+        f" --status-topic {STATUS_TOPIC} "
         f" --bootstrap-servers {BOOTSTRAP_SERVERS_ARG} "
         f" --logging-level {LOGGING_LEVEL} "
         f" --kubectl {KUBECTL} "
@@ -40,6 +42,7 @@ def test_main(mock_create_executor):
         producer_topic=PRODUCER_TOPIC,
         bootstrap_servers=BOOTSTRAP_SERVERS,
         logging_level=LOGGING_LEVEL,
+        status_topic=STATUS_TOPIC,
     )
 
     expected_executor_config = ExecutorConfig(

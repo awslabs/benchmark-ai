@@ -41,6 +41,7 @@ EOF
 create_infra() {
     local cluster_name=""
     local prefix_list_id=""
+    local ssh_access_cidr_blocks=""
     local validate=true
 
     for arg in "$@"; do
@@ -53,6 +54,9 @@ create_infra() {
             ;;
         --aws-prefix-list-id=*)
             prefix_list_id="${arg#*=}"
+            ;;
+        --aws-ssh-access-cidr-blocks=*)
+            ssh_access_cidr_blocks="${arg#*=}"
             ;;
         --no-validate)
             validate=false
@@ -73,6 +77,7 @@ create_infra() {
     [[ -n "$cluster_name" ]] && vars="${vars} -var cluster_name=${cluster_name}"
     [[ -n "$region" ]] && vars="${vars} -var region=${region}"
     [[ -n "$prefix_list_id" ]] && vars="${vars} -var prefix_list_ids=[\"${prefix_list_id}\"]"
+    [[ -n "$ssh_access_cidr_blocks" ]] && vars="${vars} -var ssh_access_cidr_blocks=[\"${ssh_access_cidr_blocks}\"]"
 
     echo "==> Initializing terraform"
     _initialize_terraform_backend ${region} || return 1
@@ -138,17 +143,18 @@ END
 
 _install_msk_aware_terraform_plugin(){
     # Get Kafka AWS binary and put it in terraform plugins directory
+    local plugin_zip="terraform-provider-aws_v2.4.0.zip"
     local plugin_name="terraform-provider-aws_v2.4.0"
     local kernel=$(uname | awk '{print tolower($0)}')
-    local s3_key=s3://benchmark-ai/${kernel}/${plugin_name}
+    local plugin_url="https://chancebair.github.io/terraform-msk-binaries/${kernel}/${plugin_zip}"
     if [[ ! -f ~/.terraform.d/plugins/${plugin_name} ]] ; then
         printf 'Downloading MSK-aware aws terraform plugin binary...\n'
         mkdir -p ~/.terraform.d/plugins
-        if aws s3 cp "$s3_key" ~/.terraform.d/plugins; then
+        if wget -nv -P ~/.terraform.d/plugins ${plugin_url} ; then
+            unzip ~/.terraform.d/plugins/${plugin_zip} -d ~/.terraform.d/plugins/
             chmod +x ~/.terraform.d/plugins/${plugin_name}
         else
-            CANONICAL_ID=$(aws s3api list-buckets --output json | jq --raw-output  '.Owner.ID')
-            printf "Please add your account ID: %s RO permissions to %s in mxnet-edge-bln account\n" "$CANONICAL_ID" "${s3_key}"
+            printf "Failed to download MSK plugin zip file from $plugin_url\n"
             return 1
         fi
     fi
@@ -506,7 +512,7 @@ terraform_plan=$(realpath $terraform_plan)
 project_dir=$(realpath $(dirname $BASH_SOURCE)/../../..)
 k8s_deploy_dir=$(realpath $(dirname $BASH_SOURCE))/deploy
 
-kafka_topics=("BAI_APP_BFF" "BAI_APP_FETCHER" "BAI_APP_EXECUTOR" "BAI_SYS_BFF" "BAI_SYS_FETCHER" "BAI_SYS_EXECUTOR" "BAI_SYS_STATUS" "CMD_SUBMIT" "CMD_RETURN")
+kafka_topics=("BAI_APP_BFF" "BAI_APP_FETCHER" "BAI_APP_EXECUTOR" "BAI_SYS_BFF" "BAI_SYS_FETCHER" "BAI_SYS_EXECUTOR" "BAI_APP_STATUS" "CMD_SUBMIT" "CMD_RETURN")
 
 readonly kubeflow_namespace=kubeflow
 
