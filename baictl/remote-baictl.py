@@ -12,6 +12,8 @@ import docker
 import base64
 import logging
 import config
+import argparse
+
 
 CFN_SPLIT_STRING = "|||"
 DOCKER_IMAGE_TAG = "benchmark-ai/baictl"
@@ -20,6 +22,13 @@ CLOUDFORMATION_YAML_PATH = os.path.join(os.path.split(os.path.realpath(__file__)
 
 def main():
     logging.getLogger().setLevel(logging.DEBUG)
+
+    parser = argparse.ArgumentParser(description="Run baictl create/destroy infra remotely")
+    parser.add_argument("mode", help="create or destroy", nargs="?", choices=("create", "destroy"))
+    args = parser.parse_args()
+
+    if args.mode != "create" and args.mode != "destroy":
+        raise ValueError('Please pass either "create" or "destroy".')
 
     config = load_config("config.yml")
 
@@ -30,7 +39,7 @@ def main():
         stack_name="baictl-ecs",
         boto_session=boto_session,
         cloudformation_yaml_path=CLOUDFORMATION_YAML_PATH,
-        baictl_command=generate_baictl_command(config),
+        baictl_command=generate_baictl_command(config=config, mode=args.mode),
     )
     docker_cli, docker_registry = login_ecr(boto_session=boto_session)
     publish_docker_image(docker_cli=docker_cli, docker_tag=docker_tag, docker_registry=docker_registry)
@@ -42,9 +51,9 @@ def load_config(path):
     return config.Config(path)
 
 
-def generate_baictl_command(config):
+def generate_baictl_command(config, mode):
     return [
-        "create",
+        mode,  # create or destroy
         "infra",
         "--aws-prefix-list-id=" + config.get_aws_prefix_lists(),
         "--aws-region=" + config.get_aws_region(),
