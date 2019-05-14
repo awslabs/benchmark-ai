@@ -166,7 +166,7 @@ submit() {
     if [[ -n "${data}" ]]; then
         cmd="curl -s -X POST -H Content-Type: application/json -d '"${data}"' http://"${current_service_endpoint}"/api/job/descriptor"
         ((VERBOSE)) && echo ${cmd}
-        ${cmd} |tee -a ${BAICTL_ACTION_IDS}
+        eval ${cmd} |tee -a ${BAICTL_ACTION_IDS}
     else
         printf '\033[01;31m[ERROR]\033[0m No data to send.\n\n'
         exit 1

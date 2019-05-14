@@ -41,6 +41,7 @@ EOF
 create_infra() {
     local cluster_name=""
     local prefix_list_id=""
+    local ssh_access_cidr_blocks=""
     local validate=true
 
     for arg in "$@"; do
@@ -53,6 +54,9 @@ create_infra() {
             ;;
         --aws-prefix-list-id=*)
             prefix_list_id="${arg#*=}"
+            ;;
+        --aws-ssh-access-cidr-blocks=*)
+            ssh_access_cidr_blocks="${arg#*=}"
             ;;
         --no-validate)
             validate=false
@@ -73,6 +77,7 @@ create_infra() {
     [[ -n "$cluster_name" ]] && vars="${vars} -var cluster_name=${cluster_name}"
     [[ -n "$region" ]] && vars="${vars} -var region=${region}"
     [[ -n "$prefix_list_id" ]] && vars="${vars} -var prefix_list_ids=[\"${prefix_list_id}\"]"
+    [[ -n "$ssh_access_cidr_blocks" ]] && vars="${vars} -var ssh_access_cidr_blocks=[\"${ssh_access_cidr_blocks}\"]"
 
     echo "==> Initializing terraform"
     _initialize_terraform_backend ${region} || return 1
@@ -145,7 +150,7 @@ _install_msk_aware_terraform_plugin(){
     if [[ ! -f ~/.terraform.d/plugins/${plugin_name} ]] ; then
         printf 'Downloading MSK-aware aws terraform plugin binary...\n'
         mkdir -p ~/.terraform.d/plugins
-        if wget -P ~/.terraform.d/plugins ${plugin_url} ; then
+        if wget -nv -P ~/.terraform.d/plugins ${plugin_url} ; then
             unzip ~/.terraform.d/plugins/${plugin_zip} -d ~/.terraform.d/plugins/
             chmod +x ~/.terraform.d/plugins/${plugin_name}
         else

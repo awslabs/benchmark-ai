@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 # Time before a consumer or producer closes if the topics it is subscribed to are idle.
-# Setting it to -1 disables the behavior so they never close.
-MAX_IDLE_TIME_MS = -1
+# Setting to a really high number (3 years) because we don't want it to ever close.
+MAX_IDLE_TIME_MS = 100000000000
 
 
 class WrongBenchmarkEventTypeException(Exception):
