@@ -5,6 +5,7 @@ import kubernetes
 from bai_kafka_utils.events import ExecutorBenchmarkEvent, Status
 from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
 from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService, KafkaServiceConfig
+from bai_kafka_utils.utils import get_pod_name
 from bai_watcher import SERVICE_NAME, __version__
 from bai_watcher.args import WatcherServiceConfig
 from bai_watcher.kubernetes_job_watcher import KubernetesJobWatcher, KubernetesJobStatus, load_kubernetes_config
@@ -76,5 +77,6 @@ def create_service(common_kafka_cfg: KafkaServiceConfig, service_cfg: WatcherSer
         callbacks,
         consumer,
         producer,
+        pod_name=get_pod_name(),
         status_topic=common_kafka_cfg.status_topic,
     )
