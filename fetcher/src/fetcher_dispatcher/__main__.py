@@ -3,7 +3,7 @@ import logging
 from bai_kafka_utils.kafka_service_args import get_kafka_service_config
 from fetcher_dispatcher import SERVICE_NAME, SERVICE_DESCRIPTION
 from fetcher_dispatcher.args import get_fetcher_service_config
-from fetcher_dispatcher.fetcher_dispatcher import create_fetcher_dispatcher
+from fetcher_dispatcher.fetcher_dispatcher_service import create_fetcher_dispatcher
 
 
 def main(argv=None):
