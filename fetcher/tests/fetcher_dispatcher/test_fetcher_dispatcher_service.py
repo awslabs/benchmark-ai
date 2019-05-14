@@ -8,10 +8,10 @@ from unittest.mock import MagicMock, patch, call, ANY
 
 from bai_kafka_utils.events import BenchmarkDoc, BenchmarkEvent, FetcherPayload, DataSet, FetcherBenchmarkEvent, Status
 from bai_kafka_utils.kafka_service import KafkaService, KafkaServiceConfig
-from fetcher_dispatcher import fetcher_dispatcher
+from fetcher_dispatcher import fetcher_dispatcher_service
 from fetcher_dispatcher.args import FetcherServiceConfig, FetcherJobConfig
 from fetcher_dispatcher.data_set_manager import DataSetManager
-from fetcher_dispatcher.fetcher_dispatcher import (
+from fetcher_dispatcher.fetcher_dispatcher_service import (
     create_data_set_manager,
     FetcherEventHandler,
     create_fetcher_dispatcher,
@@ -175,7 +175,7 @@ def test_fetcher_cleanup(data_set_manager: DataSetManager):
     data_set_manager.stop.assert_called_once()
 
 
-@patch.object(fetcher_dispatcher, "create_data_set_manager")
+@patch.object(fetcher_dispatcher_service, "create_data_set_manager")
 @patch.object(kafka, "KafkaProducer")
 @patch.object(kafka, "KafkaConsumer")
 def test_create_fetcher_dispatcher(mockKafkaConsumer, mockKafkaProducer, mock_create_data_set_manager):
@@ -204,9 +204,9 @@ def test_create_fetcher_dispatcher(mockKafkaConsumer, mockKafkaProducer, mock_cr
     assert fetcher_service
 
 
-@patch.object(fetcher_dispatcher, "DataSetManager")
-@patch.object(fetcher_dispatcher, "KubernetesDispatcher")
-@patch.object(fetcher_dispatcher, "KazooClient")
+@patch.object(fetcher_dispatcher_service, "DataSetManager")
+@patch.object(fetcher_dispatcher_service, "KubernetesDispatcher")
+@patch.object(fetcher_dispatcher_service, "KazooClient")
 def test_create_data_set_manager(mockKazooClient, mockKubernetesDispatcher, mockDataSetManager):
     mock_zk_client = MagicMock(spec=KazooClient)
     mock_job_dispatcher = MagicMock(spec=KubernetesDispatcher)
