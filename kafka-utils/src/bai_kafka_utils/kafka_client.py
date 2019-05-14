@@ -52,7 +52,7 @@ def create_kafka_consumer(
     def key_deserializer(key: bytes):
         try:
             return key.decode(DEFAULT_ENCODING) if key is not None else None
-        except UnicodeDecodeError as e:
+        except UnicodeDecodeError:
             logger.exception("Failed to deserialize key %s", key)
             return None
 
