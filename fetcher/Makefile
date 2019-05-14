@@ -14,18 +14,14 @@ _post_venv::
 _docker_package:
 	$(DOCKER) build .. -f ../Dockerfile-fetcher -t $(DOCKER_IMAGE_TAG)
 
-k8s_deploy_mock_infra:
-ifeq ($(STAGE),local)
-	$(KUBECTL) apply -f ../mock-infra $(KUBECTL_FLAGS)
-endif
+# Overrides how to deploy to Kubernetes because fetcher is using a poor man's version of Kustomize. Until we adopt it
+# properly this is good enough.
+override define fn_k8s_deploy
+	[[ "$(STAGE)" == "local" ]] && $(KUBECTL) apply -f ../mock-infra $(KUBECTL_FLAGS) || true
+	$(DEPLOY_CONDA_RUN) ../stage_deploy.sh $(STAGE)
+endef
 
-k8s_undeploy_mock_infra:
-ifeq ($(STAGE),local)
-	$(KUBECTL) delete -f ../mock-infra $(KUBECTL_FLAGS)
-endif
-
-k8s_deploy: k8s_deploy_mock_infra
-	../stage_deploy.sh $(STAGE)
-
-k8s_undeploy: k8s_undeploy_mock_infra
-	../stage_deploy.sh $(STAGE) delete
+override define fn_k8s_undeploy
+	[[ "$(STAGE)" == "local" ]] && $(KUBECTL) delete -f ../mock-infra $(KUBECTL_FLAGS) || true
+	$(DEPLOY_CONDA_RUN) ../stage_deploy.sh $(STAGE) delete
+endef
