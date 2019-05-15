@@ -21,7 +21,6 @@ dependencies:
   - kubernetes-helm 2.13.*
   - curl
   - wget >= 1.20.1
->>>>>>> Pin dependencies
   - pip:
     - ConfigArgParse
     - python-crontab
