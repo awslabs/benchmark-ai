@@ -11,6 +11,7 @@ variable "projects" {
     "reports",
     "executor",
     "watcher",
+    "bff",
   ]
 }
 
@@ -25,6 +26,9 @@ variable "region" {
 }
 
 variable "ci_docker_image" {
-  type = "string"
-  default = "jlcont/bai-ci-python:260419"
+  type = "map"
+  default = {
+    "default" = "jlcont/bai-ci-python:260419"
+    "bff" = "gavin/bai-bff-dev"
+  }
 }
