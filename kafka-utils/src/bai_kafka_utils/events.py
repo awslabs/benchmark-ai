@@ -177,4 +177,7 @@ def create_from_object(desired_class: Type[T], source_object, **overriden_fields
         raise ValueError("Source object is not a dataclass type, its type is {}".format(type(source_object)))
     data = dataclasses.asdict(source_object)
     data.update(overriden_fields)
-    return dacite.from_dict(data_class=desired_class, data=data)
+    try:
+        return dacite.from_dict(data_class=desired_class, data=data)
+    except dacite.WrongTypeError as e:
+        raise ValueError from e

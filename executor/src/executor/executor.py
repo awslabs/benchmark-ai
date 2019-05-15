@@ -1,8 +1,5 @@
 import subprocess
 import logging
-from typing import Tuple
-
-from dacite import WrongTypeError
 
 from executor import SERVICE_NAME, __version__
 from executor.config import ExecutorConfig
@@ -37,40 +34,37 @@ class ExecutorEventHandler(KafkaServiceCallback):
 
         yaml, job_id = create_job_yaml_spec(descriptor_contents, self.executor_config, fetched_data_sources)
 
-        job_is_submitted, output = self._kubernetes_apply(yaml)
+        try:
+            self._kubernetes_apply(yaml)
+        except subprocess.CalledProcessError as e:
+            logger.exception(f"Error executing benchmark: {str(e)}")
+            kafka_service.send_status_message_event(event, Status.ERROR, e.output)
+            return None
 
-        if job_is_submitted:
-            response_event = self._create_response_event(event, job_id, yaml)
-            kafka_service.send_status_message_event(
-                response_event, Status.SUCCEEDED, f"Benchmark successfully submitted with job id {job_id}"
-            )
-            return response_event
-        else:
-            kafka_service.send_status_message_event(event, Status.ERROR, output)
+        response_event = self._create_response_event(event, job_id, yaml)
+        kafka_service.send_status_message_event(
+            response_event, Status.SUCCEEDED, f"Benchmark successfully submitted with job id {job_id}"
+        )
+        return response_event
 
-    def _kubernetes_apply(self, yaml: str) -> Tuple[bool, str]:
+    def _kubernetes_apply(self, yaml: str):
         # Shelling out this command because the kubernetes python client does not have a good way to
         # call kubectl apply -f my_config.yaml (https://github.com/kubernetes-client/python/issues/387)
         # Specially https://github.com/kubernetes-client/python/pull/655 - CRDs not supported
         cmd = [self.executor_config.kubectl, "apply", "-f", "-"]
 
-        try:
-            logger.info(f"Applying yaml file using command: {cmd}")
-            result = subprocess.check_output(cmd, input=yaml.encode(DEFAULT_ENCODING))
-            logger.info(f"Kubectl output: {result}")
-            logger.info(f"Job submitted with yaml: \n {yaml}")
-            return True, result
-        except subprocess.CalledProcessError as e:
-            logger.exception(f"Error executing benchmark: {str(e)}")
-            return False, e.output()
+        logger.info(f"Applying yaml file using command: {cmd}")
+        result = subprocess.check_output(cmd, input=yaml.encode(DEFAULT_ENCODING))
+        logger.info(f"Kubectl output: {result}")
+        logger.info(f"Job submitted with yaml: \n {yaml}")
 
     def _create_response_event(self, input_event: FetcherBenchmarkEvent, job_id: str, yaml: str):
         try:
             job = BenchmarkJob(id=job_id, k8s_yaml=yaml)
             response_payload = ExecutorPayload.create_from_fetcher_payload(input_event.payload, job)
             return create_from_object(ExecutorBenchmarkEvent, input_event, payload=response_payload)
-        except WrongTypeError as e:
-            logging.exception("Data type problem in the received event")
+        except ValueError as e:
+            logging.exception(f"Data type problem in the received event: {input_event}")
             raise KafkaServiceCallbackException(str(e))
 
     def cleanup(self):
