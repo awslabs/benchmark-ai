@@ -110,6 +110,13 @@ create_infra() {
     echo "==> Creating Kafka topics"
     _create_kafka_topics || return 1
 
+    echo "==> Installing Tiller"
+    _install_tiller || return 1
+
+    echo "==> Installing Prometheus"
+    _install_prometheus || return 1
+
+
     echo "==> Installing zookeeper"
     _install_zookeeper || return 1
 
@@ -166,6 +173,15 @@ _install_msk_aware_terraform_plugin(){
     fi
 }
 
+_install_tiller(){
+    $kubectl create serviceaccount --namespace kube-system tiller || return 1
+    $kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:tiller || return 1
+    $kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}' || return 1
+}
+
+_install_prometheus(){
+    helm upgrade --install prometheus-operator-1 stable/prometheus -f $k8s_deploy_dir/prometheus.values.yml || return 1
+}
 
 _create_kafka_topics(){
     local outputs=$(terraform output -json)
