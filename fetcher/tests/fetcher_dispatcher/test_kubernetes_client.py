@@ -3,13 +3,9 @@ from kubernetes.client import V1Job
 from pytest import fixture
 
 from bai_kafka_utils.events import DataSet, BenchmarkEvent
-
 from fetcher_dispatcher import kubernetes_client
-
 from fetcher_dispatcher.args import FetcherJobConfig
 from fetcher_dispatcher.kubernetes_client import KubernetesDispatcher
-
-from unittest.mock import patch, MagicMock, create_autospec
 
 CLIENT_ID = "CLIENT_ID"
 
