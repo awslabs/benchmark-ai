@@ -5,11 +5,11 @@ from kazoo.client import KazooClient
 from kazoo.exceptions import NodeExistsError
 from typing import Callable
 
-from bai_kafka_utils.events import DataSet
+from bai_kafka_utils.events import DataSet, BenchmarkEvent
 from bai_kafka_utils.utils import md5sum
 from bai_zk_utils.states import FetcherResult, FetcherStatus
 
-DataSetDispatcher = Callable[[DataSet, str], None]
+DataSetDispatcher = Callable[[DataSet, BenchmarkEvent, str], None]
 NodePathSource = Callable[[DataSet], str]
 DataSetOnDone = Callable[[DataSet], None]
 
@@ -30,7 +30,7 @@ class DataSetManager:
         logger.info("Start")
         self._zk.start()
 
-    def fetch(self, data_set: DataSet, on_done) -> None:
+    def fetch(self, data_set: DataSet, event: BenchmarkEvent, on_done) -> None:
         logger.info("Fetch request %s", data_set)
 
         zk_node_path = self._get_node_path(data_set)
@@ -41,7 +41,7 @@ class DataSetManager:
 
             logger.info("Node lock %s acquired", zk_node_path)
 
-            self._data_set_dispatcher(data_set, zk_node_path)
+            self._data_set_dispatcher(data_set, event, zk_node_path)
         except NodeExistsError:
             logger.info("Node %s already exists", zk_node_path)
 

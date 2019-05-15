@@ -107,8 +107,10 @@ def build_docker_image(docker_cli, docker_registry):
     logging.debug("Docker build output:")
     for line in output:
         try:
-            logging.debug(line["stream"])
+            message = line["stream"] if "stream" in line else line["status"]
+            logging.debug(message)
         except KeyError as e:
+            logging.error(line)
             logging.exception(e)
             raise e
     return docker_tag
