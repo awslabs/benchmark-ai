@@ -25,7 +25,8 @@
 (def overrides (atom {}))
 (def config    (atom {}))
 
-(log/set-level! (keyword (string/trim ^String(env :logging-level "warn"))))
+;; #{:trace :debug :info :warn :error :fatal :report}
+(log/set-level! (keyword (string/trim ^String(env :logging-level "trace"))))
 
 ;; ------
 ;; Utility Functions...
@@ -38,11 +39,16 @@
     (doall (take n (line-seq rdr)))))
 
 (defn- get-descriptor-info [descriptor-filename]
-  (let [sha1 (digest/sha1 (slurp descriptor-filename))
-        doc (apply str (map char (b64/encode (.getBytes (slurp descriptor-filename)))))
+  (let [doc  (slurp descriptor-filename)
+        sha1 (digest/sha1 doc)
+        doc-encoded (apply str (map char (b64/encode (.getBytes doc))))
         info-map {:toml {:descriptor_filename descriptor-filename
                          :sha1 sha1
-                         :doc doc}}]
+                         :doc doc-encoded}}]
+
+    (try (toml/read doc) (catch Exception e
+                           (log/error (str "Unable to parse descriptor file: "(.getMessage e)))
+                           (System/exit 1)))
 
     info-map))
 
@@ -80,7 +86,8 @@
 (defn register
   "Registers (sets) the Benchmark AI (Anubis) network endpoint for his program - hostname and port"
   [options]
-  (log/trace "register called with: "options))
+  (log/trace "register called with: "options)
+  (spit BAI_SERVICE_ENDPOINT_CONFIG (str(:hostname overrides)":"(:port overrides)) :append true))
 
 (defn show
   "Shows more detailed information for the given directive"
@@ -143,11 +150,9 @@
    ;; example argument description, and a description. All three are optional
    ;; and positional.
    ["-P" "--port <PORT>" "Anubis service port number"
-    :default 8080
-    :parse-fn #(Integer/parseInt %)
+    :parse-fn #(try(if % (Integer/parseInt %)) (catch Exception e (.getMessage e) nil))
     :validate [#(< 0 % 0x10000) "Must be a number between 0 and 65536"]]
    ["-H" "--hostname <HOSTNAME>" "Anubis service hostname (or IP)"
-    :default (InetAddress/getByName "localhost")
     ;; Specify a string to output in the default column in the options summary
     ;; if the default value's string representation is very ugly
     :default-desc "localhost"
@@ -216,11 +221,15 @@
         (log/set-level! :trace))
 
     (try
-      (let [[hostname port] (rest (re-matches #"(.*):(.*)" (string/trim (slurp BAI_SERVICE_ENDPOINT_CONFIG))))]
+      (let [[hostname port] (rest (re-matches #"(.*):(.*)" (string/trim(last (re-seq #"\s*[.-A-Za-z0-9]+:\d*\s" (slurp BAI_SERVICE_ENDPOINT_CONFIG))))))]
         (if hostname (swap! config assoc-in [:hostname] hostname))
         (if port     (swap! config assoc-in [:port] port))
         (log/debug "Loaded registered hostname "(:hostname @config)" and port: "(:port @config)))
       (catch Exception e (log/debug (.getMessage e))))
+
+    (if-let [hostname (:hostname options)] (swap! overrides assoc-in [:hostname] hostname))
+    (if-let [port (:port options)] (swap! overrides assoc-in [:port] port))
+    (println @overrides)
 
     (cond
       (:help options) {:exit-message (usage summary) :ok? true}
