@@ -176,11 +176,9 @@ _install_tiller(){
     $kubectl get serviceaccount -n kube-system tiller -o yaml || $kubectl create serviceaccount --namespace kube-system tiller || return 1
     $kubectl get clusterrolebinding tiller-cluster-rule -o yaml || $kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:tiller || return 1
 
-    helm init --service-account tiller
-    # --wait does not work https://github.com/helm/helm/issues/2409
-    sleep 10
-    # TODO: Figure out a better way than to sleep since this will *always* sleep
+    helm init --wait --service-account tiller
     #TODO: Secure through TLS: https://github.com/jonbcampos/kubernetes-series/blob/master/helm/scripts/add_secure_helm.sh
+    # TODO: Permissions
 }
 
 _install_prometheus(){
