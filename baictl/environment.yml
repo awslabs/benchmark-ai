@@ -7,6 +7,7 @@ dependencies:
   - terraform >=0.11
   - aws-iam-authenticator >=1.11
   - kubernetes >= 1.13
+  - kubernetes-helm
   - ruamel.yaml >= 0.15
   # OS X has no realpath or md5sum.
   - coreutils >= 8.25
@@ -19,6 +20,7 @@ dependencies:
   - unzip >= 6.0
   - kubernetes-helm 2.13.*
   - curl
+  - wget
   - pip:
     - ConfigArgParse
     - python-crontab
