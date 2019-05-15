@@ -114,10 +114,10 @@ create_infra() {
     _install_zookeeper || return 1
 
     echo "==> Validating infrastructure"
-    [ "$validate" == false ] || validate_infra $@
+    [[ "$validate" == false ]] || validate_infra $@
 }
 
-_initialize_terraform_backend(){
+_initialize_terraform_backend() {
     local region=$1
     if [[ ! -f ${data_dir}/backend.tfvars ]] ; then
         local account_id=$(aws sts get-caller-identity | jq -r '.Account') || return 1
@@ -247,12 +247,14 @@ _install_grafana() {
         --namespace ${tiller_namespace} \
         --set rbac.pspEnabled=false \
         --set rbac.create=false \
+        --set service.type=LoadBalancer \
+        --wait \
         stable/grafana || return 1
 }
 
 _destroy_helm_charts() {
     echo "-> Destroying helm charts:\n$(helm ls --short)\n"
-    ${helm} delete $(${helm} ls --short) || return 1
+    ${helm} delete $(${helm} ls --short) --purge || return 1
 }
 
 _install_zookeeper(){
@@ -312,26 +314,26 @@ get_infra() {
     printf "\n----------\n"
 }
 
-__validate_crd(){
+__validate_crd() {
     local type=$1
     local namespace=$2
 
     local kind
     kind=$($kubectl get crd "${type}" --namespace "${namespace}" --output=json | jq .kind --raw-output)
-    [ "$kind" == "CustomResourceDefinition" ] || return 1
+    [[ "$kind" == "CustomResourceDefinition" ]] || return 1
 }
 
-__validate_mpi_job(){
+__validate_mpi_job() {
     printf "MPI Job is present"
     __validate_crd mpijobs.kubeflow.org "$kubeflow_namespace"
 }
 
-__validate_mxnet_job(){
+__validate_mxnet_job() {
     printf "MXNET Job is present"
     __validate_crd mxjobs.kubeflow.org "$kubeflow_namespace"
 }
 
-__validate_kafka_topics(){
+__validate_kafka_topics() {
     printf "Kafka Topics are present"
 
     (
@@ -349,15 +351,31 @@ __validate_kafka_topics(){
     )
 }
 
-__validate_zookeeper_pods(){
+__validate_zookeeper_pods() {
     printf "ZooKeeper is ready"
     $kubectl wait --for=condition=ready pod --selector=app=zookeeper --timeout=300s > /dev/null || return 1
 }
 
-validate_infra(){
-    local all_ok=true
+__validate_grafana() {
+    printf "Grafana is ready"
+    password=$(
+        ${kubectl} get secret --namespace tiller-world grafana -o jsonpath="{.data.admin-password}" | base64 --decode
+    )
+    host=$(
+        ${kubectl} get svc grafana --namespace tiller-world -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+    )
+    curl http://admin:${password}@${host}:80/api/health || return 1
+}
 
-    local rules=(__validate_mpi_job __validate_mxnet_job __validate_kafka_topics __validate_zookeeper_pods)
+validate_infra() {
+    local all_ok=true
+    local rules=(
+        __validate_mpi_job \
+        __validate_mxnet_job \
+        __validate_kafka_topics \
+        __validate_zookeeper_pods \
+        __validate_grafana
+    )
 
     for rule in "${rules[@]}"; do
         local result=true
@@ -365,9 +383,10 @@ validate_infra(){
 
         printf "..."
 
-        [ "$result" == false ] && printf "FAILED\n" && all_ok=false || printf "PASSED\n"
+        [[ "$result" == false ]] && printf "FAILED\n" && all_ok=false || printf "PASSED\n"
     done
-    [ "$all_ok" == true ] || return 1
+
+    [[ "$all_ok" == true ]] || return 1
 }
 
 get_benchmark() {
