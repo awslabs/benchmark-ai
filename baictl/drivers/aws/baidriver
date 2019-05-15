@@ -68,14 +68,6 @@ create_infra() {
     [ -z "$prefix_list_id" ] && printf "Missing required argument --aws-prefix-list-id\n" && return 1
     [ -z "$region" ] && printf "Missing required argument --aws-region\n" && return 1
 
-    echo "==> Installing Tiller"
-    _install_tiller || return 1
-
-    echo "==> Installing Prometheus"
-    _install_prometheus || return 1
-
-    return 0
-
     _install_msk_aware_terraform_plugin || return 1
 
     cd $terraform_dir
@@ -118,8 +110,11 @@ create_infra() {
     echo "==> Creating Kafka topics"
     _create_kafka_topics || return 1
 
+    echo "==> Installing Tiller"
+    _install_tiller || return 1
 
-
+    echo "==> Installing Prometheus"
+    _install_prometheus || return 1
 
     echo "==> Installing zookeeper"
     _install_zookeeper || return 1
@@ -178,9 +173,8 @@ _install_msk_aware_terraform_plugin(){
 }
 
 _install_tiller(){
-    helm init --service-account tiller
-    #TODO: Secure
-    # TODO: Add sleep or some other method to wait until tiller is deployed
+    helm init --wait --service-account tiller
+    #TODO: Secure through TLS: https://github.com/jonbcampos/kubernetes-series/blob/master/helm/scripts/add_secure_helm.sh
     # Method to create objects only if it doesn't exist yet
     #$kubectl get serviceaccount -n kube-system tiller -o yaml || $kubectl create serviceaccount --namespace kube-system tiller || return 1
     #$kubectl get clusterrolebinding tiller-cluster-rule -o yaml || $kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:tiller || return 1
