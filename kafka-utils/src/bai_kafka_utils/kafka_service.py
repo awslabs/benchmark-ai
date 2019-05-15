@@ -91,6 +91,9 @@ class KafkaService:
         if not event:
             raise KafkaServiceCallbackException("Empty message received (no event found)")
         logger.info(f"Got event {event}")
+        self.send_status_message_event(
+            event, Status.PENDING, f"{self.name} service, node {self.pod_name}: Processing event..."
+        )
         return callback.handle_event(event, self)
 
     def send_status_message_event(self, handled_event: BenchmarkEvent, status: Status, msg: str):
