@@ -37,7 +37,7 @@ class ExecutorEventHandler(KafkaServiceCallback):
         try:
             self._kubernetes_apply(yaml)
         except subprocess.CalledProcessError as e:
-            logger.exception(f"Error executing benchmark: {str(e)}")
+            logger.exception(f"Error executing benchmark")
             kafka_service.send_status_message_event(event, Status.ERROR, e.output)
             return None
 
@@ -65,7 +65,7 @@ class ExecutorEventHandler(KafkaServiceCallback):
             return create_from_object(ExecutorBenchmarkEvent, input_event, payload=response_payload)
         except ValueError as e:
             logging.exception(f"Data type problem in the received event: {input_event}")
-            raise KafkaServiceCallbackException(str(e))
+            raise KafkaServiceCallbackException from e
 
     def cleanup(self):
         pass
