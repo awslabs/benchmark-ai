@@ -180,6 +180,7 @@ _install_msk_aware_terraform_plugin(){
 _install_tiller(){
     helm init --service-account tiller
     #TODO: Secure
+    # TODO: Add sleep or some other method to wait until tiller is deployed
     # Method to create objects only if it doesn't exist yet
     #$kubectl get serviceaccount -n kube-system tiller -o yaml || $kubectl create serviceaccount --namespace kube-system tiller || return 1
     #$kubectl get clusterrolebinding tiller-cluster-rule -o yaml || $kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:tiller || return 1
@@ -194,6 +195,45 @@ _install_prometheus(){
     # kubectl --namespace default port-forward prometheus-operator-1-grafana-869574f557-nfqgc 3000
 }
 
+port_forward() {
+    local service_name=""
+    for arg in "$@"; do
+        case "${arg}" in
+        --service=*)
+            service_name="${arg#*=}"
+            ;;
+        esac
+    done
+
+    if [ -z "$service_name" ]; then
+        printf "Missing required argument --service=[grafana|alertmanager|prometheus]\n" && return 1
+    fi
+
+    if [ "$service_name" == "grafana" ]; then
+        _port_forward_grafana
+    elif [ "$service_name" == "alertmanager" ]; then
+        _port_forward_alertmanager
+    elif [ "$service_name" == "prometheus" ]; then
+        _port_forward_prometheus
+    else
+        printf "Unknown service $service_name\n" && return 1
+    fi
+}
+
+_port_forward_grafana(){
+    printf "Navigate to 127.0.0.1:3000 to access the Grafana dashboard\nCtrl+C to cancel the session.\n"
+    kubectl port-forward deployment/prometheus-operator-1-grafana 3000
+}
+
+_port_forward_alertmanager(){
+    printf "Navigate to 127.0.0.1:9093 to access the AlertManager dashboard\nCtrl+C to cancel the session.\n"
+    kubectl port-forward deployment/prometheus-operator-1-alertmanager 9093
+}
+
+_port_forward_prometheus(){
+    printf "Navigate to 127.0.0.1:9090 to access the Prometheus dashboard\nCtrl+C to cancel the session.\n"
+    kubectl port-forward deployment/prometheus-operator-1-prometheus 9090
+}
 
 _create_kafka_topics(){
     local outputs=$(terraform output -json)
@@ -608,6 +648,9 @@ infra)
     case "${verb}" in
     create)
         create_infra $@
+        ;;
+    port-forward)
+        port_forward $@
         ;;
     destroy)
         destroy_infra $@
