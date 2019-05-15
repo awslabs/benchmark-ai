@@ -1,6 +1,6 @@
 from kazoo.client import KazooClient
 
-from benchmarkai_fetcher_job.states import FetcherResult
+from bai_zk_utils.states import FetcherResult
 
 
 def update_zk_node(zk_node_path: str, zookeeper_ensemble: str, state: FetcherResult):

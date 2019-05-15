@@ -37,6 +37,7 @@ def update_s3_hash_tagging(dst: S3Object, md5: str):
     boto3.client("s3").put_object_tagging(
         Bucket=dst.bucket, Key=dst.key, Tagging={"TagSet": [{"Key": MD5_TAG, "Value": md5}]}
     )
+    logger.info(f"Updated hash for {dst}")
 
 
 def check_s3_for_md5(dst: S3Object, md5: str) -> bool:

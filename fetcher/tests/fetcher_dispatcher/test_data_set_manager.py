@@ -5,7 +5,7 @@ import pytest
 from kazoo.client import KazooClient
 
 from bai_kafka_utils.events import DataSet
-from benchmarkai_fetcher_job.states import FetcherResult, FetcherStatus
+from bai_zk_utils.states import FetcherResult, FetcherStatus
 from fetcher_dispatcher.data_set_manager import DataSetManager, DataSetDispatcher, DataSetOnDone
 
 DST = "s3://bucker/datasets.key"

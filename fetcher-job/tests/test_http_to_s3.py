@@ -37,6 +37,7 @@ def mock_temp_file(mocker):
 
 @fixture
 def mock_check_s3_for_md5(mocker):
+    # Cache miss is the default behaviour
     return mocker.patch.object(
         benchmarkai_fetcher_job.http_to_s3, "check_s3_for_md5", autospec=True, return_value=False
     )
@@ -44,6 +45,7 @@ def mock_check_s3_for_md5(mocker):
 
 @fixture
 def mock_check_s3_for_etag(mocker):
+    # Cache miss is the default behaviour
     return mocker.patch.object(
         benchmarkai_fetcher_job.http_to_s3, "check_s3_for_etag", autospec=True, return_value=False
     )

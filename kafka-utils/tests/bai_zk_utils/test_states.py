@@ -1,6 +1,6 @@
 import pytest
 
-from benchmarkai_fetcher_job.states import FetcherResult, FetcherStatus
+from bai_zk_utils.states import FetcherStatus, FetcherResult
 
 FETCHER_DONE_RESULT = FetcherResult(FetcherStatus.DONE, "Success")
 

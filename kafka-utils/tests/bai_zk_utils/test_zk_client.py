@@ -1,9 +1,9 @@
 from kazoo.client import KazooClient
 from unittest.mock import patch, create_autospec
 
-from benchmarkai_fetcher_job import zk_client
-from benchmarkai_fetcher_job.states import FetcherStatus, FetcherResult
-from benchmarkai_fetcher_job.zk_client import update_zk_node
+from bai_zk_utils import zk_client
+from bai_zk_utils.states import FetcherResult, FetcherStatus
+from bai_zk_utils.zk_client import update_zk_node
 
 FETCHER_RESULT = FetcherResult(FetcherStatus.DONE, "Success")
 ZK_NODE_PATH = "/zk/path"

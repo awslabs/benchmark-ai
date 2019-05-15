@@ -7,7 +7,7 @@ from pytest import fixture
 from unittest.mock import create_autospec
 
 from benchmarkai_fetcher_job import http_utils
-from benchmarkai_fetcher_job.failures import HttpClientError, HttpServerError
+from benchmarkai_fetcher_job.failures import HttpClientError, HttpServerError, CurlError
 from benchmarkai_fetcher_job.http_utils import http_download
 
 SRC = "http://someserver.com/somefile.zip"
@@ -41,6 +41,11 @@ def mock_curl_with_server_error(mock_curl):
 
 
 @fixture
+def mock_curl_not_http_error(mock_curl):
+    mock_curl.perform.side_effect = pycurl.error()
+
+
+@fixture
 def mock_temp_file():
     return create_autospec(TextIO)
 
@@ -52,6 +57,11 @@ def test_server_error(mock_temp_file, mock_curl_with_server_error):
 
 def test_client_error(mock_temp_file, mock_curl_with_client_error):
     with pytest.raises(HttpClientError):
+        http_download(mock_temp_file, SRC)
+
+
+def test_not_http_error(mock_temp_file, mock_curl_not_http_error):
+    with pytest.raises(CurlError):
         http_download(mock_temp_file, SRC)
 
 

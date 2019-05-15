@@ -7,7 +7,7 @@ from typing import Callable
 
 from bai_kafka_utils.events import DataSet
 from bai_kafka_utils.utils import md5sum
-from benchmarkai_fetcher_job.states import FetcherResult, FetcherStatus
+from bai_zk_utils.states import FetcherResult, FetcherStatus
 
 DataSetDispatcher = Callable[[DataSet, str], None]
 NodePathSource = Callable[[DataSet], str]
