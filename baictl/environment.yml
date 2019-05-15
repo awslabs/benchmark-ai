@@ -17,6 +17,7 @@ dependencies:
   - awscli >= 1.16
   - pip
   - unzip >= 6.0
+  - kubernetes-helm
   - pip:
     - ConfigArgParse
     - python-crontab
