@@ -22,3 +22,13 @@ override define fn_k8s_undeploy
 	[[ "$(STAGE)" == "local" ]] && $(KUBECTL) delete -f ../mock-infra $(KUBECTL_FLAGS) || true
 	$(DEPLOY_CONDA_RUN) ../stage_deploy.sh $(STAGE) delete
 endef
+
+
+# HACK: Overriding also package and publish because the sed approach to automatically replace tags is difficult
+# to use here due to the Kustomize-ness
+_docker_package: _pre_docker_package
+	$(DOCKER) build .. -f ../Dockerfile-$(PROJECT) -t $(DOCKER_REPOSITORY):latest
+
+docker_publish: docker_package
+	echo "Publishing $(DOCKER_REPOSITORY):latest"
+	$(DOCKER) push $(DOCKER_REPOSITORY):latest
