@@ -41,6 +41,8 @@ spec:
               value: BAI_APP_BFF
             - name: PRODUCER_TOPIC
               value: BAI_APP_FETCHER
+            - name: STATUS_TOPIC
+              value: BAI_APP_STATUS
             - name: LOGGING_LEVEL
               value: INFO
       nodeSelector:
