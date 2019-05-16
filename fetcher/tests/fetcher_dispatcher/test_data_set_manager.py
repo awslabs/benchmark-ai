@@ -90,6 +90,7 @@ def enclosing_event() -> BenchmarkEvent:
         authenticated=False,
         tstamp=42,
         visited=[],
+        type="BAI_APP_BFF",
         payload="DONTCARE",
     )
 

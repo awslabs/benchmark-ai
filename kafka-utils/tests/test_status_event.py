@@ -20,6 +20,7 @@ FETCHER_EVENT = FetcherBenchmarkEvent(
     authenticated=False,
     tstamp=1556814924121,
     visited=[VisitedService(svc="some", tstamp=1556814924121, version="1.0", node=None)],
+    type="BAI_APP_FETCHER",
     payload=FETCHER_PAYLOAD,
 )
 
@@ -36,6 +37,7 @@ STATUS_EVENT_JSON = (
   "message": "Some fancy string as message",
   "status": "RUNNING",
   "visited": [{"node":"POD_NAME", "svc":"baictl", "tstamp":"1554901873677", "version":"v0.1.0-481dad1"}],
+  "type": "BAI_APP_STATUS",
   "payload": %s
 }
 """
@@ -53,6 +55,7 @@ STATUS_EVENT = StatusMessageBenchmarkEvent(
     authenticated=True,
     tstamp=1554901873677,
     visited=[VisitedService(svc="baictl", tstamp="1554901873677", version="v0.1.0-481dad1", node="POD_NAME")],
+    type="BAI_APP_STATUS",
     status=Status.RUNNING,
     message=MESSAGE,
     payload=dataclasses.asdict(FETCHER_PAYLOAD),

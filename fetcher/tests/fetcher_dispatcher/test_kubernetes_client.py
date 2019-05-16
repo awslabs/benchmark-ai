@@ -22,6 +22,7 @@ BENCHMARK_EVENT = BenchmarkEvent(
     authenticated=False,
     tstamp=42,
     visited=[],
+    type="BAI_APP_BFF",
     payload="DONTCARE",
 )
 
@@ -133,7 +134,8 @@ def validate_namespaced_job(namespace: str, job: V1Job):
     )
 
 
-def test_call_dispatcher(mock_api_instance, mock_k8s_config):
+def test_call_dispatcher(mocker, mock_api_instance):
+    mocker.patch("kubernetes.config.incluster_config.InClusterConfigLoader", autospec=True)
     kubernetes_dispatcher = KubernetesDispatcher(
         zk_ensemble=ZOOKEEPER_ENSEMBLE_HOSTS, kubeconfig=None, fetcher_job=FETCHER_JOB_CONFIG
     )

@@ -15,11 +15,11 @@ BIG_FETCHER_JSON = """{
                                "sources": [
                                    {
                                        "path": "~/data/tf-imagenet/",
-                                       "uri": "s3://bucket/imagenet/train"
+                                       "src": "s3://bucket/imagenet/train"
                                    },
                                    {
                                        "path": "~/data/tf-imagenet/",
-                                       "uri": "s3://bucket/imagenet/validation"
+                                       "src": "s3://bucket/imagenet/validation"
                                    }
                                ],
                                "id": "imagenet"
@@ -75,15 +75,16 @@ BIG_FETCHER_JSON = """{
                "message_id": "007bd9f8-f564-4edb-bb48-7380ee562ffc",
                "client_sha1": "c05467317b6765535f1ec60f0aee812d39b35dd2",
                "client_id": "97e7eb322342626974fb171fc5793514b0aea789",
-               "client_version": "0.1.0-481dad2"
+               "client_version": "0.1.0-481dad2",
+               "type": "BAI_APP_BFF"
            }"""
 
 EXPECTED_FETCHER_CONTENTS = {
     "spec_version": "0.1.0",
     "data": {
         "sources": [
-            {"path": "~/data/tf-imagenet/", "uri": "s3://bucket/imagenet/train"},
-            {"path": "~/data/tf-imagenet/", "uri": "s3://bucket/imagenet/validation"},
+            {"path": "~/data/tf-imagenet/", "src": "s3://bucket/imagenet/train"},
+            {"path": "~/data/tf-imagenet/", "src": "s3://bucket/imagenet/validation"},
         ],
         "id": "imagenet",
     },
@@ -117,6 +118,7 @@ EXPECTED_FETCHER_EVENT = FetcherBenchmarkEvent(
     authenticated=False,
     tstamp=1556814924121,
     visited=EXPECTED_FETCHER_VISITED,
+    type="BAI_APP_BFF",
     payload=FetcherPayload(datasets=EXPECTED_FETCHER_DATASETS, toml=EXPECTED_FETCHER_DOC),
 )
 

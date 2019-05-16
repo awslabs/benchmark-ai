@@ -97,6 +97,7 @@ def get_benchmark_event(payload: FetcherPayload):
         authenticated=False,
         tstamp=42,
         visited=[],
+        type="BAI_APP_FETCHER",
         payload=payload,
     )
 
