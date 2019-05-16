@@ -76,7 +76,7 @@ def benchmark_event_without_data_sets(benchmark_event, benchmark_doc: BenchmarkD
 
 
 @mock.patch("executor.executor.subprocess.check_output")
-@mock.patch("executor.executor.create_job_yaml_spec", return_value=(JOB_ID, "yaml_spec"))
+@mock.patch("executor.executor.create_job_yaml_spec", return_value="yaml_spec")
 def test_executor_event_handler_handle_event(
     mock_create_yaml,
     mock_check_output,
