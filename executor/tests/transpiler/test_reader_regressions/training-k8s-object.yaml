@@ -21,11 +21,6 @@ spec:
             topologyKey: kubernetes.io/hostname
       initContainers:
       - name: data-puller
-        env:
-        - name: ROLE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.labels['mpi_role_type']
         image: stsukrov/puller
         args:
         - eu-west-1
