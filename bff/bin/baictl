@@ -4,9 +4,9 @@ DEBUG=${DEBUG:-0}
 VERBOSE=${VERBOSE:-0}
 
 declare -r VERSION="0.1.0-481dad2"
-declare -r SERVICE_NAME="baictl-client"
+declare -r SERVICE_NAME="bai-client"
 declare -r MY_SHA1=$(sha1sum ${0} | awk '{print $1}')
-declare -r BAICTL_HOME=${HOME}/.baictl
+declare -r BAICTL_HOME=${HOME}/.bai
 declare -r BAICTL_HISTORY=${BAICTL_HOME}/history
 declare -r BAICTL_ACTION_IDS=${BAICTL_HOME}/action_ids
 declare -r BAICTL_SERVICE_ENDPOINT_CONFIG=${BAICTL_HOME}/service_endpoint
@@ -122,7 +122,6 @@ check_version() {
 # Event Construction
 #---------------------------------------------------------
 
-
 _generate_command_event() {
     local action_id=${1?"generate_command_event() -> You MUST supply the action id as the first argument to this function"}
     shift
@@ -210,6 +209,7 @@ submit() {
         cmd="curl -s -X POST -H Content-Type: application/json -d '"${data}"' http://"${current_service_endpoint}"/api/job/descriptor"
         ((VERBOSE)) && echo ${cmd}
         eval ${cmd} |tee -a ${BAICTL_ACTION_IDS}
+        echo $?
     else
         printf '\033[01;31m[ERROR]\033[0m No data to send.\n\n'
         exit 1
