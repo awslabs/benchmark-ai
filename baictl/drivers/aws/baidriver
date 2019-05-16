@@ -89,17 +89,23 @@ create_infra() {
     terraform output kubectl_config > $kubeconfig || return 1
 
     echo "==> Creating Kubernetes objects"
-    $kubectl apply -f $data_dir/fluentd-daemonset.yaml
-    $kubectl apply -f $data_dir/autoscaler-deployment.yaml
+    ${kubectl} apply -f $data_dir/fluentd-daemonset.yaml
+    ${kubectl} apply -f $data_dir/autoscaler-deployment.yaml
 
-    $kubectl apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v1.11/nvidia-device-plugin.yml
-    $kubectl apply -f $project_dir/metrics-pusher/metrics-pusher-roles.yaml
-    $kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended/kubernetes-dashboard.yaml
+    ${kubectl} apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v1.11/nvidia-device-plugin.yml
+    ${kubectl} apply -f $project_dir/metrics-pusher/metrics-pusher-roles.yaml
+    ${kubectl} apply -f https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended/kubernetes-dashboard.yaml
 
     _create_configmap_yaml_from_terraform_outputs | $kubectl apply -f -
 
     echo "==> Installing kubeflow operators"
     _install_kubeflow_operators || return 1
+
+    echo "==> Initializing helm"
+    _init_helm || return 1
+
+    echo "==> Installing Grafana"
+    _install_grafana || return 1
 
     echo "==> Creating Kafka topics"
     _create_kafka_topics || return 1
@@ -108,10 +114,10 @@ create_infra() {
     _install_zookeeper || return 1
 
     echo "==> Validating infrastructure"
-    [ "$validate" == false ] || validate_infra $@
+    [[ "$validate" == false ]] || validate_infra $@
 }
 
-_initialize_terraform_backend(){
+_initialize_terraform_backend() {
     local region=$1
     if [[ ! -f ${data_dir}/backend.tfvars ]] ; then
         local account_id=$(aws sts get-caller-identity | jq -r '.Account') || return 1
@@ -224,8 +230,35 @@ _install_kubeflow_operators() {
     return 0
 }
 
+_init_service_account() {
+    echo "-> Initializing service account for helm"
+    ${kubectl} apply -f ${project_dir}/baictl/helm/
+}
+
+_init_helm() {
+    _init_service_account || return 1
+    ${helm} init --upgrade --history-max 200 --wait --service-account tiller || return 1
+    echo "-> Updating helm"
+    ${helm} repo update || return 1
+}
+
+_install_grafana() {
+    ${helm} upgrade --install grafana \
+        --namespace ${tiller_namespace} \
+        --set rbac.pspEnabled=false \
+        --set rbac.create=false \
+        --set service.type=LoadBalancer \
+        --wait \
+        stable/grafana || return 1
+}
+
+_destroy_helm_charts() {
+    echo "-> Destroying helm charts:\n$(helm ls --short)\n"
+    ${helm} delete $(${helm} ls --short) --purge || return 1
+}
+
 _install_zookeeper(){
-    $kubectl apply -f $k8s_deploy_dir/zookeeper.yaml || return 1
+    ${kubectl} apply -f ${k8s_deploy_dir}/zookeeper.yaml || return 1
 }
 
 destroy_infra() {
@@ -237,18 +270,23 @@ destroy_infra() {
         esac
     done
 
-    cd $terraform_dir
+    cd ${terraform_dir}
 
-    if [ -n "$region" ]; then
+    if [[ -n "$region" ]]; then
         vars="${vars} -var region=${region} -var data_dir=${data_dir}"
     else
         printf "Missing required argument --aws-region\n" && return 1
     fi
 
+    echo "==> Destroying helm charts"
+    _destroy_helm_charts || return 1
+
     _install_msk_aware_terraform_plugin || return 1
 
     _initialize_terraform_backend ${region} || return 1
     terraform destroy -auto-approve ${vars}
+
+
 }
 
 get_infra() {
@@ -276,26 +314,26 @@ get_infra() {
     printf "\n----------\n"
 }
 
-__validate_crd(){
+__validate_crd() {
     local type=$1
     local namespace=$2
 
     local kind
     kind=$($kubectl get crd "${type}" --namespace "${namespace}" --output=json | jq .kind --raw-output)
-    [ "$kind" == "CustomResourceDefinition" ] || return 1
+    [[ "$kind" == "CustomResourceDefinition" ]] || return 1
 }
 
-__validate_mpi_job(){
+__validate_mpi_job() {
     printf "MPI Job is present"
     __validate_crd mpijobs.kubeflow.org "$kubeflow_namespace"
 }
 
-__validate_mxnet_job(){
+__validate_mxnet_job() {
     printf "MXNET Job is present"
     __validate_crd mxjobs.kubeflow.org "$kubeflow_namespace"
 }
 
-__validate_kafka_topics(){
+__validate_kafka_topics() {
     printf "Kafka Topics are present"
 
     (
@@ -313,15 +351,31 @@ __validate_kafka_topics(){
     )
 }
 
-__validate_zookeeper_pods(){
+__validate_zookeeper_pods() {
     printf "ZooKeeper is ready"
     $kubectl wait --for=condition=ready pod --selector=app=zookeeper --timeout=300s > /dev/null || return 1
 }
 
-validate_infra(){
-    local all_ok=true
+__validate_grafana() {
+    printf "Grafana is ready"
+    password=$(
+        ${kubectl} get secret --namespace tiller-world grafana -o jsonpath="{.data.admin-password}" | base64 --decode
+    )
+    host=$(
+        ${kubectl} get svc grafana --namespace tiller-world -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+    )
+    curl http://admin:${password}@${host}:80/api/health || return 1
+}
 
-    local rules=(__validate_mpi_job __validate_mxnet_job __validate_kafka_topics __validate_zookeeper_pods)
+validate_infra() {
+    local all_ok=true
+    local rules=(
+        __validate_mpi_job \
+        __validate_mxnet_job \
+        __validate_kafka_topics \
+        __validate_zookeeper_pods \
+        __validate_grafana
+    )
 
     for rule in "${rules[@]}"; do
         local result=true
@@ -329,9 +383,10 @@ validate_infra(){
 
         printf "..."
 
-        [ "$result" == false ] && printf "FAILED\n" && all_ok=false || printf "PASSED\n"
+        [[ "$result" == false ]] && printf "FAILED\n" && all_ok=false || printf "PASSED\n"
     done
-    [ "$all_ok" == true ] || return 1
+
+    [[ "$all_ok" == true ]] || return 1
 }
 
 get_benchmark() {
@@ -497,17 +552,20 @@ for arg in "$@"; do
     esac
 done
 
-mkdir -p $data_dir
+mkdir -p ${data_dir}
 
-data_dir=$(realpath $data_dir)
-kubeconfig=$(realpath $data_dir/kubeconfig)
-kube_config_arg=--kubeconfig=$kubeconfig
+data_dir=$(realpath ${data_dir})
+kubeconfig=$(realpath ${data_dir}/kubeconfig)
+kube_config_arg=--kubeconfig=${kubeconfig}
 kubectl="kubectl ${kube_config_arg}"
+tiller_namespace="tiller-world"
+helm_config_arg="${kube_config_arg} --tiller-namespace ${tiller_namespace}"
+helm="helm ${helm_config_arg}"
 terraform_dir=$(dirname $BASH_SOURCE)/cluster
-terraform_plan=$data_dir/terraform.plan
+terraform_plan=${data_dir}/terraform.plan
 
-terraform_dir=$(realpath $terraform_dir)
-terraform_plan=$(realpath $terraform_plan)
+terraform_dir=$(realpath ${terraform_dir})
+terraform_plan=$(realpath ${terraform_plan})
 
 project_dir=$(realpath $(dirname $BASH_SOURCE)/../../..)
 k8s_deploy_dir=$(realpath $(dirname $BASH_SOURCE))/deploy
