@@ -56,6 +56,8 @@ spec:
             value: "BAI_APP_FETCHER"
           - name: PRODUCER_TOPIC
             value: "BAI_APP_EXECUTOR"
+          - name: STATUS_TOPIC
+            value: "BAI_APP_STATUS"
           - name: LOGGING_LEVEL
             value: "INFO"
           - name: KUBECTL
