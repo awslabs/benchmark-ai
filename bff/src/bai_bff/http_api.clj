@@ -20,7 +20,49 @@
 ;; To post a descriptor file do the following at the command line
 ;; %>curl --data-binary "@testfile.toml" http://localhost:8080/api/job/descriptor?name=gavin
 
+;;----------------------
+;; Action Functions
+;;----------------------
 
+(defn submit-job [request body]
+  (try
+    (let [body-string (slurp body)]
+      (log/debug "Printing request")
+      (log/debug request)
+      (log/debug "Body recieved is")
+      (log/debug body-string)
+      (log/debug "message body is now an event...")
+      (let [event (events/message->submit-descriptor-event
+                   request
+                   (json/parse-string body-string true))
+            json-event (json/generate-string event {:pretty true})]
+        (log/debug event)
+        (log/info json-event)
+        (>!! @eventbus/send-event-channel-atom [(:client_id event) json-event])
+        (created (:action_id event))))
+    (catch Exception e
+      (log/error "Could Not Parse Descriptor Input")
+      (bad-request "Could Not Parse Submitted Descriptor"))))
+
+(defn delete-job [request body action-id]
+  (try
+    (let [body-string (slurp body)]
+      (log/debug "Printing request")
+      (log/debug request)
+      (log/debug "Body recieved is")
+      (log/debug body-string)
+      (log/debug "message body is now an event...")
+      (let [event (events/message->cmd-event
+                   request
+                   (json/parse-string body-string true))
+            json-event (json/generate-string event {:pretty true})]
+        (log/debug event)
+        (log/info json-event)
+        (>!! @eventbus/send-event-channel-atom [(:client_id event) json-event])
+        (created (:action_id event))))
+    (catch Exception e
+      (log/error "Could Not Parse Descriptor Input")
+      (bad-request "Could Not Parse Submitted Descriptor"))))
 
 ;;----------------------
 ;; Misc Helper functions...
@@ -59,25 +101,7 @@
            (defroutes job-routes
              (GET  "/" [] (response (eventbus/get-all-jobs))) ;;TODO - remove this in production...? implement me
              (POST "/" {body :body :as request} (post-proc-results (log/info (pprint request)) #_(create-job body)));TODO - implement me
-             (POST "/descriptor" {body :body :as request} ((fn [request body]
-                                                             (try
-                                                               (let [body-string (slurp body)]
-                                                                 (log/debug "Printing request")
-                                                                 (log/debug request)
-                                                                 (log/debug "Body recieved is")
-                                                                 (log/debug body-string)
-                                                                 (log/debug "message body is now an event...")
-                                                                 (let [event (events/message->event
-                                                                              request
-                                                                              (json/parse-string body-string true))
-                                                                       json-event (json/generate-string event {:pretty true})]
-                                                                   (log/debug event)
-                                                                   (log/info json-event)
-                                                                   (>!! @eventbus/send-event-channel-atom [(:client_id event) json-event])
-                                                                   (created (:action_id event))))
-                                                               (catch Exception e
-                                                                 (log/error "Could Not Parse Descriptor Input")
-                                                                 (bad-request "Could Not Parse Submitted Descriptor")))) request body))
+             (POST "/descriptor" {body :body :as request} (submit-job request body))
              (context "/:client-id" [client-id]
                       (defroutes client-routes
                         (GET    "/" [] (post-proc-results (eventbus/get-all-client-jobs client-id)))
@@ -85,7 +109,7 @@
                       (context "/:action-id" [action-id]
                                (defroutes action-routes
                                  (GET    "/" [] (post-proc-results (eventbus/get-all-client-jobs-for-action client-id action-id)))
-                                 (DELETE "/" [] (post-proc-results (log/info "delete-job")#_(delete-job action-id)))))) )) ;TODO - implement me
+                                 (DELETE "/" {body :body :as request} (delete-job request body action-id))))))) ;
   (ANY "*" []
        (route/not-found (slurp (io/resource "404.html")))))
 

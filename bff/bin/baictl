@@ -122,37 +122,8 @@ check_version() {
 # Event Construction
 #---------------------------------------------------------
 
-_generate_command_event() {
-    local action_id=${1?"generate_command_event() -> You MUST supply the action id as the first argument to this function"}
-    shift
-    local command=${1}
-    shift
-    local command_args=(${@})
-
-    #echo "Number of args is ${#command_args[@]}"
-    local command_args_strings=$(sed 's/.$//g' <<< $(for item in ${command_args[@]}; do echo -n "\""${item}"\","; done))
-    #echo "The args as strings are:${command_args_strings}"
-
-    local event=$(cat <<-EOF
-{
-    "message_id" : "$(uuidgen)",
-    "client_id"  : "$(get_client_id)",
-    "client_version" : "${VERSION}",
-    "client_sha1"    : "${MY_SHA1}",
-    "client_username" : "$(whoami)",
-    "date" : "$(date -u +"%a %b %d %H:%M:%S %Z %Y")",
-    "visited"  : [{"svc" : "${SERVICE_NAME}", "tstamp" : 1557150931877, "version" :"${VERSION}"}],
-    "type" : "CMD_SUBMIT",
-    "payload"  : {
-        "command" : "${command}",
-        "args" : [${command_args_strings}]
-    }
-}
-EOF
-          )
-    jq '.' <<< ${event}
-}
-
+# TODO - Make a proper time stamp here for tstamp
+# TODO - Also, look at changing the formulation of client_id to just be the user's hashed email
 _generate_submit_event() {
     local descriptor_filename=${1?"generate_submit_event() -> You MUST supply a descriptor file as first argument to this function"}
     local event=$(cat <<-EOF
@@ -176,6 +147,39 @@ EOF
           )
     jq '.' <<< ${event}
 }
+
+# TODO - Make a proper time stamp here for tstamp
+# TODO - Also, look at changing the formulation of client_id to just be the user's hashed email
+_generate_command_event() {
+    local action_id=${1?"generate_command_event() -> You MUST supply the action id as the first argument to this function"}
+    shift
+    local command=${1}
+    shift
+    local command_args=(${@})
+
+    #echo "Number of args is ${#command_args[@]}"
+    local command_args_strings=$(sed 's/.$//g' <<< $(for item in ${command_args[@]}; do echo -n "\""${item}"\","; done))
+    #echo "The args as strings are:${command_args_strings}"
+
+    local event=$(cat <<-EOF
+{
+    "message_id" : "$(uuidgen)",
+    "client_id"  : "$(get_client_id)",
+    "client_version" : "${VERSION}",
+    "client_sha1"    : "${MY_SHA1}",
+    "client_username" : "$(whoami)",
+    "date" : "$(date -u +"%a %b %d %H:%M:%S %Z %Y")",
+    "visited"  : [{"svc" : "${SERVICE_NAME}", "tstamp" : 1557150931877, "version" :"${VERSION}"}],
+    "payload"  : {
+        "command" : "${command}",
+        "args" : [${command_args_strings}]
+    }
+}
+EOF
+          )
+    jq '.' <<< ${event}
+}
+
 #---------------------------------------------------------
 
 upgrade() {
@@ -250,7 +254,7 @@ abort_submission() {
 
     local data=$(_generate_command_event ${action_id} "cancel" $*)
     if [[ -n "${data}" ]]; then
-        cmd="curl -s -X POST -H Content-Type: application/json -d '"${data}"' http://"${current_service_endpoint}"/api/job/$(get_client_id)/${action_id}"
+        cmd="curl -s -X DELETE -H Content-Type: application/json -d '"${data}"' http://"${current_service_endpoint}"/api/job/$(get_client_id)/${action_id}"
         ((VERBOSE)) && echo ${cmd}
         eval ${cmd}
     else
