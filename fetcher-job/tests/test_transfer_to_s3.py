@@ -1,15 +1,13 @@
-from pycurl import Curl
-
 import pytest
 from pytest import fixture
 from typing import TextIO
-from unittest.mock import Mock, patch, MagicMock, create_autospec
+from unittest.mock import create_autospec
 
 import benchmarkai_fetcher_job
 from benchmarkai_fetcher_job.failures import HttpServerError, HttpClientError, InvalidDigestError
-from benchmarkai_fetcher_job.transfer_to_s3 import transfer_to_s3
 from benchmarkai_fetcher_job.md5sum import DigestPair
 from benchmarkai_fetcher_job.s3_utils import S3Object
+from benchmarkai_fetcher_job.transfer_to_s3 import transfer_to_s3, DownloadCallback
 
 S3DST = S3Object("bucket", "key")
 
@@ -73,21 +71,17 @@ def mock_calculate_md5_and_etag(mocker):
 
 @fixture
 def mock_successful_download(mocker):
-    return mocker.patch.object(benchmarkai_fetcher_job.transfer_to_s3, "http_download", autospec=True)
+    return mocker.create_autospec(DownloadCallback)
 
 
 @fixture
 def mock_client_error_download(mocker):
-    return mocker.patch.object(
-        benchmarkai_fetcher_job.transfer_to_s3, "http_download", autospec=True, side_effect=HttpClientError()
-    )
+    return mocker.create_autospec(DownloadCallback, side_effect=HttpClientError())
 
 
 @fixture
 def mock_server_error_download(mocker):
-    return mocker.patch.object(
-        benchmarkai_fetcher_job.transfer_to_s3, "http_download", autospec=True, side_effect=HttpServerError()
-    )
+    return mocker.create_autospec(DownloadCallback, side_effect=HttpServerError())
 
 
 def test_success(

@@ -1,6 +1,6 @@
 import hashlib
 
-from typing import TextIO, Tuple, NamedTuple
+from typing import TextIO, NamedTuple
 
 S3_MAX_CHUNK = 8 * 1024 * 1024
 

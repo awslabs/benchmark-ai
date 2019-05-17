@@ -4,7 +4,6 @@ import tempfile
 from typing import Optional, TextIO, Callable
 
 from benchmarkai_fetcher_job.failures import InvalidDigestError
-from benchmarkai_fetcher_job.http_utils import http_download
 from benchmarkai_fetcher_job.md5sum import calculate_md5_and_etag, DigestPair
 from benchmarkai_fetcher_job.s3_utils import (
     S3Object,

@@ -25,12 +25,12 @@ ZK_ENSEMBLE = "Z1"
 
 @fixture
 def mock_http_to_s3(mocker):
-    return mocker.patch.object(fetcher, "http_to_s3")
+    return mocker.patch.object(fetcher, "http_to_s3", autospec=True)
 
 
 @fixture
 def mock_s3_to_s3(mocker):
-    return mocker.patch.object(fetcher, "s3_to_s3")
+    return mocker.patch.object(fetcher, "s3_to_s3", autospec=True)
 
 
 @fixture

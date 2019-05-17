@@ -1,7 +1,5 @@
-import boto3
-import botocore
 from typing import TextIO
-from unittest.mock import Mock, patch, create_autospec, MagicMock
+from unittest.mock import patch, create_autospec, MagicMock, ANY
 
 from benchmarkai_fetcher_job import s3_utils
 from benchmarkai_fetcher_job.s3_utils import S3Object, upload_to_s3
@@ -25,4 +23,4 @@ def test_upload_to_s3_pass_through(mock_boto3):
 
     upload_to_s3(file, S3OBJECT)
 
-    s3client.upload_fileobj.assert_called_with(file, S3OBJECT.bucket, S3OBJECT.key)
+    s3client.upload_fileobj.assert_called_with(file, S3OBJECT.bucket, S3OBJECT.key, Callback=ANY)

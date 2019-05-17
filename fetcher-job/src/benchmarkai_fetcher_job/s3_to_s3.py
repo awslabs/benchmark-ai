@@ -6,6 +6,8 @@ from benchmarkai_fetcher_job.transfer_to_s3 import transfer_to_s3
 
 # Initial version of the folder transfer, that lacks validation
 # TODO Implement Merkl-tree or something like that
+
+
 def s3_to_s3_deep(src: S3Object, dst: S3Object):
     s3 = boto3.resource("s3")
     old_bucket = s3.Bucket(src.bucket)

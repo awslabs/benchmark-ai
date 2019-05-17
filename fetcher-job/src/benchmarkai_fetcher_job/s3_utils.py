@@ -73,7 +73,7 @@ class ProgressCallback:
 
     def __call__(self, transferred):
         self.transferred_total += transferred
-        print(f"{self.transferred_total} bytes transferred")
+        logger.info(f"{self.transferred_total} bytes transferred")
 
 
 def download_from_s3(fp: TextIO, src: str):

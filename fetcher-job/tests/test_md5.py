@@ -1,7 +1,6 @@
 import pytest
-from pytest import fixture
 from typing import TextIO
-from unittest.mock import Mock, create_autospec
+from unittest.mock import create_autospec
 
 from benchmarkai_fetcher_job.md5sum import calculate_md5_and_etag, DigestPair
 
