@@ -1,14 +1,11 @@
 import dataclasses
 
-import dataclasses
-
 import kubernetes
 from kubernetes.client import V1Job
 from pytest import fixture, mark
 
 from bai_kafka_utils.events import DataSet, BenchmarkEvent
 from fetcher_dispatcher import kubernetes_client
-
 from fetcher_dispatcher.args import FetcherJobConfig
 from fetcher_dispatcher.kubernetes_client import KubernetesDispatcher
 

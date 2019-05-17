@@ -7,7 +7,7 @@ spec:
     spec:
       containers:
         - name: it
-          image: stsukrov/fetcher-it
+          image: benchmarkai/fetcher-it
           imagePullPolicy: Always
           env:
             - name: S3_DATASET_BUCKET
@@ -35,6 +35,11 @@ spec:
                 configMapKeyRef:
                   name: fetcher-dispatcher
                   key: job_node_selector
+            - name: FETCHER_JOB_PULL_POLICY
+              valueFrom:
+                configMapKeyRef:
+                  name: fetcher-dispatcher
+                  key: pull_policy
             - name: CONSUMER_GROUP_ID
               value: common-it-to-salt
             - name: CONSUMER_TOPIC

@@ -36,6 +36,7 @@ def get_benchmark_event(src: str):
         tstamp=42,
         visited=[],
         payload=payload,
+        type="TYPE",
     )
 
 

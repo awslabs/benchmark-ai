@@ -1,4 +1,4 @@
-DOCKER_IMAGE_TAG = stsukrov/fetcher-it
+PROJECT = fetcher-it
 ENV_NAME = fetcherit
 
 BENCHMARK_DIR=../..

@@ -32,7 +32,10 @@ ZK_CLI=zkCli.sh
 
 if [[ ${SRC} == *"delay"* ]]; then
     echo "Simulating delay"
-    sleep 10s
+    DELAY="10"
+    [[ ${SRC} =~ delay=([0-9]+) ]] && echo ${BASH_REMATCH} && DELAY=${BASH_REMATCH[1]}
+    echo "Will sleep for ${DELAY}s"
+    sleep ${DELAY}s
 fi
 
 RESULT="DONE"

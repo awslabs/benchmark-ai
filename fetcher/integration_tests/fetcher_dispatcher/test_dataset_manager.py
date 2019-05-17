@@ -17,6 +17,7 @@ BENCHMARK_EVENT = BenchmarkEvent(
     tstamp=42,
     visited=[],
     payload="DONTCARE",
+    type="DONTCARE",
 )
 
 

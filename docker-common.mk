@@ -9,7 +9,8 @@ DOCKERHUB_ORG = benchmarkai
 DOCKER_REPOSITORY = $(DOCKERHUB_ORG)/$(PROJECT)
 
 COMMIT_SHORT_HASH := $(shell git rev-parse --short HEAD)
-DOCKER_IMAGE_TAG = $(DOCKER_REPOSITORY):$(COMMIT_SHORT_HASH)
+DOCKER_IMAGE_LABEL ?= $(COMMIT_SHORT_HASH)
+DOCKER_IMAGE_TAG = $(DOCKER_REPOSITORY):$(DOCKER_IMAGE_LABEL)
 
 # package is a high level command while docker_package can be executed separately
 package: build docker_package
