@@ -1,6 +1,6 @@
 import os
 import configargparse
-from benchmarkai_metrics_pusher.backends import BACKENDS
+from bai_metrics_pusher.backends import BACKENDS
 from dataclasses import dataclass
 from typing import Optional, Dict
 

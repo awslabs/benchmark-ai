@@ -1,2 +1,2 @@
 def test_import():
-    import benchmarkai_metrics_pusher
+    import bai_metrics_pusher
