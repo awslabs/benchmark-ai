@@ -3,7 +3,7 @@ import itertools
 
 import ruamel.yaml as yaml
 
-from typing import Dict
+from typing import Dict, Any
 
 # Using the official Kubernetes Model classes (https://github.com/kubernetes-client/python) is avoided here
 # because it presents some problems:
@@ -183,7 +183,7 @@ class ConfigTemplate:
         self._yaml_template_contents = yaml_template_contents
         self._variables = {}
 
-    def feed(self, variables: Dict[str, str]):
+    def feed(self, variables: Dict[str, Any]):
         self._variables.update(variables)
 
     def build(self):

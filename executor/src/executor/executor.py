@@ -33,7 +33,7 @@ class ExecutorEventHandler(KafkaServiceCallback):
         fetched_data_sources = event.payload.datasets
         job_id = event.action_id
 
-        yaml = create_job_yaml_spec(descriptor_contents, self.executor_config, fetched_data_sources, job_id)
+        yaml = create_job_yaml_spec(descriptor_contents, self.executor_config, fetched_data_sources, job_id, event)
 
         try:
             self._kubernetes_apply(yaml)

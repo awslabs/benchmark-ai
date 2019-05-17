@@ -23,11 +23,11 @@ spec:
       - name: data-puller
       containers:
       - name: benchmark
-        image: {docker_image}
+        image: {descriptor.docker_image}
         command: []
         args: []
         securityContext:
-          privileged: {privileged}
+          privileged: {descriptor.privileged}
         env:
         - name: BENCHMARK_AI
           value: "fifo"
@@ -66,7 +66,7 @@ spec:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
       nodeSelector:
-        beta.kubernetes.io/instance-type: {instance_type}
+        beta.kubernetes.io/instance-type: {descriptor.instance_type}
         node.type: bai-worker
         failure-domain.beta.kubernetes.io/zone: {availability_zone}
       restartPolicy: Never
