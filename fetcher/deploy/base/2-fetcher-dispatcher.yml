@@ -29,7 +29,8 @@ spec:
       containers:
         - name: fetcher-dispatcher
           imagePullPolicy: Always
-          image: stsukrov/fetcher-dispatcher
+          # TODO: We shouldn't use the :latest tag but the commit short sha
+          image: benchmarkai/fetcher-dispatcher:latest
           env:
             - name: FETCHER_JOB_IMAGE
               valueFrom:

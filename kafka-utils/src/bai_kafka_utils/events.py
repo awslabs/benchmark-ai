@@ -78,6 +78,7 @@ class BenchmarkEvent:
     authenticated: bool
     tstamp: int
     visited: List[VisitedService]
+    type: str
     payload: Any
 
 

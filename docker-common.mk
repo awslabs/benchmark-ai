@@ -5,7 +5,13 @@ KUBECTL = $(DEPLOY_CONDA_RUN) kubectl
 
 BENCHMARK_DIR ?= ..
 
-#package is a high level commandm while docker_package can be executed separately
+DOCKERHUB_ORG = benchmarkai
+DOCKER_REPOSITORY = $(DOCKERHUB_ORG)/$(PROJECT)
+
+COMMIT_SHORT_HASH := $(shell git rev-parse --short HEAD)
+DOCKER_IMAGE_TAG = $(DOCKER_REPOSITORY):$(COMMIT_SHORT_HASH)
+
+# package is a high level command while docker_package can be executed separately
 package: build docker_package
 
 _pre_docker_package::
@@ -22,11 +28,11 @@ docker_package: _post_docker_package
 publish: package docker_publish
 
 docker_publish: docker_package
+	echo "Publishing $(DOCKER_IMAGE_TAG)"
 	[[ "$(STAGE)" == "local" ]] && echo "Skipping local publishing step - use local docker repo" || $(DOCKER) push $(DOCKER_IMAGE_TAG)
 
 _deploy_venv:
 	conda env update --file $(BENCHMARK_DIR)/deploy-environment.yml --prune --name $(DEPLOY_ENV_NAME)
-
 
 deploy: publish k8s_deploy
 
@@ -36,7 +42,7 @@ undeploy: k8s_undeploy
 # K8S deploy/undeploy
 #---------------------
 define fn_k8s_deploy
-	$(KUBECTL) apply -f ./deploy $(KUBECTL_FLAGS)
+	find ./deploy -name '*.yml' -exec sh -c "sed 's|@@DOCKER_IMAGE_TAG@@|$(DOCKER_IMAGE_TAG)|g' {} | $(KUBECTL) apply $(KUBECTL_FLAGS) -f -" \;
 endef
 
 define fn_k8s_undeploy

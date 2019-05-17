@@ -28,7 +28,7 @@ spec:
               topologyKey: kubernetes.io/hostname
       containers:
         - name: watcher
-          image: edisongustavo/watcher
+          image: @@DOCKER_IMAGE_TAG@@
           env:
             - name: KAFKA_BOOTSTRAP_SERVERS
               valueFrom:

@@ -2,7 +2,7 @@ ENV_NAME = fetcher
 
 include ../python-common.mk
 
-DOCKER_IMAGE_TAG=stsukrov/fetcher-dispatcher
+PROJECT=fetcher-dispatcher
 
 include ../docker-common.mk
 
@@ -10,9 +10,6 @@ STAGE ?= devo
 
 _post_venv::
 	$(PIP) install -r requirements.txt
-
-_docker_package:
-	$(DOCKER) build $(BENCHMARK_DIR) -f $(BENCHMARK_DIR)/Dockerfile-fetcher -t $(DOCKER_IMAGE_TAG)
 
 .PHONY: integration_tests
 
@@ -33,3 +30,11 @@ override define fn_k8s_undeploy
 endef
 
 
+# HACK: Overriding also package and publish because the sed approach to automatically replace tags is difficult
+# to use here due to the Kustomize-ness
+_docker_package: _pre_docker_package
+	$(DOCKER) build $(BENCHMARK_DIR) -f $(BENCHMARK_DIR)/Dockerfile-$(PROJECT) -t $(DOCKER_REPOSITORY):latest
+
+docker_publish: docker_package
+	echo "Publishing $(DOCKER_REPOSITORY):latest"
+	$(DOCKER) push $(DOCKER_REPOSITORY):latest

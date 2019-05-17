@@ -18,7 +18,7 @@ strategy = "single_node"
 # 2. Environment
 [env]
 # Docker hub <hub-user>/<repo-name>:<tag> 
-docker_image = "edisongustavo/bai-benchmarks-hello-world:latest"
+docker_image = "benchmarkai/hello-world:latest"
 
 # 3. Machine learning related settings: 
 # dataset, benchmark code and parameters it takes
@@ -28,4 +28,4 @@ benchmark_code = "python3 hello-world.py"
 # 4. Output
 [output]
 # Define which metrics will be tracked in this benchmark
-metrics = ["throughput", "time"]
+metrics = ["epoch", "train_loss", "loss", "accuracy"]

@@ -1,5 +1,7 @@
 import dataclasses
 
+import dataclasses
+
 import kubernetes
 from kubernetes.client import V1Job
 from pytest import fixture, mark
@@ -26,6 +28,7 @@ BENCHMARK_EVENT = BenchmarkEvent(
     authenticated=False,
     tstamp=42,
     visited=[],
+    type="BAI_APP_BFF",
     payload="DONTCARE",
 )
 

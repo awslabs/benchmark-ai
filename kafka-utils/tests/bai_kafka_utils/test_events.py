@@ -24,6 +24,7 @@ def base_event_as_dict():
         "authenticated": True,
         "tstamp": 150000,
         "visited": [],
+        "type": "BAI_APP_BFF",
         "payload": {"toml": {"contents": {"name": "doc"}, "sha1": "sha1", "doc": "dst"}},
     }
 
