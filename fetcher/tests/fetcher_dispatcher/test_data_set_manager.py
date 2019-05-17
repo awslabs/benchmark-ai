@@ -1,17 +1,16 @@
-from kazoo.protocol.states import WatchedEvent, EventType, KeeperState
-from typing import NamedTuple, Any
 from unittest import mock
 
 import kazoo
 from kazoo.client import KazooClient
+from kazoo.protocol.states import WatchedEvent, EventType, KeeperState
 from pytest import fixture
+from typing import Any
 from unittest.mock import create_autospec
 
 from bai_kafka_utils.events import DataSet, BenchmarkEvent
 from bai_zk_utils.states import FetcherStatus, FetcherResult
 from bai_zk_utils.zk_locker import RWLockManager, OnLockCallback, RWLock
 from fetcher_dispatcher.data_set_manager import DataSetManager, DataSetDispatcher, DataSetOnDone
-
 
 SOME_PATH = "/some/path"
 

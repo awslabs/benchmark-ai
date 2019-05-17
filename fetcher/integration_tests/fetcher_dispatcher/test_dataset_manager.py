@@ -1,18 +1,11 @@
-import os
-
 import pytest
-from time import sleep
-
 from kazoo.client import KazooClient
 
 from bai_kafka_utils.events import BenchmarkEvent, DataSet
-from pytest import fixture
-
 from bai_zk_utils.zk_locker import DistributedRWLockManager
-from fetcher_dispatcher.args import FetcherJobConfig, FetcherServiceConfig
+from fetcher_dispatcher.args import FetcherServiceConfig
 from fetcher_dispatcher.data_set_manager import DataSetManager
 from fetcher_dispatcher.kubernetes_client import KubernetesDispatcher
-
 
 BENCHMARK_EVENT = BenchmarkEvent(
     action_id="ACTION_ID",

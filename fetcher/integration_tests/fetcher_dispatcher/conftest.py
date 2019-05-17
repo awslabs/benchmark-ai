@@ -1,16 +1,10 @@
-from time import time
 from random import randint
 
-from bai_kafka_utils.events import FetcherBenchmarkEvent
-
-from bai_kafka_utils.kafka_client import create_kafka_consumer, create_kafka_producer
 from kazoo.client import KazooClient
-
-from bai_kafka_utils.kafka_service_args import get_kafka_service_config
-
-from bai_kafka_utils.kafka_service import KafkaServiceConfig
 from pytest import fixture
 
+from bai_kafka_utils.kafka_service import KafkaServiceConfig
+from bai_kafka_utils.kafka_service_args import get_kafka_service_config
 from fetcher_dispatcher.args import get_fetcher_service_config, FetcherServiceConfig
 from fetcher_dispatcher.kubernetes_client import KubernetesDispatcher
 
