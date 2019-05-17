@@ -5,19 +5,19 @@ RUN conda update -n base -c conda-forge conda
 ######################
 # Infrequent changes #
 ######################
-# Create a conda environment to run the metrics-pusher
-COPY ./environment.yml /tmp/benchmarkai-metrics-pusher-environment.yml
-RUN conda env create -f /tmp/benchmarkai-metrics-pusher-environment.yml -p /opt/metrics-pusher
+COPY ./metrics-pusher/environment.yml /tmp/environment.yml
+
+RUN conda env create -f /tmp/environment.yml -p /opt/metrics-pusher
 
 ####################
 # Frequent changes #
 ####################
 
-# Get the metrics-pusher contents into the image
-RUN mkdir /home/metrics-pusher
-COPY . /home/metrics-pusher
-WORKDIR /home/metrics-pusher
-RUN /opt/metrics-pusher/bin/python setup.py install
+COPY . /data/benchmark-ai
+WORKDIR /data/benchmark-ai/metrics-pusher
+
+#RUN /opt/metrics-pusher/bin/pip install -r requirements.txt
+RUN /opt/metrics-pusher/bin/python3 setup.py install
 
 ########################################
 # Build the final image
