@@ -4,4 +4,4 @@ phases:
   build:
     commands:
       - cd bff
-      - make
+      - /bin/bash -c "make"
