@@ -13,7 +13,9 @@ class InputValue:
     backend_args: Dict[str, str]
 
 
-def get_input(argv) -> InputValue:
+def get_input(argv, environ=None) -> InputValue:
+    if environ is None:
+        environ = os.environ
     parser = configargparse.ArgumentParser(auto_env_var_prefix="", prog="bai-metrics-pusher")
     parser.add_argument("--backend", default="stdout", choices=list(BACKENDS.keys()))
     parser.add_argument("--pod-name")
@@ -23,9 +25,9 @@ def get_input(argv) -> InputValue:
 
     # TODO: These args should be parsed by the parser => https://github.com/MXNetEdge/benchmark-ai/issues/65
     backend_args = {}
-    for key, value in os.environ.items():
+    for key, value in environ.items():
         if key.startswith("BACKEND_ARG_"):
-            argname = key.lstrip("BACKEND_ARG_").lower()
+            argname = key[len("BACKEND_ARG_") :].lower()
             backend_args[argname] = value
 
     return InputValue(
