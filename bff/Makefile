@@ -266,7 +266,7 @@ build-deploy-container: dist
 	     -e 's|@@SVC_PORT@@|$(SVC_PORT)|g' $(DOCKER_TEMPLATE) > $(shell sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(DOCKER_TEMPLATE))
 	docker build -t $(DOCKER_REGISTRY)/$(PROJECT):$(DOCKER_TAG) \
 		     -t $(DOCKER_REGISTRY)/$(PROJECT):latest .
-	docker image ls | grep $(PROJECT)
+	docker image ls | grep $(DOCKER_TAG)
 
 
 publish-deploy-container: build-deploy-container
@@ -274,7 +274,6 @@ publish-deploy-container: build-deploy-container
 	@echo "Publishing container to registry... ($(PROFILE))"
 	@echo "------------------------"
 	docker push $(DOCKER_REGISTRY)/$(PROJECT):$(DOCKER_TAG)
-	docker push $(DOCKER_REGISTRY)/$(PROJECT):latest
 
 #----------------------------
 # CD Pipeline setup
