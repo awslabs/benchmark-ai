@@ -7,6 +7,7 @@ import signal
 from typing import Dict, Callable
 from json import JSONDecodeError
 from bai_metrics_pusher.backends import create_backend
+from bai_metrics_pusher.args import InputValue
 from bai_metrics_pusher.kubernetes_pod_watcher import start_kubernetes_pod_watcher
 
 
@@ -47,12 +48,7 @@ def listen_to_fifo_and_emit_metrics(emit: Callable[[Dict], None]):
             emit(metrics)
 
 
-def start_loop(metrics_pusher_input):
-    """
-    :type metrics_pusher_input: benchmarkai_metrics_pusher.input_values.InputValue
-    :param logger:
-    :return:
-    """
+def start_loop(metrics_pusher_input: InputValue):
     backend = create_backend(metrics_pusher_input.backend, **metrics_pusher_input.backend_args)
 
     class SigtermReceived(Exception):
