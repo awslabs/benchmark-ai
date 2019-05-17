@@ -28,7 +28,8 @@ spec:
               topologyKey: kubernetes.io/hostname
       containers:
         - name: fetcher-dispatcher
-          image: stsukrov/fetcher-dispatcher
+          # TODO: We shouldn't use the :latest tag but the commit short sha
+          image: benchmarkai/fetcher-dispatcher:latest
           env:
             - name: FETCHER_JOB_IMAGE
               valueFrom:
