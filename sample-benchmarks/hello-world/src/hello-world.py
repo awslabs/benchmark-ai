@@ -30,7 +30,7 @@ data = [
     {"epoch": 21, "train_loss": 0.006741, "loss": 0.116808, "accuracy": 0.974400},
     {"epoch": 22, "train_loss": 0.007437, "loss": 0.117510, "accuracy": 0.973900},
     {"epoch": 23, "train_loss": 0.006743, "loss": 0.108727, "accuracy": 0.977800},
-    {"epoch": 24, "train_loss": 0.005527, "loss": 0.133827, "accuracy": 0.972300}
+    {"epoch": 24, "train_loss": 0.005527, "loss": 0.133827, "accuracy": 0.972300},
 ]
 
 
