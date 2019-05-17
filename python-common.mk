@@ -57,7 +57,8 @@ test: develop
 coverage: develop
 	$(PYTEST) $(TEST_FLAGS) $(TEST_FOLDERS) $(COVERAGE_FLAGS)
 
-lint: venv
+lint: venv _lint
+_lint:
 	$(LINT) --config=$(BENCHMARK_DIR)/.flake8 $(SRC_FOLDERS)
 	$(LINT) --config=$(BENCHMARK_DIR)/.flake8 $(TEST_FOLDERS)
 	$(LINT) --config=$(BENCHMARK_DIR)/.flake8 $(INTEGRATION_TEST_FOLDERS)
@@ -72,5 +73,6 @@ _format:
 	$(FORMAT) $(FORMAT_FLAGS) setup.py
 	$(FORMAT) $(FORMAT_FLAGS) $(SRC_FOLDERS)
 	$(FORMAT) $(FORMAT_FLAGS) $(TEST_FOLDERS)
+	$(FORMAT) $(FORMAT_FLAGS) $(INTEGRATION_TEST_FOLDERS)
 
 default: install

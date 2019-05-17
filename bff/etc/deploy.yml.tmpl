@@ -18,7 +18,7 @@ spec:
         app: benchmark-ai
         service: @@PROJECT@@
         env: @@ENVIRONMENT@@
-        version: @@VERSION@@
+        tag: @@TAG@@
       annotations:
         benchmark-ai.@@PROJECT@@.git-tag: "@@REPO_SITE@@ @@TAG@@"
         benchmark-ai.@@PROJECT@@.docker-tag: "@@DOCKER_REGISTRY@@ @@DOCKER_TAG@@"
@@ -74,16 +74,12 @@ spec:
                   key: msk_bootstrap_brokers
             - name: KAFKA_SOURCE_TOPIC
               value: "@@KAFKA_SOURCE_TOPIC@@"
+            - name: KAFKA_CMD_RETURN_TOPIC
+              value: "@@KAFKA_CMD_RETURN_TOPIC@@"
             - name: KAFKA_CONSUMER_GROUP_ID
               value: "@@KAFKA_CONSUMER_GROUP_ID@@"
             - name: KAFKA_POLL_INTERVAL_MS
               value: "@@KAFKA_POLL_INTERVAL_MS@@"
-            - name: KAFKA_SINK_TOPIC
-              value: "@@KAFKA_SINK_TOPIC@@"
-            - name: KAFKA_CMD_SUBMIT_TOPIC
-              value: "@@KAFKA_CMD_SUBMIT_TOPIC@@"
-            - name: KAFKA_CMD_RETURN_TOPIC
-              value: "@@KAFKA_CMD_RETURN_TOPIC@@"
       nodeSelector:
         node.type: bai-services-cheap
       restartPolicy: Always

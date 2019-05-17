@@ -52,7 +52,7 @@
     (-> event
         (assoc-in [:visited] (conj (get-in event [:visited]) {:svc svc :tstamp (:tstamp event) :version VERSION :node (env :hostname)})))))
 
-(defn message->event
+(defn message->submit-descriptor-event
   "Takes a \"message\" from the client (as a keyword map), from the wild
   outside world, and turns it into a proper \"event\" that is
   augmented and dispatched through to the next hop in the system.
@@ -75,7 +75,27 @@
       :authenticated   authenticated                              ; <--
       :tstamp          tstamp
       :visited         (some-> message-body :visited)             ; <--
-      :payload         (some-> message-body :payload)}
+      :payload         (some-> message-body :payload)
+      :type            "BAI_APP_BFF"}
      (decode-document)
      (glean-dataset-info)
+     (add-my-visited-entry))))
+
+(defn message->cmd-event
+  [req message-body]
+  (let [tstamp (System/currentTimeMillis)
+        authenticated false] ;NOTE auth should have been taken care of by middleware.
+    (->
+     {:message_id      (uuid)                                     ; <--
+      :client_id       (some-> message-body :client_id)
+      :action_id       (uuid)                                     ; <--
+      :client_version  (some-> message-body :client_version)
+      :client_sha1     (some-> message-body :client_sha1)
+      :client_username (some-> message-body :client_username)
+      :date            (some-> message-body :date)
+      :authenticated   authenticated                              ; <--
+      :tstamp          tstamp
+      :visited         (some-> message-body :visited)             ; <--
+      :payload         (some-> message-body :payload)
+      :type            "CMD_SUBMIT"}
      (add-my-visited-entry))))

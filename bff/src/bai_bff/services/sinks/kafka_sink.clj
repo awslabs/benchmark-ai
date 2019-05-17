@@ -13,7 +13,6 @@
 
 (def kafka-keys
   #{:kafka-bootstrap-servers
-    :kafka-sink-topic
     ;:send-kafka  ; <-- this code's own flag for turning on and off kafka sending entirely
     ;:kafka-acks
     ;:kafka-retries
@@ -52,8 +51,8 @@
 
                              (reset! producer (KafkaProducer. kafka-config))
                              (while @started?
-                               (let [[client-id-key json-event-value] (<!! @send-event-channel-atom)]
-                                 (.send @producer (ProducerRecord. (env :kafka-sink-topic) (str client-id-key) (str json-event-value)))))
+                               (let [[client-id-key event] (<!! @send-event-channel-atom)]
+                                 (.send @producer (ProducerRecord. (:type event) (str client-id-key) (str(json/generate-string event))))))
                              (log/info "Shutdown Kafka producer (sender/sink)")
                              (.close @producer)
                              ))))
