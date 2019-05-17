@@ -26,7 +26,7 @@ GEN_DOCS_PATH := docs-generated
 #---
 #(note: may set VERSION variable in above stanza to override the default below, which gets it from the nearest git tag of the form v.#.#.#<blah>)
 VERSION ?= $(shell git tag | sed -n -e 's/^$(PROJECT).*-v\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p' | sort -s -u -t. -k1,1n -k2,2n -k3,3n | tail -n 1)
-TAG := $(shell git describe)
+TAG := $(PROJECT)-v$(VERSION)-$(shell git rev-list $(PROJECT)-v$(VERSION)..HEAD --count)-g$(shell git rev-parse --short HEAD)
 MODULE := $(shell git describe | sed -n 's/\(.*\)-[v]\?[0-9].*/\1/p' | xargs) #TODO: set tp docker container id
 BRANCH := $(shell git branch | grep '*' | sed -n 's/\*[ ]*//p' | xargs)
 COMMIT := $(shell git log -p -n1 | sed -n -e 's/^commit \(.*\)/\1/p'   | xargs)
