@@ -60,6 +60,13 @@ class ExecutorPayload(FetcherPayload):
 
 @dataclass_json
 @dataclass
+class CommandSubmitPayload:
+    command: str
+    args: Optional[List[str]]
+
+
+@dataclass_json
+@dataclass
 class VisitedService:
     svc: str
     tstamp: int
@@ -86,6 +93,33 @@ class BenchmarkEvent:
 @dataclass
 class FetcherBenchmarkEvent(BenchmarkEvent):
     payload: FetcherPayload
+
+
+@dataclass_json
+@dataclass
+class ExecutorBenchmarkEvent(BenchmarkEvent):
+    payload: ExecutorPayload
+
+
+@dataclass_json
+@dataclass
+class CommandSubmitEvent(BenchmarkEvent):
+    payload: CommandSubmitPayload
+
+
+@dataclass_json
+@dataclass
+class CommandReturnPayload:
+    return_code: int
+    return_value: Any
+    message: str
+    cmd_submit: CommandSubmitEvent
+
+
+@dataclass_json
+@dataclass
+class CommandReturnEvent(BenchmarkEvent):
+    payload: CommandReturnPayload
 
 
 @dataclass_json
@@ -184,3 +218,17 @@ def create_from_object(desired_class: Type[T], source_object, **overriden_fields
         return dacite.from_dict(data_class=desired_class, data=data)
     except dacite.WrongTypeError as e:
         raise ValueError from e
+
+
+def get_topic_event_type(topic: str):
+    topic_to_event_type = {
+        "BAI_APP_BFF": BenchmarkEvent,
+        "BAI_APP_FETCHER": FetcherBenchmarkEvent,
+        "BAI_APP_EXECUTOR": ExecutorBenchmarkEvent,
+        "BAI_APP_STATUS": StatusMessageBenchmarkEvent,
+        "CMD_SUBMIT": CommandSubmitEvent,
+        "CMD_RETURN": CommandReturnEvent,
+    }
+    if topic not in topic_to_event_type:
+        raise KeyError(f"Invalid topic {topic}")
+    return topic_to_event_type.get(topic)
