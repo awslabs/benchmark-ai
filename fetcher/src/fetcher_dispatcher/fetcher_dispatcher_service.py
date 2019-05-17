@@ -35,7 +35,7 @@ class FetcherEventHandler(KafkaServiceCallback):
 
         def execute(task: DataSet, callback) -> None:
 
-            task.dst = get_dataset_dst(task.src, self.s3_data_set_bucket)
+            task.dst = get_dataset_dst(task, self.s3_data_set_bucket)
 
             kafka_service.send_status_message_event(event, Status.PENDING, f"Dataset {task} sent to fetch")
 

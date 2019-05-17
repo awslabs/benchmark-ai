@@ -24,7 +24,8 @@ def get_lock_name(data_set: DataSet) -> str:
 class DataSetManager:
     @staticmethod
     def __get_node_path(data_set: DataSet) -> str:
-        return f"/data_sets/{md5sum(data_set.src)}"
+        # MD5 has impact on the node - so different locks etc.
+        return f"/data_sets/{md5sum(str(data_set))}"
 
     INITIAL_DATA = FetcherResult(FetcherStatus.PENDING).to_binary()
 

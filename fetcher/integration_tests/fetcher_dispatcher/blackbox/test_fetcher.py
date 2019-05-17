@@ -88,7 +88,9 @@ TIME_TO_REBALANCE = 10
 
 @pytest.mark.timeout(TIMEOUT_FOR_DOWNLOAD_SEC)
 @pytest.mark.parametrize(
-    "src,data_set_check", [(EXISTING_DATASET, successful_dataset), (FAILING_DATASET, failed_dataset)]
+    "src,data_set_check",
+    [(EXISTING_DATASET, successful_dataset), (FAILING_DATASET, failed_dataset)],
+    ids=["successful", "failing"],
 )
 def test_fetcher(
     kafka_producer_to_consume: KafkaProducer,

@@ -3,6 +3,8 @@ import abc
 from kazoo.client import KazooClient
 from typing import Callable, Any
 
+from bai_kafka_utils.utils import md5sum
+
 
 class RWLock(metaclass=abc.ABCMeta):
     @abc.abstractmethod
@@ -27,7 +29,7 @@ class RWLockManager(metaclass=abc.ABCMeta):
 
 
 def _str_path(state):
-    return str(state)
+    return md5sum(str(state))
 
 
 class DistributedLock(RWLock):
