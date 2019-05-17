@@ -12,6 +12,7 @@ from typing import List
 
 
 PULLER_S3_URI = "s3://puller-data/object-name/dir"
+JOB_ID = "JOB_ID"
 
 
 @pytest.mark.parametrize("filename", ["hello-world.toml", "training.toml", "horovod.toml", "cronjob.toml"])
@@ -23,10 +24,11 @@ def test_regressions(filename, shared_datadir, config_args, file_regression: Fil
     fetched_data_sources = generate_fetched_data_sources(descriptor_data)
     transpiler_config = create_executor_config(config_args)
 
-    yaml_spec, _ = create_job_yaml_spec(
+    yaml_spec = create_job_yaml_spec(
         descriptor_data,
         transpiler_config,
         fetched_data_sources,
+        JOB_ID,
         extra_bai_config_args=dict(random_object=random_object),
     )
 

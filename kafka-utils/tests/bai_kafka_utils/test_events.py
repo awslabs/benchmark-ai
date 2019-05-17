@@ -1,7 +1,5 @@
-import json
-
-import dacite
 import pytest
+import json
 
 from bai_kafka_utils.events import (
     DataSet,
@@ -148,5 +146,5 @@ def test_create_from_object_when_input_object_is_not_a_dataclass():
 
 
 def test_create_from_object_when_specifying_field_with_wrong_type(base_event):
-    with pytest.raises(dacite.WrongTypeError):
+    with pytest.raises(ValueError):
         create_from_object(FetcherBenchmarkEvent, base_event, payload="payload")

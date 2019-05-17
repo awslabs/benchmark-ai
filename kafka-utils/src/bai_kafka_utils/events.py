@@ -94,6 +94,54 @@ class ExecutorBenchmarkEvent(BenchmarkEvent):
 
 
 class Status(Enum):
+    """
+    The items of this Status enum translate into the status of the job of a specific "sub-section" of the pipeline.
+
+    For example: (this is not supposed to be a documentation on how services are behaving, it's just an example)
+
+        Let's say the full pipeline for jobs look like this:
+
+            BFF => Fetcher => Executor => Watcher
+
+        Then user "Joe" submits a benchmark:
+
+            => First service: `BFF`
+
+            1.1 - starts processing the request:
+                    - sends the status message: PENDING
+            1.2 - done processing the request
+                    - sends the status message: SUCCEEDED
+
+            => Next service: `Fetcher`
+
+            2.1 - starts processing the request:
+                    - sends the status message: PENDING
+            2.2 - done downloading all files:
+                    - sends the status message: SUCCEEDED
+
+            => Next service: `Executor`
+
+            3.1 - starts processing the request:
+                    - sends the status message: PENDING
+            3.2 - done processing the request:
+                    - sends the status message: SUCCEEDED
+
+            => Next service: `Watcher`
+
+            4.1 - starts processing the request:
+                    - sends the status message: PENDING
+            4.2 - notices that Kubernetes needs to spawn nodes:
+                    - sends the status message: INITIALIZING
+            4.3 - notices that the Pods are all executing the `init` containers:
+                    - sends the status message: INITIALIZING
+            4.4 - notices that the benchmark container at the Pods are all running:
+                    - sends the status message: RUNNING
+            4.5 - done processing the request:
+                    - sends the status message: SUCCEEDED
+
+    As can be noticed, each "service" will have its own notion of what each of these STATUS values mean.
+    """
+
     PENDING = "PENDING"
     RUNNING = "RUNNING"
     FAILED = "FAILED"
@@ -109,7 +157,7 @@ class StatusMessageBenchmarkEvent(BenchmarkEvent):
     Status events represent what the user will receive as the status of their benchmark.
 
     The messages should be thought to be "user-friendly" as to give insight to the user on what is happening inside BAI
-    regarding his benchmark.
+    regarding her benchmark.
     """
 
     message: str
@@ -131,4 +179,7 @@ def create_from_object(desired_class: Type[T], source_object, **overriden_fields
         raise ValueError("Source object is not a dataclass type, its type is {}".format(type(source_object)))
     data = dataclasses.asdict(source_object)
     data.update(overriden_fields)
-    return dacite.from_dict(data_class=desired_class, data=data)
+    try:
+        return dacite.from_dict(data_class=desired_class, data=data)
+    except dacite.WrongTypeError as e:
+        raise ValueError from e
