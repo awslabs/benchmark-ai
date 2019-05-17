@@ -4,3 +4,6 @@ channels:
   - defaults
 dependencies:
   - pytest
+  - pytest-cov
+  - pytest-mock
+  - freezegun
