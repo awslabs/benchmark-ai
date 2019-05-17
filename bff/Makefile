@@ -246,7 +246,8 @@ publish-dev-container:
 	@echo "------------------------"
 	@echo "Publishing development container..."
 	@echo "------------------------"
-	docker push $(DOCKER_REGISTRY)/$(PROJECT)-dev
+	docker push $(DOCKER_REGISTRY)/$(PROJECT)-dev:$(DOCKER_TAG)
+	docker push $(DOCKER_REGISTRY)/$(PROJECT)-dev:latest
 
 build-deploy-container: dist
 	@echo "------------------------"
@@ -272,7 +273,8 @@ publish-deploy-container: build-deploy-container
 	@echo "------------------------"
 	@echo "Publishing container to registry... ($(PROFILE))"
 	@echo "------------------------"
-	docker push $(DOCKER_REGISTRY)/$(PROJECT)
+	docker push $(DOCKER_REGISTRY)/$(PROJECT):$(DOCKER_TAG)
+	docker push $(DOCKER_REGISTRY)/$(PROJECT):latest
 
 #----------------------------
 # CD Pipeline setup
