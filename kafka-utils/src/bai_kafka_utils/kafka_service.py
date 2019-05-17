@@ -128,7 +128,9 @@ class KafkaService:
             res.append(entry)
             return res
 
-        event_to_send = dataclasses.replace(event, message_id=str(uuid.uuid4()), visited=add_self_to_visited(event))
+        event_to_send = dataclasses.replace(
+            event, message_id=str(uuid.uuid4()), type=topic, visited=add_self_to_visited(event)
+        )
         event_key = event_to_send.client_id
 
         logger.info(f"Sending {event_to_send} -> {topic}")

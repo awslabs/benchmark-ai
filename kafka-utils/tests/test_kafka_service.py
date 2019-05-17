@@ -69,6 +69,7 @@ def benchmark_event():
         authenticated=False,
         tstamp=42,
         visited=[],
+        type="BAI_APP_BFF",
         payload=payload,
     )
 
@@ -198,7 +199,7 @@ def test_message_sent(
     result_event = copy.deepcopy(benchmark_event)
     expected_event = copy.deepcopy(result_event)
 
-    mock_message_before_send(expected_event, mock_uuid4)
+    mock_message_before_send(expected_event, mock_uuid4, PRODUCER_TOPIC)
 
     mock_callback = Mock(spec=KafkaServiceCallback)
     mock_callback.handle_event = Mock(return_value=result_event)
@@ -255,11 +256,12 @@ def test_status_message_sent(
         Status.PENDING, f"{SERVICE_NAME} service, node {POD_NAME}: Processing event...", benchmark_event
     )
 
-    mock_message_before_send(expected_status_event, mock_uuid4)
+    mock_message_before_send(expected_status_event, mock_uuid4, STATUS_TOPIC)
 
     kafka_producer.send.assert_called_with(STATUS_TOPIC, value=expected_status_event, key=CLIENT_ID)
 
 
-def mock_message_before_send(status_event, mock_uuid4):
+def mock_message_before_send(status_event, mock_uuid4, topic):
     status_event.message_id = str(mock_uuid4())
     status_event.visited.append(VisitedService(SERVICE_NAME, tstamp=VISIT_TIME_MS, version=VERSION, node=POD_NAME))
+    status_event.type = topic

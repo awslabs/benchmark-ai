@@ -6,7 +6,6 @@ from unittest.mock import MagicMock, patch
 from bai_kafka_utils.events import (
     BenchmarkDoc,
     BenchmarkJob,
-    BenchmarkEvent,
     FetcherPayload,
     ExecutorPayload,
     DataSet,
@@ -43,21 +42,6 @@ def kafka_service() -> KafkaService:
 @fixture
 def benchmark_doc() -> BenchmarkDoc:
     return BenchmarkDoc({"var": "val"}, "var = val", sha1="123")
-
-
-@fixture
-def benchmark_event():
-    return BenchmarkEvent(
-        action_id="action_id",
-        message_id="MESSAGE_ID",
-        client_id="CLIENT_ID",
-        client_version="CLIENT_VERSION",
-        client_username="client_username",
-        authenticated=False,
-        tstamp=42,
-        visited=[],
-        payload=None,
-    )
 
 
 @fixture

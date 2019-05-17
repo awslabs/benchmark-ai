@@ -114,5 +114,6 @@ def benchmark_event(shared_datadir):
         authenticated=False,
         tstamp=42,
         visited=[],
+        type="BAI_APP_FETCHER",
         payload=payload,
     )
