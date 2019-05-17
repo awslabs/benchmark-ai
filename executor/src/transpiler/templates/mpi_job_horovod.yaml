@@ -23,7 +23,7 @@ metadata:
   labels:
     app: benchmark-ai
 spec:
-  replicas: {num_instances}
+  replicas: {descriptor.num_instances}
   template:
     spec:
       serviceAccountName: metrics-pusher
@@ -52,7 +52,7 @@ spec:
             fieldRef:
               fieldPath: metadata.labels['mpi_role_type']
       containers:
-      - image: {docker_image}
+      - image: {descriptor.docker_image}
         name: benchmark
         command: 
         - /bin/entrypoint.sh
@@ -65,7 +65,7 @@ spec:
           mountPath: /tmp/benchmark-ai
         resources:
           limits:
-            nvidia.com/gpu: {gpus_per_instance}
+            nvidia.com/gpu: {descriptor.gpus_per_instance}
         env:
         - name: BENCHMARK_AI
           value: "fifo"
@@ -108,6 +108,6 @@ spec:
       - name: benchmark-ai
         emptyDir: {{}}
       nodeSelector:
-        beta.kubernetes.io/instance-type: {instance_type}
+        beta.kubernetes.io/instance-type: {descriptor.instance_type}
         node.type: bai-worker
         failure-domain.beta.kubernetes.io/zone: {availability_zone}

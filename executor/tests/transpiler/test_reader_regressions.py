@@ -16,7 +16,7 @@ JOB_ID = "JOB_ID"
 
 
 @pytest.mark.parametrize("filename", ["hello-world.toml", "training.toml", "horovod.toml", "cronjob.toml"])
-def test_regressions(filename, shared_datadir, config_args, file_regression: FileRegressionFixture):
+def test_regressions(filename, shared_datadir, config_args, file_regression: FileRegressionFixture, benchmark_event):
     random_object = random.Random()
     random_object.seed(1)
 
@@ -30,6 +30,7 @@ def test_regressions(filename, shared_datadir, config_args, file_regression: Fil
         fetched_data_sources,
         JOB_ID,
         extra_bai_config_args=dict(random_object=random_object),
+        event=benchmark_event,
     )
 
     basename = os.path.splitext(filename)[0] + "-k8s-object"
