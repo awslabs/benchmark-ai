@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 print_unsupported_verb() {
     local object=$1
@@ -65,12 +65,12 @@ create_infra() {
     done
 
     #Temporary behavior
-    [ -z "$prefix_list_id" ] && printf "Missing required argument --aws-prefix-list-id\n" && return 1
-    [ -z "$region" ] && printf "Missing required argument --aws-region\n" && return 1
+    [[ -z "$prefix_list_id" ]] && printf "Missing required argument --aws-prefix-list-id\n" && return 1
+    [[ -z "$region" ]] && printf "Missing required argument --aws-region\n" && return 1
 
     _install_msk_aware_terraform_plugin || return 1
 
-    cd $terraform_dir
+    cd ${terraform_dir}
 
     local vars=""
 
@@ -243,17 +243,23 @@ _init_helm() {
 }
 
 _install_grafana() {
-    ${helm} upgrade --install grafana \
+    local ingress_security_group_id=$(
+        cd ${terraform_dir}
+        terraform output ingress_security_group_id
+    )
+    local values_file=${project_dir}/baictl/grafana-values.yaml
+
+    ${helm} upgrade grafana \
+        --install \
         --namespace ${tiller_namespace} \
-        --set rbac.pspEnabled=false \
-        --set rbac.create=false \
-        --set service.type=LoadBalancer \
+        --set service.annotations."service\.beta\.kubernetes\.io/aws-load-balancer-extra-security-groups"="${ingress_security_group_id}" \
+        --values ${values_file} \
         --wait \
         stable/grafana || return 1
 }
 
 _destroy_helm_charts() {
-    echo "-> Destroying helm charts:\n$(helm ls --short)\n"
+    echo "-> Destroying helm charts"
     ${helm} delete $(${helm} ls --short) --purge || return 1
 }
 
@@ -285,8 +291,10 @@ destroy_infra() {
 
     _initialize_terraform_backend ${region} || return 1
     terraform destroy -auto-approve ${vars}
+}
 
-
+_get_grafana() {
+    ${kubectl} get svc --namespace ${tiller_namespace} grafana -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
 }
 
 get_infra() {
@@ -308,6 +316,12 @@ get_infra() {
             ;;
         --aws-bastion-ip)
             terraform output bastion_public_ip
+            ;;
+        --grafana)
+            _get_grafana
+            ;;
+        --grafana-password)
+            ${kubectl} get secret --namespace ${tiller_namespace} grafana -o jsonpath="{.data.admin-password}" | base64 --decode
             ;;
         esac
     done
@@ -359,12 +373,14 @@ __validate_zookeeper_pods() {
 __validate_grafana() {
     printf "Grafana is ready"
     password=$(
-        ${kubectl} get secret --namespace tiller-world grafana -o jsonpath="{.data.admin-password}" | base64 --decode
+        ${kubectl} get secret --namespace ${tiller_namespace} grafana -o jsonpath="{.data.admin-password}" | base64 --decode
     )
     host=$(
-        ${kubectl} get svc grafana --namespace tiller-world -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+        ${kubectl} get svc grafana --namespace ${tiller_namespace} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
     )
-    curl http://admin:${password}@${host}:80/api/health || return 1
+
+    code=$(curl -s -o /dev/null -I -w "%{http_code}" http://admin:${password}@${host}:80/api/health)
+    [[ "${code}" == "200" ]] || return 1
 }
 
 validate_infra() {

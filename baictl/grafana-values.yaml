@@ -1,0 +1,6 @@
+rbac:
+  create: false
+  pspEnabled: false
+
+service:
+    type: LoadBalancer
