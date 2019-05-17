@@ -1,8 +1,8 @@
 FROM python:3-alpine
 
-RUN pip3 install benchmarkai-client-lib
-RUN mkdir /home/benchmark
+RUN mkdir -p /home/benchmark
 COPY src/ /home/benchmark
 WORKDIR /home/benchmark/
+RUN pip3 install -r requirements.txt
 
 CMD ["python3", "hello-world.py"]
