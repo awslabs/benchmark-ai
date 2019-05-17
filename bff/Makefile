@@ -53,7 +53,7 @@ MAIN_CLASS_FILE := $(COMPILE_PATH)/$(shell sed -e 's@\.@/@g' -e 's@-@_@g' <<<$(M
 #---
 # Continuous Delivery, Packaging and Containerization
 #---
-DOCKER_REGISTRY := gavin
+DOCKER_REGISTRY := benchmarkai
 DOCKER_TAG := $(VERSION)-$(COMMIT_SHORT_HASH)
 
 CD_SERVER := http://foo.bar.com/job/$(PROJECT)
