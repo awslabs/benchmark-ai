@@ -39,7 +39,7 @@ def http_download(fp: TextIO, src: str):
     try:
         curl.perform()
     except pycurl.error as e:
-        raise CurlError(e)
+        raise CurlError from e
 
     status = curl.getinfo(pycurl.HTTP_CODE)
     family = HTTPFamily.from_status(status)

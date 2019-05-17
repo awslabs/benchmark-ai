@@ -1,13 +1,14 @@
-from typing import List, Type
 from unittest import mock
 
 import kafka
 from kazoo.client import KazooClient
 from pytest import fixture
-from unittest.mock import MagicMock, patch, call, ANY
+from typing import List, Type
+from unittest.mock import patch, call, ANY, create_autospec
 
 from bai_kafka_utils.events import BenchmarkDoc, BenchmarkEvent, FetcherPayload, DataSet, FetcherBenchmarkEvent, Status
 from bai_kafka_utils.kafka_service import KafkaService, KafkaServiceConfig
+from bai_zk_utils.zk_locker import DistributedRWLockManager
 from fetcher_dispatcher import fetcher_dispatcher_service
 from fetcher_dispatcher.args import FetcherServiceConfig, FetcherJobConfig
 from fetcher_dispatcher.data_set_manager import DataSetManager
@@ -43,7 +44,7 @@ FETCHER_JOB_CONFIG = FetcherJobConfig(image=FETCHER_JOB_IMAGE, namespace=NAMESPA
 
 @fixture
 def data_set_manager() -> DataSetManager:
-    return MagicMock(spec=DataSetManager, autospec=True)
+    return create_autospec(DataSetManager)
 
 
 @fixture
@@ -55,8 +56,8 @@ def kafka_service(mocker) -> KafkaService:
         version="1.0",
         producer_topic=PRODUCER_TOPIC,
         callbacks=[],
-        kafka_consumer=mocker.MagicMock(spec=KafkaConsumer, autospec=True),
-        kafka_producer=mocker.MagicMock(spec=KafkaProducer, autospec=True),
+        kafka_consumer=mocker.create_autospec(KafkaConsumer),
+        kafka_producer=mocker.create_autospec(KafkaProducer),
         pod_name=POD_NAME,
         status_topic="STATUS_TOPIC",
     )
@@ -166,9 +167,10 @@ def validate_populated_dst(benchmark_event):
 
 def simulate_fetched_datasets(data_set_manager):
     for kall in data_set_manager.fetch.call_args_list:
-        args = kall[0]
+        args, _ = kall
         data_set = args[0]
-        on_done = args[1]
+        _ = args[1]  # Event
+        on_done = args[2]
         on_done(data_set)
 
 
@@ -178,12 +180,12 @@ def test_fetcher_cleanup(data_set_manager: DataSetManager):
     data_set_manager.stop.assert_called_once()
 
 
-@patch.object(fetcher_dispatcher_service, "create_data_set_manager")
-@patch.object(kafka, "KafkaProducer")
-@patch.object(kafka, "KafkaConsumer")
+@patch.object(fetcher_dispatcher_service, "create_data_set_manager", autospec=True)
+@patch.object(kafka, "KafkaProducer", autospec=True)
+@patch.object(kafka, "KafkaConsumer", autospec=True)
 def test_create_fetcher_dispatcher(mockKafkaConsumer, mockKafkaProducer, mock_create_data_set_manager):
 
-    mock_data_set_manager = MagicMock(spec=DataSetManager)
+    mock_data_set_manager = create_autospec(DataSetManager)
     mock_create_data_set_manager.return_value = mock_data_set_manager
 
     common_cfg = KafkaServiceConfig(
@@ -207,19 +209,25 @@ def test_create_fetcher_dispatcher(mockKafkaConsumer, mockKafkaProducer, mock_cr
     assert fetcher_service
 
 
-@patch.object(fetcher_dispatcher_service, "DataSetManager")
-@patch.object(fetcher_dispatcher_service, "KubernetesDispatcher")
-@patch.object(fetcher_dispatcher_service, "KazooClient")
-def test_create_data_set_manager(mockKazooClient, mockKubernetesDispatcher, mockDataSetManager):
-    mock_zk_client = MagicMock(spec=KazooClient)
-    mock_job_dispatcher = MagicMock(spec=KubernetesDispatcher)
+@patch.object(fetcher_dispatcher_service, "DistributedRWLockManager", autospec=True)
+@patch.object(fetcher_dispatcher_service, "DataSetManager", autospec=True)
+@patch.object(fetcher_dispatcher_service, "KubernetesDispatcher", autospec=True)
+@patch.object(fetcher_dispatcher_service, "KazooClient", autospec=True)
+def test_create_data_set_manager(
+    mockKazooClient, mockKubernetesDispatcher, mockDataSetManager, mockDistributedRWLockManager
+):
+    mock_zk_client = create_autospec(KazooClient)
+    mock_job_dispatcher = create_autospec(KubernetesDispatcher)
+    mock_lock_manager = create_autospec(DistributedRWLockManager)
 
     mockKazooClient.return_value = mock_zk_client
     mockKubernetesDispatcher.return_value = mock_job_dispatcher
+    mockDistributedRWLockManager.return_value = mock_lock_manager
 
     create_data_set_manager(ZOOKEEPER_ENSEMBLE_HOSTS, KUBECONFIG, FETCHER_JOB_CONFIG)
 
-    mockKazooClient.assert_called_with(ZOOKEEPER_ENSEMBLE_HOSTS)
-    mockKubernetesDispatcher.assert_called_with(KUBECONFIG, ZOOKEEPER_ENSEMBLE_HOSTS, FETCHER_JOB_CONFIG)
+    mockKazooClient.assert_called_once_with(ZOOKEEPER_ENSEMBLE_HOSTS)
+    mockKubernetesDispatcher.assert_called_once_with(KUBECONFIG, ZOOKEEPER_ENSEMBLE_HOSTS, FETCHER_JOB_CONFIG)
+    mockDistributedRWLockManager.assert_called_once_with(mock_zk_client, ANY, ANY)
 
-    mockDataSetManager.assert_called_with(mock_zk_client, mock_job_dispatcher)
+    mockDataSetManager.assert_called_once_with(mock_zk_client, mock_job_dispatcher, mock_lock_manager)

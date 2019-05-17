@@ -19,6 +19,8 @@ FORMAT_FLAGS = --line-length=120
 
 .DEFAULT_GOAL := default
 
+BENCHMARK_DIR ?= ..
+
 clean:
 	rm -rf build/
 	rm -rf dist/
@@ -37,7 +39,7 @@ _pre_venv::
 _venv: _pre_venv
 	conda env update --file environment.yml --prune --name $(ENV_NAME)
 	conda env update --file test-environment.yml --name $(ENV_NAME)
-	conda env update --file ../lint-environment.yml --name $(ENV_NAME)
+	conda env update --file $(BENCHMARK_DIR)/lint-environment.yml --name $(ENV_NAME)
 
 #Things to run after - extendable
 _post_venv::_venv
@@ -49,8 +51,6 @@ venv: _post_venv
 develop: venv
 	$(PYTHON) setup.py develop
 
-
-
 test: develop
 	$(PYTEST) $(TEST_FLAGS) $(TEST_FOLDERS)
 
@@ -58,8 +58,8 @@ coverage: develop
 	$(PYTEST) $(TEST_FLAGS) $(TEST_FOLDERS) $(COVERAGE_FLAGS)
 
 lint: venv
-	$(LINT) --config=../.flake8 $(SRC_FOLDERS)
-	$(LINT) --config=../.flake8 $(TEST_FOLDERS)
+	$(LINT) --config=$(BENCHMARK_DIR)/.flake8 $(SRC_FOLDERS)
+	$(LINT) --config=$(BENCHMARK_DIR)/.flake8 $(TEST_FOLDERS)
 
 build: clean lint coverage
 

@@ -58,6 +58,7 @@ def create_kafka_consumer(
 
     return kafka.KafkaConsumer(
         topic,
+        auto_offset_reset='latest',
         bootstrap_servers=bootstrap_servers,
         group_id=group_id,
         value_deserializer=json_deserializer,

@@ -28,6 +28,7 @@ spec:
               topologyKey: kubernetes.io/hostname
       containers:
         - name: fetcher-dispatcher
+          imagePullPolicy: Always
           image: stsukrov/fetcher-dispatcher
           env:
             - name: FETCHER_JOB_IMAGE

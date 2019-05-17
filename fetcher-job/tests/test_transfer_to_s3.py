@@ -7,7 +7,7 @@ from unittest.mock import Mock, patch, MagicMock, create_autospec
 
 import benchmarkai_fetcher_job
 from benchmarkai_fetcher_job.failures import HttpServerError, HttpClientError, InvalidDigestError
-from benchmarkai_fetcher_job.http_to_s3 import http_to_s3
+from benchmarkai_fetcher_job.transfer_to_s3 import transfer_to_s3
 from benchmarkai_fetcher_job.md5sum import DigestPair
 from benchmarkai_fetcher_job.s3_utils import S3Object
 
@@ -26,7 +26,7 @@ ETAG = "42"
 
 @fixture(autouse=True)
 def mock_temp_file(mocker):
-    mock_TemporaryFile = mocker.patch.object(benchmarkai_fetcher_job.http_to_s3.tempfile, "TemporaryFile")
+    mock_TemporaryFile = mocker.patch.object(benchmarkai_fetcher_job.transfer_to_s3.tempfile, "TemporaryFile")
     mock_file = create_autospec(TextIO)
     mock_TemporaryFile.return_value = mock_file
 
@@ -39,7 +39,7 @@ def mock_temp_file(mocker):
 def mock_check_s3_for_md5(mocker):
     # Cache miss is the default behaviour
     return mocker.patch.object(
-        benchmarkai_fetcher_job.http_to_s3, "check_s3_for_md5", autospec=True, return_value=False
+        benchmarkai_fetcher_job.transfer_to_s3, "check_s3_for_md5", autospec=True, return_value=False
     )
 
 
@@ -47,43 +47,46 @@ def mock_check_s3_for_md5(mocker):
 def mock_check_s3_for_etag(mocker):
     # Cache miss is the default behaviour
     return mocker.patch.object(
-        benchmarkai_fetcher_job.http_to_s3, "check_s3_for_etag", autospec=True, return_value=False
+        benchmarkai_fetcher_job.transfer_to_s3, "check_s3_for_etag", autospec=True, return_value=False
     )
 
 
 @fixture
 def mock_upload_to_s3(mocker):
-    return mocker.patch.object(benchmarkai_fetcher_job.http_to_s3, "upload_to_s3", autospec=True)
+    return mocker.patch.object(benchmarkai_fetcher_job.transfer_to_s3, "upload_to_s3", autospec=True)
 
 
 @fixture
 def mock_update_s3_hash_tagging(mocker):
-    return mocker.patch.object(benchmarkai_fetcher_job.http_to_s3, "update_s3_hash_tagging", autospec=True)
+    return mocker.patch.object(benchmarkai_fetcher_job.transfer_to_s3, "update_s3_hash_tagging", autospec=True)
 
 
 @fixture
 def mock_calculate_md5_and_etag(mocker):
     return mocker.patch.object(
-        benchmarkai_fetcher_job.http_to_s3, "calculate_md5_and_etag", autospec=True, return_value=DigestPair(MD5, ETAG)
+        benchmarkai_fetcher_job.transfer_to_s3,
+        "calculate_md5_and_etag",
+        autospec=True,
+        return_value=DigestPair(MD5, ETAG),
     )
 
 
 @fixture
 def mock_successful_download(mocker):
-    return mocker.patch.object(benchmarkai_fetcher_job.http_to_s3, "http_download", autospec=True)
+    return mocker.patch.object(benchmarkai_fetcher_job.transfer_to_s3, "http_download", autospec=True)
 
 
 @fixture
 def mock_client_error_download(mocker):
     return mocker.patch.object(
-        benchmarkai_fetcher_job.http_to_s3, "http_download", autospec=True, side_effect=HttpClientError()
+        benchmarkai_fetcher_job.transfer_to_s3, "http_download", autospec=True, side_effect=HttpClientError()
     )
 
 
 @fixture
 def mock_server_error_download(mocker):
     return mocker.patch.object(
-        benchmarkai_fetcher_job.http_to_s3, "http_download", autospec=True, side_effect=HttpServerError()
+        benchmarkai_fetcher_job.transfer_to_s3, "http_download", autospec=True, side_effect=HttpServerError()
     )
 
 
@@ -96,7 +99,7 @@ def test_success(
     mock_temp_file,
     mock_successful_download,
 ):
-    http_to_s3(SRC, DST)
+    transfer_to_s3(mock_successful_download, SRC, DST)
 
     mock_check_s3_for_md5.assert_not_called()
     mock_upload_to_s3.assert_called_with(mock_temp_file, S3DST)
@@ -113,7 +116,7 @@ def test_success_with_md5(
     mock_temp_file,
     mock_successful_download,
 ):
-    http_to_s3(SRC, DST, MD5)
+    transfer_to_s3(mock_successful_download, SRC, DST, MD5)
 
     mock_check_s3_for_md5.assert_called_with(S3DST, MD5)
     mock_upload_to_s3.assert_called_with(mock_temp_file, S3DST)
@@ -131,7 +134,7 @@ def test_success_with_wrong_md5(
     mock_successful_download,
 ):
     with pytest.raises(InvalidDigestError):
-        http_to_s3(SRC, DST, WRONG_MD5)
+        transfer_to_s3(mock_successful_download, SRC, DST, WRONG_MD5)
 
     mock_upload_to_s3.assert_not_called()
     mock_update_s3_hash_tagging.assert_not_called()
@@ -148,7 +151,7 @@ def test_success_with_md5_cache_hit(
 ):
     mock_check_s3_for_md5.return_value = True
 
-    http_to_s3(SRC, DST, MD5)
+    transfer_to_s3(mock_successful_download, SRC, DST, MD5)
 
     mock_check_s3_for_md5.assert_called_with(S3DST, MD5)
 
@@ -166,7 +169,7 @@ def test_success_with_etag_cache_hit(
 ):
     mock_check_s3_for_etag.return_value = True
 
-    http_to_s3(SRC, DST, MD5)
+    transfer_to_s3(mock_successful_download, SRC, DST, MD5)
 
     mock_successful_download.assert_called_once()
     mock_upload_to_s3.assert_not_called()
@@ -175,9 +178,9 @@ def test_success_with_etag_cache_hit(
 
 def test_server_error(mock_server_error_download):
     with pytest.raises(HttpServerError):
-        http_to_s3(SRC, DST)
+        transfer_to_s3(mock_server_error_download, SRC, DST)
 
 
 def test_client_error(mock_client_error_download):
     with pytest.raises(HttpClientError):
-        http_to_s3(SRC, DST)
+        transfer_to_s3(mock_client_error_download, SRC, DST)

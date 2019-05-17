@@ -1,5 +1,6 @@
 import logging
 from dataclasses import dataclass
+from typing import TextIO
 from urllib.parse import urlparse
 
 import boto3
@@ -24,11 +25,14 @@ class S3Object:
 
         return S3Object(bucket=bucket, key=key)
 
+    def __str__(self):
+        return f"s3://{self.bucket}/{self.key}"
+
 
 def upload_to_s3(fp, dst: S3Object):
     fp.seek(0)
     logger.info(f"Start upload to {dst}")
-    boto3.client("s3").upload_fileobj(fp, dst.bucket, dst.key)
+    boto3.client("s3").upload_fileobj(fp, dst.bucket, dst.key, Callback=ProgressCallback())
     logger.info(f"End upload to {dst}")
 
 
@@ -61,3 +65,19 @@ def check_s3_for_etag(dst: S3Object, etag: str) -> bool:
         return False
 
     return True
+
+
+class ProgressCallback:
+    def __init__(self):
+        self.transferred_total = 0
+
+    def __call__(self, transferred):
+        self.transferred_total += transferred
+        print(f"{self.transferred_total} bytes transferred")
+
+
+def download_from_s3(fp: TextIO, src: str):
+    s3src = S3Object.parse(src)
+    logger.info(f"Start download from {src}")
+    boto3.client("s3").download_fileobj(s3src.bucket, s3src.key, fp, Callback=ProgressCallback())
+    logger.info(f"End download from {src}")
