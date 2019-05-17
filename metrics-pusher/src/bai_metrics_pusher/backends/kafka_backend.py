@@ -1,4 +1,4 @@
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 
 import datetime
 import logging
@@ -42,7 +42,7 @@ class KafkaBackend:
     <kafka_topic_name>_<metric_name>{foolabel="foolabelvalue", barlabel="barlabelvalue"} <metric_value> <epoch_value>
     """
 
-    def __init__(self, job_id, *, topic, bootstrap_servers=None, key=None):
+    def __init__(self, job_id: str, *, topic: str, bootstrap_servers: List[str] = None, key: str = None):
         self._job_id = job_id
         if bootstrap_servers is None:
             bootstrap_servers = ["localhost:9092"]
