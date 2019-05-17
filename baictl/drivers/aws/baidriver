@@ -101,12 +101,6 @@ create_infra() {
     echo "==> Installing kubeflow operators"
     _install_kubeflow_operators || return 1
 
-    echo "==> Initializing helm"
-    _init_helm || return 1
-
-    echo "==> Installing Grafana"
-    _install_grafana || return 1
-
     echo "==> Creating Kafka topics"
     _create_kafka_topics || return 1
 
@@ -172,17 +166,34 @@ _install_msk_aware_terraform_plugin(){
     fi
 }
 
-_install_tiller(){
-    $kubectl get serviceaccount -n kube-system tiller -o yaml || $kubectl create serviceaccount --namespace kube-system tiller || return 1
-    $kubectl get clusterrolebinding tiller-cluster-rule -o yaml || $kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:tiller || return 1
+_init_service_account() {
+    echo "-> Initializing service account for helm"
+    ${kubectl} apply -f ${project_dir}/baictl/helm/ || return 1
+}
 
-    helm init --wait --service-account tiller || return 1
+_install_tiller(){
+    _init_service_account || return 1
+    #$kubectl get serviceaccount -n kube-system tiller -o yaml || $kubectl create serviceaccount --namespace kube-system tiller || return 1
+    #$kubectl get clusterrolebinding tiller-cluster-rule -o yaml || $kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:tiller || return 1
+
+    ${helm} init --wait --service-account tiller || return 1
     #TODO: Secure through TLS: https://github.com/jonbcampos/kubernetes-series/blob/master/helm/scripts/add_secure_helm.sh
     # TODO: Permissions
 }
 
 _install_prometheus(){
-    helm upgrade --install prometheus-operator-1 stable/prometheus-operator || return 1
+    ${kubectl} patch deploy --namespace ${prometheus_namespace} tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
+    ${helm} upgrade --install prometheus-operator-1 --namespace ${prometheus_namespace} -f ${k8s_deploy_dir}/prometheus-operator.yaml  stable/prometheus-operator || return 1
+}
+
+_install_grafana() {
+    ${helm} upgrade --install grafana \
+        --namespace ${prometheus_namespace} \
+        --set rbac.pspEnabled=false \
+        --set rbac.create=false \
+        --set service.type=LoadBalancer \
+        --wait \
+        stable/grafana || return 1
 }
 
 port_forward() {
@@ -288,31 +299,15 @@ _install_kubeflow_operators() {
     return 0
 }
 
-_init_service_account() {
-    echo "-> Initializing service account for helm"
-    ${kubectl} apply -f ${project_dir}/baictl/helm/
-}
-
-_init_helm() {
-    _init_service_account || return 1
-    ${helm} init --upgrade --history-max 200 --wait --service-account tiller || return 1
-    echo "-> Updating helm"
-    ${helm} repo update || return 1
-}
-
-_install_grafana() {
-    ${helm} upgrade --install grafana \
-        --namespace ${tiller_namespace} \
-        --set rbac.pspEnabled=false \
-        --set rbac.create=false \
-        --set service.type=LoadBalancer \
-        --wait \
-        stable/grafana || return 1
-}
-
 _destroy_helm_charts() {
     echo "-> Destroying helm charts:\n$(helm ls --short)\n"
     ${helm} delete $(${helm} ls --short) --purge || return 1
+
+    # https://github.com/helm/charts/tree/master/stable/prometheus-operator#uninstalling-the-chart
+    ${kubectl} delete crd prometheuses.monitoring.coreos.com
+    ${kubectl} delete crd prometheusrules.monitoring.coreos.com
+    ${kubectl} delete crd servicemonitors.monitoring.coreos.com
+    ${kubectl} delete crd alertmanagers.monitoring.coreos.com
 }
 
 _install_zookeeper(){
@@ -417,10 +412,10 @@ __validate_zookeeper_pods() {
 __validate_grafana() {
     printf "Grafana is ready"
     password=$(
-        ${kubectl} get secret --namespace tiller-world grafana -o jsonpath="{.data.admin-password}" | base64 --decode
+        ${kubectl} get secret --namespace ${prometheus_namespace} prometheus-operator-1-grafana -o jsonpath="{.data.admin-password}" | base64 --decode
     )
     host=$(
-        ${kubectl} get svc grafana --namespace tiller-world -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+        ${kubectl} get svc grafana --namespace ${prometheus_namespace} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
     )
     curl http://admin:${password}@${host}:80/api/health || return 1
 }
@@ -617,6 +612,7 @@ kubeconfig=$(realpath ${data_dir}/kubeconfig)
 kube_config_arg=--kubeconfig=${kubeconfig}
 kubectl="kubectl ${kube_config_arg}"
 tiller_namespace="tiller-world"
+prometheus_namespace="prometheus"
 helm_config_arg="${kube_config_arg} --tiller-namespace ${tiller_namespace}"
 helm="helm ${helm_config_arg}"
 terraform_dir=$(dirname $BASH_SOURCE)/cluster
