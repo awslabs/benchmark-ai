@@ -30,8 +30,8 @@ DEFAULT_RESTART_POLICY = "OnFailure"
 STATUS_TOPIC = "STATUS"
 
 
-@patch.object(args.os, "environ")
-@patch.object(fetcher_dispatcher_service, "create_fetcher_dispatcher")
+@patch.object(args.os, "environ", autospec=True)
+@patch.object(fetcher_dispatcher_service, "create_fetcher_dispatcher", autospec=True)
 def test_main(mock_create_fetcher_dispatcher, mock):
     from fetcher_dispatcher.__main__ import main
 
