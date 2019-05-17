@@ -18,13 +18,13 @@ def main(argv=None):
 
     logger.info("Starting app")
 
-    from benchmarkai_metrics_pusher.input_values import get_input
+    from bai_metrics_pusher.input_values import get_input
 
     metrics_pusher_input = get_input(argv)
     logger.info("Input is %s", metrics_pusher_input)
 
     # Start the loop
-    from benchmarkai_metrics_pusher.loop import start_loop
+    from bai_metrics_pusher.loop import start_loop
 
     start_loop(metrics_pusher_input)
 

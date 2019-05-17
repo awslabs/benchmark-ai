@@ -6,8 +6,8 @@ import json
 import signal
 from typing import Dict, Callable
 from json import JSONDecodeError
-from benchmarkai_metrics_pusher.backends import create_backend
-from benchmarkai_metrics_pusher.kubernetes_pod_watcher import start_kubernetes_pod_watcher
+from bai_metrics_pusher.backends import create_backend
+from bai_metrics_pusher.kubernetes_pod_watcher import start_kubernetes_pod_watcher
 
 
 logger = logging.getLogger(__name__)
