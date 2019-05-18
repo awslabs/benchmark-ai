@@ -7,7 +7,6 @@ setup(
     url="https://github.com/MXNetEdge/benchmark-ai",
     package_dir={"": "src"},
     packages=find_packages("src"),
-    requires=["bai_kafka_utils"],
     include_package_data=True,
     entry_points={"console_scripts": ["bai_fetcher_job = bai_fetcher_job.__main__:main"]},
 )
