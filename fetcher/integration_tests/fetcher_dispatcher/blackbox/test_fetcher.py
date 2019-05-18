@@ -8,7 +8,7 @@ from typing import Callable
 from bai_kafka_utils.events import FetcherPayload, BenchmarkDoc, BenchmarkEvent, DataSet
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
 
-TIMEOUT_FOR_DOWNLOAD_SEC = 60
+TIMEOUT_FOR_DOWNLOAD_SEC = 5 * 60
 
 
 # Should be successful in any environment - has delay of 10s for consumer group to setup

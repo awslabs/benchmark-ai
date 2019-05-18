@@ -7,10 +7,12 @@ from fetcher_dispatcher.args import FetcherServiceConfig
 from fetcher_dispatcher.data_set_manager import DataSetManager
 from fetcher_dispatcher.kubernetes_client import KubernetesDispatcher
 
+TIMEOUT_FOR_DOWNLOAD_SEC = 5 * 60
+
 EXISTING_DATASET_WITH = "http://files.grouplens.org/datasets/movielens/ml-1m.zip"
 
 
-@pytest.mark.timeout(60)
+@pytest.mark.timeout(TIMEOUT_FOR_DOWNLOAD_SEC)
 def test_fetch(
     fetcher_service_config: FetcherServiceConfig,
     zk_client: KazooClient,
