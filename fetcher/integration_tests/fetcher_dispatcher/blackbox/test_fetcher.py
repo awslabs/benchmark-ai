@@ -2,12 +2,10 @@ import dataclasses
 
 import pytest
 from kafka import KafkaConsumer, KafkaProducer
-from pytest import fixture
 from time import time
 from typing import Callable
 
-from bai_kafka_utils.events import FetcherPayload, BenchmarkDoc, BenchmarkEvent, DataSet, FetcherBenchmarkEvent
-from bai_kafka_utils.kafka_client import create_kafka_consumer, create_kafka_producer
+from bai_kafka_utils.events import FetcherPayload, BenchmarkDoc, BenchmarkEvent, DataSet
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
 
 TIMEOUT_FOR_DOWNLOAD_SEC = 60
