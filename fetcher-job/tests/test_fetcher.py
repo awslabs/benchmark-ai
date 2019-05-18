@@ -2,10 +2,10 @@ import pytest
 from bai_zk_utils.states import FetcherStatus, FetcherResult
 from pytest import fixture
 
-from benchmarkai_fetcher_job import fetcher
-from benchmarkai_fetcher_job.args import FetcherJobConfig, RetryConfig
-from benchmarkai_fetcher_job.failures import HttpClientError, HttpServerError
-from benchmarkai_fetcher_job.fetcher import SUCCESS_MESSAGE, retrying_fetch
+from bai_fetcher_job import fetcher
+from bai_fetcher_job.args import FetcherJobConfig, RetryConfig
+from bai_fetcher_job.failures import HttpClientError, HttpServerError
+from bai_fetcher_job.fetcher import SUCCESS_MESSAGE, retrying_fetch
 
 
 SERVER_ERROR = "I'm sick"

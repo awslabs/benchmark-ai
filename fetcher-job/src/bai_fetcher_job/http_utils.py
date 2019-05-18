@@ -3,7 +3,7 @@ import pycurl
 from enum import IntEnum
 from typing import TextIO
 
-from benchmarkai_fetcher_job.failures import CurlError, HttpClientError, HttpServerError
+from bai_fetcher_job.failures import CurlError, HttpClientError, HttpServerError
 
 logger = logging.getLogger(__name__)
 

@@ -2,8 +2,8 @@ import logging
 
 from typing import Optional
 
-from benchmarkai_fetcher_job.http_utils import http_download
-from benchmarkai_fetcher_job.transfer_to_s3 import transfer_to_s3
+from bai_fetcher_job.http_utils import http_download
+from bai_fetcher_job.transfer_to_s3 import transfer_to_s3
 
 logger = logging.getLogger(__name__)
 

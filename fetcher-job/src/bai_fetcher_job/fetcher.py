@@ -5,10 +5,10 @@ from bai_zk_utils.states import FetcherStatus, FetcherResult
 from bai_zk_utils.zk_client import update_zk_node
 from retrying import retry
 
-from benchmarkai_fetcher_job.args import FetcherJobConfig
-from benchmarkai_fetcher_job.failures import RetryableError, UnRetryableError
-from benchmarkai_fetcher_job.http_to_s3 import http_to_s3
-from benchmarkai_fetcher_job.s3_to_s3 import s3_to_s3
+from bai_fetcher_job.args import FetcherJobConfig
+from bai_fetcher_job.failures import RetryableError, UnRetryableError
+from bai_fetcher_job.http_to_s3 import http_to_s3
+from bai_fetcher_job.s3_to_s3 import s3_to_s3
 
 
 # Current version doesn't stream - we create temporary files.

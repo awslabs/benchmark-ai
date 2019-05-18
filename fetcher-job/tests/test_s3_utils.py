@@ -1,8 +1,8 @@
 from typing import TextIO
 from unittest.mock import patch, create_autospec, MagicMock, ANY
 
-from benchmarkai_fetcher_job import s3_utils
-from benchmarkai_fetcher_job.s3_utils import S3Object, upload_to_s3
+from bai_fetcher_job import s3_utils
+from bai_fetcher_job.s3_utils import S3Object, upload_to_s3
 
 S3URL = "s3://mybucket/some_key"
 

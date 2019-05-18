@@ -1,8 +1,8 @@
 import boto3
 from typing import Optional
 
-from benchmarkai_fetcher_job.s3_utils import S3Object, download_from_s3
-from benchmarkai_fetcher_job.transfer_to_s3 import transfer_to_s3
+from bai_fetcher_job.s3_utils import S3Object, download_from_s3
+from bai_fetcher_job.transfer_to_s3 import transfer_to_s3
 
 # Initial version of the folder transfer, that lacks validation
 # TODO Implement Merkl-tree or something like that

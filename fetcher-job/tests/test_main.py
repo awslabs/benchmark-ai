@@ -1,18 +1,18 @@
 from pytest import fixture
 
-import benchmarkai_fetcher_job
-from benchmarkai_fetcher_job.__main__ import main
-from benchmarkai_fetcher_job.args import FetcherJobConfig
+import bai_fetcher_job
+from bai_fetcher_job.__main__ import main
+from bai_fetcher_job.args import FetcherJobConfig
 
 
 @fixture
 def mock_retrying_fetch(mocker):
-    return mocker.patch.object(benchmarkai_fetcher_job.__main__, "retrying_fetch", autospec=True)
+    return mocker.patch.object(bai_fetcher_job.__main__, "retrying_fetch", autospec=True)
 
 
 @fixture
 def mock_get_fetcher_job_args(mocker):
-    return mocker.patch.object(benchmarkai_fetcher_job.__main__, "get_fetcher_job_args", autospec=True)
+    return mocker.patch.object(bai_fetcher_job.__main__, "get_fetcher_job_args", autospec=True)
 
 
 @fixture

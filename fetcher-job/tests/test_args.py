@@ -1,4 +1,4 @@
-from benchmarkai_fetcher_job.args import FetcherJobConfig, get_fetcher_job_args, RetryConfig
+from bai_fetcher_job.args import FetcherJobConfig, get_fetcher_job_args, RetryConfig
 
 
 def test_get_fetcher_job_args():

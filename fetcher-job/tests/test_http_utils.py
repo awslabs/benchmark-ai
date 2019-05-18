@@ -6,9 +6,9 @@ import pytest
 from pytest import fixture
 from unittest.mock import create_autospec
 
-from benchmarkai_fetcher_job import http_utils
-from benchmarkai_fetcher_job.failures import HttpClientError, HttpServerError, CurlError
-from benchmarkai_fetcher_job.http_utils import http_download
+from bai_fetcher_job import http_utils
+from bai_fetcher_job.failures import HttpClientError, HttpServerError, CurlError
+from bai_fetcher_job.http_utils import http_download
 
 SRC = "http://someserver.com/somefile.zip"
 

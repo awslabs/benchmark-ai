@@ -3,11 +3,11 @@ from pytest import fixture
 from typing import TextIO
 from unittest.mock import create_autospec
 
-import benchmarkai_fetcher_job
-from benchmarkai_fetcher_job.failures import HttpServerError, HttpClientError, InvalidDigestError
-from benchmarkai_fetcher_job.md5sum import DigestPair
-from benchmarkai_fetcher_job.s3_utils import S3Object
-from benchmarkai_fetcher_job.transfer_to_s3 import transfer_to_s3, DownloadCallback
+import bai_fetcher_job
+from bai_fetcher_job.failures import HttpServerError, HttpClientError, InvalidDigestError
+from bai_fetcher_job.md5sum import DigestPair
+from bai_fetcher_job.s3_utils import S3Object
+from bai_fetcher_job.transfer_to_s3 import transfer_to_s3, DownloadCallback
 
 S3DST = S3Object("bucket", "key")
 
@@ -24,7 +24,7 @@ ETAG = "42"
 
 @fixture(autouse=True)
 def mock_temp_file(mocker):
-    mock_TemporaryFile = mocker.patch.object(benchmarkai_fetcher_job.transfer_to_s3.tempfile, "TemporaryFile")
+    mock_TemporaryFile = mocker.patch.object(bai_fetcher_job.transfer_to_s3.tempfile, "TemporaryFile")
     mock_file = create_autospec(TextIO)
     mock_TemporaryFile.return_value = mock_file
 
@@ -37,7 +37,7 @@ def mock_temp_file(mocker):
 def mock_check_s3_for_md5(mocker):
     # Cache miss is the default behaviour
     return mocker.patch.object(
-        benchmarkai_fetcher_job.transfer_to_s3, "check_s3_for_md5", autospec=True, return_value=False
+        bai_fetcher_job.transfer_to_s3, "check_s3_for_md5", autospec=True, return_value=False
     )
 
 
@@ -45,24 +45,24 @@ def mock_check_s3_for_md5(mocker):
 def mock_check_s3_for_etag(mocker):
     # Cache miss is the default behaviour
     return mocker.patch.object(
-        benchmarkai_fetcher_job.transfer_to_s3, "check_s3_for_etag", autospec=True, return_value=False
+        bai_fetcher_job.transfer_to_s3, "check_s3_for_etag", autospec=True, return_value=False
     )
 
 
 @fixture
 def mock_upload_to_s3(mocker):
-    return mocker.patch.object(benchmarkai_fetcher_job.transfer_to_s3, "upload_to_s3", autospec=True)
+    return mocker.patch.object(bai_fetcher_job.transfer_to_s3, "upload_to_s3", autospec=True)
 
 
 @fixture
 def mock_update_s3_hash_tagging(mocker):
-    return mocker.patch.object(benchmarkai_fetcher_job.transfer_to_s3, "update_s3_hash_tagging", autospec=True)
+    return mocker.patch.object(bai_fetcher_job.transfer_to_s3, "update_s3_hash_tagging", autospec=True)
 
 
 @fixture
 def mock_calculate_md5_and_etag(mocker):
     return mocker.patch.object(
-        benchmarkai_fetcher_job.transfer_to_s3,
+        bai_fetcher_job.transfer_to_s3,
         "calculate_md5_and_etag",
         autospec=True,
         return_value=DigestPair(MD5, ETAG),
