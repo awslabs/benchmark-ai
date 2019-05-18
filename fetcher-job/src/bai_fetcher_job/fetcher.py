@@ -10,7 +10,6 @@ from bai_fetcher_job.failures import RetryableError, UnRetryableError
 from bai_fetcher_job.http_to_s3 import http_to_s3
 from bai_fetcher_job.s3_to_s3 import s3_to_s3
 
-
 # Current version doesn't stream - we create temporary files.
 SUCCESS_MESSAGE = "Success"
 
@@ -30,7 +29,7 @@ def retrying_fetch(cfg: FetcherJobConfig):
     try:
         _retry_fetch(cfg)
     except (RetryableError, UnRetryableError) as ex:
-        logger.exception("Predicted error. Unretryable or out of attempts")
+        logger.exception("Download error. Unretryable or out of attempts")
         _update_zk_node(cfg, FetcherStatus.FAILED, str(ex))
         return
 
