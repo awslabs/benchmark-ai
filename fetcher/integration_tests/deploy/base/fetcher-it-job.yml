@@ -41,7 +41,7 @@ spec:
                   name: fetcher-dispatcher
                   key: pull_policy
             - name: CONSUMER_GROUP_ID
-              value: common-it-to-salt
+              value: fetcher-it
             - name: CONSUMER_TOPIC
               valueFrom:
                 configMapKeyRef:
