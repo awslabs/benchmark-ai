@@ -55,7 +55,7 @@ k8s_deploy: _deploy_venv
 k8s_undeploy: _deploy_venv
 	$(call fn_k8s_undeploy)
 
-TIMEOUT ?= 300s
+JOB_TIMEOUT ?= 300
 
 _wait_for_job:
-	$(KUBECTL) wait --for=condition=complete --timeout=$(TIMEOUT) job/$(JOB_NAME) $(KUBECTL_FLAGS)
+	$(BENCHMARK_DIR)/wait_for_job.sh $(JOB_NAME) $(JOB_TIMEOUT)
