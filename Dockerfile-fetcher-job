@@ -29,6 +29,4 @@ COPY --from=base /opt/fetcher-job /opt/fetcher-job
 # A workdir only for convenience
 WORKDIR /opt/fetcher-job/bin
 
-ENTRYPOINT [ "/bin/bash", "-c" ]
-
-CMD [ "/opt/fetcher-job/bin/bai_fetcher_job" ]
+ENTRYPOINT [ "/opt/fetcher-job/bin/bai_fetcher_job" ]
