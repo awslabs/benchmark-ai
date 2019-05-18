@@ -1,3 +1,5 @@
+import dataclasses
+
 import pytest
 from kafka import KafkaConsumer, KafkaProducer
 from pytest import fixture
@@ -11,11 +13,11 @@ from bai_kafka_utils.kafka_service import KafkaServiceConfig
 TIMEOUT_FOR_DOWNLOAD_SEC = 60
 
 
-# Should be successful in any environment
-EXISTING_DATASET = "http://files.grouplens.org/datasets/movielens/ml-1m.zip?delay"
+# Should be successful in any environment - has delay of 10s for consumer group to setup
+EXISTING_DATASET_WITH_DELAY = "http://files.grouplens.org/datasets/movielens/ml-1m.zip?delay"
 
-# Should fail in any environment
-FAILING_DATASET = "http://files.grouplens.org/datasets/movielens/fail.zip?delay"
+# Should fail in any environment - has delay of 10s for consumer group to setup
+FAILING_DATASET_WITH_DELAY = "http://files.grouplens.org/datasets/movielens/fail.zip?delay"
 
 
 def get_salted_src(src: str) -> str:
@@ -23,21 +25,10 @@ def get_salted_src(src: str) -> str:
     return f"{src}?time={cur_time}"
 
 
-def get_benchmark_event(src: str):
+def get_fetcher_benchmark_event(template_event: BenchmarkEvent, src: str):
     doc = BenchmarkDoc({"var": "val"}, "var = val", "")
-    payload = FetcherPayload(toml=doc, datasets=[DataSet(src=get_salted_src(src))])
-    return BenchmarkEvent(
-        action_id="ACTION_ID",
-        message_id="MESSAGE_ID",
-        client_id="CLIENT_ID",
-        client_version="CLIENT_VERSION",
-        client_username="CLIENT_USER",
-        authenticated=False,
-        tstamp=42,
-        visited=[],
-        payload=payload,
-        type="TYPE",
-    )
+    fetch_payload = FetcherPayload(toml=doc, datasets=[DataSet(src=get_salted_src(src))])
+    return dataclasses.replace(template_event, payload=fetch_payload)
 
 
 def successful_dataset(data_set: DataSet) -> bool:
@@ -66,41 +57,21 @@ def get_message_is_the_response(
 POLL_TIMEOUT_MS = 500
 
 
-@fixture
-def kafka_consumer_of_produced(kafka_service_config: KafkaServiceConfig):
-    print(f"Creating a consumer with {kafka_service_config}...\n")
-    return create_kafka_consumer(
-        kafka_service_config.bootstrap_servers,
-        kafka_service_config.consumer_group_id,
-        # Yes. We consume, what the service has produced
-        kafka_service_config.producer_topic,
-        FetcherBenchmarkEvent,
-    )
-
-
-@fixture
-def kafka_producer_to_consume(kafka_service_config: KafkaServiceConfig):
-    print("Creating a producer...\n")
-    return create_kafka_producer(kafka_service_config.bootstrap_servers)
-
-
-TIME_TO_REBALANCE = 10
-
-
 @pytest.mark.timeout(TIMEOUT_FOR_DOWNLOAD_SEC)
 @pytest.mark.parametrize(
     "src,data_set_check",
-    [(EXISTING_DATASET, successful_dataset), (FAILING_DATASET, failed_dataset)],
+    [(EXISTING_DATASET_WITH_DELAY, successful_dataset), (FAILING_DATASET_WITH_DELAY, failed_dataset)],
     ids=["successful", "failing"],
 )
 def test_fetcher(
+    benchmark_event_dummy_payload: BenchmarkEvent,
     kafka_producer_to_consume: KafkaProducer,
     kafka_consumer_of_produced: KafkaConsumer,
     kafka_service_config: KafkaServiceConfig,
     src: str,
     data_set_check: Callable[[DataSet], bool],
 ):
-    benchmark_event = get_benchmark_event(src)
+    benchmark_event = get_fetcher_benchmark_event(benchmark_event_dummy_payload, src)
 
     print(f"Sending event {benchmark_event}")
 
