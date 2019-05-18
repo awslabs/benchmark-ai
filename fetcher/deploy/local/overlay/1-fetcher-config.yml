@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 data:
   job_node_selector: '{}'
-  job_image: stsukrov/mock-fetcher-job
+  job_image: benchmarkai/mock-fetcher-job:local-latest
   pull_policy: Never
 metadata:
   name: fetcher-dispatcher

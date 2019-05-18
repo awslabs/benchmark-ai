@@ -22,6 +22,8 @@ class KubernetesDispatcher:
 
     SRC_ARG = "--src"
 
+    MD5_ARG = "--md5"
+
     FETCHER_CONTAINER_NAME = "fetcher"
 
     ZOOKEEPER_ENSEMBLE_HOSTS = "ZOOKEEPER_ENSEMBLE_HOSTS"
@@ -98,6 +100,8 @@ class KubernetesDispatcher:
             task.dst,
             KubernetesDispatcher.ZK_NODE_PATH_ARG,
             zk_node_path,
+            KubernetesDispatcher.MD5_ARG,
+            task.md5,
         ]
 
     def get_env(self) -> List[kubernetes.client.V1EnvVar]:

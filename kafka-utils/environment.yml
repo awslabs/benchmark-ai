@@ -4,6 +4,7 @@ channels:
   - defaults
 dependencies:
   - kafka-python 1.4.*
+  - kazoo 2.5.*
   - pip
   - pip:
       - ConfigArgParse

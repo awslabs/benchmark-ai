@@ -5,18 +5,23 @@ from bai_kafka_utils.events import FetcherBenchmarkEvent, Status
 from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
 from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService, KafkaServiceConfig
 from bai_kafka_utils.utils import get_pod_name
+from bai_zk_utils.zk_locker import DistributedRWLockManager
 from fetcher_dispatcher import SERVICE_NAME, __version__
 from fetcher_dispatcher.args import FetcherServiceConfig, FetcherJobConfig
-from fetcher_dispatcher.data_set_manager import DataSet, DataSetManager
+from fetcher_dispatcher.data_set_manager import DataSet, DataSetManager, get_lock_name
 from fetcher_dispatcher.data_set_pull import get_dataset_dst
 from fetcher_dispatcher.kubernetes_client import KubernetesDispatcher
+
+LOCK_MANAGER_PREFIX = "fetcher_lock_manager"
 
 
 def create_data_set_manager(zookeeper_ensemble_hosts: str, kubeconfig: str, fetcher_job: FetcherJobConfig):
     zk_client = KazooClient(zookeeper_ensemble_hosts)
     job_dispatcher = KubernetesDispatcher(kubeconfig, zookeeper_ensemble_hosts, fetcher_job)
 
-    return DataSetManager(zk_client, job_dispatcher)
+    lock_manager = DistributedRWLockManager(zk_client, LOCK_MANAGER_PREFIX, get_lock_name)
+
+    return DataSetManager(zk_client, job_dispatcher, lock_manager)
 
 
 class FetcherEventHandler(KafkaServiceCallback):
@@ -30,11 +35,11 @@ class FetcherEventHandler(KafkaServiceCallback):
 
         def execute(task: DataSet, callback) -> None:
 
-            task.dst = get_dataset_dst(task.src, self.s3_data_set_bucket)
+            task.dst = get_dataset_dst(task, self.s3_data_set_bucket)
 
             kafka_service.send_status_message_event(event, Status.PENDING, f"Dataset {task} sent to fetch")
 
-            self.data_set_mgr.fetch(task, callback)
+            self.data_set_mgr.fetch(task, event, callback)
 
         def execute_all(tasks: List[DataSet], callback: Callable) -> None:
             kafka_service.send_status_message_event(event, Status.PENDING, "Start fetching datasets")

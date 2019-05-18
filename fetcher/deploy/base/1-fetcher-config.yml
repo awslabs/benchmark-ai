@@ -6,7 +6,7 @@ data:
   producer_topic: BAI_APP_FETCHER
   status_topic: BAI_APP_STATUS
   job_node_selector: '{"node.type":"bai-services-network"}'
-  job_image: stsukrov/datafetcher
+  job_image: benchmarkai/fetcher-job
   pull_policy: Always
 metadata:
   name: fetcher-dispatcher
