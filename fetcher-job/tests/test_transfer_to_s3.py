@@ -36,17 +36,13 @@ def mock_temp_file(mocker):
 @fixture
 def mock_check_s3_for_md5(mocker):
     # Cache miss is the default behaviour
-    return mocker.patch.object(
-        bai_fetcher_job.transfer_to_s3, "check_s3_for_md5", autospec=True, return_value=False
-    )
+    return mocker.patch.object(bai_fetcher_job.transfer_to_s3, "check_s3_for_md5", autospec=True, return_value=False)
 
 
 @fixture
 def mock_check_s3_for_etag(mocker):
     # Cache miss is the default behaviour
-    return mocker.patch.object(
-        bai_fetcher_job.transfer_to_s3, "check_s3_for_etag", autospec=True, return_value=False
-    )
+    return mocker.patch.object(bai_fetcher_job.transfer_to_s3, "check_s3_for_etag", autospec=True, return_value=False)
 
 
 @fixture
@@ -62,10 +58,7 @@ def mock_update_s3_hash_tagging(mocker):
 @fixture
 def mock_calculate_md5_and_etag(mocker):
     return mocker.patch.object(
-        bai_fetcher_job.transfer_to_s3,
-        "calculate_md5_and_etag",
-        autospec=True,
-        return_value=DigestPair(MD5, ETAG),
+        bai_fetcher_job.transfer_to_s3, "calculate_md5_and_etag", autospec=True, return_value=DigestPair(MD5, ETAG)
     )
 
 

@@ -5,13 +5,7 @@ from typing import Optional, TextIO, Callable
 
 from bai_fetcher_job.failures import InvalidDigestError
 from bai_fetcher_job.md5sum import calculate_md5_and_etag, DigestPair
-from bai_fetcher_job.s3_utils import (
-    S3Object,
-    upload_to_s3,
-    check_s3_for_md5,
-    check_s3_for_etag,
-    update_s3_hash_tagging,
-)
+from bai_fetcher_job.s3_utils import S3Object, upload_to_s3, check_s3_for_md5, check_s3_for_etag, update_s3_hash_tagging
 
 logger = logging.getLogger(__name__)
 
