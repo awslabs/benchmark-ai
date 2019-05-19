@@ -308,6 +308,9 @@ _install_grafana() {
 _destroy_helm_charts() {
     echo "-> Destroying helm charts:\n$(helm ls --short)\n"
     ${helm} delete $(${helm} ls --short) --purge || return 1
+
+    # TODO: `helm delete` does not properly delete CRDs which are created by the Prometheus Operator, for example:
+    # https://github.com/istio/istio/issues/7688
 }
 
 _install_zookeeper(){
