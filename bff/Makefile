@@ -53,7 +53,7 @@ MAIN_CLASS_FILE := $(COMPILE_PATH)/$(shell sed -e 's@\.@/@g' -e 's@-@_@g' <<<$(M
 #---
 # Continuous Delivery, Packaging and Containerization
 #---
-DOCKER_REGISTRY := gavin
+DOCKER_REGISTRY := benchmarkai
 DOCKER_TAG := $(VERSION)-$(COMMIT_SHORT_HASH)
 
 CD_SERVER := http://foo.bar.com/job/$(PROJECT)
@@ -76,12 +76,10 @@ SVC_PORT := 8080
 THREAD_POOL_SIZE := 6
 MAX_QUEUE_SIZE := 21
 #KAFKA_BOOTSTRAP_SERVERS #Here only as a note that this is a thing
-KAFKA_SOURCE_TOPIC := BAI_APP_STATUS
 KAFKA_CONSUMER_GROUP_ID := $(PROJECT)
 KAFKA_POLL_INTERVAL_MS := 500
-KAFKA_SINK_TOPIC := BAI_APP_BFF
-KAFKA_CMD_SUBMIT_TOPIC := CMD_SUBMIT
-KAFKA_CMD_RETURN_TOPIC := CMD_RETURN
+KAFKA_SOURCE_TOPICS := BAI_APP_STATUS,CMD_RETURN
+KAFKA_SINK_TOPICS := BAI_APP_BFF,CMD_SUBMIT
 
 #This project may be built in the context of a docker environment using the image: gavin/bai-bff-dev
 #docker run -it --rm -v "$PWD":/srv/app -w /srv/app gavin/bai-bff-dev <command>

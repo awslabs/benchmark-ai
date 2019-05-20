@@ -38,7 +38,7 @@
         (log/debug event)
         (log/info (json/generate-string event {:pretty true}))
         (>!! @eventbus/send-event-channel-atom [(:client_id event) event])
-        (created (:action_id event))))
+        (:action_id event)))
     (catch Exception e
       (log/error "Could Not Parse Descriptor Input")
       (bad-request "Could Not Parse Submitted Descriptor"))))
@@ -57,7 +57,7 @@
         (log/debug event)
         (log/info (json/generate-string event {:pretty true}))
         (>!! @eventbus/send-event-channel-atom [(:client_id event) event])
-        (created (:action_id event))))
+        (:action_id event)))
     (catch Exception e
       (log/error "Could Not Parse Descriptor Input")
       (bad-request "Could Not Parse Submitted Descriptor"))))
@@ -99,7 +99,7 @@
            (defroutes job-routes
              (GET  "/" [] (response (eventbus/get-all-jobs))) ;;TODO - remove this in production...? implement me
              (POST "/" {body :body :as request} (post-proc-results (log/info (pprint request)) #_(create-job body)));TODO - implement me
-             (POST "/descriptor" {body :body :as request} (dispatch-submit-job request body))
+             (POST "/descriptor" {body :body :as request} (response (dispatch-submit-job request body)))
              (context "/:client-id" [client-id]
                       (defroutes client-routes
                         (GET    "/" [] (post-proc-results (eventbus/get-all-client-jobs client-id)))
@@ -107,7 +107,7 @@
                       (context "/:action-id" [action-id]
                                (defroutes action-routes
                                  (GET    "/" [] (post-proc-results (eventbus/get-all-client-jobs-for-action client-id action-id)))
-                                 (DELETE "/" {body :body :as request} (dispatch-delete-job request body action-id))))))) ;
+                                 (DELETE "/" {body :body :as request} (response (dispatch-delete-job request body action-id)))))))) ;
   (ANY "*" []
        (route/not-found (slurp (io/resource "404.html")))))
 

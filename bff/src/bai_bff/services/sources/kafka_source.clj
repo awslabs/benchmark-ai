@@ -3,6 +3,7 @@
             [bai-bff.services.eventbus :refer [receive-events-channel-atom]]
             [bai-bff.utils.utils :refer [assert-configured!]]
             [environ.core :refer [env]]
+            [clojure.string :as s]
             [cheshire.core :as json]
             [taoensso.timbre :as log])
   (:import  [org.apache.kafka.clients.consumer KafkaConsumer]))
@@ -10,11 +11,27 @@
 (def kafka-keys
   #{:kafka-bootstrap-servers
     :kafka-consumer-group-id
-    :kafka-source-topic
+    :kafka-source-topics
     :kafka-poll-interval-ms
     ;:kafka-auto-offset-reset
     ;:kafka-session-timeout-ms
     })
+
+(defn- records->events
+  "Uses the Kafka records object to retrieve the values from individual
+  records' values, for the specified topic, and convert them to JSON.
+  The result is a seq of events.  Please not that you are not allowed
+  to use the records object in a multi-threaded environment (I don't
+  believe). See:
+  https://kafka.apache.org/11/javadoc/org/apache/kafka/clients/consumer/ConsumerRecords.html#records-java.lang.String-"
+  [records topic]
+  (remove nil? (map (fn [record]
+                      (try
+                        (json/decode (.value record) true)
+                        (catch Exception e
+                          (log/warn (str "Could not decode ingress message because... <"(.getMessage e)">, ignored and skipping..."))
+                          nil))) ;<-- TODO instrument to prometheus for example
+                    (.records records topic))))
 
     ; XXX: We need to create a mechanism to propagate failure here as
     ; worker-thread deaths will go unnoticed :/
@@ -36,17 +53,11 @@
                                                             (.put "session.timeout.ms"   (Integer/parseInt (env :kafka-session-timeout-ms "10000")))
                                                             (.put "key.deserializer",  (env :kafka-key-deserializer   "org.apache.kafka.common.serialization.StringDeserializer"))
                                                             (.put "value.deserializer" (env :kafka-value-deserializer "org.apache.kafka.common.serialization.StringDeserializer"))))]
-                             (.subscribe consumer [(env :kafka-source-topic)])
+                             (.subscribe consumer (s/split (env :kafka-source-topics) #",|:"))
                              (while @started?
                                (let [poll-interval (Integer/parseInt (env :kafka-poll-interval-ms))
                                      records (.poll consumer poll-interval)
-                                     events (remove nil? (map (fn [record]
-                                                               (try
-                                                                 (json/decode (.value record) true)
-                                                                 (catch Exception e
-                                                                   (log/warn (str "Could not decode ingress message: " (.getMessage e)))
-                                                                   nil))) ;<-- TODO instrument to prometheus for example
-                                                             (.records records (env :kafka-source-topic))))]
+                                     events  (records->events records (env :kafka-source-topic))]
                                         ; XXX: do this with a value.deserializer
                                  (when-not (false? (process-records-fn events)) ;;TODO; (zoiks) - replace this process-records-fn with putting events on the @receive-events-channel-atom channel
                                         ; XXX: Add telemetry

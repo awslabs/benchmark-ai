@@ -5,6 +5,7 @@
             [cheshire.core :as json]
             [taoensso.timbre :as log]
             [environ.core :refer [env]]
+            [clojure.string :as s]
             [clojure.core.async :as a :refer [>! <! >!! <!! go chan buffer close! thread
                                               alts! alts!! timeout]])
   (:import (org.apache.kafka.clients.producer KafkaProducer
@@ -13,6 +14,7 @@
 
 (def kafka-keys
   #{:kafka-bootstrap-servers
+    :kafka-sink-topics
     ;:send-kafka  ; <-- this code's own flag for turning on and off kafka sending entirely
     ;:kafka-acks
     ;:kafka-retries
@@ -37,7 +39,8 @@
         (assert-configured! kafka-keys)
         (reset! worker-thread
                 (Thread. (fn []
-                           (let [kafka-config (doto (java.util.Properties.)
+                           (let [allowed-kafka-sink-topics (set (s/split (env :kafka-sink-topics) #",|:"))
+                                 kafka-config (doto (java.util.Properties.)
                                                 (.put "bootstrap.servers" (env :kafka-bootstrap-servers))
                                                 (.put "acks"              (env :kafka-acks "all"))
                                                 (.put "retries"           (Integer/valueOf  (env :kafka-retries 0)))
@@ -52,7 +55,8 @@
                              (reset! producer (KafkaProducer. kafka-config))
                              (while @started?
                                (let [[client-id-key event] (<!! @send-event-channel-atom)]
-                                 (.send @producer (ProducerRecord. (:type event) (str client-id-key) (str(json/generate-string event))))))
+                                 (if (allowed-kafka-sink-topics (:type event)) (.send @producer (ProducerRecord. (:type event) (str client-id-key) (str(json/generate-string event))))
+                                                                               (log/warn (str "This topic ["(:type event)"] is not present in the set of permitted topics; skipping...")))))
                              (log/info "Shutdown Kafka producer (sender/sink)")
                              (.close @producer)
                              ))))
