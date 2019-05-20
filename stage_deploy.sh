@@ -25,7 +25,7 @@ for yml in ${BASE_PATH}/*.yml; do
 
     if [[ -f ${overlay} ]]; then
         echo "Overlay found: ${overlay}"
-        kubectl patch --patch="$(cat ${overlay})" --filename="${yml}" --local --output yaml --type merge | kubectl ${KUBE_ACTION} -f -
+        kubectl patch --patch="$(cat ${overlay})" --filename="${yml}" --local --output yaml --type strategic | kubectl ${KUBE_ACTION} -f -
     elif [[ -f ${override} ]]; then
         kubectl ${KUBE_ACTION} -f "${override}"
     else

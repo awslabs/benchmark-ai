@@ -1,6 +1,8 @@
-DOCKER_IMAGE_TAG = stsukrov/mock-fetcher-job
+PROJECT = mock-fetcher-job
 
-include ../../docker-common.mk
+BENCHMARK_DIR = ../..
+
+include $(BENCHMARK_DIR)/docker-common.mk
 
 build:
 	echo "Stub target for build"

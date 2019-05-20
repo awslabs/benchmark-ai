@@ -32,18 +32,25 @@ ZK_CLI=zkCli.sh
 
 if [[ ${SRC} == *"delay"* ]]; then
     echo "Simulating delay"
-    sleep 30s
+    DELAY="10"
+    [[ ${SRC} =~ delay=([0-9]+) ]] && echo ${BASH_REMATCH} && DELAY=${BASH_REMATCH[1]}
+    echo "Will sleep for ${DELAY}s"
+    sleep ${DELAY}s
 fi
 
 RESULT="DONE"
+MESSAGE=""
 if [[ ${SRC} == *"fail"* ]]; then
   RESULT="FAILED"
+  MESSAGE="Something bad"
 fi
 
-echo "Reporting download of ${SRC} -> ${DST}:${RESULT}"
+JSON_RESULT="{\"status\":\"${RESULT}\", \"message\":\"$MESSAGE\"}"
+
+echo "Reporting download of ${SRC} -> ${DST}:${JSON_RESULT}"
 
 if [[ -n "$ZK_NODE_PATH" ]]; then
     echo "Updating ${ZK_NODE_PATH}"
-    ${ZK_CLI} -server ${ZOOKEEPER_ENSEMBLE_HOSTS} set ${ZK_NODE_PATH} ${RESULT}
+    ${ZK_CLI} -server ${ZOOKEEPER_ENSEMBLE_HOSTS} set ${ZK_NODE_PATH} "${JSON_RESULT}"
     echo "I'm done"
 fi

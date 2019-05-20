@@ -2,12 +2,15 @@ from unittest import mock
 
 import kazoo
 from kazoo.client import KazooClient
+from kazoo.protocol.states import WatchedEvent, EventType, KeeperState
 from pytest import fixture
+from typing import Any
 from unittest.mock import create_autospec
 
 from bai_kafka_utils.events import DataSet, BenchmarkEvent
+from bai_zk_utils.states import FetcherStatus, FetcherResult
+from bai_zk_utils.zk_locker import RWLockManager, OnLockCallback, RWLock
 from fetcher_dispatcher.data_set_manager import DataSetManager, DataSetDispatcher, DataSetOnDone
-from fetcher_dispatcher.fetch_state import FetchState
 
 SOME_PATH = "/some/path"
 
@@ -16,21 +19,40 @@ def data_set_to_path(dataset: DataSet) -> str:
     return SOME_PATH
 
 
-@fixture
-def zoo_keeper_client() -> KazooClient:
-    return create_autospec(KazooClient)
+def _mock_result_binary(status: FetcherStatus, msg: str = None):
+    return FetcherResult(status, msg).to_binary()
+
+
+BIN_RESULT_RUNNING = _mock_result_binary(FetcherStatus.RUNNING)
+BIN_RESULT_PENDING = _mock_result_binary(FetcherStatus.PENDING)
+BIN_RESULT_DONE = _mock_result_binary(FetcherStatus.DONE)
+
+
+ERROR_MESSAGE = "Error"
+
+
+BIN_RESULT_FAILED = _mock_result_binary(FetcherStatus.FAILED, ERROR_MESSAGE)
 
 
 def _mock_running_node():
-    return [[FetchState.STATE_RUNNING], [FetchState.STATE_DONE]]
+    return mock.Mock(side_effect=[[BIN_RESULT_RUNNING], [BIN_RESULT_DONE]])
 
 
 def _mock_done_node():
-    return [[FetchState.STATE_DONE]]
+    return mock.Mock(side_effect=[[BIN_RESULT_DONE]])
+
+
+def _mock_failed_node():
+    return mock.Mock(side_effect=[[BIN_RESULT_FAILED]])
 
 
 def _mock_existing_node():
     return kazoo.exceptions.NodeExistsError()
+
+
+@fixture
+def zoo_keeper_client() -> KazooClient:
+    return create_autospec(KazooClient)
 
 
 @fixture
@@ -95,14 +117,33 @@ def enclosing_event() -> BenchmarkEvent:
     )
 
 
-def test_pass_through_start(zoo_keeper_client: KazooClient, kubernetes_job_starter: DataSetDispatcher):
-    data_set_manager = DataSetManager(zoo_keeper_client, kubernetes_job_starter)
+@fixture
+def mock_lock() -> RWLock:
+    return create_autospec(RWLock)
+
+
+@fixture
+def mock_lock_manager(mock_lock: RWLock) -> RWLockManager:
+    def mock_instant_lock(state: Any, on_locked: OnLockCallback):
+        on_locked(state, mock_lock)
+
+    mock_locker = create_autospec(RWLockManager)
+    mock_locker.acquire_write_lock.side_effect = mock_instant_lock
+    return mock_locker
+
+
+def test_pass_through_start(
+    zoo_keeper_client: KazooClient, kubernetes_job_starter: DataSetDispatcher, mock_lock_manager: RWLockManager
+):
+    data_set_manager = DataSetManager(zoo_keeper_client, kubernetes_job_starter, mock_lock_manager)
     data_set_manager.start()
     assert zoo_keeper_client.start.called
 
 
-def test_pass_through_stop(zoo_keeper_client: KazooClient, kubernetes_job_starter: DataSetDispatcher):
-    data_set_manager = DataSetManager(zoo_keeper_client, kubernetes_job_starter)
+def test_pass_through_stop(
+    zoo_keeper_client: KazooClient, kubernetes_job_starter: DataSetDispatcher, mock_lock_manager: RWLockManager
+):
+    data_set_manager = DataSetManager(zoo_keeper_client, kubernetes_job_starter, mock_lock_manager)
     data_set_manager.stop()
     assert zoo_keeper_client.stop.called
 
@@ -112,16 +153,19 @@ def test_first_fast_success(
     some_data_set: DataSet,
     enclosing_event: BenchmarkEvent,
     kubernetes_job_starter: DataSetDispatcher,
+    mock_lock_manager: RWLockManager,
 ):
-    on_done = _test_fetch(zoo_keeper_client_with_done_node, enclosing_event, kubernetes_job_starter, some_data_set)
+    on_done = _test_fetch(
+        zoo_keeper_client_with_done_node, enclosing_event, kubernetes_job_starter, mock_lock_manager, some_data_set
+    )
 
     kubernetes_job_starter.assert_called_with(some_data_set, enclosing_event, SOME_PATH)
-    assert on_done.called
+    on_done.assert_called_with(some_data_set)
 
 
 # Common part of the tests
-def _test_fetch(zoo_keeper_client, enclosing_event, kubernetes_job_starter, some_data_set):
-    data_set_manager = DataSetManager(zoo_keeper_client, kubernetes_job_starter, data_set_to_path)
+def _test_fetch(zoo_keeper_client, enclosing_event, kubernetes_job_starter, mock_lock_manager, some_data_set):
+    data_set_manager = DataSetManager(zoo_keeper_client, kubernetes_job_starter, mock_lock_manager, data_set_to_path)
     on_done = create_autospec(DataSetOnDone)
     data_set_manager.fetch(some_data_set, enclosing_event, on_done)
     return on_done
@@ -132,8 +176,11 @@ def test_first_wait_success(
     some_data_set: DataSet,
     enclosing_event: BenchmarkEvent,
     kubernetes_job_starter: DataSetDispatcher,
+    mock_lock_manager: RWLockManager,
 ):
-    on_done = _test_fetch(zoo_keeper_client_with_running_node, enclosing_event, kubernetes_job_starter, some_data_set)
+    on_done = _test_fetch(
+        zoo_keeper_client_with_running_node, enclosing_event, kubernetes_job_starter, mock_lock_manager, some_data_set
+    )
 
     kubernetes_job_starter.assert_called_with(some_data_set, enclosing_event, SOME_PATH)
     assert not on_done.called
@@ -141,44 +188,14 @@ def test_first_wait_success(
     _verify_wait_succes(on_done, zoo_keeper_client_with_running_node)
 
 
-def test_second_already_done(
-    zoo_keeper_client_with_done_node_that_exists: KazooClient,
-    some_data_set: DataSet,
-    enclosing_event: BenchmarkEvent,
-    kubernetes_job_starter: DataSetDispatcher,
-):
-    on_done = _test_fetch(
-        zoo_keeper_client_with_done_node_that_exists, enclosing_event, kubernetes_job_starter, some_data_set
-    )
-
-    assert not kubernetes_job_starter.called
-    assert on_done.called
-
-
-def test_second_wait_success(
-    zoo_keeper_client_with_running_node_that_exists: KazooClient,
-    some_data_set: DataSet,
-    enclosing_event: BenchmarkEvent,
-    kubernetes_job_starter: DataSetDispatcher,
-):
-    on_done = _test_fetch(
-        zoo_keeper_client_with_running_node_that_exists, enclosing_event, kubernetes_job_starter, some_data_set
-    )
-
-    assert not kubernetes_job_starter.called
-    assert not on_done.called
-
-    _verify_wait_succes(on_done, zoo_keeper_client_with_running_node_that_exists)
-
-
 def _verify_wait_succes(on_done: DataSetOnDone, zoo_keeper_client: KazooClient):
     get_args, _ = zoo_keeper_client.get.call_args
     assert get_args[0] == SOME_PATH
 
-    zk_node_evt = mock.Mock()
-    zk_node_evt.path = SOME_PATH
+    zk_node_evt = WatchedEvent(path=SOME_PATH, type=EventType.CHANGED, state=KeeperState.CONNECTED_RO)
 
     node_watcher = get_args[1]
     node_watcher(zk_node_evt)
 
     assert on_done.called
+    zoo_keeper_client.delete.assert_called_with(SOME_PATH)

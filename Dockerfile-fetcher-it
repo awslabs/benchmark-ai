@@ -1,0 +1,38 @@
+FROM continuumio/miniconda3 as base
+
+RUN conda update -n base -c conda-forge conda
+
+######################
+# Infrequent changes #
+######################
+COPY ./fetcher/environment.yml /tmp/environment.yml
+COPY ./fetcher/test-environment.yml /tmp/test-environment.yml
+
+RUN conda env create -f /tmp/environment.yml -p /opt/fetcher
+RUN conda env update -f /tmp/test-environment.yml -p /opt/fetcher
+
+####################
+# Frequent changes #
+####################
+
+COPY . /data/benchmark-ai
+WORKDIR /data/benchmark-ai/fetcher
+
+RUN /opt/fetcher/bin/pip install -r requirements.txt
+RUN /opt/fetcher/bin/python3 setup.py install
+
+########################################
+# Build the final image
+########################################
+FROM ubuntu:18.04
+
+COPY --from=base /opt/fetcher /opt/fetcher
+COPY ./fetcher/integration_tests /fetcher/it
+
+# A workdir only for convenience
+WORKDIR /opt/fetcher/bin
+
+ENTRYPOINT [ "/bin/bash", "-c" ]
+
+CMD ["/opt/fetcher/bin/pytest -v /fetcher/it/" ]
+

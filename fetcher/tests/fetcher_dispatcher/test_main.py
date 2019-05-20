@@ -7,7 +7,7 @@ from fetcher_dispatcher.args import FetcherServiceConfig, FetcherJobConfig
 
 BOOTSTRAP_SERVERS = ["K1", "K2"]
 
-S3_DATA_SET_BUCKET = "S3"
+S3_DATASET_BUCKET = "S3"
 
 KUBECONFIG = "path/cfg"
 
@@ -30,8 +30,8 @@ DEFAULT_RESTART_POLICY = "OnFailure"
 STATUS_TOPIC = "STATUS"
 
 
-@patch.object(args.os, "environ")
-@patch.object(fetcher_dispatcher_service, "create_fetcher_dispatcher")
+@patch.object(args.os, "environ", autospec=True)
+@patch.object(fetcher_dispatcher_service, "create_fetcher_dispatcher", autospec=True)
 def test_main(mock_create_fetcher_dispatcher, mock):
     from fetcher_dispatcher.__main__ import main
 
@@ -39,7 +39,7 @@ def test_main(mock_create_fetcher_dispatcher, mock):
         f"--consumer-topic {CONSUMER_TOPIC} "
         f"--producer-topic {PRODUCER_TOPIC} "
         f"--zookeeper-ensemble-hosts {ZOOKEEPER_ENSEMBLE_HOSTS} "
-        f"--s3-data-set-bucket {S3_DATA_SET_BUCKET} "
+        f"--s3-data-set-bucket {S3_DATASET_BUCKET} "
         f"--bootstrap-servers {BOOTSTRAP_SERVERS_ARG} "
         f"--logging-level {LOGGING_LEVEL} "
         f"--fetcher-job-image {FETCHER_JOB_IMAGE} "
@@ -56,7 +56,7 @@ def test_main(mock_create_fetcher_dispatcher, mock):
 
     fetcher_dispatcher_cfg = FetcherServiceConfig(
         zookeeper_ensemble_hosts=ZOOKEEPER_ENSEMBLE_HOSTS,
-        s3_data_set_bucket=S3_DATA_SET_BUCKET,
+        s3_data_set_bucket=S3_DATASET_BUCKET,
         fetcher_job=FetcherJobConfig(
             image=FETCHER_JOB_IMAGE, namespace=DEFAULT_NAMESPACE, restart_policy=DEFAULT_RESTART_POLICY
         ),
