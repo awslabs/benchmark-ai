@@ -101,11 +101,11 @@ create_infra() {
     echo "==> Installing kubeflow operators"
     _install_kubeflow_operators || return 1
 
-    echo "==> Initializing helm"
-    _init_helm || return 1
+    echo "==> Installing Tiller"
+    _install_tiller || return 1
 
-    echo "==> Installing Grafana"
-    _install_grafana || return 1
+    echo "==> Installing Prometheus"
+    _install_prometheus || return 1
 
     echo "==> Installing zookeeper"
     _install_zookeeper || return 1
@@ -161,6 +161,60 @@ _install_msk_aware_terraform_plugin(){
             return 1
         fi
     fi
+}
+
+_install_tiller(){
+    ${kubectl} get serviceaccount -n ${tiller_namespace} tiller -o yaml || $kubectl create serviceaccount --namespace ${tiller_namespace} tiller || return 1
+    ${kubectl} get clusterrolebinding tiller-cluster-rule -o yaml || $kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=${tiller_namespace}:tiller || return 1
+
+    ${helm} init --wait --service-account tiller || return 1
+    #TODO: Secure through TLS?: https://github.com/jonbcampos/kubernetes-series/blob/master/helm/scripts/add_secure_helm.sh
+    # TODO: Permissions RBAC
+    # https://medium.com/@amimahloof/how-to-setup-helm-and-tiller-with-rbac-and-namespaces-34bf27f7d3c3
+}
+
+_install_prometheus(){
+    ${helm} upgrade --install prometheus-operator-1 -f ${k8s_deploy_dir}/prometheus-operator.yaml stable/prometheus-operator || return 1
+}
+
+port_forward() {
+    local service_name=""
+    for arg in "$@"; do
+        case "${arg}" in
+        --service=*)
+            service_name="${arg#*=}"
+            ;;
+        esac
+    done
+
+    if [ -z "$service_name" ]; then
+        printf "Missing required argument --service=[grafana|alertmanager|prometheus]\n" && return 1
+    fi
+
+    if [ "$service_name" == "grafana" ]; then
+        _port_forward_grafana
+    elif [ "$service_name" == "alertmanager" ]; then
+        _port_forward_alertmanager
+    elif [ "$service_name" == "prometheus" ]; then
+        _port_forward_prometheus
+    else
+        printf "Unknown service $service_name\n" && return 1
+    fi
+}
+
+_port_forward_grafana(){
+    printf "Navigate to 127.0.0.1:3000 to access the Grafana dashboard\nCtrl+C to cancel the session.\n"
+    kubectl port-forward deployment/prometheus-operator-1-grafana 3000
+}
+
+_port_forward_alertmanager(){
+    printf "Navigate to 127.0.0.1:9093 to access the AlertManager dashboard\nCtrl+C to cancel the session.\n"
+    kubectl port-forward deployment/prometheus-operator-1-alertmanager 9093
+}
+
+_port_forward_prometheus(){
+    printf "Navigate to 127.0.0.1:9090 to access the Prometheus dashboard\nCtrl+C to cancel the session.\n"
+    kubectl port-forward deployment/prometheus-operator-1-prometheus 9090
 }
 
 __create_kubeflow_namespace(){
@@ -236,6 +290,9 @@ _install_grafana() {
 _destroy_helm_charts() {
     echo "-> Destroying helm charts:\n$(helm ls --short)\n"
     ${helm} delete $(${helm} ls --short) --purge || return 1
+
+    # TODO: `helm delete` does not properly delete CRDs which are created by the Prometheus Operator, for example:
+    # https://github.com/istio/istio/issues/7688
 }
 
 _install_zookeeper(){
@@ -258,9 +315,6 @@ destroy_infra() {
     else
         printf "Missing required argument --aws-region\n" && return 1
     fi
-
-    echo "==> Destroying helm charts"
-    _destroy_helm_charts || return 1
 
     _install_msk_aware_terraform_plugin || return 1
 
@@ -320,6 +374,11 @@ __validate_zookeeper_pods() {
 }
 
 __validate_grafana() {
+    # TODO: Validate through tunnel method.
+    # This method only works if the load balancer is up, which is complicated because it either has to be
+    # restricted to Amzn (for example) which then makes it unavailable to ECS (if we don't deploy through our Macs)
+    # or we have to use a public endpoint which has security concerns.
+
     printf "Grafana is ready"
     password=$(
         ${kubectl} get secret --namespace tiller-world grafana -o jsonpath="{.data.admin-password}" | base64 --decode
@@ -327,6 +386,9 @@ __validate_grafana() {
     host=$(
         ${kubectl} get svc grafana --namespace tiller-world -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
     )
+
+    # TODO: Determine security implications of this call. Generally we should avoid passing credentials as program args
+    # according to https://coe.amazon.com/coes/100190
     curl http://admin:${password}@${host}:80/api/health || return 1
 }
 
@@ -335,8 +397,7 @@ validate_infra() {
     local rules=(
         __validate_mpi_job \
         __validate_mxnet_job \
-        __validate_zookeeper_pods \
-        __validate_grafana
+        __validate_zookeeper_pods 
     )
 
     for rule in "${rules[@]}"; do
@@ -520,7 +581,7 @@ data_dir=$(realpath ${data_dir})
 kubeconfig=$(realpath ${data_dir}/kubeconfig)
 kube_config_arg=--kubeconfig=${kubeconfig}
 kubectl="kubectl ${kube_config_arg}"
-tiller_namespace="tiller-world"
+tiller_namespace="kube-system"
 helm_config_arg="${kube_config_arg} --tiller-namespace ${tiller_namespace}"
 helm="helm ${helm_config_arg}"
 terraform_dir=$(dirname $BASH_SOURCE)/cluster
@@ -540,6 +601,9 @@ infra)
     case "${verb}" in
     create)
         create_infra $@
+        ;;
+    port-forward)
+        port_forward $@
         ;;
     destroy)
         destroy_infra $@

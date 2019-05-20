@@ -4,6 +4,7 @@ import toml
 from argparse import ArgumentParser
 from executor.args import create_executor_config
 from transpiler.bai_knowledge import create_job_yaml_spec
+from uuid import uuid4
 
 
 def main(argv=None):
@@ -16,7 +17,7 @@ def main(argv=None):
     # TODO: Pass this as an argument
     fetched_data_sources = descriptor_data.get("data", {}).get("sources", [])
 
-    yaml_string, _ = create_job_yaml_spec(descriptor_data, transpiler_config, fetched_data_sources)
+    yaml_string = create_job_yaml_spec(descriptor_data, transpiler_config, fetched_data_sources, str(uuid4()))
 
     if input.filename:
         current_dir = os.path.dirname(os.path.abspath(__file__))
