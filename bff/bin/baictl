@@ -129,7 +129,7 @@ _generate_submit_event() {
     local event=$(cat <<-EOF
 {
     "message_id" : "$(uuidgen)",
-    "client_id"  : "$(sha1sum <<<$(whoami)+$(hostname) | awk '{print $1}')",
+    "client_id"  : "$(get_client_id)",
     "client_version" : "${VERSION}",
     "client_sha1"    : "${MY_SHA1}",
     "client_username" : "$(whoami)",
