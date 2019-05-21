@@ -1,7 +1,7 @@
 import datetime
 import pytest
 
-from unittest.mock import call, Mock
+from unittest.mock import call, create_autospec
 
 import kafka
 
@@ -10,11 +10,8 @@ from bai_metrics_pusher.backends.kafka_backend import KafkaBackend, KafkaExporte
 
 @pytest.fixture
 def mock_kafka_producer(mocker):
-    mock_kafka_producer_class = mocker.patch.object(kafka, "KafkaProducer")
-    mock_kafka_producer = Mock(spec=kafka.KafkaProducer, autospec=True)
-    mock_kafka_producer.send = Mock()
-    mock_kafka_producer.close = Mock()
-    mock_kafka_producer_class.return_value = mock_kafka_producer
+    mock_kafka_producer = create_autospec(kafka.KafkaProducer)
+    mocker.patch.object(kafka, "KafkaProducer", return_value=mock_kafka_producer)
     return mock_kafka_producer
 
 
