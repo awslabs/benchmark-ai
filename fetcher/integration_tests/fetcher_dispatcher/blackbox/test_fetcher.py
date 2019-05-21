@@ -79,16 +79,12 @@ def test_fetcher(
 
     filter_event = get_message_is_the_response(benchmark_event, data_set_check)
 
-    try:
-        while True:
-            records = kafka_consumer_of_produced.poll(POLL_TIMEOUT_MS)
-            print("Got this:")
-            print(records)
-            kafka_consumer_of_produced.commit()
-            for topic, recs in records.items():
-                for msg in recs:
-                    if filter_event(msg.value):
-                        return
-    finally:
-        kafka_consumer_of_produced.close()
-        kafka_producer_to_consume.close()
+    while True:
+        records = kafka_consumer_of_produced.poll(POLL_TIMEOUT_MS)
+        print("Got this:")
+        print(records)
+        kafka_consumer_of_produced.commit()
+        for topic, recs in records.items():
+            for msg in recs:
+                if filter_event(msg.value):
+                    return
