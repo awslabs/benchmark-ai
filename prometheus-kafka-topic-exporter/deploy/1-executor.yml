@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: executor
+  labels:
+    app: benchmark-ai
+spec:
+  selector:
+    matchLabels:
+      app: benchmark-ai
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: benchmark-ai
+        service: executor
+    spec:
+      serviceAccountName: executor
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: service
+                    operator: In
+                    values:
+                      - executor
+              topologyKey: kubernetes.io/hostname
+      initContainers:
+        - name: kubectl-delivery
+          image: mpioperator/kubectl-delivery:0.1.0
+          env:
+          - name: TARGET_DIR
+            value: "/tmp/kubectl"
+          volumeMounts:
+          - mountPath: /tmp
+            name: kubectl
+      containers:
+        - name: executor
+          image: @@DOCKER_IMAGE_TAG@@
+          env:
+          - name: AVAILABILITY_ZONES
+            value:
+            valueFrom:
+              configMapKeyRef:
+                name: outputs-infrastructure
+                key: availability_zones
+          - name: KAFKA_BOOTSTRAP_SERVERS
+            valueFrom:
+              configMapKeyRef:
+                name: outputs-infrastructure
+                key: msk_bootstrap_brokers
+          - name: CONSUMER_GROUP_ID
+            value: "executor"
+          - name: CONSUMER_TOPIC
+            value: "BAI_APP_FETCHER"
+          - name: PRODUCER_TOPIC
+            value: "BAI_APP_EXECUTOR"
+          - name: STATUS_TOPIC
+            value: "BAI_APP_STATUS"
+          - name: LOGGING_LEVEL
+            value: "INFO"
+          - name: KUBECTL
+            value: "/kubectl/kubectl"
+          volumeMounts:
+            - mountPath: /kubectl
+              name: kubectl
+      nodeSelector:
+        node.type: bai-services-cheap
+      restartPolicy: Always
+      volumes:
+        - name: kubectl
+          emptyDir: {}
