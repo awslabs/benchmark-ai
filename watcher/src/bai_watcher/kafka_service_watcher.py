@@ -14,7 +14,8 @@ logger = logging.getLogger(__name__)
 
 
 class WatchJobsEventHandler(KafkaServiceCallback):
-    def __init__(self, config: WatcherServiceConfig):
+    def __init__(self, consumed_topics: List[str], config: WatcherServiceConfig):
+        super(WatchJobsEventHandler, self).__init__(consumed_topics=consumed_topics)
         self.config = config
         self.watchers = {}
 
@@ -68,15 +69,16 @@ class WatchJobsEventHandler(KafkaServiceCallback):
 
 
 def create_service(common_kafka_cfg: KafkaServiceConfig, service_cfg: WatcherServiceConfig) -> KafkaService:
-    callbacks = [WatchJobsEventHandler(service_cfg)]
-    consumer, producer = create_kafka_consumer_producer(common_kafka_cfg, ExecutorBenchmarkEvent)
+    callbacks = [WatchJobsEventHandler([common_kafka_cfg.consumer_topic], service_cfg)]
+    consumer, producer = create_kafka_consumer_producer(common_kafka_cfg)
     return KafkaService(
-        SERVICE_NAME,
-        __version__,
-        common_kafka_cfg.producer_topic,
-        callbacks,
-        consumer,
-        producer,
+        name=SERVICE_NAME,
+        version=__version__,
+        producer_topic=common_kafka_cfg.producer_topic,
+        callbacks=callbacks,
+        kafka_consumer=consumer,
+        kafka_producer=producer,
+        cmd_return_topic=common_kafka_cfg.cmd_return_topic,
         pod_name=get_pod_name(),
         status_topic=common_kafka_cfg.status_topic,
     )

@@ -1,7 +1,13 @@
 import pytest
 
 from typing import Callable
-from bai_kafka_utils.events import ExecutorBenchmarkEvent, BenchmarkEvent, BenchmarkJob, ExecutorPayload
+from bai_kafka_utils.events import (
+    BenchmarkEvent,
+    BenchmarkJob,
+    ExecutorPayload,
+    create_from_object,
+    ExecutorBenchmarkEvent,
+)
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
 from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
 
@@ -15,6 +21,9 @@ kafka_cfg = KafkaServiceConfig(
     consumer_topic="BAI_APP_EXECUTOR",
     bootstrap_servers=["localhost:9092"],
     logging_level="INFO",
+    cmd_submit_topic="CMD_SUBMIT",
+    cmd_return_topic="CMD_RETURN",
+    status_topic="BAI_APP_STATUS",
 )
 
 
@@ -42,12 +51,12 @@ def get_event_equals(src_event: BenchmarkEvent) -> Callable[[BenchmarkEvent], bo
     reason="This test requires the executor service to be running on your machine, along with Kafka, ZK, etc"
 )
 def test_producer(benchmark_event):
-    consumer, producer = create_kafka_consumer_producer(kafka_cfg, ExecutorBenchmarkEvent)
+    consumer, producer = create_kafka_consumer_producer(kafka_cfg)
 
-    expected_job = BenchmarkJob(id=JOB_ID, status="SUBMITTED", k8s_yaml="")
-    expected_payload = ExecutorPayload.from_fetcher_payload(benchmark_event.payload, job=expected_job)
-    expected_event = BenchmarkEvent.from_event_new_payload(benchmark_event, expected_payload)
-    producer.send(kafka_cfg.producer_topic, benchmark_event)
+    expected_job = BenchmarkJob(id=JOB_ID, k8s_yaml="")
+    expected_payload = ExecutorPayload.create_from_fetcher_payload(benchmark_event.payload, job=expected_job)
+    expected_event = create_from_object(ExecutorBenchmarkEvent, benchmark_event, payload=expected_payload)
+    producer.send(kafka_cfg.producer_topic, benchmark_event, key=benchmark_event.client_id)
 
     filter_event = get_message_is_the_response(benchmark_event)
     is_expected_event = get_event_equals(expected_event)

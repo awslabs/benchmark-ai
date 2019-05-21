@@ -37,7 +37,7 @@ def mock_kafka_producer(mocker):
 
 
 def test_kafka_consumer_pass_through(mock_kafka_consumer):
-    create_kafka_consumer(BOOTSTRAP_SERVERS, GROUP_ID, TOPIC, BenchmarkEvent)
+    create_kafka_consumer(BOOTSTRAP_SERVERS, GROUP_ID, [TOPIC])
     mock_kafka_consumer.assert_called_with(
         TOPIC,
         bootstrap_servers=BOOTSTRAP_SERVERS,
@@ -49,14 +49,14 @@ def test_kafka_consumer_pass_through(mock_kafka_consumer):
 
 
 def test_kafka_consumer_handles_invalid_format(mock_kafka_consumer):
-    create_kafka_consumer(BOOTSTRAP_SERVERS, GROUP_ID, TOPIC, BenchmarkEvent)
+    create_kafka_consumer(BOOTSTRAP_SERVERS, GROUP_ID, [TOPIC])
     deserializer = get_deserializer(mock_kafka_consumer)
 
     assert deserializer(INVALID_JSON) is None
 
 
 def test_kafka_consumer_handles_wrong_schema(mock_kafka_consumer):
-    create_kafka_consumer(BOOTSTRAP_SERVERS, GROUP_ID, TOPIC, BenchmarkEvent)
+    create_kafka_consumer(BOOTSTRAP_SERVERS, GROUP_ID, [TOPIC])
     deserializer = get_deserializer(mock_kafka_consumer)
 
     assert deserializer(WRONG_SCHEMA_JSON) is None
@@ -66,14 +66,14 @@ def test_kafka_consumer_handles_wrong_schema(mock_kafka_consumer):
     "serialized_key, expected_key", [(CLIENT_ID_SERIALIZED, CLIENT_ID), (None, None), (ILLEGAL_UTF8_KEY, None)]
 )
 def test_kafka_key_deserializer(mock_kafka_consumer, serialized_key, expected_key):
-    create_kafka_consumer(BOOTSTRAP_SERVERS, GROUP_ID, TOPIC, BenchmarkEvent)
+    create_kafka_consumer(BOOTSTRAP_SERVERS, GROUP_ID, [TOPIC])
     key_deserializer = get_key_deserializer(mock_kafka_consumer)
 
     assert expected_key == key_deserializer(serialized_key)
 
 
 def test_kafka_key_deserializer_serializer(mock_kafka_consumer, mock_kafka_producer):
-    create_kafka_consumer(BOOTSTRAP_SERVERS, GROUP_ID, TOPIC, BenchmarkEvent)
+    create_kafka_consumer(BOOTSTRAP_SERVERS, GROUP_ID, [TOPIC])
     create_kafka_producer(BOOTSTRAP_SERVERS)
 
     key_deserializer = get_key_deserializer(mock_kafka_consumer)
@@ -97,11 +97,6 @@ def test_kafka_key_serializer(mock_kafka_producer):
     key_serializer = get_key_serializer(mock_kafka_producer)
 
     assert CLIENT_ID_SERIALIZED == key_serializer(CLIENT_ID)
-
-
-def test_wrong_event_type():
-    with pytest.raises(WrongBenchmarkEventTypeException):
-        create_kafka_consumer(BOOTSTRAP_SERVERS, GROUP_ID, TOPIC, BenchmarkPayload)
 
 
 def get_deserializer(mock: MagicMock):

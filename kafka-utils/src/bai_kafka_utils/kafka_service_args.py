@@ -14,6 +14,8 @@ def get_kafka_service_config(program_name: str, cmd_args: str) -> KafkaServiceCo
         producer_topic=args.producer_topic,
         consumer_group_id=args.consumer_group_id,
         bootstrap_servers=args.bootstrap_servers,
+        cmd_submit_topic=args.cmd_submit_topic,
+        cmd_return_topic=args.cmd_return_topic,
         logging_level=args.logging_level,
         status_topic=args.status_topic,
     )
@@ -41,6 +43,10 @@ def create_kafka_service_parser(program_name: str) -> ArgParser:
     )
 
     parser.add_argument("--consumer-group-id", env_var="CONSUMER_GROUP_ID")
+
+    parser.add_argument("--cmd-submit-topic", env_var="CMD_SUBMIT_TOPIC", default="CMD_SUBMIT")
+
+    parser.add_argument("--cmd-return-topic", env_var="CMD_RETURN_TOPIC", default="CMD_RETURN")
 
     parser.add_argument("--status-topic", env_var="STATUS_TOPIC", default="BAI_APP_STATUS")
 

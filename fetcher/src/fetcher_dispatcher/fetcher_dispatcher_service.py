@@ -25,7 +25,8 @@ def create_data_set_manager(zookeeper_ensemble_hosts: str, kubeconfig: str, fetc
 
 
 class FetcherEventHandler(KafkaServiceCallback):
-    def __init__(self, data_set_mgr: DataSetManager, s3_data_set_bucket: str):
+    def __init__(self, consumed_topics: List[str], data_set_mgr: DataSetManager, s3_data_set_bucket: str):
+        super(FetcherEventHandler, self).__init__(consumed_topics=consumed_topics)
         self.data_set_mgr = data_set_mgr
         self.s3_data_set_bucket = s3_data_set_bucket
 
@@ -79,19 +80,20 @@ def create_fetcher_dispatcher(common_kafka_cfg: KafkaServiceConfig, fetcher_cfg:
     )
     data_set_mgr.start()
 
-    callbacks = [FetcherEventHandler(data_set_mgr, fetcher_cfg.s3_data_set_bucket)]
+    callbacks = [FetcherEventHandler([common_kafka_cfg.consumer_topic], data_set_mgr, fetcher_cfg.s3_data_set_bucket)]
 
-    consumer, producer = create_kafka_consumer_producer(common_kafka_cfg, FetcherBenchmarkEvent)
+    consumer, producer = create_kafka_consumer_producer(common_kafka_cfg)
 
     pod_name = get_pod_name()
 
     return KafkaService(
-        SERVICE_NAME,
-        __version__,
-        common_kafka_cfg.producer_topic,
-        callbacks,
-        consumer,
-        producer,
-        pod_name,
-        common_kafka_cfg.status_topic,
+        name=SERVICE_NAME,
+        version=__version__,
+        producer_topic=common_kafka_cfg.producer_topic,
+        callbacks=callbacks,
+        kafka_consumer=consumer,
+        kafka_producer=producer,
+        cmd_return_topic=common_kafka_cfg.cmd_return_topic,
+        pod_name=pod_name,
+        status_topic=common_kafka_cfg.status_topic,
     )

@@ -2,7 +2,7 @@ import logging
 
 import kafka
 from kafka import KafkaConsumer, KafkaProducer
-from typing import List, Type, Tuple
+from typing import List, Tuple
 
 from bai_kafka_utils.events import BenchmarkEvent, get_topic_event_type
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
@@ -22,26 +22,25 @@ class WrongBenchmarkEventTypeException(Exception):
 
 # args from kafka
 def create_kafka_consumer_producer(
-    kafka_cfg: KafkaServiceConfig, event_type: Type[BenchmarkEvent]
+    kafka_cfg: KafkaServiceConfig
 ) -> Tuple[KafkaConsumer, KafkaProducer]:
+    # Each service's Kafka consumer subscribes to both the service's input topic and the cmd_submit topic
+    consumer_topics = [kafka_cfg.consumer_topic, kafka_cfg.cmd_submit_topic]
     return (
         create_kafka_consumer(
-            kafka_cfg.bootstrap_servers, kafka_cfg.consumer_group_id, kafka_cfg.consumer_topic, event_type
+            kafka_cfg.bootstrap_servers, kafka_cfg.consumer_group_id, consumer_topics
         ),
         create_kafka_producer(kafka_cfg.bootstrap_servers),
     )
 
 
 def create_kafka_consumer(
-    bootstrap_servers: List[str], group_id: str, topic: str, event_type: Type[BenchmarkEvent]
+    bootstrap_servers: List[str], group_id: str, topics: List[str]
 ) -> kafka.KafkaConsumer:
-    if not issubclass(event_type, BenchmarkEvent):
-        raise WrongBenchmarkEventTypeException(f"{str(event_type)} is not a valid event type")
-
     def json_deserializer(msg_value):
         try:
             envelope = BenchmarkEvent.from_json(msg_value.decode(DEFAULT_ENCODING))
-            event_type = get_topic_event_type(envelope.type)  # TODO: Remove event_type from create_kafka_consumer signature
+            event_type = get_topic_event_type(envelope.type)
             return event_type.from_json(msg_value.decode(DEFAULT_ENCODING))
         # Our json deserializer can raise anything - constructor can raise anything).
         # Handling JsonDecodeError and KeyError is not enough
@@ -59,7 +58,7 @@ def create_kafka_consumer(
             return None
 
     return kafka.KafkaConsumer(
-        topic,  # TODO: Change to list of topics
+        *topics,
         bootstrap_servers=bootstrap_servers,
         group_id=group_id,
         value_deserializer=json_deserializer,

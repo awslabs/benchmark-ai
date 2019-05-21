@@ -1,5 +1,6 @@
 import subprocess
 import logging
+from typing import List
 
 from executor import SERVICE_NAME, __version__
 from executor.config import ExecutorConfig
@@ -25,7 +26,8 @@ logger = logging.getLogger(SERVICE_NAME)
 
 
 class ExecutorEventHandler(KafkaServiceCallback):
-    def __init__(self, executor_config):
+    def __init__(self, consumed_topics: List[str], executor_config):
+        super(ExecutorEventHandler, self).__init__(consumed_topics=consumed_topics)
         self.executor_config = executor_config
 
     def handle_event(self, event: FetcherBenchmarkEvent, kafka_service: KafkaService):
@@ -74,19 +76,20 @@ class ExecutorEventHandler(KafkaServiceCallback):
 
 def create_executor(common_kafka_cfg: KafkaServiceConfig, executor_config: ExecutorConfig) -> KafkaService:
 
-    callbacks = [ExecutorEventHandler(executor_config)]
+    callbacks = [ExecutorEventHandler([common_kafka_cfg.consumer_topic], executor_config)]
 
-    consumer, producer = create_kafka_consumer_producer(common_kafka_cfg, FetcherBenchmarkEvent)
+    consumer, producer = create_kafka_consumer_producer(common_kafka_cfg)
 
     pod_name = get_pod_name()
 
     return KafkaService(
-        SERVICE_NAME,
-        __version__,
-        common_kafka_cfg.producer_topic,
-        callbacks,
-        consumer,
-        producer,
-        pod_name,
+        name=SERVICE_NAME,
+        version=__version__,
+        producer_topic=common_kafka_cfg.producer_topic,
+        callbacks=callbacks,
+        kafka_consumer=consumer,
+        kafka_producer=producer,
+        cmd_return_topic=common_kafka_cfg.cmd_return_topic,
+        pod_name=pod_name,
         status_topic=common_kafka_cfg.status_topic,
     )

@@ -1,8 +1,5 @@
-import kafka
-from unittest import mock
-
 from pytest import fixture
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from bai_kafka_utils.events import (
     BenchmarkDoc,
     BenchmarkJob,
@@ -59,17 +56,18 @@ def benchmark_event_without_data_sets(benchmark_event, benchmark_doc: BenchmarkD
     return create_from_object(FetcherBenchmarkEvent, benchmark_event, payload=payload)
 
 
-@mock.patch("executor.executor.subprocess.check_output")
-@mock.patch("executor.executor.create_job_yaml_spec", return_value="yaml_spec")
-def test_executor_event_handler_handle_event(
-    mock_create_yaml,
-    mock_check_output,
-    benchmark_event_with_data_sets: FetcherBenchmarkEvent,
-    kafka_service: KafkaService,
-    config_args,
-):
+def get_executor_callback(config_args):
     config = create_executor_config(config_args)
-    executor_callback = ExecutorEventHandler(config)
+    return ExecutorEventHandler([MOCK_CONSUMER_TOPIC], config)
+
+
+def test_executor_event_handler_handle_event(
+    mocker, benchmark_event_with_data_sets: FetcherBenchmarkEvent, kafka_service: KafkaService, config_args
+):
+    mock_create_yaml = mocker.patch("executor.executor.subprocess.check_output")
+    mock_check_output = mocker.patch("executor.executor.create_job_yaml_spec", return_value="yaml_spec")
+
+    executor_callback = get_executor_callback(config_args)
 
     event_to_send = executor_callback.handle_event(benchmark_event_with_data_sets, kafka_service)
 
@@ -78,10 +76,11 @@ def test_executor_event_handler_handle_event(
     assert event_to_send.action_id == benchmark_event_with_data_sets.action_id
 
 
-@mock.patch("executor.executor.subprocess.check_output")
-def test_executor_event_handler_k8s_apply(mock_check_output, config_args):
+def test_executor_event_handler_k8s_apply(mocker, config_args):
+    mock_check_output = mocker.patch("executor.executor.subprocess.check_output")
+
     config = create_executor_config(config_args)
-    executor_callback = ExecutorEventHandler(config)
+    executor_callback = get_executor_callback(config_args)
 
     executor_callback._kubernetes_apply(JOB_YAML)
 
@@ -101,16 +100,16 @@ def test_create_response_event(benchmark_event_with_data_sets, config_args):
         ExecutorBenchmarkEvent, benchmark_event_with_data_sets, payload=expected_payload
     )
 
-    config = create_executor_config(config_args)
-    executor_callback = ExecutorEventHandler(config)
+    executor_callback = get_executor_callback(config_args)
     response_event = executor_callback._create_response_event(benchmark_event_with_data_sets, JOB_ID, JOB_YAML)
 
     assert expected_event == response_event
 
 
-@patch.object(kafka, "KafkaProducer")
-@patch.object(kafka, "KafkaConsumer")
-def test_create_executor(mockKafkaConsumer, mockKafkaProducer, config_args):
+def test_create_executor(mocker, config_args):
+    mock_kafka_consumer = mocker.patch("kafka.KafkaProducer")
+    mock_kafka_producer = mocker.patch("kafka.KafkaConsumer")
+
     kafka_service_config = KafkaServiceConfig(
         bootstrap_servers=MOCK_KAFKA_BOOTSTRAP_SERVERS,
         consumer_group_id=MOCK_CONSUMER_GROUP_ID,
@@ -121,7 +120,7 @@ def test_create_executor(mockKafkaConsumer, mockKafkaProducer, config_args):
     executor_config = create_executor_config(config_args)
     executor = create_executor(kafka_service_config, executor_config)
 
-    mockKafkaConsumer.assert_called_once()
-    mockKafkaProducer.assert_called_once()
+    mock_kafka_consumer.assert_called_once()
+    mock_kafka_producer.assert_called_once()
 
     assert executor

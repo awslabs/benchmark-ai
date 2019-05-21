@@ -4,7 +4,7 @@ import re
 import time
 import uuid
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, List
 from unittest.mock import MagicMock, Mock, call
 
 import pytest
@@ -42,6 +42,9 @@ VISIT_TIME_MS = VISIT_TIME * 1000
 
 CONSUMER_TOPIC = "IN_TOPIC"
 
+CMD_RETURN_TOPIC = "CMD_RETURN"
+CMD_SUBMIT_TOPIC = "CMD_SUBMIT"
+
 STATUS_TOPIC = "STATUS_TOPIC"
 
 STATUS_MESSAGE = "MESSAGE"
@@ -53,7 +56,11 @@ class MockBenchmarkPayload(BenchmarkPayload):
     bar: int
 
 
-MockConsumerRecord = collections.namedtuple("FakeConsumerRecord", ["key", "value"])
+def create_mock_consumer_record(key, value, topic):
+    MockConsumerRecord = collections.namedtuple("FakeConsumerRecord", ["key", "value"])
+    MockConsumerRecord.topic = topic
+
+    return MockConsumerRecord(key=key, value=value)
 
 
 @fixture
@@ -77,8 +84,9 @@ def benchmark_event():
 @fixture
 def kafka_consumer(benchmark_event: BenchmarkEvent):
     consumer = MagicMock(spec=KafkaConsumer)
+    mock_record = create_mock_consumer_record(value=benchmark_event, key=SOME_KEY, topic=CONSUMER_TOPIC)
 
-    consumer.poll = Mock(return_value={CONSUMER_TOPIC: [MockConsumerRecord(value=benchmark_event, key=SOME_KEY)]})
+    consumer.poll = Mock(return_value={CONSUMER_TOPIC: [mock_record]})
     return consumer
 
 
@@ -90,9 +98,27 @@ def kafka_consumer_with_invalid_message(benchmark_event):
     consumer.poll = Mock(
         return_value={
             CONSUMER_TOPIC: [
-                MockConsumerRecord(value=None, key=SOME_KEY),
-                MockConsumerRecord(value=benchmark_event, key=SOME_KEY),
+                create_mock_consumer_record(value=None, key=SOME_KEY, topic=CONSUMER_TOPIC),
+                create_mock_consumer_record(value=benchmark_event, key=SOME_KEY, topic=CONSUMER_TOPIC),
             ]
+        }
+    )
+    return consumer
+
+
+@fixture
+def kafka_consumer_with_two_topics(benchmark_event):
+    consumer = MagicMock(spec=KafkaConsumer)
+
+    # Add a good one to allow the stop handler to do it's job
+    consumer.poll = Mock(
+        return_value={
+            CONSUMER_TOPIC: [
+                create_mock_consumer_record(value=benchmark_event, key=SOME_KEY, topic=CONSUMER_TOPIC),
+            ],
+            CMD_SUBMIT_TOPIC: [
+                create_mock_consumer_record(value=benchmark_event, key=SOME_KEY, topic=CMD_SUBMIT_TOPIC),
+            ],
         }
     )
     return consumer
@@ -107,7 +133,14 @@ def kafka_producer():
 def simple_kafka_service(kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer):
     callbacks = []
     kafka_service = KafkaService(
-        SERVICE_NAME, VERSION, PRODUCER_TOPIC, callbacks, kafka_consumer, kafka_producer, POD_NAME
+        name=SERVICE_NAME,
+        version=VERSION,
+        producer_topic=PRODUCER_TOPIC,
+        callbacks=callbacks,
+        kafka_consumer=kafka_consumer,
+        kafka_producer=kafka_producer,
+        cmd_return_topic=CMD_RETURN_TOPIC,
+        pod_name=POD_NAME
     )
     return kafka_service
 
@@ -142,9 +175,15 @@ def test_kafka_service_stop_before_run(simple_kafka_service: KafkaService):
         simple_kafka_service.stop_loop()
 
 
-def test_invalid_message_ignored(kafka_consumer_with_invalid_message: KafkaConsumer, kafka_producer: KafkaProducer):
+def _create_mock_callback(return_value=None, consumed_topics: List[str] = CONSUMER_TOPIC):
     mock_callback = MagicMock(spec=KafkaServiceCallback)
-    mock_callback.handle_event.return_value = None
+    mock_callback.handle_event.return_value = return_value
+    mock_callback.consumed_topics = consumed_topics
+    return mock_callback
+
+
+def test_invalid_message_ignored(kafka_consumer_with_invalid_message: KafkaConsumer, kafka_producer: KafkaProducer):
+    mock_callback = _create_mock_callback()
 
     kafka_service = _create_kafka_service([mock_callback], kafka_consumer_with_invalid_message, kafka_producer)
     kafka_service.run_loop()
@@ -155,11 +194,26 @@ def test_invalid_message_ignored(kafka_consumer_with_invalid_message: KafkaConsu
     assert mock_callback.handle_event.call_count == 1
 
 
-def test_message_passed_through(kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer):
-    mock_callback1 = MagicMock(spec=KafkaServiceCallback)
-    mock_callback2 = MagicMock(spec=KafkaServiceCallback)
+def test_not_consumed_topic_ignored(kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer):
+    mock_callback = _create_mock_callback(consumed_topics=["NON_EXISTENT_TOPIC"])
+    kafka_service = _create_kafka_service([mock_callback], kafka_consumer, kafka_producer)
+    kafka_service.run_loop()
 
-    mock_callback1.handle_event.return_value = mock_callback2.handle_event.return_value = None
+    assert not mock_callback.handle_event.called
+    assert mock_callback.cleanup.called
+
+
+def test_multiple_consumed_topics(kafka_consumer_with_two_topics: KafkaConsumer, kafka_producer: KafkaProducer):
+    mock_callback = _create_mock_callback(consumed_topics=[CONSUMER_TOPIC, CMD_SUBMIT_TOPIC])
+    kafka_service = _create_kafka_service([mock_callback], kafka_consumer_with_two_topics, kafka_producer)
+    kafka_service.run_loop()
+
+    assert mock_callback.handle_event.call_count == 2
+
+
+def test_message_passed_through(kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer):
+    mock_callback1 = _create_mock_callback()
+    mock_callback2 = _create_mock_callback()
 
     mock_callbacks = [mock_callback1, mock_callback2]
 
@@ -172,9 +226,8 @@ def test_message_passed_through(kafka_consumer: KafkaConsumer, kafka_producer: K
 
 
 def test_immutable_callbacks(kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer):
-    mock_callback_passed = MagicMock(spec=KafkaServiceCallback)
-    mock_callback_passed.handle_event.return_value = None
-    mock_callback_added_later = MagicMock(spec=KafkaServiceCallback)
+    mock_callback_passed = _create_mock_callback()
+    mock_callback_added_later = _create_mock_callback()
 
     callbacks = [mock_callback_passed]
 
@@ -201,8 +254,7 @@ def test_message_sent(
 
     mock_message_before_send(expected_event, mock_uuid4, PRODUCER_TOPIC)
 
-    mock_callback = Mock(spec=KafkaServiceCallback)
-    mock_callback.handle_event = Mock(return_value=result_event)
+    mock_callback = _create_mock_callback(return_value=result_event)
 
     kafka_service = _create_kafka_service([mock_callback], kafka_consumer, kafka_producer)
     kafka_service.run_loop()
@@ -228,9 +280,17 @@ def _create_kafka_service(callbacks, kafka_consumer, kafka_producer):
             pass
 
     kafka_service = KafkaService(
-        SERVICE_NAME, VERSION, PRODUCER_TOPIC, callbacks, kafka_consumer, kafka_producer, POD_NAME, STATUS_TOPIC
+        name=SERVICE_NAME,
+        version=VERSION,
+        producer_topic=PRODUCER_TOPIC,
+        callbacks=callbacks,
+        kafka_consumer=kafka_consumer,
+        kafka_producer=kafka_producer,
+        cmd_return_topic=CMD_RETURN_TOPIC,
+        pod_name=POD_NAME,
+        status_topic=STATUS_TOPIC
     )
-    kafka_service.add_callback(StopKafkaServiceCallback())
+    kafka_service.add_callback(StopKafkaServiceCallback(CONSUMER_TOPIC))
     return kafka_service
 
 
@@ -247,7 +307,7 @@ def test_status_message_sent(
 ):
     mock_time, mock_uuid4 = mock_time_and_uuid(mocker)
 
-    status_callback = DoNothingCallback()
+    status_callback = DoNothingCallback([])
 
     kafka_service = _create_kafka_service([status_callback], kafka_consumer, kafka_producer)
     kafka_service.run_loop()

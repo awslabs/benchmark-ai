@@ -5,7 +5,7 @@ import time
 import uuid
 from dataclasses import dataclass
 from signal import signal, SIGTERM
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from kafka import KafkaProducer, KafkaConsumer
 
@@ -20,11 +20,19 @@ class KafkaServiceConfig:
     producer_topic: str
     bootstrap_servers: List[str]
     logging_level: str
+    cmd_submit_topic: Optional[str] = None
+    cmd_return_topic: Optional[str] = None
     status_topic: Optional[str] = None
     consumer_group_id: Optional[str] = None
 
 
 class KafkaServiceCallback(metaclass=abc.ABCMeta):
+    # Callbacks will only receive events belonging to these topics
+    consumed_topics: List[str]
+
+    def __init__(self, consumed_topics: List[str]):
+        self.consumed_topics = consumed_topics
+
     @abc.abstractmethod
     def handle_event(self, event: BenchmarkEvent, kafka_service) -> Optional[BenchmarkEvent]:
         pass
@@ -54,6 +62,7 @@ class KafkaService:
         kafka_consumer: KafkaConsumer,
         kafka_producer: KafkaProducer,
         pod_name: str,
+        cmd_return_topic: str,
         status_topic: Optional[str] = None,
     ):
 
@@ -61,12 +70,14 @@ class KafkaService:
         self._producer = kafka_producer
         self._consumer = kafka_consumer
         self._status_topic = status_topic
+        self._cmd_return_topic = cmd_return_topic
         self.name = name
         self.version = version
         self.pod_name = pod_name
 
         # Immutability helps us to avoid nasty bugs.
         self._callbacks = list(callbacks)
+
         self._running = False
         signal(SIGTERM, self.stop_loop)
 
@@ -148,14 +159,19 @@ class KafkaService:
 
         while self._running:
             # KafkaConsumer.poll() might return more than one message
-            # TODO: Do we need a timeout here? (timeout_ms parameter)
             records = self._consumer.poll().values()
             for record in records:
                 for msg in record:
+                    handled = False
                     for callback in self._callbacks:
-                        output = self.safe_handle_msg(msg, callback)
-                        if output:
-                            self.send_event(output)
+                        if msg.topic in callback.consumed_topics:
+                            handled = True
+                            output = self.safe_handle_msg(msg, callback)
+                            if output:
+                                self.send_event(output)
+                    if not handled:
+                        logger.warning(f"Message received but not processed: {msg} \n"
+                                       f"(No callbacks assigned to topic {msg.topic})")
 
         for callback in self._callbacks:
             callback.cleanup()
