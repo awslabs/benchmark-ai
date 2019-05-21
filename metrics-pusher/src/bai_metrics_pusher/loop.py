@@ -4,10 +4,10 @@ import stat
 import logging
 import json
 import signal
-from typing import Dict, Callable
 from json import JSONDecodeError
 from bai_metrics_pusher.backends import create_backend
 from bai_metrics_pusher.args import InputValue
+from bai_metrics_pusher.backends.backend_interface import Backend
 from bai_metrics_pusher.kubernetes_pod_watcher import start_kubernetes_pod_watcher
 
 
@@ -37,7 +37,7 @@ def _get_fifo(pathname):
     return io.open(pathname, "r", buffering=1)
 
 
-def listen_to_fifo_and_emit_metrics(emit: Callable[[Dict], None]):
+def listen_to_fifo_and_emit_metrics(backend: Backend):
     with _get_fifo(FIFO_FILEPATH) as fifo:
         while True:
             logger.debug("Reading line from fifo")
@@ -45,7 +45,7 @@ def listen_to_fifo_and_emit_metrics(emit: Callable[[Dict], None]):
             if line == "":  # The client side sent an EOF
                 break
             metrics = _deserialize(line)
-            emit(metrics)
+            backend.emit(metrics)
 
 
 def start_loop(metrics_pusher_input: InputValue):
@@ -82,5 +82,8 @@ def start_loop(metrics_pusher_input: InputValue):
 
         listen_to_fifo_and_emit_metrics(backend)
     except SigtermReceived:
+        logger.info("Sigterm received")
+    finally:
         # TODO: Do I need to finish reading the FIFO contents?
         logger.info("Pod is terminated, exiting")
+        backend.close()
