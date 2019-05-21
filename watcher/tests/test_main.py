@@ -9,6 +9,8 @@ LOGGING_LEVEL = "WARN"
 CONSUMER_TOPIC = "IN"
 PRODUCER_TOPIC = "OUT"
 STATUS_TOPIC = "STATUS_TOPIC"
+CMD_RETURN_TOPIC = "CMD_RETURN"
+CMD_SUBMIT_TOPIC = "CMD_SUBMIT"
 BOOTSTRAP_SERVERS_ARG = ",".join(BOOTSTRAP_SERVERS)
 
 
@@ -22,6 +24,8 @@ def test_main(mocker):
         f" --consumer-topic {CONSUMER_TOPIC} "
         f" --producer-topic {PRODUCER_TOPIC} "
         f" --status-topic {STATUS_TOPIC} "
+        f" --cmd-return-topic {CMD_RETURN_TOPIC} "
+        f" --cmd-submit-topic {CMD_SUBMIT_TOPIC} "
         f" --bootstrap-servers {BOOTSTRAP_SERVERS_ARG} "
         f" --logging-level {LOGGING_LEVEL} "
         f" --kubeconfig kubeconfig "
@@ -31,6 +35,8 @@ def test_main(mocker):
     expected_common_kafka_cfg = KafkaServiceConfig(
         consumer_topic=CONSUMER_TOPIC,
         producer_topic=PRODUCER_TOPIC,
+        cmd_return_topic=CMD_RETURN_TOPIC,
+        cmd_submit_topic=CMD_SUBMIT_TOPIC,
         bootstrap_servers=BOOTSTRAP_SERVERS,
         logging_level=LOGGING_LEVEL,
         status_topic=STATUS_TOPIC,

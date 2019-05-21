@@ -3,13 +3,7 @@ from pytest import fixture
 from unittest.mock import MagicMock, ANY
 
 import bai_kafka_utils
-from bai_kafka_utils.events import BenchmarkEvent, BenchmarkPayload
-from bai_kafka_utils.kafka_client import (
-    create_kafka_consumer,
-    create_kafka_producer,
-    WrongBenchmarkEventTypeException,
-    MAX_IDLE_TIME_MS,
-)
+from bai_kafka_utils.kafka_client import create_kafka_consumer, create_kafka_producer, MAX_IDLE_TIME_MS
 from bai_kafka_utils.utils import DEFAULT_ENCODING
 
 ILLEGAL_UTF8_KEY = b"\xc3\x28"

@@ -5,7 +5,7 @@ import time
 import uuid
 from dataclasses import dataclass
 from signal import signal, SIGTERM
-from typing import List, Optional, Dict
+from typing import List, Optional
 
 from kafka import KafkaProducer, KafkaConsumer
 
@@ -170,8 +170,10 @@ class KafkaService:
                             if output:
                                 self.send_event(output)
                     if not handled:
-                        logger.warning(f"Message received but not processed: {msg} \n"
-                                       f"(No callbacks assigned to topic {msg.topic})")
+                        logger.warning(
+                            f"Message received but not processed: {msg} \n"
+                            f"(No callbacks assigned to topic {msg.topic})"
+                        )
 
         for callback in self._callbacks:
             callback.cleanup()

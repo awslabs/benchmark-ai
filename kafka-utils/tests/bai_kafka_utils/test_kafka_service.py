@@ -113,11 +113,9 @@ def kafka_consumer_with_two_topics(benchmark_event):
     # Add a good one to allow the stop handler to do it's job
     consumer.poll = Mock(
         return_value={
-            CONSUMER_TOPIC: [
-                create_mock_consumer_record(value=benchmark_event, key=SOME_KEY, topic=CONSUMER_TOPIC),
-            ],
+            CONSUMER_TOPIC: [create_mock_consumer_record(value=benchmark_event, key=SOME_KEY, topic=CONSUMER_TOPIC)],
             CMD_SUBMIT_TOPIC: [
-                create_mock_consumer_record(value=benchmark_event, key=SOME_KEY, topic=CMD_SUBMIT_TOPIC),
+                create_mock_consumer_record(value=benchmark_event, key=SOME_KEY, topic=CMD_SUBMIT_TOPIC)
             ],
         }
     )
@@ -140,7 +138,7 @@ def simple_kafka_service(kafka_consumer: KafkaConsumer, kafka_producer: KafkaPro
         kafka_consumer=kafka_consumer,
         kafka_producer=kafka_producer,
         cmd_return_topic=CMD_RETURN_TOPIC,
-        pod_name=POD_NAME
+        pod_name=POD_NAME,
     )
     return kafka_service
 
@@ -288,7 +286,7 @@ def _create_kafka_service(callbacks, kafka_consumer, kafka_producer):
         kafka_producer=kafka_producer,
         cmd_return_topic=CMD_RETURN_TOPIC,
         pod_name=POD_NAME,
-        status_topic=STATUS_TOPIC
+        status_topic=STATUS_TOPIC,
     )
     kafka_service.add_callback(StopKafkaServiceCallback(CONSUMER_TOPIC))
     return kafka_service

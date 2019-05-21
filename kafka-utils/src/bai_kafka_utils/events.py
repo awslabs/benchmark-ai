@@ -60,13 +60,6 @@ class ExecutorPayload(FetcherPayload):
 
 @dataclass_json
 @dataclass
-class CommandSubmitPayload:
-    command: str
-    args: Optional[List[str]]
-
-
-@dataclass_json
-@dataclass
 class VisitedService:
     svc: str
     tstamp: int
@@ -103,6 +96,13 @@ class ExecutorBenchmarkEvent(BenchmarkEvent):
 
 @dataclass_json
 @dataclass
+class CommandSubmitPayload:
+    command: str
+    args: Optional[List[str]]
+
+
+@dataclass_json
+@dataclass
 class CommandSubmitEvent(BenchmarkEvent):
     payload: CommandSubmitPayload
 
@@ -120,12 +120,6 @@ class CommandReturnPayload:
 @dataclass
 class CommandReturnEvent(BenchmarkEvent):
     payload: CommandReturnPayload
-
-
-@dataclass_json
-@dataclass
-class ExecutorBenchmarkEvent(BenchmarkEvent):
-    payload: ExecutorPayload
 
 
 class Status(Enum):

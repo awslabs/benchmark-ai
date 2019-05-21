@@ -21,22 +21,16 @@ class WrongBenchmarkEventTypeException(Exception):
 
 
 # args from kafka
-def create_kafka_consumer_producer(
-    kafka_cfg: KafkaServiceConfig
-) -> Tuple[KafkaConsumer, KafkaProducer]:
+def create_kafka_consumer_producer(kafka_cfg: KafkaServiceConfig) -> Tuple[KafkaConsumer, KafkaProducer]:
     # Each service's Kafka consumer subscribes to both the service's input topic and the cmd_submit topic
     consumer_topics = [kafka_cfg.consumer_topic, kafka_cfg.cmd_submit_topic]
     return (
-        create_kafka_consumer(
-            kafka_cfg.bootstrap_servers, kafka_cfg.consumer_group_id, consumer_topics
-        ),
+        create_kafka_consumer(kafka_cfg.bootstrap_servers, kafka_cfg.consumer_group_id, consumer_topics),
         create_kafka_producer(kafka_cfg.bootstrap_servers),
     )
 
 
-def create_kafka_consumer(
-    bootstrap_servers: List[str], group_id: str, topics: List[str]
-) -> kafka.KafkaConsumer:
+def create_kafka_consumer(bootstrap_servers: List[str], group_id: str, topics: List[str]) -> kafka.KafkaConsumer:
     def json_deserializer(msg_value):
         try:
             envelope = BenchmarkEvent.from_json(msg_value.decode(DEFAULT_ENCODING))
