@@ -10,7 +10,7 @@ from fetcher_dispatcher.kubernetes_client import KubernetesDispatcher
 
 TIMEOUT_FOR_DOWNLOAD_SEC = 5 * 60
 
-EXISTING_DATASET_WITH = "http://files.grouplens.org/datasets/movielens/ml-1m.zip"
+EXISTING_DATASET = "http://files.grouplens.org/datasets/movielens/ml-1m.zip"
 
 
 @fixture
@@ -30,7 +30,7 @@ def test_fetch(
     benchmark_event_dummy_payload: BenchmarkEvent,
 ):
     data_set = DataSet(
-        src=EXISTING_DATASET_WITH, dst=f"s3://{fetcher_service_config.s3_data_set_bucket}/it/test.file", md5=None
+        src=EXISTING_DATASET, dst=f"s3://{fetcher_service_config.s3_data_set_bucket}/it/test.file", md5=None
     )
 
     test_fetch.test_done = False
