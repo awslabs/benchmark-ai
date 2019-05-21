@@ -23,6 +23,16 @@ def data_set_manager(zk_client: KazooClient, k8s_dispatcher: KubernetesDispatche
     data_set_manager.stop()
 
 
+@fixture
+def data_set_manager(zk_client: KazooClient, k8s_dispatcher: KubernetesDispatcher):
+    locker = DistributedRWLockManager(zk_client, "it_locks")
+    data_set_manager = DataSetManager(zk_client, k8s_dispatcher, locker)
+
+    data_set_manager.start()
+    yield data_set_manager
+    data_set_manager.stop()
+
+
 # Repeat 2 - regression test.
 # Checks that unlocking works as expected
 @pytest.mark.parametrize("repeat", [1, 2])
