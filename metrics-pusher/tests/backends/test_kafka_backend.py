@@ -47,9 +47,9 @@ def test_2_metrics(mock_kafka_producer_send):
         name="metric1", value=0.1, timestamp=1000, labels={"job-id": "job-id", "sender": "metrics-pusher"}
     )
     expected_metric_object2 = KafkaExporterMetric(
-        name="metric2", value=0.1, timestamp=1000, labels={"job-id": "job-id", "sender": "metrics-pusher"}
+        name="metric2", value=0.2, timestamp=1000, labels={"job-id": "job-id", "sender": "metrics-pusher"}
     )
-    mock_kafka_producer_send.call_args_list == [
+    assert mock_kafka_producer_send.call_args_list == [
         call("KAFKA_TOPIC", value=expected_metric_object1, key="KAFKA_KEY"),
         call("KAFKA_TOPIC", value=expected_metric_object2, key="KAFKA_KEY"),
     ]
