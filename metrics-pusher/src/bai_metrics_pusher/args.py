@@ -16,7 +16,7 @@ class InputValue:
     backend_args: Dict[str, str]
 
 
-def get_input(argv, environ=None) -> InputValue:
+def get_input(argv, environ: Dict[str, str] = None) -> InputValue:
     if environ is None:
         environ = os.environ
     parser = configargparse.ArgumentParser(auto_env_var_prefix="", prog="bai-metrics-pusher")
@@ -26,42 +26,74 @@ def get_input(argv, environ=None) -> InputValue:
 
     args = parser.parse_args(argv)
 
-    # TODO: These args should be parsed by the parser => https://github.com/MXNetEdge/benchmark-ai/issues/65
-    backend_args = _get_backend_args(environ, backend_class=BACKENDS[args.backend])
+    environ = {key.lower(): value for key, value in environ.items()}
+    backend_args = create_dict_of_parameter_values_for_callable(
+        prefix="backend_arg_", values=environ, method=BACKENDS[args.backend]
+    )
 
     return InputValue(
         backend=args.backend, backend_args=backend_args, pod_name=args.pod_name, pod_namespace=args.pod_namespace
     )
 
 
-def _get_backend_args(environ, backend_class):
-    return create_dict_of_parameter_values_for_callable(prefix="BACKEND_ARG_", values=environ, method=backend_class)
-
-
 def create_dict_of_parameter_values_for_callable(prefix: str, values: Dict[str, str], method: Callable):
+    """
+    Creates a dict with the parameters that can be accepted by the signature of :param(method).
+
+    The returned dictionary can be used to invoke :param(method) by doing dictionary unpacking
+
+    Example:
+
+        def foo(arg1: str, arg2: int):
+            pass
+
+        args = create_dict_of_parameter_values_for_callable(
+                   prefix="prefix_",
+                   values={"prefix_arg1": "string",
+                           "prefix_arg2": 42},
+                   method=foo)
+        foo(**args)
+
+    If :param(values) contains
+
+    :param prefix: A prefix to limit the items considered when inspecting the keys in :param(values).
+    :param values: The values to inspect for parameters that can be passed to :param(method)
+    :param method: The method to inspect
+    :return:
+    :raises: AssertionError when :param(method) does not have all its parameters annotated
+    """
     signature = inspect.signature(method)
 
-    args = {}
     for key, string_value in values.items():
         if key.startswith(prefix):
-            argname = key[len(prefix) :].lower()
-            try:
-                parameter = signature.parameters[argname]
-            except KeyError:
+            argname = key[len(prefix) :]
+            if argname not in signature.parameters:
                 raise KeyError("Parameter `%s` does not exist in: %s" % (argname, method))
 
-            parameter_type = parameter.annotation
-            assert parameter_type != inspect.Parameter.empty, "Parameter `%s` has no type annotation in: %s" % (
-                argname,
-                method,
+    args = {}
+    for argname, parameter in signature.parameters.items():
+        parameter_type = parameter.annotation
+        assert parameter_type != inspect.Parameter.empty, "Parameter `%s` has no type annotation in: %s" % (
+            argname,
+            method,
+        )
+
+        key = prefix + argname
+        if key not in values:
+            raise ValueError(
+                "Parameter `%s` of `%s` is missing from the specified values. Prefix: `%s`. Specified keys: %s"
+                % (argname, method, prefix, set(values.keys()))
             )
 
-            if parameter_type == typing.List[str]:
-                value = string_value.split(",")
-            elif parameter_type == typing.List[int]:
-                value = map(int, string_value.split(","))
-                value = list(value)
-            else:
-                value = parameter_type(string_value)
-            args[argname] = value
+        string_value = values[key]
+
+        if parameter_type == typing.List[str]:
+            value = string_value.split(",")
+        elif parameter_type == typing.List[int]:
+            value = map(int, string_value.split(","))
+            value = list(value)
+        else:
+            value = parameter_type(string_value)
+
+        args[argname] = value
     return args
