@@ -63,7 +63,9 @@ class KafkaBackend(Backend):
             )
 
             # TODO: Handle KafkaTimeoutError
+            logger.info("Pushing metric %s", metric_object)
             self._producer.send(self._topic, value=metric_object, key=self._key)
 
     def close(self):
+        logger.info("Closing producer")
         self._producer.close()
