@@ -1,0 +1,1 @@
+FROM aws/codebuild/standard:2.0

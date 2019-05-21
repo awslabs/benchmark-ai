@@ -1,0 +1,1 @@
+This folder serves Dockerfile-infra-validation to be then used in baictl create infra to validate the created infrastructure.
