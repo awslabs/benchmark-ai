@@ -9,12 +9,13 @@ from bai_metrics_pusher.backends.kafka_backend import KafkaBackend, KafkaExporte
 
 
 @pytest.fixture
-def mock_kafka_producer_send(mocker):
+def mock_kafka_producer(mocker):
     mock_kafka_producer_class = mocker.patch.object(kafka, "KafkaProducer")
     mock_kafka_producer = Mock(spec=kafka.KafkaProducer, autospec=True)
     mock_kafka_producer.send = Mock()
+    mock_kafka_producer.close = Mock()
     mock_kafka_producer_class.return_value = mock_kafka_producer
-    return mock_kafka_producer.send
+    return mock_kafka_producer
 
 
 @pytest.fixture(autouse=True)
@@ -26,22 +27,22 @@ def freeze_time_to_1_second_after_epoch(mocker):
     yield
 
 
-def test_1_metric(mock_kafka_producer_send):
+def test_1_metric(mock_kafka_producer):
     kafka_backend = KafkaBackend("job-id", topic="KAFKA_TOPIC", key="KAFKA_KEY")
 
-    kafka_backend({"metric": 0.1})
+    kafka_backend.emit({"metric": 0.1})
 
     expected_metric_object = KafkaExporterMetric(
         name="metric", value=0.1, timestamp=1000, labels={"job-id": "job-id", "sender": "metrics-pusher"}
     )
-    assert mock_kafka_producer_send.call_args_list == [
+    assert mock_kafka_producer.send.call_args_list == [
         call("KAFKA_TOPIC", value=expected_metric_object, key="KAFKA_KEY")
     ]
 
 
-def test_2_metrics(mock_kafka_producer_send):
+def test_2_metrics(mock_kafka_producer):
     kafka_backend = KafkaBackend("job-id", topic="KAFKA_TOPIC", key="KAFKA_KEY")
-    kafka_backend({"metric1": 0.1, "metric2": 0.2})
+    kafka_backend.emit({"metric1": 0.1, "metric2": 0.2})
 
     expected_metric_object1 = KafkaExporterMetric(
         name="metric1", value=0.1, timestamp=1000, labels={"job-id": "job-id", "sender": "metrics-pusher"}
@@ -49,7 +50,13 @@ def test_2_metrics(mock_kafka_producer_send):
     expected_metric_object2 = KafkaExporterMetric(
         name="metric2", value=0.2, timestamp=1000, labels={"job-id": "job-id", "sender": "metrics-pusher"}
     )
-    assert mock_kafka_producer_send.call_args_list == [
+    assert mock_kafka_producer.send.call_args_list == [
         call("KAFKA_TOPIC", value=expected_metric_object1, key="KAFKA_KEY"),
         call("KAFKA_TOPIC", value=expected_metric_object2, key="KAFKA_KEY"),
     ]
+
+
+def test_close(mock_kafka_producer):
+    kafka_backend = KafkaBackend("job-id", topic="KAFKA_TOPIC", key="KAFKA_KEY")
+    kafka_backend.close()
+    assert mock_kafka_producer.close.call_args_list == [call()]

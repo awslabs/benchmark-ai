@@ -6,6 +6,7 @@ import dataclasses
 from dataclasses_json import dataclass_json
 
 from bai_kafka_utils.kafka_client import create_kafka_producer
+from bai_metrics_pusher.backends.backend_interface import AcceptedMetricTypes, Backend
 
 logger = logging.getLogger("backend.kafka")
 
@@ -19,7 +20,7 @@ class KafkaExporterMetric:
     labels: Dict[str, str]
 
 
-class KafkaBackend:
+class KafkaBackend(Backend):
     """
     Exports metrics as described by https://github.com/ogibayashi/kafka-topic-exporter
 
@@ -50,7 +51,7 @@ class KafkaBackend:
         self._key = key
         self._topic = topic
 
-    def __call__(self, metrics):
+    def emit(self, metrics: Dict[str, AcceptedMetricTypes]):
         now = datetime.datetime.utcnow()
         timestamp_in_millis = int(now.timestamp()) * 1000
         for metric_name, metric_value in metrics.items():
@@ -63,3 +64,6 @@ class KafkaBackend:
 
             # TODO: Handle KafkaTimeoutError
             self._producer.send(self._topic, value=metric_object, key=self._key)
+
+    def close(self):
+        self._producer.close()
