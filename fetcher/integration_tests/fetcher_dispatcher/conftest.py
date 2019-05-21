@@ -53,16 +53,23 @@ def benchmark_event_dummy_payload():
 @fixture
 def kafka_consumer_of_produced(kafka_service_config: KafkaServiceConfig):
     print(f"Creating a consumer with {kafka_service_config}...\n")
-    return create_kafka_consumer(
+    kafka_consumer = create_kafka_consumer(
         kafka_service_config.bootstrap_servers,
         kafka_service_config.consumer_group_id,
         # Yes. We consume, what the service has produced
         kafka_service_config.producer_topic,
         FetcherBenchmarkEvent,
     )
+    yield kafka_consumer
+    # Unfortunately no __enter__/__exit__ on kafka objects yet - let's do old-school close
+    print("Closing consumer...\n")
+    kafka_consumer.close()
 
 
 @fixture
 def kafka_producer_to_consume(kafka_service_config: KafkaServiceConfig):
     print("Creating a producer...\n")
-    return create_kafka_producer(kafka_service_config.bootstrap_servers)
+    kafka_producer = create_kafka_producer(kafka_service_config.bootstrap_servers)
+    yield kafka_producer
+    print("Closing producer...\n")
+    kafka_producer.close()
