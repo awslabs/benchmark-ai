@@ -200,6 +200,7 @@ submit() {
     local descriptor_filename=${1?"submit() -> You MUST supply a descriptor file as first argument"}
     local current_service_endpoint=$(cat ${BAICTL_SERVICE_ENDPOINT_CONFIG} | tail -n 1)
 
+    if [ ! -f "$descriptor_filename" ]; then echo "file does not exist"; exit 1; fi
     if [[ -z "${current_service_endpoint}" ]]; then
         printf "
 \033[01;31m[WARNING]\033[0m You do not have a service endpoint registered.
