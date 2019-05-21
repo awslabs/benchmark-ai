@@ -52,13 +52,15 @@ class KafkaBackend:
 
     def __call__(self, metrics):
         now = datetime.datetime.utcnow()
-        epoch = datetime.datetime(1970, 1, 1)
-        timestamp = int((now - epoch).total_seconds() * 1000)
+        # now = datetime.datetime(1970, 1, 1, hour=0, minute=0, second=1)
+        # epoch = datetime.datetime(1970, 1, 1)
+        # timestamp = int((now - epoch).total_seconds() * 1000)
+        timestamp_in_millis = int(now.timestamp()) * 1000
         for metric_name, metric_value in metrics.items():
             metric_object = KafkaExporterMetric(
                 name=metric_name,
                 value=metric_value,
-                timestamp=timestamp,
+                timestamp=timestamp_in_millis,
                 labels={"job-id": self._job_id, "sender": "metrics-pusher"},
             )
 

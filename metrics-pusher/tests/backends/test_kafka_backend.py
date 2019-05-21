@@ -1,5 +1,5 @@
+import datetime
 import pytest
-from freezegun import freeze_time
 
 from unittest.mock import call, Mock
 
@@ -18,9 +18,12 @@ def mock_kafka_producer_send(mocker):
 
 
 @pytest.fixture(autouse=True)
-def freeze_time_to_1_second_after_epoch():
-    with freeze_time("1970-01-01 00:00:01"):
-        yield
+def freeze_time_to_1_second_after_epoch(mocker):
+    # Can't use `freezegun` because it removes the timezone information from the frozen time.
+    # https://github.com/spulec/freezegun/issues/89
+    mock_datetime = mocker.patch("datetime.datetime")
+    mock_datetime.utcnow.return_value = datetime.datetime(1970, 1, 1, 0, 0, second=1, tzinfo=datetime.timezone.utc)
+    yield
 
 
 def test_1_metric(mock_kafka_producer_send):

@@ -6,4 +6,3 @@ dependencies:
   - pytest
   - pytest-cov
   - pytest-mock
-  - freezegun
