@@ -8,7 +8,7 @@ logger = logging.getLogger("backend.elasticsearch")
 
 
 class ElasticsearchBackend:
-    def __init__(self, job_id, *, hostname="localhost", port=9200):
+    def __init__(self, job_id: str, *, hostname: str = "localhost", port: int = 9200):
         self.job_id = job_id
 
         verify_certs = True

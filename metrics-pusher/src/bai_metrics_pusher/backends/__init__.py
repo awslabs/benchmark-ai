@@ -1,8 +1,9 @@
+from .kafka_backend import KafkaBackend
 from .elasticsearch_backend import ElasticsearchBackend
 from .logging_backend import LoggingBackend
 
 
-BACKENDS = {"stdout": LoggingBackend, "elasticsearch": ElasticsearchBackend}
+BACKENDS = {"stdout": LoggingBackend, "elasticsearch": ElasticsearchBackend, "kafka": KafkaBackend}
 
 
 def create_backend(backend: str, *args, **kwargs):

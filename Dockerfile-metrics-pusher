@@ -16,7 +16,7 @@ RUN conda env create -f /tmp/environment.yml -p /opt/metrics-pusher
 COPY . /data/benchmark-ai
 WORKDIR /data/benchmark-ai/metrics-pusher
 
-#RUN /opt/metrics-pusher/bin/pip install -r requirements.txt
+RUN /opt/metrics-pusher/bin/pip install -r requirements.txt
 RUN /opt/metrics-pusher/bin/python3 setup.py install
 
 ########################################
