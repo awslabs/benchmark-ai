@@ -1,4 +1,4 @@
-from bai_metrics_pusher.backends.kafka_backend import KafkaBackend
+from .kafka_backend import KafkaBackend
 from .elasticsearch_backend import ElasticsearchBackend
 from .logging_backend import LoggingBackend
 
