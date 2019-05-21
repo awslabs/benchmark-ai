@@ -56,12 +56,14 @@
                                                             (.put "key.deserializer",  (env :kafka-key-deserializer   "org.apache.kafka.common.serialization.StringDeserializer"))
                                                             (.put "value.deserializer" (env :kafka-value-deserializer "org.apache.kafka.common.serialization.StringDeserializer"))))]
                              (log/info (str "Configuring to consume from ["(count kafka-source-topics)"] topics: "(env :kafka-source-topics)))
+                             (reset! topic->process-fn-map
+                                     (merge (zipmap kafka-source-topics (repeatedly #(partial (fn [event] (log/warn "No handler implementation for this event <"event">"))))) @topic->process-fn-map))
                              (.subscribe consumer kafka-source-topics)
                              (while @started?
                                (let [poll-interval (Integer/parseInt (env :kafka-poll-interval-ms))
                                      records (.poll consumer poll-interval)]
                                  (when (every? true? (map (fn [topic]
-                                                            ((get topic->process-fn-map topic) (records->events records topic))) kafka-source-topics))
+                                                            ((get @topic->process-fn-map topic) (records->events records topic))) kafka-source-topics))
                                    ;; XXX: Add telemetry here - or even better write HOF around the process functions that produce metrics!
                                    (.commitSync consumer))))
                              (log/info "Shutdown kafka consumer (source)")
@@ -87,7 +89,7 @@
 
 
 (defn create-kafka-source-service [topic->process-fn-map]
-  (KafkaSourceService. topic->process-fn-map
+  (KafkaSourceService. (atom topic->process-fn-map)
                        (atom nil)
                        (atom false)
                        (atom false)))
