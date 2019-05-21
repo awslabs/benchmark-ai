@@ -59,16 +59,18 @@ spec:
         - name: BENCHMARK_AI_FIFO_FILEPATH
           value: /tmp/benchmark-ai/fifo
         - name: BACKEND
-          value: elasticsearch
+          value: kafka
         - name: BACKEND_ARG_JOB_ID
           value: benchmark-job-id
-        - name: BACKEND_ARG_HOSTNAME
+        - name: BACKEND_ARG_BOOTSTRAP_SERVERS
           valueFrom:
             configMapKeyRef:
               name: outputs-infrastructure
-              key: es_endpoint
-        - name: BACKEND_ARG_PORT
-          value: '443'
+              key: msk_bootstrap_brokers
+        - name: BACKEND_ARG_KEY
+          value: CLIENT_ID
+        - name: BACKEND_ARG_TOPIC
+          value: BAI_METRICS
         - name: POD_NAME
           valueFrom:
             fieldRef:
