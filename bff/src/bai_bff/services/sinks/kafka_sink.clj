@@ -51,7 +51,7 @@
                                                 (.put "compression.type"  (env :kafka-compression-type "none"))
                                                 (.put "key.serializer"    (env :kafka-key-serializer   "org.apache.kafka.common.serialization.StringSerializer"))
                                                 (.put "value.serializer"  (env :kafka-value-serializer "org.apache.kafka.common.serialization.StringSerializer")))]
-
+                             (log/info (str "Allowed to dispatch to ["(count allowed-kafka-sink-topics)"] topics: "(env :kafka-sink-topics)))
                              (reset! producer (KafkaProducer. kafka-config))
                              (while @started?
                                (let [[client-id-key event] (<!! @send-event-channel-atom)]

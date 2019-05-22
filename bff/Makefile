@@ -8,7 +8,7 @@ ORGANIZATION := MXNet Berlin
 RELEASE_NAME := flatbush
 PROFILE := prod
 AUTHOR := Gavin M. Bell
-REPO_SITE = https://github.com/MXNetEdge/benchmark-ai/$(PROJECT)
+REPO_SITE = https://github.com/MXNetEdge/benchmark-ai/bff
 
 RESOURCE_PATHS := resources
 SOURCE_PATHS := src
@@ -301,10 +301,10 @@ deploy.yml: $(DEPLOY_TEMPLATE)
 	     -e 's|@@COMMIT_SHORT_HASH@@|$(COMMIT_SHORT_HASH)|g' \
              -e 's|@@THREAD_POOL_SIZE@@|$(THREAD_POOL_SIZE)|g' \
 	     -e 's|@@MAX_QUEUE_SIZE@@|$(MAX_QUEUE_SIZE)|g' \
-	     -e 's|@@KAFKA_SOURCE_TOPIC@@|$(KAFKA_SOURCE_TOPIC)|g' \
+	     -e 's|@@KAFKA_SOURCE_TOPICS@@|$(KAFKA_SOURCE_TOPICS)|g' \
 	     -e 's|@@KAFKA_CONSUMER_GROUP_ID@@|$(KAFKA_CONSUMER_GROUP_ID)|g' \
 	     -e 's|@@KAFKA_POLL_INTERVAL_MS@@|$(KAFKA_POLL_INTERVAL_MS)|g' \
-	     -e 's|@@KAFKA_SINK_TOPIC@@|$(KAFKA_SINK_TOPIC)|g' \
+	     -e 's|@@KAFKA_SINK_TOPICS@@|$(KAFKA_SINK_TOPICS)|g' \
 	     -e 's|@@KAFKA_CMD_SUBMIT_TOPIC@@|$(KAFKA_CMD_SUBMIT_TOPIC)|g' \
 	     -e 's|@@KAFKA_CMD_RETURN_TOPIC@@|$(KAFKA_CMD_RETURN_TOPIC)|g' $(DEPLOY_TEMPLATE) > $(shell sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(DEPLOY_TEMPLATE))
 

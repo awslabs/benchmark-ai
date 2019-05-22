@@ -31,7 +31,8 @@
           endpoints-fn    create-endpoints-service}}]
    (let [eventbus       (eventbus-fn)
          kafka-sink     (kafka-sink-fn)
-         kafka-source   (kafka-source-fn bus/process-status-records) ; <-- TODO: story for event reception TBD <= here to be annoyingly obvious
+         kafka-source   (kafka-source-fn {"BAI_APP_STATUS" bus/process-status-records
+                                          "CMD_RETURN"     bus/process-cmd-return-records}) ; <-- TODO: story for event reception TBD <= here to be annoyingly obvious
          endpoints      (endpoints-fn)]
      {:eventbus      eventbus
       :kafka-sink    kafka-sink
