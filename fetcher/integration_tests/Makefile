@@ -11,9 +11,6 @@ include $(BENCHMARK_DIR)/docker-common.mk
 build:
 	echo "Stub target for build"
 
-_docker_package:
-	$(DOCKER) build $(BENCHMARK_DIR) -f $(BENCHMARK_DIR)/Dockerfile-fetcher-it -t $(DOCKER_IMAGE_TAG)
-
 run: publish k8s_run
 
 k8s_run: _k8s_silent_cleanup _k8s_silent_undeploy k8s_deploy _wait_for_job _k8s_cleanup
