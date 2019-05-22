@@ -10,7 +10,7 @@ from fetcher_dispatcher import SERVICE_NAME, __version__
 from fetcher_dispatcher.args import FetcherServiceConfig, FetcherJobConfig
 from fetcher_dispatcher.data_set_manager import DataSet, DataSetManager, get_lock_name
 from fetcher_dispatcher.data_set_pull import get_dataset_dst
-from fetcher_dispatcher.kubernetes_client import KubernetesDispatcher
+from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
 
 LOCK_MANAGER_PREFIX = "fetcher_lock_manager"
 

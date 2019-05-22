@@ -15,7 +15,7 @@ from fetcher_dispatcher.data_set_manager import DataSetManager, DataSetDispatche
 SOME_PATH = "/some/path"
 
 
-def data_set_to_path(dataset: DataSet) -> str:
+def data_set_to_path(client_id: str, action_id: str, dataset: DataSet) -> str:
     return SOME_PATH
 
 
@@ -159,7 +159,7 @@ def test_first_fast_success(
         zoo_keeper_client_with_done_node, enclosing_event, kubernetes_job_starter, mock_lock_manager, some_data_set
     )
 
-    kubernetes_job_starter.assert_called_with(some_data_set, enclosing_event, SOME_PATH)
+    kubernetes_job_starter.dispatch_fetch.assert_called_with(some_data_set, enclosing_event, SOME_PATH)
     on_done.assert_called_with(some_data_set)
 
 
@@ -182,7 +182,7 @@ def test_first_wait_success(
         zoo_keeper_client_with_running_node, enclosing_event, kubernetes_job_starter, mock_lock_manager, some_data_set
     )
 
-    kubernetes_job_starter.assert_called_with(some_data_set, enclosing_event, SOME_PATH)
+    kubernetes_job_starter.dispatch_fetch.assert_called_with(some_data_set, enclosing_event, SOME_PATH)
     assert not on_done.called
 
     _verify_wait_succes(on_done, zoo_keeper_client_with_running_node)

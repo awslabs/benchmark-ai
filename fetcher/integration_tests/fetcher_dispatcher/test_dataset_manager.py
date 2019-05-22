@@ -6,7 +6,7 @@ from bai_kafka_utils.events import BenchmarkEvent, DataSet, FetchedType
 from bai_zk_utils.zk_locker import DistributedRWLockManager
 from fetcher_dispatcher.args import FetcherServiceConfig
 from fetcher_dispatcher.data_set_manager import DataSetManager
-from fetcher_dispatcher.kubernetes_client import KubernetesDispatcher
+from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
 
 TIMEOUT_FOR_DOWNLOAD_SEC = 5 * 60
 

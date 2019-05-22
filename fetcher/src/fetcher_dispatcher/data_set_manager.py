@@ -1,4 +1,5 @@
 # Zookeeper based fetch synchronizer
+import abc
 import logging
 
 from kazoo.client import KazooClient
@@ -11,7 +12,22 @@ from bai_zk_utils.states import FetcherResult
 from bai_zk_utils.zk_locker import RWLockManager, RWLock
 
 DataSetDispatcher = Callable[[DataSet, BenchmarkEvent, str], None]
-NodePathSource = Callable[[DataSet], str]
+
+
+class DataSetDispatcher(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
+    def dispatch_fetch(self, task: DataSet, event: BenchmarkEvent, zk_node_path: str):
+        pass
+
+    @abc.abstractmethod
+    def cancel_all(self, client_id: str, action_id: str):
+        pass
+
+
+# client_id/action_id/dataset
+NodePathSource = Callable[[str, str, DataSet], str]
+
+
 DataSetOnDone = Callable[[DataSet], None]
 
 logger = logging.getLogger(__name__)
@@ -23,9 +39,14 @@ def get_lock_name(data_set: DataSet) -> str:
 
 class DataSetManager:
     @staticmethod
-    def __get_node_path(data_set: DataSet) -> str:
+    def __get_node_path(client_id: str, action_id: str = None, data_set: DataSet = None) -> str:
         # MD5 has impact on the node - so different locks etc.
-        return f"/data_sets/{md5sum(str(data_set))}"
+        path = f"/data_sets/{client_id}"
+        if action_id:
+            path += f"/{action_id}"
+            if data_set:
+                path += f"/{md5sum(str(data_set))}"
+        return path
 
     INITIAL_DATA = FetcherResult(FetcherStatus.PENDING).to_binary()
 
@@ -55,12 +76,12 @@ class DataSetManager:
                 lock.release()
 
             # This node will be killed if I die
-            zk_node_path = self._get_node_path(data_set)
+            zk_node_path = self._get_node_path(event.client_id, event.action_id, data_set)
             self._zk.create(zk_node_path, DataSetManager.INITIAL_DATA, ephemeral=True, makepath=True)
 
             self.__handle_node_state(zk_node_path, _on_done_and_unlock, data_set)
 
-            self._data_set_dispatcher(data_set, event, zk_node_path)
+            self._data_set_dispatcher.dispatch_fetch(data_set, event, zk_node_path)
             pass
 
         self._lock_manager.acquire_write_lock(data_set, on_data_set_locked)
@@ -100,3 +121,13 @@ class DataSetManager:
     def stop(self) -> None:
         logger.info("Stop")
         self._zk.stop()
+
+    def cancel(self, client_id: str, action_id: str):
+        self._data_set_dispatcher.cancel_all(client_id, action_id)
+
+        zk_node_path = self._get_node_path(client_id, action_id)
+
+        # Cleanup - they all get notified
+        self._zk.delete(zk_node_path, recursive=True)
+
+        pass

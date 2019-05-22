@@ -5,9 +5,9 @@ from kubernetes.client import V1Job
 from pytest import fixture, mark
 
 from bai_kafka_utils.events import DataSet, BenchmarkEvent
-from fetcher_dispatcher import kubernetes_client
+from fetcher_dispatcher import kubernetes_dispatcher
 from fetcher_dispatcher.args import FetcherJobConfig
-from fetcher_dispatcher.kubernetes_client import KubernetesDispatcher
+from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
 
 CLIENT_ID = "CLIENT_ID"
 
@@ -64,12 +64,12 @@ def validate_client_calls(mock_client):
 
 @fixture
 def mock_k8s_config(mocker):
-    return mocker.patch.object(kubernetes_client.kubernetes, "config", autospec=True)
+    return mocker.patch.object(kubernetes_dispatcher.kubernetes, "config", autospec=True)
 
 
 @fixture
 def mock_k8s_client(mocker):
-    return mocker.patch.object(kubernetes_client.kubernetes, "client", autospec=True)
+    return mocker.patch.object(kubernetes_dispatcher.kubernetes, "client", autospec=True)
 
 
 @fixture
@@ -77,7 +77,7 @@ def mock_api_instance(mocker):
     mock_batch_api_instance = mocker.create_autospec(kubernetes.client.BatchV1Api)
 
     mocker.patch.object(
-        kubernetes_client.kubernetes.client, "BatchV1Api", autospec=True, return_value=mock_batch_api_instance
+        kubernetes_dispatcher.kubernetes.client, "BatchV1Api", autospec=True, return_value=mock_batch_api_instance
     )
 
     return mock_batch_api_instance
@@ -146,7 +146,7 @@ def test_call_dispatcher(mock_api_instance, mock_k8s_config, data_set):
         zk_ensemble=ZOOKEEPER_ENSEMBLE_HOSTS, kubeconfig=None, fetcher_job=FETCHER_JOB_CONFIG
     )
 
-    kubernetes_dispatcher(data_set, BENCHMARK_EVENT, ZK_NODE_PATH)
+    kubernetes_dispatcher.dispatch_fetch(data_set, BENCHMARK_EVENT, ZK_NODE_PATH)
     mock_api_instance.create_namespaced_job.assert_called_once()
 
     job_args, _ = mock_api_instance.create_namespaced_job.call_args

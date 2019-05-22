@@ -17,7 +17,7 @@ from fetcher_dispatcher.fetcher_dispatcher_service import (
     FetcherEventHandler,
     create_fetcher_dispatcher,
 )
-from fetcher_dispatcher.kubernetes_client import KubernetesDispatcher
+from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
 
 FETCHER_JOB_IMAGE = "job/image"
 

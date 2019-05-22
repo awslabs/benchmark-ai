@@ -1,3 +1,5 @@
+import kubernetes
+from bai_kafka_utils.utils import id_generator
 from kazoo.client import KazooClient
 from pytest import fixture
 
@@ -5,13 +7,19 @@ from bai_kafka_utils.events import BenchmarkEvent
 from bai_kafka_utils.kafka_client import create_kafka_consumer, create_kafka_producer
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
 from bai_kafka_utils.kafka_service_args import get_kafka_service_config
-from fetcher_dispatcher.args import get_fetcher_service_config, FetcherServiceConfig
-from fetcher_dispatcher.kubernetes_client import KubernetesDispatcher
+from fetcher_dispatcher.args import get_fetcher_service_config, FetcherServiceConfig, FetcherJobConfig
+from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher, create_kubernetes_api_client
+from integration_tests.fetcher_dispatcher.utils.kubernetes_client import KubernetesTestUtilsClient
 
 
 @fixture
 def fetcher_service_config() -> FetcherServiceConfig:
     return get_fetcher_service_config(None)
+
+
+@fixture
+def fetcher_job_config(fetcher_service_config: FetcherServiceConfig) -> FetcherJobConfig:
+    return fetcher_service_config.fetcher_job
 
 
 @fixture
@@ -35,11 +43,21 @@ def k8s_dispatcher(fetcher_service_config: FetcherServiceConfig):
 
 
 @fixture
+def k8s_api_client(fetcher_service_config: FetcherServiceConfig) -> kubernetes.client.ApiClient:
+    return create_kubernetes_api_client(fetcher_service_config.kubeconfig)
+
+
+@fixture
+def k8s_test_client(k8s_api_client: kubernetes.client.ApiClient) -> KubernetesTestUtilsClient:
+    return KubernetesTestUtilsClient(k8s_api_client)
+
+
+@fixture
 def benchmark_event_dummy_payload(kafka_service_config: KafkaServiceConfig):
     return BenchmarkEvent(
-        action_id="ACTION_ID",
-        message_id="DONTCARE",
-        client_id="CLIENT_ID",
+        action_id="ACTION_ID_" + id_generator(),
+        message_id="DONTCARE_" + id_generator(),
+        client_id="CLIENT_ID_" + id_generator(),
         client_version="DONTCARE",
         client_username="DONTCARE",
         authenticated=False,
