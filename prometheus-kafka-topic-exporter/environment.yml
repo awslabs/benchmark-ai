@@ -1,7 +1,0 @@
-name: executor
-channels:
-  - conda-forge
-  - defaults
-dependencies:
-  - openjdk==11.*
-  - wget
