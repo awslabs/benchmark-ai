@@ -30,12 +30,15 @@ ZK_CLI=zkCli.sh
 [[ -z "$DST" ]] && echo "--dst is required" && exit 1
 [[ -z "$ZOOKEEPER_ENSEMBLE_HOSTS" ]] && echo "ZOOKEEPER_ENSEMBLE_HOSTS environment variable is required" && exit 1
 
+trap 'echo "Caught SIGTERM" && WAS_TERMINATED="true"' SIGTERM
+
 if [[ ${SRC} == *"delay"* ]]; then
     echo "Simulating delay"
     DELAY="10"
     [[ ${SRC} =~ delay=([0-9]+) ]] && echo ${BASH_REMATCH} && DELAY=${BASH_REMATCH[1]}
     echo "Will sleep for ${DELAY}s"
-    sleep ${DELAY}s
+    sleep ${DELAY}s &
+    wait $!
 fi
 
 RESULT="DONE"
@@ -43,6 +46,11 @@ MESSAGE=""
 if [[ ${SRC} == *"fail"* ]]; then
   RESULT="FAILED"
   MESSAGE="Something bad"
+fi
+
+if [[ ${WAS_TERMINATED} == "true" ]]; then
+  RESULT="FAILED"
+  MESSAGE="Was terminated"
 fi
 
 JSON_RESULT="{\"status\":\"${RESULT}\", \"message\":\"$MESSAGE\"}"
