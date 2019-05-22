@@ -25,10 +25,13 @@ def create_data_set_manager(zookeeper_ensemble_hosts: str, kubeconfig: str, fetc
 
 
 class FetcherEventHandler(KafkaServiceCallback):
-    def __init__(self, consumed_topics: List[str], data_set_mgr: DataSetManager, s3_data_set_bucket: str):
+    def __init__(
+        self, consumed_topics: List[str], data_set_mgr: DataSetManager, s3_data_set_bucket: str, producer_topic: str
+    ):
         super(FetcherEventHandler, self).__init__(consumed_topics=consumed_topics)
         self.data_set_mgr = data_set_mgr
         self.s3_data_set_bucket = s3_data_set_bucket
+        self.producer_topic = producer_topic
 
     def handle_event(self, event: FetcherBenchmarkEvent, kafka_service: KafkaService):
         def extract_datasets(event) -> List[DataSet]:
@@ -62,10 +65,11 @@ class FetcherEventHandler(KafkaServiceCallback):
 
         if not tasks:
             kafka_service.send_status_message_event(event, Status.SUCCEEDED, "Nothing to fetch")
-            return event
+            kafka_service.send_event(event, self.producer_topic)
+            return
 
         def on_all_done():
-            kafka_service.send_event(event)
+            kafka_service.send_event(event, self.producer_topic)
             kafka_service.send_status_message_event(event, Status.SUCCEEDED, "All data sets processed")
 
         execute_all(tasks, on_all_done)
@@ -80,7 +84,14 @@ def create_fetcher_dispatcher(common_kafka_cfg: KafkaServiceConfig, fetcher_cfg:
     )
     data_set_mgr.start()
 
-    callbacks = [FetcherEventHandler([common_kafka_cfg.consumer_topic], data_set_mgr, fetcher_cfg.s3_data_set_bucket)]
+    callbacks = [
+        FetcherEventHandler(
+            [common_kafka_cfg.consumer_topic],
+            data_set_mgr,
+            fetcher_cfg.s3_data_set_bucket,
+            common_kafka_cfg.producer_topic,
+        )
+    ]
 
     consumer, producer = create_kafka_consumer_producer(common_kafka_cfg)
 
@@ -89,11 +100,9 @@ def create_fetcher_dispatcher(common_kafka_cfg: KafkaServiceConfig, fetcher_cfg:
     return KafkaService(
         name=SERVICE_NAME,
         version=__version__,
-        producer_topic=common_kafka_cfg.producer_topic,
         callbacks=callbacks,
         kafka_consumer=consumer,
         kafka_producer=producer,
-        cmd_return_topic=common_kafka_cfg.cmd_return_topic,
         pod_name=pod_name,
         status_topic=common_kafka_cfg.status_topic,
     )

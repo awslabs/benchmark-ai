@@ -96,30 +96,30 @@ class ExecutorBenchmarkEvent(BenchmarkEvent):
 
 @dataclass_json
 @dataclass
-class CommandSubmitPayload:
+class CommandRequestPayload:
     command: str
     args: Optional[List[str]]
 
 
 @dataclass_json
 @dataclass
-class CommandSubmitEvent(BenchmarkEvent):
-    payload: CommandSubmitPayload
+class CommandRequestEvent(BenchmarkEvent):
+    payload: CommandRequestPayload
 
 
 @dataclass_json
 @dataclass
-class CommandReturnPayload:
+class CommandResponsePayload:
     return_code: int
     return_value: Any
     message: str
-    cmd_submit: CommandSubmitEvent
+    cmd_submit: CommandRequestEvent
 
 
 @dataclass_json
 @dataclass
-class CommandReturnEvent(BenchmarkEvent):
-    payload: CommandReturnPayload
+class CommandResponseEvent(BenchmarkEvent):
+    payload: CommandResponsePayload
 
 
 class Status(Enum):
@@ -220,8 +220,8 @@ def get_topic_event_type(topic: str):
         "BAI_APP_FETCHER": FetcherBenchmarkEvent,
         "BAI_APP_EXECUTOR": ExecutorBenchmarkEvent,
         "BAI_APP_STATUS": StatusMessageBenchmarkEvent,
-        "CMD_SUBMIT": CommandSubmitEvent,
-        "CMD_RETURN": CommandReturnEvent,
+        "CMD_SUBMIT": CommandRequestEvent,
+        "CMD_RETURN": CommandResponseEvent,
     }
     if topic not in topic_to_event_type:
         raise KeyError(f"Invalid topic {topic}")

@@ -26,35 +26,36 @@ logger = logging.getLogger(SERVICE_NAME)
 
 
 class ExecutorEventHandler(KafkaServiceCallback):
-    def __init__(self, consumed_topics: List[str], executor_config):
+    def __init__(self, consumed_topics: List[str], executor_config: ExecutorConfig, producer_topic: str):
         super(ExecutorEventHandler, self).__init__(consumed_topics=consumed_topics)
-        self.executor_config = executor_config
+        self.config = executor_config
+        self.producer_topic = producer_topic
 
     def handle_event(self, event: FetcherBenchmarkEvent, kafka_service: KafkaService):
         descriptor_contents = event.payload.toml.contents
         fetched_data_sources = event.payload.datasets
         job_id = event.action_id
 
-        yaml = create_job_yaml_spec(descriptor_contents, self.executor_config, fetched_data_sources, job_id, event)
+        yaml = create_job_yaml_spec(descriptor_contents, self.config, fetched_data_sources, job_id, event=event)
 
         try:
             self._kubernetes_apply(yaml)
         except subprocess.CalledProcessError as e:
             logger.exception(f"Error executing benchmark")
             kafka_service.send_status_message_event(event, Status.ERROR, e.output)
-            return None
+            return
 
         response_event = self._create_response_event(event, job_id, yaml)
         kafka_service.send_status_message_event(
             response_event, Status.SUCCEEDED, f"Benchmark successfully submitted with job id {job_id}"
         )
-        return response_event
+        kafka_service.send_event(response_event, topic=self.producer_topic)
 
     def _kubernetes_apply(self, yaml: str):
         # Shelling out this command because the kubernetes python client does not have a good way to
         # call kubectl apply -f my_config.yaml (https://github.com/kubernetes-client/python/issues/387)
         # Specially https://github.com/kubernetes-client/python/pull/655 - CRDs not supported
-        cmd = [self.executor_config.kubectl, "apply", "-f", "-"]
+        cmd = [self.config.kubectl, "apply", "-f", "-"]
 
         logger.info(f"Applying yaml file using command: {cmd}")
         result = subprocess.check_output(cmd, input=yaml.encode(DEFAULT_ENCODING))
@@ -76,7 +77,9 @@ class ExecutorEventHandler(KafkaServiceCallback):
 
 def create_executor(common_kafka_cfg: KafkaServiceConfig, executor_config: ExecutorConfig) -> KafkaService:
 
-    callbacks = [ExecutorEventHandler([common_kafka_cfg.consumer_topic], executor_config)]
+    callbacks = [
+        ExecutorEventHandler([common_kafka_cfg.consumer_topic], executor_config, common_kafka_cfg.producer_topic)
+    ]
 
     consumer, producer = create_kafka_consumer_producer(common_kafka_cfg)
 
@@ -85,11 +88,9 @@ def create_executor(common_kafka_cfg: KafkaServiceConfig, executor_config: Execu
     return KafkaService(
         name=SERVICE_NAME,
         version=__version__,
-        producer_topic=common_kafka_cfg.producer_topic,
         callbacks=callbacks,
         kafka_consumer=consumer,
         kafka_producer=producer,
-        cmd_return_topic=common_kafka_cfg.cmd_return_topic,
         pod_name=pod_name,
         status_topic=common_kafka_cfg.status_topic,
     )

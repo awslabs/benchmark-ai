@@ -34,7 +34,7 @@ class KafkaServiceCallback(metaclass=abc.ABCMeta):
         self.consumed_topics = consumed_topics
 
     @abc.abstractmethod
-    def handle_event(self, event: BenchmarkEvent, kafka_service) -> Optional[BenchmarkEvent]:
+    def handle_event(self, event: BenchmarkEvent, kafka_service):
         pass
 
     @abc.abstractmethod
@@ -57,20 +57,16 @@ class KafkaService:
         self,
         name: str,
         version: str,
-        producer_topic: str,
         callbacks: List[KafkaServiceCallback],
         kafka_consumer: KafkaConsumer,
         kafka_producer: KafkaProducer,
         pod_name: str,
-        cmd_return_topic: str,
         status_topic: Optional[str] = None,
     ):
 
-        self._producer_topic = producer_topic
         self._producer = kafka_producer
         self._consumer = kafka_consumer
         self._status_topic = status_topic
-        self._cmd_return_topic = cmd_return_topic
         self.name = name
         self.version = version
         self.pod_name = pod_name
@@ -85,14 +81,13 @@ class KafkaService:
     _IS_NOT_RUNNING = "Loop is not running"
     _CANNOT_UPDATE_CALLBACKS = "Cannot update callbacks with running loop"
 
-    def safe_handle_msg(self, msg, callback: KafkaServiceCallback) -> Optional[BenchmarkEvent]:
+    def safe_handle_msg(self, msg, callback: KafkaServiceCallback):
         try:
-            return self.handle_event(msg.value, callback)
+            self.handle_event(msg.value, callback)
         except KafkaServiceCallbackException:
             logger.exception(f"Failed to handle message: {msg}")
-        return None
 
-    def handle_event(self, event: BenchmarkEvent, callback: KafkaServiceCallback) -> Optional[BenchmarkEvent]:
+    def handle_event(self, event: BenchmarkEvent, callback: KafkaServiceCallback):
         """
         Utility method for handling a benchmark event.
         Does the logging and calls the callback function to handle the event
@@ -105,7 +100,7 @@ class KafkaService:
         self.send_status_message_event(
             event, Status.PENDING, f"{self.name} service, node {self.pod_name}: Processing event..."
         )
-        return callback.handle_event(event, self)
+        callback.handle_event(event, self)
 
     def send_status_message_event(self, handled_event: BenchmarkEvent, status: Status, msg: str):
         """
@@ -122,15 +117,13 @@ class KafkaService:
 
         self.send_event(status_event, topic=self._status_topic)
 
-    def send_event(self, event: BenchmarkEvent, topic=None):
+    def send_event(self, event: BenchmarkEvent, topic: str):
         """
         Base method for sending an event to Kafka.
         Adds this service to the visited field in the event and calls the KafkaProducer.
         :param event: value of the message to send
         :param topic: topic to send to
         """
-
-        topic = topic or self._producer_topic
 
         def add_self_to_visited(event):
             current_time_ms = int(time.time() * 1000)
@@ -159,16 +152,17 @@ class KafkaService:
 
         while self._running:
             # KafkaConsumer.poll() might return more than one message
-            records = self._consumer.poll().values()
-            for record in records:
+            records = self._consumer.poll()
+
+            for topic, record in records.items():
                 for msg in record:
+                    if msg.value and msg.value.type and not msg.value.type == topic:
+                        logger.warning(f"Unexpected event type {msg.value.type} in topic {topic}")
                     handled = False
                     for callback in self._callbacks:
                         if msg.topic in callback.consumed_topics:
                             handled = True
-                            output = self.safe_handle_msg(msg, callback)
-                            if output:
-                                self.send_event(output)
+                            self.safe_handle_msg(msg, callback)
                     if not handled:
                         logger.warning(
                             f"Message received but not processed: {msg} \n"

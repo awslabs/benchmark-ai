@@ -4,7 +4,7 @@ import re
 import time
 import uuid
 from dataclasses import dataclass
-from typing import Optional, List
+from typing import List
 from unittest.mock import MagicMock, Mock, call
 
 import pytest
@@ -133,11 +133,9 @@ def simple_kafka_service(kafka_consumer: KafkaConsumer, kafka_producer: KafkaPro
     kafka_service = KafkaService(
         name=SERVICE_NAME,
         version=VERSION,
-        producer_topic=PRODUCER_TOPIC,
         callbacks=callbacks,
         kafka_consumer=kafka_consumer,
         kafka_producer=kafka_producer,
-        cmd_return_topic=CMD_RETURN_TOPIC,
         pod_name=POD_NAME,
     )
     return kafka_service
@@ -173,19 +171,16 @@ def test_kafka_service_stop_before_run(simple_kafka_service: KafkaService):
         simple_kafka_service.stop_loop()
 
 
-def _create_mock_callback(return_value=None, consumed_topics: List[str] = CONSUMER_TOPIC):
+def _create_mock_callback(consumed_topics: List[str] = CONSUMER_TOPIC):
     mock_callback = MagicMock(spec=KafkaServiceCallback)
-    mock_callback.handle_event.return_value = return_value
     mock_callback.consumed_topics = consumed_topics
     return mock_callback
 
 
 def test_invalid_message_ignored(kafka_consumer_with_invalid_message: KafkaConsumer, kafka_producer: KafkaProducer):
     mock_callback = _create_mock_callback()
-
     kafka_service = _create_kafka_service([mock_callback], kafka_consumer_with_invalid_message, kafka_producer)
     kafka_service.run_loop()
-
     # Nothing done for broken message
     with pytest.raises(AssertionError):
         assert mock_callback.handle_event.assert_called_with(None, kafka_service)
@@ -245,6 +240,17 @@ def test_immutable_callbacks(kafka_consumer: KafkaConsumer, kafka_producer: Kafk
 def test_message_sent(
     mocker, kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer, benchmark_event: BenchmarkEvent
 ):
+    class SendMessageCallback(KafkaServiceCallback):
+        def __init__(self, consumed_topics: List[str], topic):
+            super(SendMessageCallback, self).__init__(consumed_topics)
+            self.topic = topic
+
+        def handle_event(self, event: BenchmarkEvent, kafka_service: KafkaService):
+            kafka_service.send_event(event, topic=self.topic)
+
+        def cleanup(self):
+            pass
+
     mock_time, mock_uuid4 = mock_time_and_uuid(mocker)
 
     result_event = copy.deepcopy(benchmark_event)
@@ -252,9 +258,9 @@ def test_message_sent(
 
     mock_message_before_send(expected_event, mock_uuid4, PRODUCER_TOPIC)
 
-    mock_callback = _create_mock_callback(return_value=result_event)
+    callback = SendMessageCallback([CONSUMER_TOPIC], PRODUCER_TOPIC)
 
-    kafka_service = _create_kafka_service([mock_callback], kafka_consumer, kafka_producer)
+    kafka_service = _create_kafka_service([callback], kafka_consumer, kafka_producer)
     kafka_service.run_loop()
 
     response_call = call(PRODUCER_TOPIC, value=expected_event, key=CLIENT_ID)
@@ -270,7 +276,7 @@ def mock_time_and_uuid(mocker):
 # Helper to create a KafkaService to test
 def _create_kafka_service(callbacks, kafka_consumer, kafka_producer):
     class StopKafkaServiceCallback(KafkaServiceCallback):
-        def handle_event(self, event: BenchmarkEvent, kafka_service: KafkaService) -> Optional[BenchmarkEvent]:
+        def handle_event(self, event: BenchmarkEvent, kafka_service: KafkaService):
             kafka_service.stop_loop()
             return None
 
@@ -280,11 +286,9 @@ def _create_kafka_service(callbacks, kafka_consumer, kafka_producer):
     kafka_service = KafkaService(
         name=SERVICE_NAME,
         version=VERSION,
-        producer_topic=PRODUCER_TOPIC,
         callbacks=callbacks,
         kafka_consumer=kafka_consumer,
         kafka_producer=kafka_producer,
-        cmd_return_topic=CMD_RETURN_TOPIC,
         pod_name=POD_NAME,
         status_topic=STATUS_TOPIC,
     )
@@ -293,7 +297,7 @@ def _create_kafka_service(callbacks, kafka_consumer, kafka_producer):
 
 
 class DoNothingCallback(KafkaServiceCallback):
-    def handle_event(self, event: BenchmarkEvent, kafka_service: KafkaService) -> Optional[BenchmarkEvent]:
+    def handle_event(self, event: BenchmarkEvent, kafka_service: KafkaService):
         return None
 
     def cleanup(self):

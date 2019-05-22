@@ -23,7 +23,7 @@ class FetcherStatus(Enum):
 @dataclass_json
 class FetcherResult:
     status: FetcherStatus
-    message: str = None
+    message: str = ""
 
     def to_binary(self):
         return self.to_json().encode(DEFAULT_ENCODING)

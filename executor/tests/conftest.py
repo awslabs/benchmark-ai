@@ -1,13 +1,16 @@
 import textwrap
-import uuid
 
 import toml
 import pytest
 
 from bai_kafka_utils.events import DataSet, BenchmarkDoc, FetcherPayload, BenchmarkEvent
+from bai_kafka_utils.kafka_service import KafkaServiceConfig
 from transpiler.descriptor import Descriptor
 from transpiler.bai_knowledge import EnvironmentInfo
 from transpiler.config import DescriptorConfig, BaiConfig
+
+
+ACTION_ID = "ACTION_ID"
 
 
 @pytest.fixture
@@ -106,7 +109,7 @@ def benchmark_event(shared_datadir):
     payload = FetcherPayload(toml=doc, datasets=[])
 
     return BenchmarkEvent(
-        action_id=uuid.uuid4().hex,
+        action_id=ACTION_ID,
         message_id="MESSAGE_ID",
         client_id="CLIENT_ID",
         client_version="CLIENT_VERSION",
@@ -116,4 +119,18 @@ def benchmark_event(shared_datadir):
         visited=[],
         type="BAI_APP_FETCHER",
         payload=payload,
+    )
+
+
+@pytest.fixture
+def kafka_service_config():
+    return KafkaServiceConfig(
+        consumer_group_id="CONSUMER_GROUP_ID",
+        producer_topic="BAI_APP_FETCHER",
+        consumer_topic="BAI_APP_EXECUTOR",
+        bootstrap_servers=["localhost:9092"],
+        logging_level="INFO",
+        cmd_submit_topic="CMD_SUBMIT",
+        cmd_return_topic="CMD_RETURN",
+        status_topic="BAI_APP_STATUS",
     )

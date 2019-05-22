@@ -75,11 +75,9 @@ def create_service(common_kafka_cfg: KafkaServiceConfig, service_cfg: WatcherSer
     return KafkaService(
         name=SERVICE_NAME,
         version=__version__,
-        producer_topic=common_kafka_cfg.producer_topic,
         callbacks=callbacks,
         kafka_consumer=consumer,
         kafka_producer=producer,
-        cmd_return_topic=common_kafka_cfg.cmd_return_topic,
         pod_name=get_pod_name(),
         status_topic=common_kafka_cfg.status_topic,
     )
