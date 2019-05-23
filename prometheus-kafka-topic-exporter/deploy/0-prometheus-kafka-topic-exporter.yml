@@ -26,15 +26,6 @@ spec:
                     values:
                       - prometheus-kafka-topic-exporter
               topologyKey: kubernetes.io/hostname
-      initContainers:
-        - name: kubectl-delivery
-          image: mpioperator/kubectl-delivery:0.1.0
-          env:
-          - name: TARGET_DIR
-            value: "/tmp/kubectl"
-          volumeMounts:
-          - mountPath: /tmp
-            name: kubectl
       containers:
         - name: prometheus-kafka-topic-exporter
           image: @@DOCKER_IMAGE_TAG@@
@@ -54,19 +45,13 @@ spec:
             value: "BAI_APP_STATUS"
           - name: LOGGING_LEVEL
             value: "INFO"
-          - name: KUBECTL
-            value: "/kubectl/kubectl"
           volumeMounts:
-            - mountPath: /kubectl
-              name: kubectl
             - mountPath: /config
               name: config-volume
       nodeSelector:
         node.type: bai-services-cheap
       restartPolicy: Always
       volumes:
-        - name: kubectl
-          emptyDir: {}
         - name: config-volume
           configMap:
             name: prometheus-kafka-topic-exporter-config
