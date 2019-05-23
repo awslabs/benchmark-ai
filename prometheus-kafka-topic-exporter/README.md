@@ -22,6 +22,7 @@ bin/kafka-console-producer.sh --broker-list b-1.benchmark-cluster.pceosy.c2.kafk
 bin/kafka-console-consumer.sh --bootstrap-server b-1.benchmark-cluster.pceosy.c2.kafka.us-west-2.amazonaws.com:9092 --topic MARCO_TEST --from-beginning
 
 kubectl port-forward prometheus-kafka-topic-exporter-57f8fd9f8c-pvlbb 12340 12340
+127.0.0.1/metrics
 Produces
 ```
 # HELP MARCO_TEST_queries_sum
