@@ -39,12 +39,6 @@ spec:
         - name: prometheus-kafka-topic-exporter
           image: @@DOCKER_IMAGE_TAG@@
           env:
-          - name: AVAILABILITY_ZONES
-            value:
-            valueFrom:
-              configMapKeyRef:
-                name: outputs-infrastructure
-                key: availability_zones
           - name: KAFKA_BOOTSTRAP_SERVERS
             valueFrom:
               configMapKeyRef:
@@ -65,9 +59,14 @@ spec:
           volumeMounts:
             - mountPath: /kubectl
               name: kubectl
+            - mountPath: /config
+              name: config-volume
       nodeSelector:
         node.type: bai-services-cheap
       restartPolicy: Always
       volumes:
         - name: kubectl
           emptyDir: {}
+        - name: config-volume
+          configMap:
+            name: prometheus-kafka-topic-exporter-config

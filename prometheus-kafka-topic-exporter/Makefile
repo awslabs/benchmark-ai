@@ -8,9 +8,10 @@ STAGE ?= devo
 
 build:
 
+k8s_deploy: _k8_create_configmap
 
-_post_venv::
-	$(PIP) install -r requirements.txt
+_k8_create_configmap:
+	${KUBECTL} create configmap prometheus-kafka-topic-exporter-config --from-file $(BENCHMARK_DIR)/prometheus-kafka-topic-exporter/config/
 
 _docker_package: _pre_docker_package
 	$(DOCKER) build $(BENCHMARK_DIR) -f $(BENCHMARK_DIR)/Dockerfile-$(PROJECT) -t $(DOCKER_IMAGE_TAG)
