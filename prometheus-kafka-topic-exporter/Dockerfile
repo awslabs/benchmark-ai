@@ -7,4 +7,4 @@ ENTRYPOINT [ "/bin/bash", "-c" ]
 
 # The default is to log to a local file - not that convenient when expecting output on stdout
 # Expect config to be mounted at /config/kafka-topic-exporter.properties
-CMD [ "java -Dlog4j.configuration=file:///opt/log4j.properties -jar /opt/kafka-topic-exporter.jar /config/kafka-topic-exporter.properties" ]
+CMD [ "java -Dlog4j.configuration=file:///config/log4j.properties -jar /opt/kafka-topic-exporter.jar /config/kafka-topic-exporter.properties" ]
