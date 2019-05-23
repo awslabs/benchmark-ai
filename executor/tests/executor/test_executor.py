@@ -59,7 +59,7 @@ def benchmark_event_without_data_sets(benchmark_event, benchmark_doc: BenchmarkD
 @fixture
 def executor_callback(config_args, kafka_service_config) -> ExecutorEventHandler:
     config = create_executor_config(config_args)
-    return ExecutorEventHandler([MOCK_CONSUMER_TOPIC], config, kafka_service_config.producer_topic)
+    return ExecutorEventHandler(config, kafka_service_config.producer_topic)
 
 
 def test_executor_event_handler_handle_event(
@@ -110,8 +110,8 @@ def test_create_response_event(benchmark_event_with_data_sets, executor_callback
 
 
 def test_create_executor(mocker, config_args, kafka_service_config):
-    mock_kafka_consumer = mocker.patch("kafka.KafkaProducer")
-    mock_kafka_producer = mocker.patch("kafka.KafkaConsumer")
+    mock_kafka_consumer = mocker.patch("kafka.KafkaProducer", autospec=True)
+    mock_kafka_producer = mocker.patch("kafka.KafkaConsumer", autospec=True)
 
     executor_config = create_executor_config(config_args)
     executor = create_executor(kafka_service_config, executor_config)
@@ -120,6 +120,3 @@ def test_create_executor(mocker, config_args, kafka_service_config):
     mock_kafka_producer.assert_called_once()
 
     assert executor
-
-
-# def test_executor_handle_event(mocker, config_args)

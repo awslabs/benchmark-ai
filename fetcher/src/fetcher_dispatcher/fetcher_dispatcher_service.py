@@ -25,10 +25,7 @@ def create_data_set_manager(zookeeper_ensemble_hosts: str, kubeconfig: str, fetc
 
 
 class FetcherEventHandler(KafkaServiceCallback):
-    def __init__(
-        self, consumed_topics: List[str], data_set_mgr: DataSetManager, s3_data_set_bucket: str, producer_topic: str
-    ):
-        super(FetcherEventHandler, self).__init__(consumed_topics=consumed_topics)
+    def __init__(self, producer_topic: str, data_set_mgr: DataSetManager, s3_data_set_bucket: str):
         self.data_set_mgr = data_set_mgr
         self.s3_data_set_bucket = s3_data_set_bucket
         self.producer_topic = producer_topic
@@ -84,14 +81,11 @@ def create_fetcher_dispatcher(common_kafka_cfg: KafkaServiceConfig, fetcher_cfg:
     )
     data_set_mgr.start()
 
-    callbacks = [
-        FetcherEventHandler(
-            [common_kafka_cfg.consumer_topic],
-            data_set_mgr,
-            fetcher_cfg.s3_data_set_bucket,
-            common_kafka_cfg.producer_topic,
-        )
-    ]
+    callbacks = {
+        common_kafka_cfg.consumer_topic: [
+            FetcherEventHandler(common_kafka_cfg.producer_topic, data_set_mgr, fetcher_cfg.s3_data_set_bucket)
+        ]
+    }
 
     consumer, producer = create_kafka_consumer_producer(common_kafka_cfg)
 

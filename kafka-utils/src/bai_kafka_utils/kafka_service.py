@@ -5,7 +5,7 @@ import time
 import uuid
 from dataclasses import dataclass
 from signal import signal, SIGTERM
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from kafka import KafkaProducer, KafkaConsumer
 
@@ -27,12 +27,6 @@ class KafkaServiceConfig:
 
 
 class KafkaServiceCallback(metaclass=abc.ABCMeta):
-    # Callbacks will only receive events belonging to these topics
-    consumed_topics: List[str]
-
-    def __init__(self, consumed_topics: List[str]):
-        self.consumed_topics = consumed_topics
-
     @abc.abstractmethod
     def handle_event(self, event: BenchmarkEvent, kafka_service):
         pass
@@ -57,7 +51,7 @@ class KafkaService:
         self,
         name: str,
         version: str,
-        callbacks: List[KafkaServiceCallback],
+        callbacks: Dict[str, List[KafkaServiceCallback]],
         kafka_consumer: KafkaConsumer,
         kafka_producer: KafkaProducer,
         pod_name: str,
@@ -72,7 +66,7 @@ class KafkaService:
         self.pod_name = pod_name
 
         # Immutability helps us to avoid nasty bugs.
-        self._callbacks = list(callbacks)
+        self._callbacks = {topic: list(callbacks) for topic, callbacks in callbacks.items()}
 
         self._running = False
         signal(SIGTERM, self.stop_loop)
@@ -156,21 +150,19 @@ class KafkaService:
 
             for topic, record in records.items():
                 for msg in record:
-                    if msg.value and msg.value.type and not msg.value.type == topic:
+                    if msg.value and not msg.value.type == topic:
                         logger.warning(f"Unexpected event type {msg.value.type} in topic {topic}")
-                    handled = False
-                    for callback in self._callbacks:
-                        if msg.topic in callback.consumed_topics:
-                            handled = True
-                            self.safe_handle_msg(msg, callback)
-                    if not handled:
+                    if topic not in self._callbacks:
                         logger.warning(
-                            f"Message received but not processed: {msg} \n"
-                            f"(No callbacks assigned to topic {msg.topic})"
+                            f"Message received but not processed: {msg} \n" f"(No callbacks assigned to topic {topic})"
                         )
+                    else:
+                        for callback in self._callbacks[topic]:
+                            self.safe_handle_msg(msg, callback)
 
-        for callback in self._callbacks:
-            callback.cleanup()
+        for callback_list in self._callbacks.values():
+            for callback in callback_list:
+                callback.cleanup()
 
     def stop_loop(self):
         if not self._running:
@@ -178,14 +170,22 @@ class KafkaService:
 
         self._running = False
 
-    def add_callback(self, callback: KafkaServiceCallback):
+    def add_callback(self, callback: KafkaServiceCallback, topic: str):
         if self._running:
             raise KafkaService.LoopAlreadyRunningException(KafkaService._CANNOT_UPDATE_CALLBACKS)
 
-        self._callbacks.append(callback)
+        if topic in self._callbacks:
+            self._callbacks[topic].append(callback)
+        else:
+            self._callbacks[topic] = [callback]
 
-    def remove_callback(self, callback: KafkaServiceCallback):
+    def remove_callback(self, callback: KafkaServiceCallback, topic: str = None):
         if self._running:
             raise KafkaService.LoopAlreadyRunningException(KafkaService._CANNOT_UPDATE_CALLBACKS)
 
-        self._callbacks.remove(callback)
+        if topic:
+            self._callbacks[topic].remove(callback)
+        else:
+            for cbs in self._callbacks.values():
+                if callback in cbs:
+                    cbs.remove(callback)

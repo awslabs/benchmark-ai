@@ -56,7 +56,7 @@ def kafka_service(mocker) -> KafkaService:
     kafka_service = KafkaService(
         name="kafka-service",
         version="1.0",
-        callbacks=[],
+        callbacks={},
         kafka_consumer=mocker.create_autospec(KafkaConsumer),
         kafka_producer=mocker.create_autospec(KafkaProducer),
         pod_name=POD_NAME,
@@ -91,7 +91,7 @@ def benchmark_event_without_datasets(benchmark_doc: BenchmarkDoc) -> BenchmarkEv
 
 @fixture
 def fetcher_callback(data_set_manager) -> FetcherEventHandler:
-    return FetcherEventHandler([CONSUMER_TOPIC], data_set_manager, S3_BUCKET, PRODUCER_TOPIC)
+    return FetcherEventHandler(PRODUCER_TOPIC, data_set_manager, S3_BUCKET)
 
 
 def get_benchmark_event(payload: FetcherPayload):
@@ -185,7 +185,7 @@ def simulate_fetched_datasets(data_set_manager):
 
 
 def test_fetcher_cleanup(data_set_manager: DataSetManager):
-    fetcher_callback = FetcherEventHandler([CONSUMER_TOPIC], data_set_manager, S3_BUCKET, PRODUCER_TOPIC)
+    fetcher_callback = FetcherEventHandler(PRODUCER_TOPIC, data_set_manager, S3_BUCKET)
     fetcher_callback.cleanup()
     data_set_manager.stop.assert_called_once()
 

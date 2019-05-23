@@ -44,7 +44,7 @@ def test_create_service(mocker, kafka_service_config):
 
 def test_constructor_loads_kubernetes_config_with_inexistent_kubeconfig_file(kubernetes_config):
     service_config = WatcherServiceConfig(kubeconfig="inexistent-path")
-    WatchJobsEventHandler([CONSUMER_TOPIC], service_config)
+    WatchJobsEventHandler(service_config)
     assert kubernetes_config.load_incluster_config.call_args_list == [call()]
     assert kubernetes_config.load_kube_config.call_args_list == []
 
@@ -52,6 +52,6 @@ def test_constructor_loads_kubernetes_config_with_inexistent_kubeconfig_file(kub
 def test_constructor_loads_kubernetes_config_with_existing_kubeconfig_file(kubernetes_config, datadir):
     kubeconfig_filename = str(datadir / "kubeconfig")
     service_config = WatcherServiceConfig(kubeconfig=kubeconfig_filename)
-    WatchJobsEventHandler([CONSUMER_TOPIC], service_config)
+    WatchJobsEventHandler(service_config)
     assert kubernetes_config.load_incluster_config.call_args_list == []
     assert kubernetes_config.load_kube_config.call_args_list == [call(kubeconfig_filename)]

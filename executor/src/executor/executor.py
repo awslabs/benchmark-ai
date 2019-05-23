@@ -1,6 +1,5 @@
 import subprocess
 import logging
-from typing import List
 
 from executor import SERVICE_NAME, __version__
 from executor.config import ExecutorConfig
@@ -26,8 +25,7 @@ logger = logging.getLogger(SERVICE_NAME)
 
 
 class ExecutorEventHandler(KafkaServiceCallback):
-    def __init__(self, consumed_topics: List[str], executor_config: ExecutorConfig, producer_topic: str):
-        super(ExecutorEventHandler, self).__init__(consumed_topics=consumed_topics)
+    def __init__(self, executor_config: ExecutorConfig, producer_topic: str):
         self.config = executor_config
         self.producer_topic = producer_topic
 
@@ -77,9 +75,9 @@ class ExecutorEventHandler(KafkaServiceCallback):
 
 def create_executor(common_kafka_cfg: KafkaServiceConfig, executor_config: ExecutorConfig) -> KafkaService:
 
-    callbacks = [
-        ExecutorEventHandler([common_kafka_cfg.consumer_topic], executor_config, common_kafka_cfg.producer_topic)
-    ]
+    callbacks = {
+        common_kafka_cfg.consumer_topic: [ExecutorEventHandler(executor_config, common_kafka_cfg.producer_topic)]
+    }
 
     consumer, producer = create_kafka_consumer_producer(common_kafka_cfg)
 

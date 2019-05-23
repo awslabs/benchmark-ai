@@ -223,6 +223,4 @@ def get_topic_event_type(topic: str):
         "CMD_SUBMIT": CommandRequestEvent,
         "CMD_RETURN": CommandResponseEvent,
     }
-    if topic not in topic_to_event_type:
-        raise KeyError(f"Invalid topic {topic}")
-    return topic_to_event_type.get(topic)
+    return topic_to_event_type[topic]

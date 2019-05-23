@@ -1,6 +1,4 @@
 import logging
-from typing import List
-
 import kubernetes
 
 from bai_kafka_utils.events import ExecutorBenchmarkEvent, Status
@@ -15,8 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class WatchJobsEventHandler(KafkaServiceCallback):
-    def __init__(self, consumed_topics: List[str], config: WatcherServiceConfig):
-        super(WatchJobsEventHandler, self).__init__(consumed_topics=consumed_topics)
+    def __init__(self, config: WatcherServiceConfig):
         self.config = config
         self.watchers = {}
 
@@ -70,7 +67,7 @@ class WatchJobsEventHandler(KafkaServiceCallback):
 
 
 def create_service(common_kafka_cfg: KafkaServiceConfig, service_cfg: WatcherServiceConfig) -> KafkaService:
-    callbacks = [WatchJobsEventHandler([common_kafka_cfg.consumer_topic], service_cfg)]
+    callbacks = {common_kafka_cfg.consumer_topic: [WatchJobsEventHandler(service_cfg)]}
     consumer, producer = create_kafka_consumer_producer(common_kafka_cfg)
     return KafkaService(
         name=SERVICE_NAME,
