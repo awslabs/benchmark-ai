@@ -17,7 +17,7 @@ exporter.metric.expire.seconds=60
 # connection to discover the full cluster membership (which may change dynamically), this list need not
 # contain the full set of servers (you may want more than one, though, in case a server is down).
 # kubectl describe configmap outputs-infrastructure -> msk_bootstrap_brokers
-bootstrap.servers=b-1.benchmark-cluster.pceosy.c2.kafka.us-west-2.amazonaws.com:9092,b-3.benchmark-cluster.pceosy.c2.kafka.us-west-2.amazonaws.com:9092,b-2.benchmark-cluster.pceosy.c2.kafka.us-west-2.amazonaws.com:9092
+bootstrap.servers=@@KAFKA_BOOTSTRAP_SERVERS@@
 
 kafka.consumer.topics=BAI_METRICS
 

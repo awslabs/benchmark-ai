@@ -630,7 +630,7 @@ terraform_plan=$(realpath ${terraform_plan})
 project_dir=$(realpath $(dirname $BASH_SOURCE)/../../..)
 k8s_deploy_dir=$(realpath $(dirname $BASH_SOURCE))/deploy
 
-kafka_topics=("BAI_APP_BFF" "BAI_APP_FETCHER" "BAI_APP_EXECUTOR" "BAI_SYS_BFF" "BAI_SYS_FETCHER" "BAI_SYS_EXECUTOR" "BAI_APP_STATUS" "CMD_SUBMIT" "CMD_RETURN")
+kafka_topics=("BAI_APP_BFF" "BAI_APP_FETCHER" "BAI_APP_EXECUTOR" "BAI_SYS_BFF" "BAI_SYS_FETCHER" "BAI_SYS_EXECUTOR" "BAI_APP_STATUS" "BAI_METRICS" "CMD_SUBMIT" "CMD_RETURN")
 
 readonly kubeflow_namespace=kubeflow
 
