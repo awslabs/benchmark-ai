@@ -1,3 +1,4 @@
+from kafka import KafkaConsumer, KafkaProducer
 from pytest import fixture
 from unittest.mock import MagicMock
 from bai_kafka_utils.events import (
@@ -110,13 +111,14 @@ def test_create_response_event(benchmark_event_with_data_sets, executor_callback
 
 
 def test_create_executor(mocker, config_args, kafka_service_config):
-    mock_kafka_consumer = mocker.patch("kafka.KafkaProducer", autospec=True)
-    mock_kafka_producer = mocker.patch("kafka.KafkaConsumer", autospec=True)
+    mock_consumer = MagicMock(spec=KafkaConsumer)
+    mock_producer = MagicMock(spec=KafkaProducer)
+    mock_create_consumer_producer = mocker.patch(
+        "executor.executor.create_kafka_consumer_producer", return_value=(mock_consumer, mock_producer), autospec=True
+    )
 
     executor_config = create_executor_config(config_args)
     executor = create_executor(kafka_service_config, executor_config)
 
-    mock_kafka_consumer.assert_called_once()
-    mock_kafka_producer.assert_called_once()
-
+    mock_create_consumer_producer.assert_called_once()
     assert executor

@@ -1,5 +1,6 @@
 import abc
 import dataclasses
+import itertools
 import logging
 import time
 import uuid
@@ -160,9 +161,9 @@ class KafkaService:
                         for callback in self._callbacks[topic]:
                             self.safe_handle_msg(msg, callback)
 
-        for callback_list in self._callbacks.values():
-            for callback in callback_list:
-                callback.cleanup()
+        distinct_callbacks = set(itertools.chain.from_iterable(self._callbacks.values()))
+        for callback in distinct_callbacks:
+            callback.cleanup()
 
     def stop_loop(self):
         if not self._running:

@@ -207,6 +207,7 @@ def test_multiple_consumed_topics(kafka_consumer_with_two_topics: KafkaConsumer,
     kafka_service.run_loop()
 
     assert mock_callback.handle_event.call_count == 2
+    mock_callback.cleanup.assert_called_once()
 
 
 def test_message_passed_through(kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer):
