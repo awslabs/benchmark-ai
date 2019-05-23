@@ -5,8 +5,7 @@ RUN wget -O /opt/kafka-topic-exporter.jar https://github.com/ogibayashi/kafka-to
 
 ADD run.sh /opt/run.sh
 
-ENTRYPOINT [ "/bin/bash", "-c" ]
+# Config has to be mounted at /config
 
-# The default is to log to a local file - not that convenient when expecting output on stdout
-# Expect config to be mounted at /config/kafka-topic-exporter.properties
+ENTRYPOINT [ "/bin/bash", "-c" ]
 CMD [ "/opt/run.sh" ]
