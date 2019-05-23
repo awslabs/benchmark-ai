@@ -108,18 +108,4 @@ resource "aws_instance" "bastion" {
   tags {
     "Name" = "BenchmarkAI Bastion"
   }
-
-  provisioner "remote-exec" {
-    connection {
-      type = "ssh"
-      user = "ubuntu"
-      private_key = "${tls_private_key.bastion_private_key.private_key_pem}"
-    }
-
-    inline = [
-      # HACK: Terraform ssh agent connects before host is initialized ()
-      "sleep 60",
-      "sudo snap install --beta kafka",
-    ]
-  }
 }

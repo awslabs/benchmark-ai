@@ -101,9 +101,6 @@ create_infra() {
     echo "==> Installing kubeflow operators"
     _install_kubeflow_operators || return 1
 
-    echo "==> Creating Kafka topics"
-    _create_kafka_topics || return 1
-
     echo "==> Installing Tiller"
     _install_tiller || return 1
 
@@ -218,21 +215,6 @@ _port_forward_alertmanager(){
 _port_forward_prometheus(){
     printf "Navigate to 127.0.0.1:9090 to access the Prometheus dashboard\nCtrl+C to cancel the session.\n"
     kubectl port-forward deployment/prometheus-operator-1-prometheus 9090
-}
-
-_create_kafka_topics(){
-    local outputs=$(terraform output -json)
-    local msk_zookeeper_connect=$(echo $outputs | jq -r '.msk_zookeeper_connect.value')
-    local bastion_pem_filename=$(echo $outputs | jq -r '.bastion_pem_filename.value')
-    local bastion_public_ip=$(echo $outputs | jq -r '.bastion_public_ip.value')
-
-    printf "Creating Kafka Topics...\n"
-    for topic in "${kafka_topics[@]}"; do
-        echo "---- Topic: ${topic}..."
-        ssh -i ${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no "/snap/bin/kafka.topics --create --if-not-exists --zookeeper $msk_zookeeper_connect --replication-factor 3 --partitions 1 --topic $topic"
-        echo "---- Topic: ${topic}... DONE"
-    done
-
 }
 
 __create_kubeflow_namespace(){
@@ -386,24 +368,6 @@ __validate_mxnet_job() {
     __validate_crd mxjobs.kubeflow.org "$kubeflow_namespace"
 }
 
-__validate_kafka_topics() {
-    printf "Kafka Topics are present"
-
-    (
-    cd $terraform_dir > /dev/null
-    local outputs=$(terraform output -json)
-    local msk_zookeeper_connect=$(echo $outputs | jq -r '.msk_zookeeper_connect.value')
-    local bastion_pem_filename=$(echo $outputs | jq -r '.bastion_pem_filename.value')
-    local bastion_public_ip=$(echo $outputs | jq -r '.bastion_public_ip.value')
-
-    local result=$(ssh -i ${bastion_pem_filename} -t ubuntu@$bastion_public_ip -o StrictHostKeyChecking=no -o LogLevel=QUIET "/snap/bin/kafka.topics --list --zookeeper $msk_zookeeper_connect")
-
-    for topic in "${kafka_topics[@]}"; do
-        echo $result | grep $topic > /dev/null || return 1
-    done
-    )
-}
-
 __validate_zookeeper_pods() {
     printf "ZooKeeper is ready"
     $kubectl wait --for=condition=ready pod --selector=app=zookeeper --timeout=300s > /dev/null || return 1
@@ -433,7 +397,6 @@ validate_infra() {
     local rules=(
         __validate_mpi_job \
         __validate_mxnet_job \
-        __validate_kafka_topics \
         __validate_zookeeper_pods
     )
 
@@ -629,8 +592,6 @@ terraform_plan=$(realpath ${terraform_plan})
 
 project_dir=$(realpath $(dirname $BASH_SOURCE)/../../..)
 k8s_deploy_dir=$(realpath $(dirname $BASH_SOURCE))/deploy
-
-kafka_topics=("BAI_APP_BFF" "BAI_APP_FETCHER" "BAI_APP_EXECUTOR" "BAI_SYS_BFF" "BAI_SYS_FETCHER" "BAI_SYS_EXECUTOR" "BAI_APP_STATUS" "CMD_SUBMIT" "CMD_RETURN")
 
 readonly kubeflow_namespace=kubeflow
 
