@@ -4,7 +4,6 @@ RUN yum install -y wget
 RUN wget -O /opt/kafka-topic-exporter.jar https://github.com/ogibayashi/kafka-topic-exporter/releases/download/v0.0.6/kafka-topic-exporter-0.0.6-jar-with-dependencies.jar
 
 ADD run.sh /opt/run.sh
-RUN chmod +x /opt/run.sh
 
 ENTRYPOINT [ "/bin/bash", "-c" ]
 
