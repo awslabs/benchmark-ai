@@ -207,6 +207,19 @@ def test_multiple_consumed_topics(kafka_consumer_with_two_topics: KafkaConsumer,
     kafka_service.run_loop()
 
     assert mock_callback.handle_event.call_count == 2
+
+
+def test_multiple_consumed_topics_cleanup_once(
+    kafka_consumer_with_two_topics: KafkaConsumer, kafka_producer: KafkaProducer
+):
+    mock_callback = _create_mock_callback()
+    kafka_service = _create_kafka_service(
+        {CONSUMER_TOPIC: [mock_callback], CMD_SUBMIT_TOPIC: [mock_callback]},
+        kafka_consumer_with_two_topics,
+        kafka_producer,
+    )
+    kafka_service.run_loop()
+
     mock_callback.cleanup.assert_called_once()
 
 
