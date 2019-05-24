@@ -18,6 +18,12 @@ class HttpServerError(RetryableError):
     pass
 
 
+# Unretryable since boto retries on it's own
+# TODO - Align retry policies between boto3 and us
+class S3Error(UnRetryableError):
+    pass
+
+
 # Any curl exceptions that was before HTTP was properly established.
 # DNS is mostly unretryable.
 # Cannot connect - probably is.

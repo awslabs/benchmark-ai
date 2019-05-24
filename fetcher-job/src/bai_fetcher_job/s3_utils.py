@@ -1,10 +1,12 @@
 import logging
 from dataclasses import dataclass
-from typing import TextIO
 from urllib.parse import urlparse
 
 import boto3
-import botocore
+from botocore.exceptions import ClientError
+from typing import TextIO
+
+from bai_fetcher_job.failures import S3Error
 
 MD5_TAG = "MD5"
 
@@ -32,15 +34,21 @@ class S3Object:
 def upload_to_s3(fp, dst: S3Object):
     fp.seek(0)
     logger.info(f"Start upload to {dst}")
-    boto3.client("s3").upload_fileobj(fp, dst.bucket, dst.key, Callback=ProgressCallback())
+    try:
+        boto3.client("s3").upload_fileobj(fp, dst.bucket, dst.key, Callback=ProgressCallback())
+    except ClientError as e:
+        raise S3Error from e
     logger.info(f"End upload to {dst}")
 
 
 def update_s3_hash_tagging(dst: S3Object, md5: str):
     logger.info(f"Updating hash for {dst}")
-    boto3.client("s3").put_object_tagging(
-        Bucket=dst.bucket, Key=dst.key, Tagging={"TagSet": [{"Key": MD5_TAG, "Value": md5}]}
-    )
+    try:
+        boto3.client("s3").put_object_tagging(
+            Bucket=dst.bucket, Key=dst.key, Tagging={"TagSet": [{"Key": MD5_TAG, "Value": md5}]}
+        )
+    except ClientError as e:
+        raise S3Error from e
     logger.info(f"Updated hash for {dst}")
 
 
@@ -50,8 +58,9 @@ def check_s3_for_md5(dst: S3Object, md5: str) -> bool:
         md5s = [tag["Value"] for tag in tags["TagSet"] if tag["Key"] == "MD5"]
         if md5s:
             return md5 == md5s[0]
-    except botocore.exceptions.ClientError:
+    except ClientError:
         # Like no object or something
+        logger.exception(f"Fail to validate hash for {dst}")
         return False
     # Ok, The file IS there. But it has no MD5 tags.
     # May be it's small enough for md5 to be the Tag?
@@ -61,7 +70,9 @@ def check_s3_for_md5(dst: S3Object, md5: str) -> bool:
 def check_s3_for_etag(dst: S3Object, etag: str) -> bool:
     try:
         boto3.client("s3").get_object(Bucket=dst.bucket, Key=dst.key, IfMatch=etag)
-    except botocore.exceptions.ClientError:
+    except ClientError:
+        # Like no object or something
+        logger.exception(f"Fail to validate etag for {dst}")
         return False
 
     return True
@@ -79,5 +90,24 @@ class ProgressCallback:
 def download_from_s3(fp: TextIO, src: str):
     s3src = S3Object.parse(src)
     logger.info(f"Start download from {src}")
-    boto3.client("s3").download_fileobj(s3src.bucket, s3src.key, fp, Callback=ProgressCallback())
+    try:
+        boto3.client("s3").download_fileobj(s3src.bucket, s3src.key, fp, Callback=ProgressCallback())
+    except ClientError as e:
+        raise S3Error from e
     logger.info(f"End download from {src}")
+
+
+def is_s3_file(obj: S3Object):
+    s3 = boto3.resource("s3")
+    bucket = s3.Bucket(obj.bucket)
+    try:
+        any_object = False
+        for sub_obj in bucket.objects.filter(Prefix=obj.key):
+            any_object = True
+            if sub_obj.key != obj.key:
+                return False
+        if not any_object:
+            raise S3Error("Object not found")
+        return True
+    except ClientError as e:
+        raise S3Error from e

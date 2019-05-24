@@ -1,8 +1,9 @@
 import boto3
 from typing import Optional
 
-from bai_fetcher_job.s3_utils import S3Object, download_from_s3
+from bai_fetcher_job.s3_utils import S3Object, download_from_s3, is_s3_file
 from bai_fetcher_job.transfer_to_s3 import transfer_to_s3
+
 
 # Initial version of the folder transfer, that lacks validation
 # TODO Implement Merkl-tree or something like that
@@ -32,17 +33,3 @@ def s3_to_s3(src: str, dst: str, md5: Optional[str] = None):
     else:
         # For all other cases we just transfer
         s3_to_s3_deep(s3src, s3dst)
-
-
-def is_s3_file(obj: S3Object):
-    s3 = boto3.resource("s3")
-    bucket = s3.Bucket(obj.bucket)
-
-    first = True
-    for sub_obj in bucket.objects.filter(Prefix=obj.key):
-        if first:
-            if sub_obj.key != obj.key:
-                return False
-        else:
-            return False
-    return True
