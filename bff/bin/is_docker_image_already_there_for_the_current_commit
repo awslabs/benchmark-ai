@@ -1,0 +1,11 @@
+#!/bin/bash
+
+check_for_image() {
+    local short_hash=${1:-$(git rev-parse --short HEAD)}
+    grep -q "${short_hash}" <<<$(docker images | tail -n +2 | awk '{print $2}' | grep -v latest | grep -v none)
+    ret=$?
+    ((ret == 0 )) && echo "Image already present"
+    return $ret
+}
+
+check_for_image $*

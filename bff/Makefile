@@ -248,6 +248,7 @@ publish-dev-container:
 	docker push $(DOCKER_REGISTRY)/$(PROJECT)-dev:latest
 
 build-deploy-container: dist
+	$(shell ./bin/is_docker_image_already_there_for_the_current_commit)
 	@echo "------------------------"
 	@echo "Building container'ed artifact... ($(PROFILE))"
 	@echo "------------------------"
