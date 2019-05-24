@@ -72,7 +72,7 @@ def check_s3_for_etag(dst: S3Object, etag: str) -> bool:
         boto3.client("s3").get_object(Bucket=dst.bucket, Key=dst.key, IfMatch=etag)
     except ClientError:
         # Like no object or something
-        logger.exception(f"Fail to validate etag for {dst}")
+        logger.exception(f"Failed to validate etag for {dst}")
         return False
 
     return True
