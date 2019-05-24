@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: entrypoint-JOB_ID
+  name: entrypoint-benchmark_JOB_ID
   namespace: default
   labels:
-    benchmark: JOB_ID
+    benchmark: benchmark_JOB_ID
 data:
   entrypoint: |
     #!/bin/bash \\
@@ -21,7 +21,7 @@ data:
 apiVersion: kubeflow.org/v1alpha1
 kind: MPIJob
 metadata:
-  name: JOB_ID
+  name: benchmark_JOB_ID
   labels:
     app: benchmark-ai
 spec:
@@ -94,7 +94,7 @@ spec:
         - name: BACKEND
           value: elasticsearch
         - name: BACKEND_ARG_JOB_ID
-          value: JOB_ID
+          value: benchmark_JOB_ID
         - name: BACKEND_ARG_HOSTNAME
           valueFrom:
             configMapKeyRef:
@@ -117,7 +117,7 @@ spec:
       - name: entrypoint
         configMap:
           defaultMode: 0700
-          name: entrypoint-JOB_ID
+          name: entrypoint-benchmark_JOB_ID
       - name: benchmark-ai
         emptyDir: {}
       - name: p0
