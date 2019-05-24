@@ -1,0 +1,66 @@
+# BenchmarkAI meta
+spec_version = "0.1.0"
+
+# These fields don't have any impact on the job to run, they contain
+# merely informative data so the benchmark can be categorized when displayed
+# in the dashboard.
+[info]
+task_name = "MLPerf image classification / Tensorflow"
+description = """ \
+    An MLPerf tensorflow example of using Benchmark AI.\
+    """
+
+# 1. Hardware
+[hardware]
+instance_type = "p3.8xlarge"
+strategy = "single_node"
+
+# 2. Environment
+[env]
+# Docker hub <hub-user>/<repo-name>:<tag>
+docker_image = "benchmarkai/mlperf-img-class-tflow:latest"
+
+# 3. Machine learning related settings:
+# dataset, benchmark code and parameters it takes
+[ml]
+benchmark_code = "./run_and_time.sh 2"
+
+# [Opt] 4. Dataset
+[data]
+# Dataset ID
+id = "ImageNet"
+# md5 = "rddytftyfrdr75657fftrtrt11"
+
+# [Opt] Data sources
+# List all required data sources below.
+# Make an entry for each with the same format as the ones below.
+[[data.sources]]
+# Data download URI.
+src = "https://s3.amazonaws.com/aws-ml-platform-datasets/imagenet/480px-q95/val-480px-q95.rec"
+# Path where the dataset is stored in the container FS
+path = "/imn"
+
+[[data.sources]]
+# Data download URI.
+src = "https://s3.amazonaws.com/aws-ml-platform-datasets/imagenet/480px-q95/train-480px-q95.rec"
+# Path where the dataset is stored in the container FS
+path = "/imn"
+
+[[data.sources]]
+# Data download URI.
+src = "https://s3.amazonaws.com/aws-ml-platform-datasets/imagenet/480px-q95/train-480px-q95.idx"
+# Path where the dataset is stored in the container FS
+path = "/imn"
+
+[[data.sources]]
+# Data download URI.
+src = "https://s3.amazonaws.com/aws-ml-platform-datasets/imagenet/480px-q95/val-480px-q95.idx"
+# Path where the dataset is stored in the container FS
+path = "/imn"
+
+# ...
+
+# 4. Output
+[output]
+# Define which metrics will be tracked in this benchmark
+metrics = ["accuracy"]
