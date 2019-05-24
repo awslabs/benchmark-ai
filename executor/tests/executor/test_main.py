@@ -10,6 +10,8 @@ KUBECTL = "path/cfg"
 LOGGING_LEVEL = "WARN"
 CONSUMER_TOPIC = "IN"
 PRODUCER_TOPIC = "OUT"
+CMD_SUBMIT_TOPIC = "CMD_SUBMIT"
+CMD_RETURN_TOPIC = "CMD_RETURN"
 STATUS_TOPIC = "STATUS_TOPIC"
 BOOTSTRAP_SERVERS_ARG = ",".join(BOOTSTRAP_SERVERS)
 VALID_STRATEGIES = "s1,s2"
@@ -26,6 +28,8 @@ def test_main(mock_create_executor):
     main(
         f" --consumer-topic {CONSUMER_TOPIC} "
         f" --producer-topic {PRODUCER_TOPIC} "
+        f" --cmd-submit-topic {CMD_SUBMIT_TOPIC}"
+        f" --cmd-return-topic {CMD_RETURN_TOPIC}"
         f" --status-topic {STATUS_TOPIC} "
         f" --bootstrap-servers {BOOTSTRAP_SERVERS_ARG} "
         f" --logging-level {LOGGING_LEVEL} "
@@ -40,6 +44,8 @@ def test_main(mock_create_executor):
     expected_common_kafka_cfg = KafkaServiceConfig(
         consumer_topic=CONSUMER_TOPIC,
         producer_topic=PRODUCER_TOPIC,
+        cmd_submit_topic=CMD_SUBMIT_TOPIC,
+        cmd_return_topic=CMD_RETURN_TOPIC,
         bootstrap_servers=BOOTSTRAP_SERVERS,
         logging_level=LOGGING_LEVEL,
         status_topic=STATUS_TOPIC,

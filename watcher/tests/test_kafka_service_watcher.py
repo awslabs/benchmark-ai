@@ -8,14 +8,19 @@ from bai_watcher.args import WatcherServiceConfig
 from bai_watcher.kafka_service_watcher import create_service, WatchJobsEventHandler
 
 
+CONSUMER_TOPIC = "IN_TOPIC"
+
+
 @pytest.fixture
 def kafka_service_config():
     return KafkaServiceConfig(
         bootstrap_servers=["kafka1:9092", "kafka2:9092"],
         consumer_group_id="GROUP_ID",
-        consumer_topic="IN_TOPIC",
+        consumer_topic=CONSUMER_TOPIC,
         logging_level="DEBUG",
         producer_topic="OUT_TOPIC",
+        status_topic="STATUS_TOPIC",
+        cmd_return_topic="CMD_RETURN",
     )
 
 

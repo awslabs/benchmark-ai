@@ -1,11 +1,12 @@
 import abc
 import dataclasses
+import itertools
 import logging
 import time
 import uuid
 from dataclasses import dataclass
 from signal import signal, SIGTERM
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from kafka import KafkaProducer, KafkaConsumer
 
@@ -20,13 +21,15 @@ class KafkaServiceConfig:
     producer_topic: str
     bootstrap_servers: List[str]
     logging_level: str
+    cmd_submit_topic: Optional[str] = None
+    cmd_return_topic: Optional[str] = None
     status_topic: Optional[str] = None
     consumer_group_id: Optional[str] = None
 
 
 class KafkaServiceCallback(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def handle_event(self, event: BenchmarkEvent, kafka_service) -> Optional[BenchmarkEvent]:
+    def handle_event(self, event: BenchmarkEvent, kafka_service):
         pass
 
     @abc.abstractmethod
@@ -49,15 +52,13 @@ class KafkaService:
         self,
         name: str,
         version: str,
-        producer_topic: str,
-        callbacks: List[KafkaServiceCallback],
+        callbacks: Dict[str, List[KafkaServiceCallback]],
         kafka_consumer: KafkaConsumer,
         kafka_producer: KafkaProducer,
         pod_name: str,
         status_topic: Optional[str] = None,
     ):
 
-        self._producer_topic = producer_topic
         self._producer = kafka_producer
         self._consumer = kafka_consumer
         self._status_topic = status_topic
@@ -66,7 +67,8 @@ class KafkaService:
         self.pod_name = pod_name
 
         # Immutability helps us to avoid nasty bugs.
-        self._callbacks = list(callbacks)
+        self._callbacks = {topic: list(callbacks) for topic, callbacks in callbacks.items()}
+
         self._running = False
         signal(SIGTERM, self.stop_loop)
 
@@ -74,14 +76,13 @@ class KafkaService:
     _IS_NOT_RUNNING = "Loop is not running"
     _CANNOT_UPDATE_CALLBACKS = "Cannot update callbacks with running loop"
 
-    def safe_handle_msg(self, msg, callback: KafkaServiceCallback) -> Optional[BenchmarkEvent]:
+    def safe_handle_msg(self, msg, callback: KafkaServiceCallback):
         try:
-            return self.handle_event(msg.value, callback)
+            self.handle_event(msg.value, callback)
         except KafkaServiceCallbackException:
             logger.exception(f"Failed to handle message: {msg}")
-        return None
 
-    def handle_event(self, event: BenchmarkEvent, callback: KafkaServiceCallback) -> Optional[BenchmarkEvent]:
+    def handle_event(self, event: BenchmarkEvent, callback: KafkaServiceCallback):
         """
         Utility method for handling a benchmark event.
         Does the logging and calls the callback function to handle the event
@@ -94,7 +95,7 @@ class KafkaService:
         self.send_status_message_event(
             event, Status.PENDING, f"{self.name} service, node {self.pod_name}: Processing event..."
         )
-        return callback.handle_event(event, self)
+        callback.handle_event(event, self)
 
     def send_status_message_event(self, handled_event: BenchmarkEvent, status: Status, msg: str):
         """
@@ -111,15 +112,13 @@ class KafkaService:
 
         self.send_event(status_event, topic=self._status_topic)
 
-    def send_event(self, event: BenchmarkEvent, topic=None):
+    def send_event(self, event: BenchmarkEvent, topic: str):
         """
         Base method for sending an event to Kafka.
         Adds this service to the visited field in the event and calls the KafkaProducer.
         :param event: value of the message to send
         :param topic: topic to send to
         """
-
-        topic = topic or self._producer_topic
 
         def add_self_to_visited(event):
             current_time_ms = int(time.time() * 1000)
@@ -148,16 +147,22 @@ class KafkaService:
 
         while self._running:
             # KafkaConsumer.poll() might return more than one message
-            # TODO: Do we need a timeout here? (timeout_ms parameter)
-            records = self._consumer.poll().values()
-            for record in records:
-                for msg in record:
-                    for callback in self._callbacks:
-                        output = self.safe_handle_msg(msg, callback)
-                        if output:
-                            self.send_event(output)
+            records = self._consumer.poll()
 
-        for callback in self._callbacks:
+            for topic, record in records.items():
+                for msg in record:
+                    if msg.value and not msg.value.type == topic:
+                        logger.warning(f"Unexpected event type {msg.value.type} in topic {topic}")
+                    if topic not in self._callbacks:
+                        logger.warning(
+                            f"Message received but not processed: {msg} \n" f"(No callbacks assigned to topic {topic})"
+                        )
+                    else:
+                        for callback in self._callbacks[topic]:
+                            self.safe_handle_msg(msg, callback)
+
+        distinct_callbacks = set(itertools.chain.from_iterable(self._callbacks.values()))
+        for callback in distinct_callbacks:
             callback.cleanup()
 
     def stop_loop(self):
@@ -166,14 +171,22 @@ class KafkaService:
 
         self._running = False
 
-    def add_callback(self, callback: KafkaServiceCallback):
+    def add_callback(self, callback: KafkaServiceCallback, topic: str):
         if self._running:
             raise KafkaService.LoopAlreadyRunningException(KafkaService._CANNOT_UPDATE_CALLBACKS)
 
-        self._callbacks.append(callback)
+        if topic in self._callbacks:
+            self._callbacks[topic].append(callback)
+        else:
+            self._callbacks[topic] = [callback]
 
-    def remove_callback(self, callback: KafkaServiceCallback):
+    def remove_callback(self, callback: KafkaServiceCallback, topic: str = None):
         if self._running:
             raise KafkaService.LoopAlreadyRunningException(KafkaService._CANNOT_UPDATE_CALLBACKS)
 
-        self._callbacks.remove(callback)
+        if topic:
+            self._callbacks[topic].remove(callback)
+        else:
+            for cbs in self._callbacks.values():
+                if callback in cbs:
+                    cbs.remove(callback)
