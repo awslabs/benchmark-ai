@@ -15,7 +15,6 @@ spec:
         app: benchmark-ai
         service: prometheus-kafka-topic-exporter
     spec:
-      serviceAccountName: prometheus-kafka-topic-exporter
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
