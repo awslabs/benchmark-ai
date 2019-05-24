@@ -3,6 +3,9 @@ kind: ConfigMap
 metadata:
   name: entrypoint-{job_id}
   namespace: default
+  action-id: {event.action_id}
+  client-id: {event.client_id}
+  spawned-by: {service_name}
   labels:
     benchmark: {job_id}
 data:
@@ -22,6 +25,9 @@ metadata:
   name: {job_id}
   labels:
     app: benchmark-ai
+    action-id: {event.action_id}
+    client-id: {event.client_id}
+    spawned-by: {service_name}
 spec:
   replicas: {descriptor.num_instances}
   template:
