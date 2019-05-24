@@ -60,7 +60,7 @@ def check_s3_for_md5(dst: S3Object, md5: str) -> bool:
             return md5 == md5s[0]
     except ClientError:
         # Like no object or something
-        logger.exception(f"Fail to validate hash for {dst}")
+        logger.exception(f"Failed to validate hash for {dst}")
         return False
     # Ok, The file IS there. But it has no MD5 tags.
     # May be it's small enough for md5 to be the Tag?
