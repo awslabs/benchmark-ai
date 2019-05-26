@@ -24,7 +24,7 @@ def data_set_manager(zk_client: KazooClient, k8s_dispatcher: KubernetesDispatche
 
 
 # Repeat 2 - regression test.
-# Checks that 
+# Checks that
 @pytest.mark.parametrize("repeat", [1, 2])
 @pytest.mark.timeout(TIMEOUT_FOR_DOWNLOAD_SEC)
 def test_fetch(
