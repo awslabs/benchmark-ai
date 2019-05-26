@@ -16,7 +16,7 @@ NODE2 = "node2"
 
 
 def get_path(state: str):
-    return f"state/{(str(state))}/"
+    return f"state/{state}/"
 
 
 def get_data(state: str):
