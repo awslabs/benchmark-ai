@@ -1,9 +1,13 @@
 import abc
+import logging
 
 from kazoo.client import KazooClient
+from kazoo.protocol.states import WatchedEvent
 from typing import Callable, Any
 
 from bai_kafka_utils.utils import md5sum
+
+logger = logging.getLogger(__name__)
 
 
 class RWLock(metaclass=abc.ABCMeta):
@@ -38,6 +42,7 @@ class DistributedLock(RWLock):
         self.node_path = node_path
 
     def release(self):
+        logger.info(f"Unlock delete {self.node_path}")
         self.zk_client.delete(self.node_path)
 
 
@@ -59,47 +64,83 @@ class DistributedRWLockManager(RWLockManager):
         return f"{self.get_lock_node_parent_path(state)}/writelock-"
 
     @staticmethod
+    def _get_abs_path(parent, child):
+        return f"{parent}/{child}"
+
+    @staticmethod
     def get_sequence_index(path: str):
         last_delim = path.rindex("-")
         return int(path[last_delim + 1 :])
 
     @staticmethod
     def _incompatible_with_read(node_path: str, my_index: int):
-        return "writelock-" in node_path and DistributedRWLockManager.get_sequence_index(node_path) < my_index
+        return "writelock-" in node_path
 
     @staticmethod
     def _incompatible_with_write(node_path: str, my_index: int):
+        return True
+
+    @staticmethod
+    def _is_before(node_path: str, my_index: int):
         return DistributedRWLockManager.get_sequence_index(node_path) < my_index
 
     def _acquire_lock(
         self, state: Any, on_locked: OnLockCallback, get_path: PathCallback, is_incompat: IsCompatiblePredicate
     ):
         my_node_path_template = get_path(state)
+        # Don't use state in the loop to avoid issues with mutable objects.
+        # State is passed only to be passed to on_locked
+        state_path = self.get_lock_node_parent_path(state)
 
         my_node_path = self.zk_client.create(my_node_path_template, ephemeral=True, sequence=True, makepath=True)
 
-        self._acquire_lock_loop(state, on_locked, my_node_path, is_incompat)
+        self._acquire_lock_loop(state, state_path, on_locked, my_node_path, is_incompat)
 
     def _acquire_lock_loop(
-        self, state: Any, on_locked: OnLockCallback, my_node_path: str, is_incompat: IsCompatiblePredicate
+        self,
+        state: Any,
+        state_path: str,
+        on_locked: OnLockCallback,
+        my_node_path: str,
+        is_incompat: IsCompatiblePredicate,
     ):
         my_index = DistributedRWLockManager.get_sequence_index(my_node_path)
 
-        def _on_lock_changed():
-            self._acquire_lock_loop(self, state, on_locked, my_node_path, is_incompat)
+        def _on_lock_changed(event: WatchedEvent):
+            logger.info(f"Trace _on_changed with {my_node_path}")
+            self._acquire_lock_loop(state, state_path, on_locked, my_node_path, is_incompat)
             pass
 
+        # This is not an infinite loop.
+        # It does just one step if:
+        # - we lock it immediately
+        # - we should wait
+        # It continues ONLY if the current locking node was deleted between get_children and exists
+        # Since this makes us one position closer to our goal - this cannot happen infinitely
+        logger.info(f"Enter lock loop on {state_path} with {my_index}")
+
         while True:
-            children = self.zk_client.get_children(self.get_lock_node_parent_path(state))
-            relevant_children = list(filter(lambda path: is_incompat(path, my_index), children))
+            logger.info(f"Calling get children for {state_path}")
+            children = self.zk_client.get_children(state_path)
+            relevant_children = list(
+                filter(
+                    lambda path: DistributedRWLockManager._is_before(path, my_index) and is_incompat(path, my_index),
+                    children,
+                )
+            )
 
             if relevant_children:
                 # We have to wait
-                current_lock = relevant_children[0]
+                rel_current_lock = relevant_children[0]
+                current_lock = DistributedRWLockManager._get_abs_path(state_path, rel_current_lock)
                 locked = self.zk_client.exists(current_lock, _on_lock_changed)
                 if locked:
                     # They call us later
                     return
+                # Since it's a rare case, let's do some logging
+                logger.info(f"Lock is awaited by {relevant_children}")
+                logger.info(f"{current_lock} seems to be removed by other process just now")
+                logger.info(f"Continue lock loop {state_path}")
             else:
                 on_locked(state, DistributedLock(self.zk_client, my_node_path))
                 return

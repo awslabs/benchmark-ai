@@ -53,5 +53,7 @@ spec:
                 configMapKeyRef:
                   name: fetcher-dispatcher
                   key: producer_topic
+            - name: PYTEST_ARGS
+              value: "-o log_cli=true --log-cli-level=INFO"
       restartPolicy: Never
   backoffLimit: 0

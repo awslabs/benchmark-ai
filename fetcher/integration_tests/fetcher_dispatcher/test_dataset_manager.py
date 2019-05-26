@@ -23,22 +23,31 @@ def data_set_manager(zk_client: KazooClient, k8s_dispatcher: KubernetesDispatche
     data_set_manager.stop()
 
 
+# Repeat 2 - regression test.
+# Checks that 
+@pytest.mark.parametrize("repeat", [1, 2])
 @pytest.mark.timeout(TIMEOUT_FOR_DOWNLOAD_SEC)
 def test_fetch(
+    repeat: int,
     data_set_manager: DataSetManager,
     fetcher_service_config: FetcherServiceConfig,
     benchmark_event_dummy_payload: BenchmarkEvent,
 ):
-    data_set = DataSet(
-        src=EXISTING_DATASET, dst=f"s3://{fetcher_service_config.s3_data_set_bucket}/it/test.file", md5=None
-    )
+    data_sets = []
+    for _ in range(repeat):
+        data_sets.append(
+            DataSet(
+                src=EXISTING_DATASET, dst=f"s3://{fetcher_service_config.s3_data_set_bucket}/it/test.file", md5=None
+            )
+        )
 
-    test_fetch.test_done = False
+    test_fetch.completed = 0
 
     def on_done_test(data_set: DataSet):
-        test_fetch.test_done = True
+        test_fetch.completed = test_fetch.completed + 1
 
-    data_set_manager.fetch(data_set, benchmark_event_dummy_payload, on_done_test)
+    for data_set in data_sets:
+        data_set_manager.fetch(data_set, benchmark_event_dummy_payload, on_done_test)
 
-    while not test_fetch.test_done:
+    while test_fetch.completed < repeat:
         pass
