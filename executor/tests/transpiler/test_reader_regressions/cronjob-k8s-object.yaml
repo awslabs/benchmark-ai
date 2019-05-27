@@ -9,6 +9,9 @@ spec:
     metadata:
       labels:
         app: benchmark-ai
+        action-id: ACTION_ID
+        client-id: CLIENT_ID
+        created-by: executor
     spec:
       serviceAccountName: metrics-pusher
       affinity:

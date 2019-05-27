@@ -3,6 +3,9 @@ kind: ConfigMap
 metadata:
   name: entrypoint-JOB_ID
   namespace: default
+  action-id: ACTION_ID
+  client-id: CLIENT_ID
+  created-by: executor
   labels:
     benchmark: JOB_ID
 data:
@@ -24,6 +27,9 @@ metadata:
   name: JOB_ID
   labels:
     app: benchmark-ai
+    action-id: ACTION_ID
+    client-id: CLIENT_ID
+    created-by: executor
 spec:
   replicas: 2
   template:

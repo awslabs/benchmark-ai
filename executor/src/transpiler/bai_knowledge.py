@@ -7,10 +7,10 @@ from ruamel import yaml
 
 from bai_kafka_utils.events import DataSet, BenchmarkEvent
 from transpiler.descriptor import Descriptor
-
+from transpiler.kubernetes_spec_logic import ConfigTemplate, VolumeMount, HostPath, Volume, EmptyDirVolumeSource
 from transpiler.config import BaiConfig, BaiDataSource, EnvironmentInfo
 from executor.config import ExecutorConfig
-from transpiler.kubernetes_spec_logic import ConfigTemplate, VolumeMount, HostPath, Volume, EmptyDirVolumeSource
+from executor import SERVICE_NAME
 
 
 class BaiKubernetesObjectBuilder:
@@ -51,6 +51,7 @@ class BaiKubernetesObjectBuilder:
 
         config_template.feed({"descriptor": descriptor})
         config_template.feed({"event": event})
+        config_template.feed({"service_name": SERVICE_NAME})
         config_template.feed({"job_id": self.job_id, "availability_zone": availability_zone})
         self.root = config_template.build()
         self.add_volumes(data_sources)
