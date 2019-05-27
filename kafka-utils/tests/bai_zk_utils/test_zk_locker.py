@@ -177,3 +177,4 @@ def test_mutable_has_no_effect(locker: DistributedRWLockManager, on_done1: OnLoc
 
     lock1 = get_lock(on_done1)
     lock1.release()
+    on_done2.assert_called_once_with(state, ANY)
