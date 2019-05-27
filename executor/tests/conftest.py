@@ -2,7 +2,7 @@ import textwrap
 
 import toml
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import create_autospec
 
 from bai_kafka_utils.events import DataSet, BenchmarkDoc, FetcherPayload, BenchmarkEvent
 from bai_kafka_utils.kafka_service import KafkaServiceConfig, KafkaService
@@ -138,4 +138,4 @@ def kafka_service_config():
 
 @pytest.fixture
 def kafka_service() -> KafkaService:
-    return MagicMock(spec=KafkaService)
+    return create_autospec(KafkaService)
