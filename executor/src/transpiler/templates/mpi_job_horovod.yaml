@@ -80,7 +80,8 @@ spec:
         - name: BENCHMARK_AI_FIFO_MAX_WAIT_TIME
           value: "60"
       - name: sidecar
-        image: "edisongustavo/benchmarkai-metrics-pusher:0.1"
+        # TODO: Automate tag selection
+        image: benchmarkai/metrics-pusher:ffed580
         env:
         - name: BENCHMARK_AI_FIFO_FILEPATH
           value: /tmp/benchmark-ai/fifo
