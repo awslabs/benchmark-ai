@@ -25,7 +25,7 @@ def get_data(state: str):
 
 KazooWatcher = Callable[[WatchedEvent], None]
 
-NOT_SIMULATE_THIS_YET = "Can not simulate this yet"
+NOT_SUPPORTED_YET = "Can not simulate this yet"
 
 # While we generally highly convinced, that mocks should be simple and it's not a good idea to simulate
 # the complex behaviour with it, we think it makes sense to implement this easy KazooClient simulator
@@ -51,7 +51,7 @@ def mock_zk_client() -> KazooClient:
             if exists:
                 nodes[path].append(watcher)
             else:
-                assert False, NOT_SIMULATE_THIS_YET
+                assert False, NOT_SUPPORTED_YET
         return exists
 
     # No support for watchers yet
@@ -71,7 +71,7 @@ def mock_zk_client() -> KazooClient:
         # Recursive delete in any form
         for node_path, watchers in nodes.items():
             if node_path.startswith(path) and path != node_path:
-                assert False, NOT_SIMULATE_THIS_YET
+                assert False, NOT_SUPPORTED_YET
 
         watchers = nodes.pop(path)
         for watcher in watchers:

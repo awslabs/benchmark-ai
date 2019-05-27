@@ -24,7 +24,7 @@ def data_set_manager(zk_client: KazooClient, k8s_dispatcher: KubernetesDispatche
 
 
 # Repeat 2 - regression test.
-# Checks that
+# Checks that unlocking works as expected
 @pytest.mark.parametrize("repeat", [1, 2])
 @pytest.mark.timeout(TIMEOUT_FOR_DOWNLOAD_SEC)
 def test_fetch(
@@ -44,7 +44,7 @@ def test_fetch(
     test_fetch.completed = 0
 
     def on_done_test(data_set: DataSet):
-        test_fetch.completed = test_fetch.completed + 1
+        test_fetch.completed += 1
 
     for data_set in data_sets:
         data_set_manager.fetch(data_set, benchmark_event_dummy_payload, on_done_test)

@@ -7,6 +7,10 @@ from typing import Callable, Any
 
 from bai_kafka_utils.utils import md5sum
 
+READLOCK_SUFFIX = "readlock-"
+
+WRITELOCK_SUFFIX = "writelock-"
+
 logger = logging.getLogger(__name__)
 
 
@@ -19,7 +23,7 @@ class RWLock(metaclass=abc.ABCMeta):
 OnLockCallback = Callable[[Any, RWLock], None]
 PathCallback = Callable[[Any], str]
 DataCallback = Callable[[Any], bytes]
-IsCompatiblePredicate = Callable[[str, int], bool]
+IsIncompatiblePredicate = Callable[[str], bool]
 
 
 class RWLockManager(metaclass=abc.ABCMeta):
@@ -46,6 +50,8 @@ class DistributedLock(RWLock):
         self.zk_client.delete(self.node_path)
 
 
+# Implements ZooKeepers cookebook distributed locks.
+# See here https://zookeeper.apache.org/doc/r3.1.2/recipes.html#Shared+Locks
 class DistributedRWLockManager(RWLockManager):
     # We expect a started zk_client
     def __init__(self, zk_client: KazooClient, prefix: str, get_path: PathCallback = _str_path):
@@ -55,13 +61,13 @@ class DistributedRWLockManager(RWLockManager):
 
     def get_lock_node_parent_path(self, state: Any):
         node_path = self.get_path(state)
-        return f"/{self.prefix}/{node_path}"
+        return DistributedRWLockManager._get_abs_path(self.prefix, node_path)
 
     def _get_read_lock_path(self, state: Any):
-        return f"{self.get_lock_node_parent_path(state)}/readlock-"
+        return DistributedRWLockManager._get_abs_path(self.get_lock_node_parent_path(state), READLOCK_SUFFIX)
 
     def _get_write_lock_path(self, state: Any):
-        return f"{self.get_lock_node_parent_path(state)}/writelock-"
+        return DistributedRWLockManager._get_abs_path(self.get_lock_node_parent_path(state), WRITELOCK_SUFFIX)
 
     @staticmethod
     def _get_abs_path(parent, child):
@@ -73,19 +79,15 @@ class DistributedRWLockManager(RWLockManager):
         return int(path[last_delim + 1 :])
 
     @staticmethod
-    def _incompatible_with_read(node_path: str, my_index: int):
-        return "writelock-" in node_path
+    def _incompatible_with_read(node_path: str):
+        return WRITELOCK_SUFFIX in node_path
 
     @staticmethod
-    def _incompatible_with_write(node_path: str, my_index: int):
+    def _incompatible_with_write(node_path: str):
         return True
 
-    @staticmethod
-    def _is_before(node_path: str, my_index: int):
-        return DistributedRWLockManager.get_sequence_index(node_path) < my_index
-
     def _acquire_lock(
-        self, state: Any, on_locked: OnLockCallback, get_path: PathCallback, is_incompat: IsCompatiblePredicate
+        self, state: Any, on_locked: OnLockCallback, get_path: PathCallback, is_incompat: IsIncompatiblePredicate
     ):
         my_node_path_template = get_path(state)
         # Don't use state in the loop to avoid issues with mutable objects.
@@ -102,7 +104,7 @@ class DistributedRWLockManager(RWLockManager):
         state_path: str,
         on_locked: OnLockCallback,
         my_node_path: str,
-        is_incompat: IsCompatiblePredicate,
+        is_incompat: IsIncompatiblePredicate,
     ):
         my_index = DistributedRWLockManager.get_sequence_index(my_node_path)
 
@@ -122,23 +124,24 @@ class DistributedRWLockManager(RWLockManager):
         while True:
             logger.info(f"Calling get children for {state_path}")
             children = self.zk_client.get_children(state_path)
-            relevant_children = list(
-                filter(
-                    lambda path: DistributedRWLockManager._is_before(path, my_index) and is_incompat(path, my_index),
-                    children,
-                )
+
+            # Nodes before me to lock the resource
+            locks_before = list(
+                path
+                for path in children
+                if DistributedRWLockManager.get_sequence_index(path) < my_index and is_incompat(path)
             )
 
-            if relevant_children:
+            if locks_before:
                 # We have to wait
-                rel_current_lock = relevant_children[0]
+                rel_current_lock = locks_before[0]
                 current_lock = DistributedRWLockManager._get_abs_path(state_path, rel_current_lock)
                 locked = self.zk_client.exists(current_lock, _on_lock_changed)
                 if locked:
                     # They call us later
                     return
                 # Since it's a rare case, let's do some logging
-                logger.info(f"Lock is awaited by {relevant_children}")
+                logger.info(f"Lock is awaited by {locks_before}")
                 logger.info(f"{current_lock} seems to be removed by other process just now")
                 logger.info(f"Continue lock loop {state_path}")
             else:
