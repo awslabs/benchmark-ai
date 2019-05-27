@@ -32,11 +32,6 @@ JOB_YAML = "test yaml"
 
 
 @fixture
-def kafka_service() -> KafkaService:
-    return MagicMock(spec=KafkaService)
-
-
-@fixture
 def benchmark_doc() -> BenchmarkDoc:
     return BenchmarkDoc({"var": "val"}, "var = val", sha1="123")
 

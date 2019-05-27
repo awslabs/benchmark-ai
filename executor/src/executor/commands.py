@@ -29,22 +29,23 @@ class ExecutorCommandHandler(KafkaServiceCallback):
         if command.upper() == "DELETE":
             try:
                 result = self._delete_job(args)
-                return_code = 0
-                msg = "Benchmark job successfully deleted"
-            except subprocess.CalledProcessError as e:
-                result = str(e)
-                return_code = 1
-                msg = "Error deleting benchmark job"
-                logging.exception(f"Error processing DELETE command: {event}")
-                raise KafkaServiceCallbackException from e
-            finally:
                 self._send_response_event(
                     kafka_service=kafka_service,
                     input_event=event,
-                    return_code=return_code,
+                    return_code=0,
                     return_value=result,
-                    msg=msg,
+                    msg="Benchmark job successfully deleted",
                 )
+            except (subprocess.CalledProcessError, IndexError) as e:
+                self._send_response_event(
+                    kafka_service=kafka_service,
+                    input_event=event,
+                    return_code=1,
+                    return_value=str(e),
+                    msg="Error deleting benchmark job",
+                )
+                logging.exception(f"Error processing DELETE command: {event}")
+                raise KafkaServiceCallbackException from e
         else:
             logging.warning(f"ERROR: Unknown command: {command}. Full event is {event}")
             self._send_response_event(
@@ -54,13 +55,19 @@ class ExecutorCommandHandler(KafkaServiceCallback):
                 return_value=f"Could not process command (unknown command {command})",
                 msg="ERROR: Unknown command",
             )
+            raise KafkaServiceCallbackException(f"Unknown command {command}")
 
     def _delete_job(self, args) -> str:
-        action_id = args[0]
+        try:
+            action_id = args[0]
+        except IndexError:
+            logging.exception(f"Command is missing an argument: action_id")
+            raise
+
         label_selector = self._create_label_selector(action_id)
         resource_types = self.ALL_K8S_RESOURCE_TYPES
 
-        cmd = [self.config.kubectl, "delete", resource_types, "--selector", label_selector]
+        cmd = [self.kubectl, "delete", resource_types, "--selector", label_selector]
         logger.info(f"Deleting resources of types {resource_types} matching selector {label_selector}")
 
         result = subprocess.check_output(cmd)
