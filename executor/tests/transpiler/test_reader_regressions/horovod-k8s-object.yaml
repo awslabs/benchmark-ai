@@ -5,7 +5,7 @@ metadata:
   namespace: default
   action-id: ACTION_ID
   client-id: CLIENT_ID
-  spawned-by: executor
+  created-by: executor
   labels:
     benchmark: JOB_ID
 data:
@@ -29,7 +29,7 @@ metadata:
     app: benchmark-ai
     action-id: ACTION_ID
     client-id: CLIENT_ID
-    spawned-by: executor
+    created-by: executor
 spec:
   replicas: 2
   template:

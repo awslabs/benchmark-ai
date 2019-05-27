@@ -5,7 +5,7 @@ metadata:
   namespace: default
   action-id: {event.action_id}
   client-id: {event.client_id}
-  spawned-by: {service_name}
+  created-by: {service_name}
   labels:
     benchmark: {job_id}
 data:
@@ -27,7 +27,7 @@ metadata:
     app: benchmark-ai
     action-id: {event.action_id}
     client-id: {event.client_id}
-    spawned-by: {service_name}
+    created-by: {service_name}
 spec:
   replicas: {descriptor.num_instances}
   template:

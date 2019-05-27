@@ -9,7 +9,7 @@ spec:
         app: benchmark-ai
         action-id: ACTION_ID
         client-id: CLIENT_ID
-        spawned-by: executor
+        created-by: executor
     spec:
       serviceAccountName: metrics-pusher
       affinity:
