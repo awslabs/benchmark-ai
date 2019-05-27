@@ -34,5 +34,5 @@ WORKDIR /opt/fetcher/bin
 
 ENTRYPOINT [ "/bin/bash", "-c" ]
 
-CMD ["/opt/fetcher/bin/pytest -v /fetcher/it/" ]
+CMD ["/opt/fetcher/bin/pytest", "-v", "/fetcher/it/", "$PYTEST_ARGS" ]
 
