@@ -126,11 +126,11 @@ class DistributedRWLockManager(RWLockManager):
             children = self.zk_client.get_children(state_path)
 
             # Nodes before me to lock the resource
-            locks_before = list(
+            locks_before = [
                 path
                 for path in children
                 if DistributedRWLockManager.get_sequence_index(path) < my_index and is_incompat(path)
-            )
+            ]
 
             if locks_before:
                 # We have to wait

@@ -46,7 +46,7 @@ def mock_zk_client() -> KazooClient:
         return path
 
     def mock_exists(path, watcher: KazooWatcher = None):
-        exists = any(True for _ in filter(lambda p: p.startswith(path), nodes.keys()))
+        exists = any(True for p in nodes.keys() if p.startswith(path))
         if watcher:
             if exists:
                 nodes[path].append(watcher)
@@ -58,10 +58,7 @@ def mock_zk_client() -> KazooClient:
     def mock_get_children(path: str):
         if not mock_exists(path):
             raise NoNodeError(f"{path} not found")
-
-        abs_paths = filter(lambda p: p.startswith(path) and p != path, nodes.keys())
-        rel_paths = map(lambda p: p.replace(path + "/", ""), abs_paths)
-        return list(rel_paths)
+        return [p.replace(path + "/", "") for p in nodes.keys() if p.startswith(path) and p != path]
 
     # No recursive yet
     def mock_delete(path: str):
