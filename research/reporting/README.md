@@ -74,6 +74,80 @@ To see these logs:
 
 You can play around with querying in the 'dev tools' tab.
 
+## Querying and getting aggregates
+
+I've managed to query and get aggregates.
+First, do a projection and only include the `benchmark_id` and the metric fields. You can do a projection using the '_source' field.
+
+Then, make a query filtering for the report type ('Type' field) and the date range you are interested in.
+Set the 'size' field to 0, because you aren't interested in individual log lines.
+
+Then, create an aggregates section getting the average for each metric, and group by the `benchmark_id.keyword`.
+
+```
+{ 
+  "_source": ["benchmark_id", "CPU Memory (mb)", "Throughput (/s)", "Time to Train (s)", "Top 1 Train Acc", "Top 1 Val Acc", "Uptime (s)"],
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "Type": "Training CV"
+          }
+        }
+      ],
+      "filter": {
+        "range": {
+          "@timestamp": {
+            "lte": "2019-05-28T12"
+          }
+        }
+      }
+    }
+  },
+  "size": 0,
+  "aggs": {
+    "benchmarck_aggs": {
+      "aggs": {
+        "avg_cpu_memory": {
+          "avg": {
+            "field": "CPU Memory (mb)"
+          }
+        },
+        "avg_throughput": {
+          "avg": {
+            "field": "Throughput (/s)"
+          }
+        },
+        "avg_time_to_train": {
+          "avg": {
+            "field": "Time to Train (s)"
+          }
+        },
+        "avg_top1_train_acc": {
+          "avg": {
+            "field": "Top 1 Train Acc"
+          }
+        },
+        "avg_top1_val_acc": {
+          "avg": {
+            "field": "Top 1 Val Acc"
+          }
+        },
+        "avg_uptime": {
+          "avg": {
+            "field": "Uptime (s)"
+          }
+        }
+      },
+      "terms": {
+        "field": "benchmark_id.keyword",
+        "size": 50
+      }
+    }
+  }
+}
+```
 
 
 
