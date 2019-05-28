@@ -6,23 +6,24 @@ VERBOSE=${VERBOSE:-0}
 declare -r VERSION="0.1.0-481dad2"
 declare -r SERVICE_NAME="bai-client"
 declare -r MY_SHA1=$(sha1sum ${0} | awk '{print $1}')
-declare -r BAICTL_HOME=${HOME}/.bai
-declare -r BAICTL_HISTORY=${BAICTL_HOME}/history
-declare -r BAICTL_ACTION_IDS=${BAICTL_HOME}/action_ids
-declare -r BAICTL_SERVICE_ENDPOINT_CONFIG=${BAICTL_HOME}/service_endpoint
+declare -r BAI_HOME=${HOME}/.bai
+declare -r BAI_HISTORY=${BAI_HOME}/history
+declare -r BAI_ACTION_IDS=${BAI_HOME}/action_ids
+declare -r BAI_SERVICE_ENDPOINT_CONFIG=${BAI_HOME}/service_endpoint
 
 banner() {
     printf '
-\033[01;31m _             _        _    _
-| |           (_)      | |  | |
-| |__    __ _  _   ___ | |_ | |\033[0m
-\033[01;33m|  _ \  / _` || | / __|| __|| |
-| |_) || (_| || || (__ | |_ | |\033[0m
-\033[01;32m|_.__/  \__,_||_| \___| \__||_|\033[0m
+
+\033[01;31m  _           _            _ _            _
+ | |         (_)          | (_)          | |
+ | |__   __ _ _ ______ ___| |_  ___ _ __ | |_\033[0m
+ \033[01;33m| _  \ / _  | |______/ __| | |/ _ \  _ \| __|
+ | |_) | (_| | |     | (__| | |  __/ | | | |_\033[0m
+\033[01;32m |_.__/ \__,_|_|      \___|_|_|\___|_| |_|\__|\033[0m
 
 (v%s)
 -------------------------
-AWS: \033[01;33mB\033[0menchmark \033[01;33mAI\033[0m \033[01;33mC\033[0mon\033[01;33mt\033[0mro\033[01;33ml\033[0m
+AWS: \033[01;33mB\033[0menchmark \033[01;33mAI\033[0m \033[01;33mClient\033[0m
 -------------------------
 
 Brought to you by the cool peeps of the  MXNet-Berlin Team
@@ -71,10 +72,10 @@ check_tools() {
 }
 
 _setup() {
-    mkdir -p "${BAICTL_HOME}"
-    touch "${BAICTL_HOME}/action_ids"
-    touch "${BAICTL_HOME}/history"
-    touch "${BAICTL_HOME}/service_endpoint"
+    mkdir -p "${BAI_HOME}"
+    touch "${BAI_HOME}/action_ids"
+    touch "${BAI_HOME}/history"
+    touch "${BAI_HOME}/service_endpoint"
 }
 
 #---------------------------------------------------------
@@ -82,7 +83,7 @@ _setup() {
 #---------------------------------------------------------
 
 _construct_endpoint_URL() {
-    printf "http://%s" "$(cat "${BAICTL_SERVICE_ENDPOINT_CONFIG}")"
+    printf "http://%s" "$(cat "${BAI_SERVICE_ENDPOINT_CONFIG}")"
 }
 
 get_client_id() {
@@ -97,15 +98,15 @@ register_service_endpoint() {
     local service_endpoint=${1:?"register() -> You MUST supply the service endpoint hostname|IP and PORT"}
     #TODO - Do basic sanity checking on format and then write it to file;
 
-    echo "${service_endpoint}" > "${BAICTL_SERVICE_ENDPOINT_CONFIG}"
+    echo "${service_endpoint}" > "${BAI_SERVICE_ENDPOINT_CONFIG}"
 }
 
 unregister_service_endpoint() {
-    cat /dev/null > "${BAICTL_SERVICE_ENDPOINT_CONFIG}"
+    cat /dev/null > "${BAI_SERVICE_ENDPOINT_CONFIG}"
 }
 
 show_registered_service_endpoint() {
-    local current_service_endpoint=$(cat "${BAICTL_SERVICE_ENDPOINT_CONFIG}")
+    local current_service_endpoint=$(cat "${BAI_SERVICE_ENDPOINT_CONFIG}")
     if [[ -n "${current_service_endpoint}" ]]; then
         printf "Currently service endpoint is: [\033[01;33m%s\033[0m] \n" "$current_service_endpoint"
         return 0
@@ -202,7 +203,7 @@ sync_version() {
 #submit event
 submit() {
     local descriptor_filename=${1?"submit() -> You MUST supply a descriptor file as first argument"}
-    local current_service_endpoint=$(cat ${BAICTL_SERVICE_ENDPOINT_CONFIG} | tail -n 1)
+    local current_service_endpoint=$(cat ${BAI_SERVICE_ENDPOINT_CONFIG} | tail -n 1)
 
     if [ ! -f "$descriptor_filename" ]; then echo "file does not exist"; exit 1; fi
     if [[ -z "${current_service_endpoint}" ]]; then
@@ -217,7 +218,7 @@ submit() {
     if [[ -n "${data}" ]]; then
         cmd="curl -s -X POST -H Content-Type: application/json -d '"${data}"' http://"${current_service_endpoint}"/api/job/descriptor"
         ((VERBOSE)) && echo ${cmd}
-        eval ${cmd} |tee -a ${BAICTL_ACTION_IDS}
+        eval ${cmd} |tee -a ${BAI_ACTION_IDS}
         echo $?
     else
         printf '\033[01;31m[ERROR]\033[0m No data to send.\n\n'
@@ -227,7 +228,7 @@ submit() {
 
 #local db lookup
 get_last_action_id() {
-    local last_action_id=$(cat ${BAICTL_ACTION_IDS} | tail -n 1 | awk '{print $1}')
+    local last_action_id=$(cat ${BAI_ACTION_IDS} | tail -n 1 | awk '{print $1}')
     printf "[\033[01;33m%s\033[0m] \n" "$last_action_id"
 }
 

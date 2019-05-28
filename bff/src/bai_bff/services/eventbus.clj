@@ -78,7 +78,7 @@
   here.  Each record is put in the datastore - status-db.  See
   comments for update-status-store regarding pureness and operations"
   [events]
-  (if-not (seq events)
+  (when (seq events)
     (log/trace (str "Processing "(count events)" events"))
     (doseq [event events] ; <- I should do this loop with recursion and then only have a single call to swap! at the end... meh.
       (if-not (nil? event) (swap! status-db update-status-store event))))
@@ -90,7 +90,7 @@
   here.  Each record is put in the datastore - status-db.  See
   comments for update-status-store regarding pureness and operations"
   [events]
-  (if-not (seq events)
+  (when (seq events)
     (log/trace (str "Processing "(count events)" events"))
     (doseq [event events] ; <- I should do this loop with recursion and then only have a single call to swap! at the end... meh.
       (if-not (nil? event) (swap! status-db update-status-store event))))

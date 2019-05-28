@@ -12,10 +12,7 @@
   #{:kafka-bootstrap-servers
     :kafka-consumer-group-id
     :kafka-source-topics
-    :kafka-poll-interval-ms
-    ;:kafka-auto-offset-reset
-    ;:kafka-session-timeout-ms
-    })
+    :kafka-poll-interval-ms})
 
 (defn- records->events
   "Uses the Kafka records object to retrieve the values from individual
