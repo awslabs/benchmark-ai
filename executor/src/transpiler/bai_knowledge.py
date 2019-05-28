@@ -13,6 +13,9 @@ from executor.config import ExecutorConfig
 from executor import SERVICE_NAME
 
 
+JOB_ID_PREFIX = "benchmark_"
+
+
 class BaiKubernetesObjectBuilder:
     """
     Adds the logic required from BAI into the Kubernetes root object that represents
@@ -41,7 +44,7 @@ class BaiKubernetesObjectBuilder:
         """
         self.descriptor = descriptor
         self.config = config
-        self.job_id = job_id
+        self.job_id = JOB_ID_PREFIX + job_id
 
         if random_object is None:
             random_object = random.Random()
