@@ -29,6 +29,7 @@ clean:
 	rm -rf .pytest_cache
 	find . -name '__pycache__' -exec rm -fr {} +
 	rm -f .coverage
+	rm -f deploy.yml
 
 #Things to run before - extendable
 _pre_venv::

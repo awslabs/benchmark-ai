@@ -8,7 +8,7 @@ BENCHMARK_DIR ?= ..
 DOCKERHUB_ORG = benchmarkai
 DOCKER_REPOSITORY = $(DOCKERHUB_ORG)/$(PROJECT)
 
-COMMIT_SHORT_HASH := $(shell git rev-parse --short HEAD)
+COMMIT_SHORT_HASH ?= $(shell git rev-parse --short HEAD)
 DOCKER_IMAGE_LABEL ?= $(COMMIT_SHORT_HASH)
 DOCKER_IMAGE_TAG = $(DOCKER_REPOSITORY):$(DOCKER_IMAGE_LABEL)
 
@@ -43,14 +43,17 @@ undeploy: k8s_undeploy
 # K8S deploy/undeploy
 #---------------------
 define fn_k8s_deploy
-	find ./deploy -name '*.yml' -exec sh -c "sed 's|@@DOCKER_IMAGE_TAG@@|$(DOCKER_IMAGE_TAG)|g' {} | $(KUBECTL) apply $(KUBECTL_FLAGS) -f -" \;
+	$(KUBECTL) apply $(KUBECTL_FLAGS) -f deploy.yml \;
 endef
+
+deploy.yml:
+	find ./deploy -name '*.yml' -exec sh -c "sed 's|@@DOCKER_IMAGE_TAG@@|$(DOCKER_IMAGE_TAG)|g' {}" > deploy.yml \;
 
 define fn_k8s_undeploy
 	$(KUBECTL) delete -f ./deploy $(KUBECTL_FLAGS)
 endef
 
-k8s_deploy: _deploy_venv
+k8s_deploy: deploy.yml _deploy_venv
 	$(call fn_k8s_deploy)
 k8s_undeploy: _deploy_venv
 	$(call fn_k8s_undeploy)
