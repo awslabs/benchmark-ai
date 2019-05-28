@@ -4,14 +4,14 @@ from executor import SERVICE_NAME, SERVICE_DESCRIPTION
 from executor.executor import create_executor
 from executor.args import create_executor_config
 from bai_kafka_utils.kafka_service_args import get_kafka_service_config
-from bai_kafka_utils.utils import set_logging_level_and_format
+from bai_kafka_utils.logging import configure_logging
 
 
 def main(argv=None):
     common_kafka_cfg = get_kafka_service_config(SERVICE_NAME, argv)
     executor_config = create_executor_config(argv)
 
-    set_logging_level_and_format(level=common_kafka_cfg.logging_level)
+    configure_logging(level=common_kafka_cfg.logging_level)
 
     logger = logging.getLogger(SERVICE_NAME)
     logger.info(f"Starting {SERVICE_NAME} Service: {SERVICE_DESCRIPTION}")

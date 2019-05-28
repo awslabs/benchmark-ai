@@ -3,14 +3,14 @@ import logging
 
 def main(argv=None):
     from bai_kafka_utils.kafka_service_args import get_kafka_service_config
-    from bai_kafka_utils.utils import set_logging_level_and_format
+    from bai_kafka_utils.logging import configure_logging
     from bai_watcher import SERVICE_NAME, SERVICE_DESCRIPTION
     from bai_watcher.args import get_watcher_service_config
 
     common_kafka_cfg = get_kafka_service_config(SERVICE_NAME, argv)
     service_cfg = get_watcher_service_config(argv)
 
-    set_logging_level_and_format(level=common_kafka_cfg.logging_level)
+    configure_logging(level=common_kafka_cfg.logging_level)
 
     from bai_watcher.kafka_service_watcher import create_service
 
