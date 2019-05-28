@@ -23,18 +23,17 @@ phases:
   build:
     commands:
       - cd ${project}
-      - make
+      - make install deploy.yml COMMIT_SHORT_HASH=$CODEBUILD_RESOLVED_SOURCE_VERSION
   #post_build:
     #commands:
       # - command
       # - command
-#artifacts:
-  #files:
-    # - location
-    # - location
+artifacts:
+  files:
+    - deploy.yml
   #name: $(date +%Y-%m-%d)
-  #discard-paths: yes
-  #base-directory: location
+  discard-paths: yes
+  base-directory: ${project}
 #cache:
   #paths:
     # - paths
