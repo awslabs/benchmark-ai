@@ -1,7 +1,10 @@
 DOCKER = docker
 DEPLOY_ENV_NAME = deploy-$(ENV_NAME)
 DEPLOY_CONDA_RUN = conda run --name $(DEPLOY_ENV_NAME)
-KUBECTL = $(DEPLOY_CONDA_RUN) kubectl
+ifndef KUBECONFIG
+	KUBECONFIG = $(HOME)/.bai/kubeconfig
+endif
+KUBECTL = $(DEPLOY_CONDA_RUN) kubectl --kubeconfig=$(KUBECONFIG)
 
 BENCHMARK_DIR ?= ..
 
