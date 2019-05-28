@@ -1,0 +1,34 @@
+﻿Type,Framework,Framework Desc,Model,Precision,Benchmark Desc,Instance Type,Latency (ms),P50 Latency (ms),P90 Latency (ms),P99 Latency (ms),Throughput (/s),Error Rate (%),CPU Memory (mb),GPU Memory Mean (mb),GPU Memory Max (mb),Uptime (s)
+Inference,MXNet,MKL/Symbol,ResNet-50,FP16,ImageNet,p3.2xlarge,,,,,1142.58,,2704.57,5584.14,7123.43,1020.62
+Inference,MXNet,MKL/Symbol,ResNet-50,FP32,ImageNet,p3.2xlarge,,,,,1067.14,,2611.33,9672.8,12091,1073.43
+Inference,MXNet,MKL/Hybrid,ResNet-50,FP32,ImageNet,p3.2xlarge,,,,,1108.52,,2619.43,2143.51,2719.43,1090.05
+Inference,MXNet,MKL/Hybrid,ResNet-50,,ImageNet,c5.18xlarge,,,,,147.71,,2663.43,,,865.61
+Inference,MXNet,Symbol,ResNet-50,,ImageNet,c5.18xlarge,,,,,32.03,,2622.86,,,2128.01
+Inference,MXNet,MKL/Symbol,ResNet-50,,ImageNet,c5.18xlarge,,,,,163.53,,2644,,,880.93
+Inference,MXNet,Symbol,ResNet-50,,ImageNet,c5.18xlarge,,,,,32.48,,2641.71,,,2186.5
+Inference,MXNet,Gluon,ResNet-164,,CIFAR-10,p3.2xlarge,45.51,,,,22.1,,2654.86,2913.3,2951.71,8494.29
+Inference,MXNet,Gluon,ResNet-164,,CIFAR-10,c5.18xlarge,97.86,,,,10.25,,2676,,,1485.56
+Inference,MXNet,Gluon Hybrid,ResNet-164,,CIFAR-10,p3.2xlarge,11.38,,,,87.98,,2666.86,2601.6,2633.43,6140.85
+Inference,MXNet,Gluon Hybrid,ResNet-164,,CIFAR-10,c5.18xlarge,95.92,,,,10.47,,2650.29,,,1464.13
+Inference,MXNet,Module,ResNet-164,,CIFAR-10,p3.2xlarge,7.83,,,,127.79,,2696,2495.3,2526.29,4804.73
+Inference,MXNet,Module,ResNet-164,,CIFAR-10,c5.18xlarge,87.28,,,,11.54,,2677.71,,,1375.49
+Inference,MXNet,MMS-GPU,LSTM,,PTB,p3.16xlarge,160,17,73,118.67,430.73,0,761.33,1.33,13,1533.15
+Inference,MXNet,MMS-GPU,,,NOOP,p3.16xlarge,,,,,,,,,,
+Inference,MXNet,MMS-GPU,Resnet-18,,,p3.16xlarge,233.75,41.25,390,424.5,158.82,0,760,44.32,443.25,1737.29
+Inference,MXNet,MMS-CPU,LSTM,,PTB,c5.2xlarge,36.75,13.75,35.25,138,314.95,0,745,,,1564.68
+Inference,MXNet,MMS-CPU,,,NOOP,c5.2xlarge,3.75,3,7,0,1732.52,0,763,,,1577.05
+Inference,MXNet,MMS-CPU,ResNet-18,,,c5.2xlarge,74.88,47.25,92.25,246.5,90.15,0,759.5,,,2277.56
+Inference,MXNet,Scala,Char-RNN,,Single,p3.16xlarge,1665,1653.87,1782.35,1981.79,,,732.5,,,2384.88
+Inference,MXNet,Scala,Resnet-18,,Single,p3.16xlarge,4.99,4.76,5.6,8.34,,,746.57,33.64,100.93,707.05
+Inference,MXNet,Scala,Resnet-18,,Batch size 16,p3.16xlarge,13.91,13.95,15.01,16.53,,,746.57,33.64,100.93,707.05
+Inference,MXNet,Scala,SSD,,Single,p3.16xlarge,74.88,60.26,68.32,711.85,,,755.2,,,1232.96
+Inference,MXNet,Scala,SSD,,Batch size 16,p3.16xlarge,886.87,648.88,1384.11,1451.61,,,755.2,,,1232.96
+Inference,MXNet,Scala,Char-RNN,,Single,c5.2xlarge,1340.22,1314.51,1408.52,1713.82,,,751.47,,,1895.66
+Inference,MXNet,Scala,Resnet-18,,Single,c5.2xlarge,12.72,11.42,16.43,18.54,,,767.71,,,693.37
+Inference,MXNet,Scala,Resnet-18,,Batch size 16,c5.2xlarge,123.88,117.2,131.56,220.08,,,767.71,,,693.37
+Inference,MXNet,Scala,SSD,,Single,c5.2xlarge,258.07,220.62,330.31,789.22,,,771.2,,,2839.03
+Inference,MXNet,Scala,SSD,,Batch size 16,c5.2xlarge,4464.41,4262.86,5710.11,5848.26,,,771.2,,,2839.03
+Inference,MXNet,Java,SSD,,Single,p3.16xlarge,76.89,61.13,69.54,726.09,,,756.4,,,1590.11
+Inference,MXNet,Java,SSD,,Batch size 16,p3.16xlarge,,,,,,,756.4,,,1590.11
+Inference,MXNet,Java,SSD,,Single,c5.2xlarge,261.31,225.04,332.6,791.14,,,725.43,,,4795.6
+Inference,MXNet,Java,SSD,,Batch size 16,c5.2xlarge,,,,,,,725.43,,,4795.6

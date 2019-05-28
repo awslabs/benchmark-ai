@@ -1,0 +1,14 @@
+﻿Type,Framework,Framework Desc,Model,Benchmark Desc,Instance Type,Perplexity,Throughput (/s),Time to Train (s),CPU Memory (mb),GPU Memory Mean (mb),GPU Memory Max (mb),Uptime (s)
+Training NLP,MXNet,MKL/Gluon,LSTM,PTB,c5.18xlarge,,188.35,2851.95,2654.29,,,3348.07
+Training NLP,MXNet,MKL/Symbol,LSTM,PTB,c5.18xlarge,,300.42,4224.12,2663.56,,,4877.56
+Training NLP,MXNet,MKL/Hybrid,LSTM,PTB,c5.18xlarge,,195.06,2758.01,2654.86,,,3259.25
+Training NLP,MXNet,Gluon,LSTM,PTB,c4.8xlarge,121.18,,1102.64,2633.71,,,1759.8
+Training NLP,MXNet,Gluon,LSTM,PTB,c5.18xlarge,121.42,,741.19,2664,,,1405.54
+Training NLP,MXNet,Gluon,LSTM,PTB,p2.16xlarge,122.14,,779.9,2660.57,982.34,1121.18,1672.12
+Training NLP,MXNet,Gluon,LSTM,PTB,p3.8xlarge,106.6,,279.85,2655.43,1333.25,1777.71,1035.2
+Training NLP,MXNet,Symbol,LSTM,PTB,c4.8xlarge,,191.28,1114.51,2643.43,,,1596.24
+Training NLP,MXNet,Symbol,LSTM,PTB,c5.18xlarge,,286.34,741.04,2660,,,1269.96
+Training NLP,MXNet,Symbol,LSTM,PTB,p2.16xlarge,,165.02,6369.18,2638.86,566.23,576.65,7248.92
+Training NLP,MXNet,Symbol,LSTM,PTB,p3.8xlarge,,984.96,1066.87,2754.5,1176.75,1307.5,1807.06
+Training NLP,MXNet,Gluon,BiDAF,SQuAD,p3.2xlarge,,,6710.33,6710.33,6710.33,6710.33,6710.33
+Training NLP,MXNet,Gluon,BiDAF,SQuAD,p3.8xlarge,,,6710.33,6710.33,6710.33,6710.33,6710.33

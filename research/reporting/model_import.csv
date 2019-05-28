@@ -1,0 +1,19 @@
+﻿Type,Framework,Model,Benchmark Desc,Instance Type,Latency (ms),P50 Latency (ms),P90 Latency (ms),P99 Latency (ms)
+Model Import,MXNet,BVLC Alexnet,Import ONNX Model,p3.2xlarge,1.21,1.06,1.08,
+Model Import,MXNet,BVLC GoogleNet,Import ONNX Model,p3.2xlarge,4.45,3.54,3.56,3.62
+Model Import,MXNet,DenseNet-121,Import ONNX Model,p3.2xlarge,11.16,9.72,9.9,10.46
+Model Import,MXNet,SqueezeNet,Import ONNX Model,p3.2xlarge,1.51,1.3,1.32,1.36
+Model Import,MXNet,BVLC Ref CaffeNet,Import ONNX Model,p3.2xlarge,1.05,1.05,1.06,1.08
+Model Import,MXNet,ShuffleNet,Import ONNX Model,p3.2xlarge,4.12,3.57,3.65,3.72
+Model Import,MXNet,BVLC Ref RCNN Ilsvrc13,Import ONNX Model,p3.2xlarge,1.2,1.02,1.05,1.15
+Model Import,MXNet,VGG19,Import ONNX Model,p3.2xlarge,5.33,3.99,4.02,4.26
+Model Import,MXNet,ResNet-50,Import ONNX Model,p3.2xlarge,6.18,4.3,4.32,4.67
+Model Import,MXNet,BVLC Alexnet,Import ONNX Model,c5.18xlarge,39.86,39.45,41.27,44.97
+Model Import,MXNet,BVLC GoogleNet,Import ONNX Model,c5.18xlarge,58.92,58.92,59.35,61.07
+Model Import,MXNet,DenseNet-121,Import ONNX Model,c5.18xlarge,125.85,125.07,125.7,127.46
+Model Import,MXNet,SqueezeNet,Import ONNX Model,c5.18xlarge,14.17,14.07,14.71,15.31
+Model Import,MXNet,BVLC Ref CaffeNet,Import ONNX Model,c5.18xlarge,36.02,35.49,36.97,41.47
+Model Import,MXNet,ShuffleNet,Import ONNX Model,c5.18xlarge,25.78,25.83,26.26,27.8
+Model Import,MXNet,BVLC Ref RCNN Ilsvrc13,Import ONNX Model,c5.18xlarge,34.53,34.55,35.56,38.72
+Model Import,MXNet,VGG19,Import ONNX Model,c5.18xlarge,304.3,302.14,307.34,318.57
+Model Import,MXNet,ResNet-50,Import ONNX Model,c5.18xlarge,78.76,78.5,79.51,82.82

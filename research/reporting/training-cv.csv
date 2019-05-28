@@ -1,0 +1,30 @@
+﻿Type,Framework,Framework Desc,Model,Precision,Benchmark Desc,Instance Type,Top 1 Val Acc,Top 1 Train Acc,Throughput (/s),Time to Train (s),CPU Memory (mb),GPU Memory Mean (mb),GPU Memory Max (mb),Uptime (s)
+Training CV,MXNet,MKL/Symbol,ResNet-18,,CIFAR-10,c5.18xlarge,0.79,0.97,832.88,1504.2,2694,,,2026.6
+Training CV,MXNet,MKL/Symbol,ResNet50-V1,FP32,ImageNet,c5.18xlarge,,,,,,,,
+Training CV,MXNet,Gluon,ResNet-164,,CIFAR-10,p3.2xlarge,,,1373.02,7422.32,2654.86,2913.3,2951.71,8494.29
+Training CV,MXNet,Gluon Hybrid,ResNet-164,,CIFAR-10,p3.2xlarge,,,1825.55,5360.07,2666.86,2601.6,2633.43,6140.85
+Training CV,MXNet,Module,ResNet-164,,CIFAR-10,p3.2xlarge,,,1919.26,4002.87,2696,2495.3,2526.29,4804.73
+Training CV,MXNet,Gluon,ResNet-50V1,FP16,ImageNet,p3.16xlarge,0.76,0.78,4673.03,25412.38,2699.43,15173.42,15284.79,27265.04
+Training CV,MXNet,Symbol,ResNet-50V1,FP16,ImageNet,p3.16xlarge,0.76,0.78,6098.38,18931.58,2686.86,14018.56,14103.89,21568.92
+Training CV,MXNet,Symbol,ResNet-50V1,FP32,ImageNet,p3.16xlarge,0.76,0.77,2649.53,43759.93,2630.67,13468.24,13504.61,46461.46
+Training CV,MXNet,Symbol,ResNet-50V1,FP16,ImageNet,p3.16xlarge,,,,,,,,
+Training CV,MXNet,Symbol,ResNet-50V1,FP16,ImageNet,p3.16xlarge,,,,,,,,
+Training CV,MXNet,Symbol,ResNet-50V2,FP16,ImageNet,p3.16xlarge,0.76,0.78,5400.39,21545.86,2746,12921.59,12993.42,24154.31
+Training CV,MXNet,Symbol,ResNet-50V2,FP32,ImageNet,p3.16xlarge,0.76,0.78,5400.39,21545.86,2746,12921.59,12993.42,24154.31
+Training CV,Tensorflow,MKL,ResNet-50,,Batch size 1,c5.18xlarge,,,2.99,,777.71,,,
+Training CV,Tensorflow,MKL,ResNet-50,,Batch size 32,c5.18xlarge,,,10.57,,777.71,,,
+Training CV,Tensorflow,Horovod,ResNet-50,,,p3.16xlarge,75.47,,4901.89,23758.02,777.78,15537.55,15672.33,
+Training CV,MXNet,Gluon/Synthetic,ResNet-50,FP32,p27-DLAMI-UL,p3.16xlarge,,,2673.41,,767,11054.36,12699.56,2090.92
+Training CV,MXNet,Gluon/Synthetic,ResNet-50,FP32,p27-DLAMI-AML,p3.16xlarge,,,2755.36,,17304751.14,11041.66,12699.5,2042.52
+Training CV,MXNet,Gluon/Synthetic,ResNet-50,FP32,p36-DLAMI-UL,p3.16xlarge,,,2672.05,,748.57,11078.47,12699.61,2107.16
+Training CV,MXNet,Gluon/Synthetic,ResNet-50,FP32,p36-DLAMI-AML,p3.16xlarge,,,2724.35,,17254253.51,11057.57,12699.55,2040.95
+Training CV,Tensorflow,MKL/Synthetic,ResNet-50,FP32,p27-DLAMI-UL,p3.16xlarge,,,2744.47,,797.71,7779.15,15558.3,568.43
+Training CV,Tensorflow,MKL/Synthetic,ResNet-50,FP32,p27-DLAMI-AML,p3.16xlarge,,,2861.45,,9905060.14,7778.4,15556.8,570.43
+Training CV,Tensorflow,MKL/Synthetic,ResNet-50,FP32,p36-DLAMI-UL,p3.16xlarge,,,2758.44,,733.14,7779.87,15559.73,547.14
+Training CV,Tensorflow,MKL/Synthetic,ResNet-50,FP32,p36-DLAMI-AML,p3.16xlarge,,,2848.4,,10091744.66,7778.79,15557.59,521.27
+Training CV,PyTorch,MKL-DNN/Synthetic,ResNet-50,FP32,p27-DLAMI-UL,p3.16xlarge,,,646.68,,734.29,8553.82,14003.46,993.01
+Training CV,PyTorch,MKL-DNN/Synthetic,ResNet-50,FP32,p27-DLAMI-AML,p3.16xlarge,,,522.56,,21350993.86,9605.41,14050.61,1107.54
+Training CV,PyTorch,MKL-DNN/Synthetic,ResNet-50,FP32,p36-DLAMI-UL,p3.16xlarge,,,574,,728.57,9912.58,14266.95,1003.37
+Training CV,PyTorch,MKL-DNN/Synthetic,ResNet-50,FP32,p36-DLAMI-AML,p3.16xlarge,,,477.01,,21596234.38,10232.4,14137.54,1085.44
+Training CV,Chainer,iDeep/Synthetic,ResNet-50,FP32,p36-DLAMI-UL,p3.16xlarge,,,2528.02,,752.57,6492,12984,602.39
+Training CV,Chainer,iDeep/Synthetic,ResNet-50,FP32,p36-DLAMI-AML,p3.16xlarge,,,2478.58,,7802442.2,6492,12984,648.24

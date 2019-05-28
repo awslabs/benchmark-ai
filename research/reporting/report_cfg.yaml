@@ -1,0 +1,1298 @@
+benchmarks:
+- labels:
+    Benchmark Desc: CIFAR-10
+    Framework: MXNet
+    Framework Desc: MKL/Symbol
+    Instance Type: c5.18xlarge
+    Model: ResNet-18
+    Type: Training CV
+  metrics:
+    CPU Memory (mb): 2694.0
+    Throughput (/s): 832.88
+    Time to Train (s): 1504.2
+    Top 1 Train Acc: 0.97
+    Top 1 Val Acc: 0.79
+    Uptime (s): 2026.6
+  name: TrainingCV_benchmark_1
+- labels:
+    Benchmark Desc: ImageNet
+    Framework: MXNet
+    Framework Desc: MKL/Symbol
+    Instance Type: c5.18xlarge
+    Model: ResNet50-V1
+    Precision: FP32
+    Type: Training CV
+  metrics: {}
+  name: TrainingCV_benchmark_2
+- labels:
+    Benchmark Desc: CIFAR-10
+    Framework: MXNet
+    Framework Desc: Gluon
+    Instance Type: p3.2xlarge
+    Model: ResNet-164
+    Type: Training CV
+  metrics:
+    CPU Memory (mb): 2654.86
+    GPU Memory Max (mb): 2951.71
+    GPU Memory Mean (mb): 2913.3
+    Throughput (/s): 1373.02
+    Time to Train (s): 7422.32
+    Uptime (s): 8494.29
+  name: TrainingCV_benchmark_3
+- labels:
+    Benchmark Desc: CIFAR-10
+    Framework: MXNet
+    Framework Desc: Gluon Hybrid
+    Instance Type: p3.2xlarge
+    Model: ResNet-164
+    Type: Training CV
+  metrics:
+    CPU Memory (mb): 2666.86
+    GPU Memory Max (mb): 2633.43
+    GPU Memory Mean (mb): 2601.6
+    Throughput (/s): 1825.55
+    Time to Train (s): 5360.07
+    Uptime (s): 6140.85
+  name: TrainingCV_benchmark_4
+- labels:
+    Benchmark Desc: CIFAR-10
+    Framework: MXNet
+    Framework Desc: Module
+    Instance Type: p3.2xlarge
+    Model: ResNet-164
+    Type: Training CV
+  metrics:
+    CPU Memory (mb): 2696.0
+    GPU Memory Max (mb): 2526.29
+    GPU Memory Mean (mb): 2495.3
+    Throughput (/s): 1919.26
+    Time to Train (s): 4002.87
+    Uptime (s): 4804.73
+  name: TrainingCV_benchmark_5
+- labels:
+    Benchmark Desc: ImageNet
+    Framework: MXNet
+    Framework Desc: Gluon
+    Instance Type: p3.16xlarge
+    Model: ResNet-50V1
+    Precision: FP16
+    Type: Training CV
+  metrics:
+    CPU Memory (mb): 2699.43
+    GPU Memory Max (mb): 15284.79
+    GPU Memory Mean (mb): 15173.42
+    Throughput (/s): 4673.03
+    Time to Train (s): 25412.38
+    Top 1 Train Acc: 0.78
+    Top 1 Val Acc: 0.76
+    Uptime (s): 27265.04
+  name: TrainingCV_benchmark_6
+- labels:
+    Benchmark Desc: ImageNet
+    Framework: MXNet
+    Framework Desc: Symbol
+    Instance Type: p3.16xlarge
+    Model: ResNet-50V1
+    Precision: FP16
+    Type: Training CV
+  metrics:
+    CPU Memory (mb): 2686.86
+    GPU Memory Max (mb): 14103.89
+    GPU Memory Mean (mb): 14018.56
+    Throughput (/s): 6098.38
+    Time to Train (s): 18931.58
+    Top 1 Train Acc: 0.78
+    Top 1 Val Acc: 0.76
+    Uptime (s): 21568.92
+  name: TrainingCV_benchmark_7
+- labels:
+    Benchmark Desc: ImageNet
+    Framework: MXNet
+    Framework Desc: Symbol
+    Instance Type: p3.16xlarge
+    Model: ResNet-50V1
+    Precision: FP32
+    Type: Training CV
+  metrics:
+    CPU Memory (mb): 2630.67
+    GPU Memory Max (mb): 13504.61
+    GPU Memory Mean (mb): 13468.24
+    Throughput (/s): 2649.53
+    Time to Train (s): 43759.93
+    Top 1 Train Acc: 0.77
+    Top 1 Val Acc: 0.76
+    Uptime (s): 46461.46
+  name: TrainingCV_benchmark_8
+- labels:
+    Benchmark Desc: ImageNet
+    Framework: MXNet
+    Framework Desc: Symbol
+    Instance Type: p3.16xlarge
+    Model: ResNet-50V1
+    Precision: FP16
+    Type: Training CV
+  metrics: {}
+  name: TrainingCV_benchmark_9
+- labels:
+    Benchmark Desc: ImageNet
+    Framework: MXNet
+    Framework Desc: Symbol
+    Instance Type: p3.16xlarge
+    Model: ResNet-50V1
+    Precision: FP16
+    Type: Training CV
+  metrics: {}
+  name: TrainingCV_benchmark_10
+- labels:
+    Benchmark Desc: ImageNet
+    Framework: MXNet
+    Framework Desc: Symbol
+    Instance Type: p3.16xlarge
+    Model: ResNet-50V2
+    Precision: FP16
+    Type: Training CV
+  metrics:
+    CPU Memory (mb): 2746.0
+    GPU Memory Max (mb): 12993.42
+    GPU Memory Mean (mb): 12921.59
+    Throughput (/s): 5400.39
+    Time to Train (s): 21545.86
+    Top 1 Train Acc: 0.78
+    Top 1 Val Acc: 0.76
+    Uptime (s): 24154.31
+  name: TrainingCV_benchmark_11
+- labels:
+    Benchmark Desc: ImageNet
+    Framework: MXNet
+    Framework Desc: Symbol
+    Instance Type: p3.16xlarge
+    Model: ResNet-50V2
+    Precision: FP32
+    Type: Training CV
+  metrics:
+    CPU Memory (mb): 2746.0
+    GPU Memory Max (mb): 12993.42
+    GPU Memory Mean (mb): 12921.59
+    Throughput (/s): 5400.39
+    Time to Train (s): 21545.86
+    Top 1 Train Acc: 0.78
+    Top 1 Val Acc: 0.76
+    Uptime (s): 24154.31
+  name: TrainingCV_benchmark_12
+- labels:
+    Benchmark Desc: Batch size 1
+    Framework: Tensorflow
+    Framework Desc: MKL
+    Instance Type: c5.18xlarge
+    Model: ResNet-50
+    Type: Training CV
+  metrics:
+    CPU Memory (mb): 777.71
+    Throughput (/s): 2.99
+  name: TrainingCV_benchmark_13
+- labels:
+    Benchmark Desc: Batch size 32
+    Framework: Tensorflow
+    Framework Desc: MKL
+    Instance Type: c5.18xlarge
+    Model: ResNet-50
+    Type: Training CV
+  metrics:
+    CPU Memory (mb): 777.71
+    Throughput (/s): 10.57
+  name: TrainingCV_benchmark_14
+- labels:
+    Framework: Tensorflow
+    Framework Desc: Horovod
+    Instance Type: p3.16xlarge
+    Model: ResNet-50
+    Type: Training CV
+  metrics:
+    CPU Memory (mb): 777.78
+    GPU Memory Max (mb): 15672.33
+    GPU Memory Mean (mb): 15537.55
+    Throughput (/s): 4901.89
+    Time to Train (s): 23758.02
+    Top 1 Val Acc: 75.47
+  name: TrainingCV_benchmark_15
+- labels:
+    Benchmark Desc: p27-DLAMI-UL
+    Framework: MXNet
+    Framework Desc: Gluon/Synthetic
+    Instance Type: p3.16xlarge
+    Model: ResNet-50
+    Precision: FP32
+    Type: Training CV
+  metrics:
+    CPU Memory (mb): 767.0
+    GPU Memory Max (mb): 12699.56
+    GPU Memory Mean (mb): 11054.36
+    Throughput (/s): 2673.41
+    Uptime (s): 2090.92
+  name: TrainingCV_benchmark_16
+- labels:
+    Benchmark Desc: p27-DLAMI-AML
+    Framework: MXNet
+    Framework Desc: Gluon/Synthetic
+    Instance Type: p3.16xlarge
+    Model: ResNet-50
+    Precision: FP32
+    Type: Training CV
+  metrics:
+    CPU Memory (mb): 17304751.14
+    GPU Memory Max (mb): 12699.5
+    GPU Memory Mean (mb): 11041.66
+    Throughput (/s): 2755.36
+    Uptime (s): 2042.52
+  name: TrainingCV_benchmark_17
+- labels:
+    Benchmark Desc: p36-DLAMI-UL
+    Framework: MXNet
+    Framework Desc: Gluon/Synthetic
+    Instance Type: p3.16xlarge
+    Model: ResNet-50
+    Precision: FP32
+    Type: Training CV
+  metrics:
+    CPU Memory (mb): 748.57
+    GPU Memory Max (mb): 12699.61
+    GPU Memory Mean (mb): 11078.47
+    Throughput (/s): 2672.05
+    Uptime (s): 2107.16
+  name: TrainingCV_benchmark_18
+- labels:
+    Benchmark Desc: p36-DLAMI-AML
+    Framework: MXNet
+    Framework Desc: Gluon/Synthetic
+    Instance Type: p3.16xlarge
+    Model: ResNet-50
+    Precision: FP32
+    Type: Training CV
+  metrics:
+    CPU Memory (mb): 17254253.51
+    GPU Memory Max (mb): 12699.55
+    GPU Memory Mean (mb): 11057.57
+    Throughput (/s): 2724.35
+    Uptime (s): 2040.95
+  name: TrainingCV_benchmark_19
+- labels:
+    Benchmark Desc: p27-DLAMI-UL
+    Framework: Tensorflow
+    Framework Desc: MKL/Synthetic
+    Instance Type: p3.16xlarge
+    Model: ResNet-50
+    Precision: FP32
+    Type: Training CV
+  metrics:
+    CPU Memory (mb): 797.71
+    GPU Memory Max (mb): 15558.3
+    GPU Memory Mean (mb): 7779.15
+    Throughput (/s): 2744.47
+    Uptime (s): 568.43
+  name: TrainingCV_benchmark_20
+- labels:
+    Benchmark Desc: p27-DLAMI-AML
+    Framework: Tensorflow
+    Framework Desc: MKL/Synthetic
+    Instance Type: p3.16xlarge
+    Model: ResNet-50
+    Precision: FP32
+    Type: Training CV
+  metrics:
+    CPU Memory (mb): 9905060.14
+    GPU Memory Max (mb): 15556.8
+    GPU Memory Mean (mb): 7778.4
+    Throughput (/s): 2861.45
+    Uptime (s): 570.43
+  name: TrainingCV_benchmark_21
+- labels:
+    Benchmark Desc: p36-DLAMI-UL
+    Framework: Tensorflow
+    Framework Desc: MKL/Synthetic
+    Instance Type: p3.16xlarge
+    Model: ResNet-50
+    Precision: FP32
+    Type: Training CV
+  metrics:
+    CPU Memory (mb): 733.14
+    GPU Memory Max (mb): 15559.73
+    GPU Memory Mean (mb): 7779.87
+    Throughput (/s): 2758.44
+    Uptime (s): 547.14
+  name: TrainingCV_benchmark_22
+- labels:
+    Benchmark Desc: p36-DLAMI-AML
+    Framework: Tensorflow
+    Framework Desc: MKL/Synthetic
+    Instance Type: p3.16xlarge
+    Model: ResNet-50
+    Precision: FP32
+    Type: Training CV
+  metrics:
+    CPU Memory (mb): 10091744.66
+    GPU Memory Max (mb): 15557.59
+    GPU Memory Mean (mb): 7778.79
+    Throughput (/s): 2848.4
+    Uptime (s): 521.27
+  name: TrainingCV_benchmark_23
+- labels:
+    Benchmark Desc: p27-DLAMI-UL
+    Framework: PyTorch
+    Framework Desc: MKL-DNN/Synthetic
+    Instance Type: p3.16xlarge
+    Model: ResNet-50
+    Precision: FP32
+    Type: Training CV
+  metrics:
+    CPU Memory (mb): 734.29
+    GPU Memory Max (mb): 14003.46
+    GPU Memory Mean (mb): 8553.82
+    Throughput (/s): 646.68
+    Uptime (s): 993.01
+  name: TrainingCV_benchmark_24
+- labels:
+    Benchmark Desc: p27-DLAMI-AML
+    Framework: PyTorch
+    Framework Desc: MKL-DNN/Synthetic
+    Instance Type: p3.16xlarge
+    Model: ResNet-50
+    Precision: FP32
+    Type: Training CV
+  metrics:
+    CPU Memory (mb): 21350993.86
+    GPU Memory Max (mb): 14050.61
+    GPU Memory Mean (mb): 9605.41
+    Throughput (/s): 522.56
+    Uptime (s): 1107.54
+  name: TrainingCV_benchmark_25
+- labels:
+    Benchmark Desc: p36-DLAMI-UL
+    Framework: PyTorch
+    Framework Desc: MKL-DNN/Synthetic
+    Instance Type: p3.16xlarge
+    Model: ResNet-50
+    Precision: FP32
+    Type: Training CV
+  metrics:
+    CPU Memory (mb): 728.57
+    GPU Memory Max (mb): 14266.95
+    GPU Memory Mean (mb): 9912.58
+    Throughput (/s): 574.0
+    Uptime (s): 1003.37
+  name: TrainingCV_benchmark_26
+- labels:
+    Benchmark Desc: p36-DLAMI-AML
+    Framework: PyTorch
+    Framework Desc: MKL-DNN/Synthetic
+    Instance Type: p3.16xlarge
+    Model: ResNet-50
+    Precision: FP32
+    Type: Training CV
+  metrics:
+    CPU Memory (mb): 21596234.38
+    GPU Memory Max (mb): 14137.54
+    GPU Memory Mean (mb): 10232.4
+    Throughput (/s): 477.01
+    Uptime (s): 1085.44
+  name: TrainingCV_benchmark_27
+- labels:
+    Benchmark Desc: p36-DLAMI-UL
+    Framework: Chainer
+    Framework Desc: iDeep/Synthetic
+    Instance Type: p3.16xlarge
+    Model: ResNet-50
+    Precision: FP32
+    Type: Training CV
+  metrics:
+    CPU Memory (mb): 752.57
+    GPU Memory Max (mb): 12984.0
+    GPU Memory Mean (mb): 6492.0
+    Throughput (/s): 2528.02
+    Uptime (s): 602.39
+  name: TrainingCV_benchmark_28
+- labels:
+    Benchmark Desc: p36-DLAMI-AML
+    Framework: Chainer
+    Framework Desc: iDeep/Synthetic
+    Instance Type: p3.16xlarge
+    Model: ResNet-50
+    Precision: FP32
+    Type: Training CV
+  metrics:
+    CPU Memory (mb): 7802442.2
+    GPU Memory Max (mb): 12984.0
+    GPU Memory Mean (mb): 6492.0
+    Throughput (/s): 2478.58
+    Uptime (s): 648.24
+  name: TrainingCV_benchmark_29
+- labels:
+    Benchmark Desc: PTB
+    Framework: MXNet
+    Framework Desc: MKL/Gluon
+    Instance Type: c5.18xlarge
+    Model: LSTM
+    Type: Training NLP
+  metrics:
+    CPU Memory (mb): 2654.29
+    Throughput (/s): 188.35
+    Time to Train (s): 2851.95
+    Uptime (s): 3348.07
+  name: TrainingNLP_benchmark_1
+- labels:
+    Benchmark Desc: PTB
+    Framework: MXNet
+    Framework Desc: MKL/Symbol
+    Instance Type: c5.18xlarge
+    Model: LSTM
+    Type: Training NLP
+  metrics:
+    CPU Memory (mb): 2663.56
+    Throughput (/s): 300.42
+    Time to Train (s): 4224.12
+    Uptime (s): 4877.56
+  name: TrainingNLP_benchmark_2
+- labels:
+    Benchmark Desc: PTB
+    Framework: MXNet
+    Framework Desc: MKL/Hybrid
+    Instance Type: c5.18xlarge
+    Model: LSTM
+    Type: Training NLP
+  metrics:
+    CPU Memory (mb): 2654.86
+    Throughput (/s): 195.06
+    Time to Train (s): 2758.01
+    Uptime (s): 3259.25
+  name: TrainingNLP_benchmark_3
+- labels:
+    Benchmark Desc: PTB
+    Framework: MXNet
+    Framework Desc: Gluon
+    Instance Type: c4.8xlarge
+    Model: LSTM
+    Type: Training NLP
+  metrics:
+    CPU Memory (mb): 2633.71
+    Perplexity: 121.18
+    Time to Train (s): 1102.64
+    Uptime (s): 1759.8
+  name: TrainingNLP_benchmark_4
+- labels:
+    Benchmark Desc: PTB
+    Framework: MXNet
+    Framework Desc: Gluon
+    Instance Type: c5.18xlarge
+    Model: LSTM
+    Type: Training NLP
+  metrics:
+    CPU Memory (mb): 2664.0
+    Perplexity: 121.42
+    Time to Train (s): 741.19
+    Uptime (s): 1405.54
+  name: TrainingNLP_benchmark_5
+- labels:
+    Benchmark Desc: PTB
+    Framework: MXNet
+    Framework Desc: Gluon
+    Instance Type: p2.16xlarge
+    Model: LSTM
+    Type: Training NLP
+  metrics:
+    CPU Memory (mb): 2660.57
+    GPU Memory Max (mb): 1121.18
+    GPU Memory Mean (mb): 982.34
+    Perplexity: 122.14
+    Time to Train (s): 779.9
+    Uptime (s): 1672.12
+  name: TrainingNLP_benchmark_6
+- labels:
+    Benchmark Desc: PTB
+    Framework: MXNet
+    Framework Desc: Gluon
+    Instance Type: p3.8xlarge
+    Model: LSTM
+    Type: Training NLP
+  metrics:
+    CPU Memory (mb): 2655.43
+    GPU Memory Max (mb): 1777.71
+    GPU Memory Mean (mb): 1333.25
+    Perplexity: 106.6
+    Time to Train (s): 279.85
+    Uptime (s): 1035.2
+  name: TrainingNLP_benchmark_7
+- labels:
+    Benchmark Desc: PTB
+    Framework: MXNet
+    Framework Desc: Symbol
+    Instance Type: c4.8xlarge
+    Model: LSTM
+    Type: Training NLP
+  metrics:
+    CPU Memory (mb): 2643.43
+    Throughput (/s): 191.28
+    Time to Train (s): 1114.51
+    Uptime (s): 1596.24
+  name: TrainingNLP_benchmark_8
+- labels:
+    Benchmark Desc: PTB
+    Framework: MXNet
+    Framework Desc: Symbol
+    Instance Type: c5.18xlarge
+    Model: LSTM
+    Type: Training NLP
+  metrics:
+    CPU Memory (mb): 2660.0
+    Throughput (/s): 286.34
+    Time to Train (s): 741.04
+    Uptime (s): 1269.96
+  name: TrainingNLP_benchmark_9
+- labels:
+    Benchmark Desc: PTB
+    Framework: MXNet
+    Framework Desc: Symbol
+    Instance Type: p2.16xlarge
+    Model: LSTM
+    Type: Training NLP
+  metrics:
+    CPU Memory (mb): 2638.86
+    GPU Memory Max (mb): 576.65
+    GPU Memory Mean (mb): 566.23
+    Throughput (/s): 165.02
+    Time to Train (s): 6369.18
+    Uptime (s): 7248.92
+  name: TrainingNLP_benchmark_10
+- labels:
+    Benchmark Desc: PTB
+    Framework: MXNet
+    Framework Desc: Symbol
+    Instance Type: p3.8xlarge
+    Model: LSTM
+    Type: Training NLP
+  metrics:
+    CPU Memory (mb): 2754.5
+    GPU Memory Max (mb): 1307.5
+    GPU Memory Mean (mb): 1176.75
+    Throughput (/s): 984.96
+    Time to Train (s): 1066.87
+    Uptime (s): 1807.06
+  name: TrainingNLP_benchmark_11
+- labels:
+    Benchmark Desc: SQuAD
+    Framework: MXNet
+    Framework Desc: Gluon
+    Instance Type: p3.2xlarge
+    Model: BiDAF
+    Type: Training NLP
+  metrics:
+    CPU Memory (mb): 6710.33
+    GPU Memory Max (mb): 6710.33
+    GPU Memory Mean (mb): 6710.33
+    Time to Train (s): 6710.33
+    Uptime (s): 6710.33
+  name: TrainingNLP_benchmark_12
+- labels:
+    Benchmark Desc: SQuAD
+    Framework: MXNet
+    Framework Desc: Gluon
+    Instance Type: p3.8xlarge
+    Model: BiDAF
+    Type: Training NLP
+  metrics:
+    CPU Memory (mb): 6710.33
+    GPU Memory Max (mb): 6710.33
+    GPU Memory Mean (mb): 6710.33
+    Time to Train (s): 6710.33
+    Uptime (s): 6710.33
+  name: TrainingNLP_benchmark_13
+- labels:
+    Benchmark Desc: Import ONNX Model
+    Framework: MXNet
+    Instance Type: p3.2xlarge
+    Model: BVLC Alexnet
+    Type: Model Import
+  metrics:
+    Latency (ms): 1.21
+    P50 Latency (ms): 1.06
+    P90 Latency (ms): 1.08
+  name: ModelImport_benchmark_1
+- labels:
+    Benchmark Desc: Import ONNX Model
+    Framework: MXNet
+    Instance Type: p3.2xlarge
+    Model: BVLC GoogleNet
+    Type: Model Import
+  metrics:
+    Latency (ms): 4.45
+    P50 Latency (ms): 3.54
+    P90 Latency (ms): 3.56
+    P99 Latency (ms): 3.62
+  name: ModelImport_benchmark_2
+- labels:
+    Benchmark Desc: Import ONNX Model
+    Framework: MXNet
+    Instance Type: p3.2xlarge
+    Model: DenseNet-121
+    Type: Model Import
+  metrics:
+    Latency (ms): 11.16
+    P50 Latency (ms): 9.72
+    P90 Latency (ms): 9.9
+    P99 Latency (ms): 10.46
+  name: ModelImport_benchmark_3
+- labels:
+    Benchmark Desc: Import ONNX Model
+    Framework: MXNet
+    Instance Type: p3.2xlarge
+    Model: SqueezeNet
+    Type: Model Import
+  metrics:
+    Latency (ms): 1.51
+    P50 Latency (ms): 1.3
+    P90 Latency (ms): 1.32
+    P99 Latency (ms): 1.36
+  name: ModelImport_benchmark_4
+- labels:
+    Benchmark Desc: Import ONNX Model
+    Framework: MXNet
+    Instance Type: p3.2xlarge
+    Model: BVLC Ref CaffeNet
+    Type: Model Import
+  metrics:
+    Latency (ms): 1.05
+    P50 Latency (ms): 1.05
+    P90 Latency (ms): 1.06
+    P99 Latency (ms): 1.08
+  name: ModelImport_benchmark_5
+- labels:
+    Benchmark Desc: Import ONNX Model
+    Framework: MXNet
+    Instance Type: p3.2xlarge
+    Model: ShuffleNet
+    Type: Model Import
+  metrics:
+    Latency (ms): 4.12
+    P50 Latency (ms): 3.57
+    P90 Latency (ms): 3.65
+    P99 Latency (ms): 3.72
+  name: ModelImport_benchmark_6
+- labels:
+    Benchmark Desc: Import ONNX Model
+    Framework: MXNet
+    Instance Type: p3.2xlarge
+    Model: BVLC Ref RCNN Ilsvrc13
+    Type: Model Import
+  metrics:
+    Latency (ms): 1.2
+    P50 Latency (ms): 1.02
+    P90 Latency (ms): 1.05
+    P99 Latency (ms): 1.15
+  name: ModelImport_benchmark_7
+- labels:
+    Benchmark Desc: Import ONNX Model
+    Framework: MXNet
+    Instance Type: p3.2xlarge
+    Model: VGG19
+    Type: Model Import
+  metrics:
+    Latency (ms): 5.33
+    P50 Latency (ms): 3.99
+    P90 Latency (ms): 4.02
+    P99 Latency (ms): 4.26
+  name: ModelImport_benchmark_8
+- labels:
+    Benchmark Desc: Import ONNX Model
+    Framework: MXNet
+    Instance Type: p3.2xlarge
+    Model: ResNet-50
+    Type: Model Import
+  metrics:
+    Latency (ms): 6.18
+    P50 Latency (ms): 4.3
+    P90 Latency (ms): 4.32
+    P99 Latency (ms): 4.67
+  name: ModelImport_benchmark_9
+- labels:
+    Benchmark Desc: Import ONNX Model
+    Framework: MXNet
+    Instance Type: c5.18xlarge
+    Model: BVLC Alexnet
+    Type: Model Import
+  metrics:
+    Latency (ms): 39.86
+    P50 Latency (ms): 39.45
+    P90 Latency (ms): 41.27
+    P99 Latency (ms): 44.97
+  name: ModelImport_benchmark_10
+- labels:
+    Benchmark Desc: Import ONNX Model
+    Framework: MXNet
+    Instance Type: c5.18xlarge
+    Model: BVLC GoogleNet
+    Type: Model Import
+  metrics:
+    Latency (ms): 58.92
+    P50 Latency (ms): 58.92
+    P90 Latency (ms): 59.35
+    P99 Latency (ms): 61.07
+  name: ModelImport_benchmark_11
+- labels:
+    Benchmark Desc: Import ONNX Model
+    Framework: MXNet
+    Instance Type: c5.18xlarge
+    Model: DenseNet-121
+    Type: Model Import
+  metrics:
+    Latency (ms): 125.85
+    P50 Latency (ms): 125.07
+    P90 Latency (ms): 125.7
+    P99 Latency (ms): 127.46
+  name: ModelImport_benchmark_12
+- labels:
+    Benchmark Desc: Import ONNX Model
+    Framework: MXNet
+    Instance Type: c5.18xlarge
+    Model: SqueezeNet
+    Type: Model Import
+  metrics:
+    Latency (ms): 14.17
+    P50 Latency (ms): 14.07
+    P90 Latency (ms): 14.71
+    P99 Latency (ms): 15.31
+  name: ModelImport_benchmark_13
+- labels:
+    Benchmark Desc: Import ONNX Model
+    Framework: MXNet
+    Instance Type: c5.18xlarge
+    Model: BVLC Ref CaffeNet
+    Type: Model Import
+  metrics:
+    Latency (ms): 36.02
+    P50 Latency (ms): 35.49
+    P90 Latency (ms): 36.97
+    P99 Latency (ms): 41.47
+  name: ModelImport_benchmark_14
+- labels:
+    Benchmark Desc: Import ONNX Model
+    Framework: MXNet
+    Instance Type: c5.18xlarge
+    Model: ShuffleNet
+    Type: Model Import
+  metrics:
+    Latency (ms): 25.78
+    P50 Latency (ms): 25.83
+    P90 Latency (ms): 26.26
+    P99 Latency (ms): 27.8
+  name: ModelImport_benchmark_15
+- labels:
+    Benchmark Desc: Import ONNX Model
+    Framework: MXNet
+    Instance Type: c5.18xlarge
+    Model: BVLC Ref RCNN Ilsvrc13
+    Type: Model Import
+  metrics:
+    Latency (ms): 34.53
+    P50 Latency (ms): 34.55
+    P90 Latency (ms): 35.56
+    P99 Latency (ms): 38.72
+  name: ModelImport_benchmark_16
+- labels:
+    Benchmark Desc: Import ONNX Model
+    Framework: MXNet
+    Instance Type: c5.18xlarge
+    Model: VGG19
+    Type: Model Import
+  metrics:
+    Latency (ms): 304.3
+    P50 Latency (ms): 302.14
+    P90 Latency (ms): 307.34
+    P99 Latency (ms): 318.57
+  name: ModelImport_benchmark_17
+- labels:
+    Benchmark Desc: Import ONNX Model
+    Framework: MXNet
+    Instance Type: c5.18xlarge
+    Model: ResNet-50
+    Type: Model Import
+  metrics:
+    Latency (ms): 78.76
+    P50 Latency (ms): 78.5
+    P90 Latency (ms): 79.51
+    P99 Latency (ms): 82.82
+  name: ModelImport_benchmark_18
+- labels:
+    Benchmark Desc: ImageNet
+    Framework: MXNet
+    Framework Desc: MKL/Symbol
+    Instance Type: p3.2xlarge
+    Model: ResNet-50
+    Precision: FP16
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 2704.57
+    GPU Memory Max (mb): 7123.43
+    GPU Memory Mean (mb): 5584.14
+    Throughput (/s): 1142.58
+    Uptime (s): 1020.62
+  name: Inference_benchmark_1
+- labels:
+    Benchmark Desc: ImageNet
+    Framework: MXNet
+    Framework Desc: MKL/Symbol
+    Instance Type: p3.2xlarge
+    Model: ResNet-50
+    Precision: FP32
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 2611.33
+    GPU Memory Max (mb): 12091.0
+    GPU Memory Mean (mb): 9672.8
+    Throughput (/s): 1067.14
+    Uptime (s): 1073.43
+  name: Inference_benchmark_2
+- labels:
+    Benchmark Desc: ImageNet
+    Framework: MXNet
+    Framework Desc: MKL/Hybrid
+    Instance Type: p3.2xlarge
+    Model: ResNet-50
+    Precision: FP32
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 2619.43
+    GPU Memory Max (mb): 2719.43
+    GPU Memory Mean (mb): 2143.51
+    Throughput (/s): 1108.52
+    Uptime (s): 1090.05
+  name: Inference_benchmark_3
+- labels:
+    Benchmark Desc: ImageNet
+    Framework: MXNet
+    Framework Desc: MKL/Hybrid
+    Instance Type: c5.18xlarge
+    Model: ResNet-50
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 2663.43
+    Throughput (/s): 147.71
+    Uptime (s): 865.61
+  name: Inference_benchmark_4
+- labels:
+    Benchmark Desc: ImageNet
+    Framework: MXNet
+    Framework Desc: Symbol
+    Instance Type: c5.18xlarge
+    Model: ResNet-50
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 2622.86
+    Throughput (/s): 32.03
+    Uptime (s): 2128.01
+  name: Inference_benchmark_5
+- labels:
+    Benchmark Desc: ImageNet
+    Framework: MXNet
+    Framework Desc: MKL/Symbol
+    Instance Type: c5.18xlarge
+    Model: ResNet-50
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 2644.0
+    Throughput (/s): 163.53
+    Uptime (s): 880.93
+  name: Inference_benchmark_6
+- labels:
+    Benchmark Desc: ImageNet
+    Framework: MXNet
+    Framework Desc: Symbol
+    Instance Type: c5.18xlarge
+    Model: ResNet-50
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 2641.71
+    Throughput (/s): 32.48
+    Uptime (s): 2186.5
+  name: Inference_benchmark_7
+- labels:
+    Benchmark Desc: CIFAR-10
+    Framework: MXNet
+    Framework Desc: Gluon
+    Instance Type: p3.2xlarge
+    Model: ResNet-164
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 2654.86
+    GPU Memory Max (mb): 2951.71
+    GPU Memory Mean (mb): 2913.3
+    Latency (ms): 45.51
+    Throughput (/s): 22.1
+    Uptime (s): 8494.29
+  name: Inference_benchmark_8
+- labels:
+    Benchmark Desc: CIFAR-10
+    Framework: MXNet
+    Framework Desc: Gluon
+    Instance Type: c5.18xlarge
+    Model: ResNet-164
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 2676.0
+    Latency (ms): 97.86
+    Throughput (/s): 10.25
+    Uptime (s): 1485.56
+  name: Inference_benchmark_9
+- labels:
+    Benchmark Desc: CIFAR-10
+    Framework: MXNet
+    Framework Desc: Gluon Hybrid
+    Instance Type: p3.2xlarge
+    Model: ResNet-164
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 2666.86
+    GPU Memory Max (mb): 2633.43
+    GPU Memory Mean (mb): 2601.6
+    Latency (ms): 11.38
+    Throughput (/s): 87.98
+    Uptime (s): 6140.85
+  name: Inference_benchmark_10
+- labels:
+    Benchmark Desc: CIFAR-10
+    Framework: MXNet
+    Framework Desc: Gluon Hybrid
+    Instance Type: c5.18xlarge
+    Model: ResNet-164
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 2650.29
+    Latency (ms): 95.92
+    Throughput (/s): 10.47
+    Uptime (s): 1464.13
+  name: Inference_benchmark_11
+- labels:
+    Benchmark Desc: CIFAR-10
+    Framework: MXNet
+    Framework Desc: Module
+    Instance Type: p3.2xlarge
+    Model: ResNet-164
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 2696.0
+    GPU Memory Max (mb): 2526.29
+    GPU Memory Mean (mb): 2495.3
+    Latency (ms): 7.83
+    Throughput (/s): 127.79
+    Uptime (s): 4804.73
+  name: Inference_benchmark_12
+- labels:
+    Benchmark Desc: CIFAR-10
+    Framework: MXNet
+    Framework Desc: Module
+    Instance Type: c5.18xlarge
+    Model: ResNet-164
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 2677.71
+    Latency (ms): 87.28
+    Throughput (/s): 11.54
+    Uptime (s): 1375.49
+  name: Inference_benchmark_13
+- labels:
+    Benchmark Desc: PTB
+    Framework: MXNet
+    Framework Desc: MMS-GPU
+    Instance Type: p3.16xlarge
+    Model: LSTM
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 761.33
+    Error Rate (%): 0.0
+    GPU Memory Max (mb): 13.0
+    GPU Memory Mean (mb): 1.33
+    Latency (ms): 160.0
+    P50 Latency (ms): 17.0
+    P90 Latency (ms): 73.0
+    P99 Latency (ms): 118.67
+    Throughput (/s): 430.73
+    Uptime (s): 1533.15
+  name: Inference_benchmark_14
+- labels:
+    Benchmark Desc: NOOP
+    Framework: MXNet
+    Framework Desc: MMS-GPU
+    Instance Type: p3.16xlarge
+    Type: Inference
+  metrics: {}
+  name: Inference_benchmark_15
+- labels:
+    Framework: MXNet
+    Framework Desc: MMS-GPU
+    Instance Type: p3.16xlarge
+    Model: Resnet-18
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 760.0
+    Error Rate (%): 0.0
+    GPU Memory Max (mb): 443.25
+    GPU Memory Mean (mb): 44.32
+    Latency (ms): 233.75
+    P50 Latency (ms): 41.25
+    P90 Latency (ms): 390.0
+    P99 Latency (ms): 424.5
+    Throughput (/s): 158.82
+    Uptime (s): 1737.29
+  name: Inference_benchmark_16
+- labels:
+    Benchmark Desc: PTB
+    Framework: MXNet
+    Framework Desc: MMS-CPU
+    Instance Type: c5.2xlarge
+    Model: LSTM
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 745.0
+    Error Rate (%): 0.0
+    Latency (ms): 36.75
+    P50 Latency (ms): 13.75
+    P90 Latency (ms): 35.25
+    P99 Latency (ms): 138.0
+    Throughput (/s): 314.95
+    Uptime (s): 1564.68
+  name: Inference_benchmark_17
+- labels:
+    Benchmark Desc: NOOP
+    Framework: MXNet
+    Framework Desc: MMS-CPU
+    Instance Type: c5.2xlarge
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 763.0
+    Error Rate (%): 0.0
+    Latency (ms): 3.75
+    P50 Latency (ms): 3.0
+    P90 Latency (ms): 7.0
+    P99 Latency (ms): 0.0
+    Throughput (/s): 1732.52
+    Uptime (s): 1577.05
+  name: Inference_benchmark_18
+- labels:
+    Framework: MXNet
+    Framework Desc: MMS-CPU
+    Instance Type: c5.2xlarge
+    Model: ResNet-18
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 759.5
+    Error Rate (%): 0.0
+    Latency (ms): 74.88
+    P50 Latency (ms): 47.25
+    P90 Latency (ms): 92.25
+    P99 Latency (ms): 246.5
+    Throughput (/s): 90.15
+    Uptime (s): 2277.56
+  name: Inference_benchmark_19
+- labels:
+    Benchmark Desc: Single
+    Framework: MXNet
+    Framework Desc: Scala
+    Instance Type: p3.16xlarge
+    Model: Char-RNN
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 732.5
+    Latency (ms): 1665.0
+    P50 Latency (ms): 1653.87
+    P90 Latency (ms): 1782.35
+    P99 Latency (ms): 1981.79
+    Uptime (s): 2384.88
+  name: Inference_benchmark_20
+- labels:
+    Benchmark Desc: Single
+    Framework: MXNet
+    Framework Desc: Scala
+    Instance Type: p3.16xlarge
+    Model: Resnet-18
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 746.57
+    GPU Memory Max (mb): 100.93
+    GPU Memory Mean (mb): 33.64
+    Latency (ms): 4.99
+    P50 Latency (ms): 4.76
+    P90 Latency (ms): 5.6
+    P99 Latency (ms): 8.34
+    Uptime (s): 707.05
+  name: Inference_benchmark_21
+- labels:
+    Benchmark Desc: Batch size 16
+    Framework: MXNet
+    Framework Desc: Scala
+    Instance Type: p3.16xlarge
+    Model: Resnet-18
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 746.57
+    GPU Memory Max (mb): 100.93
+    GPU Memory Mean (mb): 33.64
+    Latency (ms): 13.91
+    P50 Latency (ms): 13.95
+    P90 Latency (ms): 15.01
+    P99 Latency (ms): 16.53
+    Uptime (s): 707.05
+  name: Inference_benchmark_22
+- labels:
+    Benchmark Desc: Single
+    Framework: MXNet
+    Framework Desc: Scala
+    Instance Type: p3.16xlarge
+    Model: SSD
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 755.2
+    Latency (ms): 74.88
+    P50 Latency (ms): 60.26
+    P90 Latency (ms): 68.32
+    P99 Latency (ms): 711.85
+    Uptime (s): 1232.96
+  name: Inference_benchmark_23
+- labels:
+    Benchmark Desc: Batch size 16
+    Framework: MXNet
+    Framework Desc: Scala
+    Instance Type: p3.16xlarge
+    Model: SSD
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 755.2
+    Latency (ms): 886.87
+    P50 Latency (ms): 648.88
+    P90 Latency (ms): 1384.11
+    P99 Latency (ms): 1451.61
+    Uptime (s): 1232.96
+  name: Inference_benchmark_24
+- labels:
+    Benchmark Desc: Single
+    Framework: MXNet
+    Framework Desc: Scala
+    Instance Type: c5.2xlarge
+    Model: Char-RNN
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 751.47
+    Latency (ms): 1340.22
+    P50 Latency (ms): 1314.51
+    P90 Latency (ms): 1408.52
+    P99 Latency (ms): 1713.82
+    Uptime (s): 1895.66
+  name: Inference_benchmark_25
+- labels:
+    Benchmark Desc: Single
+    Framework: MXNet
+    Framework Desc: Scala
+    Instance Type: c5.2xlarge
+    Model: Resnet-18
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 767.71
+    Latency (ms): 12.72
+    P50 Latency (ms): 11.42
+    P90 Latency (ms): 16.43
+    P99 Latency (ms): 18.54
+    Uptime (s): 693.37
+  name: Inference_benchmark_26
+- labels:
+    Benchmark Desc: Batch size 16
+    Framework: MXNet
+    Framework Desc: Scala
+    Instance Type: c5.2xlarge
+    Model: Resnet-18
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 767.71
+    Latency (ms): 123.88
+    P50 Latency (ms): 117.2
+    P90 Latency (ms): 131.56
+    P99 Latency (ms): 220.08
+    Uptime (s): 693.37
+  name: Inference_benchmark_27
+- labels:
+    Benchmark Desc: Single
+    Framework: MXNet
+    Framework Desc: Scala
+    Instance Type: c5.2xlarge
+    Model: SSD
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 771.2
+    Latency (ms): 258.07
+    P50 Latency (ms): 220.62
+    P90 Latency (ms): 330.31
+    P99 Latency (ms): 789.22
+    Uptime (s): 2839.03
+  name: Inference_benchmark_28
+- labels:
+    Benchmark Desc: Batch size 16
+    Framework: MXNet
+    Framework Desc: Scala
+    Instance Type: c5.2xlarge
+    Model: SSD
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 771.2
+    Latency (ms): 4464.41
+    P50 Latency (ms): 4262.86
+    P90 Latency (ms): 5710.11
+    P99 Latency (ms): 5848.26
+    Uptime (s): 2839.03
+  name: Inference_benchmark_29
+- labels:
+    Benchmark Desc: Single
+    Framework: MXNet
+    Framework Desc: Java
+    Instance Type: p3.16xlarge
+    Model: SSD
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 756.4
+    Latency (ms): 76.89
+    P50 Latency (ms): 61.13
+    P90 Latency (ms): 69.54
+    P99 Latency (ms): 726.09
+    Uptime (s): 1590.11
+  name: Inference_benchmark_30
+- labels:
+    Benchmark Desc: Batch size 16
+    Framework: MXNet
+    Framework Desc: Java
+    Instance Type: p3.16xlarge
+    Model: SSD
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 756.4
+    Uptime (s): 1590.11
+  name: Inference_benchmark_31
+- labels:
+    Benchmark Desc: Single
+    Framework: MXNet
+    Framework Desc: Java
+    Instance Type: c5.2xlarge
+    Model: SSD
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 725.43
+    Latency (ms): 261.31
+    P50 Latency (ms): 225.04
+    P90 Latency (ms): 332.6
+    P99 Latency (ms): 791.14
+    Uptime (s): 4795.6
+  name: Inference_benchmark_32
+- labels:
+    Benchmark Desc: Batch size 16
+    Framework: MXNet
+    Framework Desc: Java
+    Instance Type: c5.2xlarge
+    Model: SSD
+    Type: Inference
+  metrics:
+    CPU Memory (mb): 725.43
+    Uptime (s): 4795.6
+  name: Inference_benchmark_33
