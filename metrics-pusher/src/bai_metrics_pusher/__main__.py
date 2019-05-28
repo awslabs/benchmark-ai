@@ -9,11 +9,11 @@ def main(argv=None):
     import sys
 
     # Configure logging
-    from bai_kafka_utils.utils import LOGGING_FORMAT
+    from bai_kafka_utils.utils import set_logging_level_and_format
 
     logging_streams = {"stdout": sys.stdout, "stderr": sys.stderr}
     stream = logging_streams[os.environ.get("LOGGING_STREAM", "stderr").lower()]
-    logging.basicConfig(stream=stream, level=os.environ.get("LOGGING_LEVEL", "INFO").upper(), format=LOGGING_FORMAT)
+    set_logging_level_and_format(level=os.environ.get("LOGGING_LEVEL", "INFO").upper(), stream=stream)
 
     # Start the app
     logger = logging.getLogger("metrics-pusher")

@@ -1,5 +1,6 @@
 import encodings
 import hashlib
+import logging
 import platform
 import random
 import string
@@ -7,6 +8,10 @@ import string
 DEFAULT_ENCODING = encodings.utf_8.getregentry().name
 
 LOGGING_FORMAT = "%(asctime)s %(levelname)s: %(message)s"
+
+
+def set_logging_level_and_format(level: str, **kwargs):
+    logging.basicConfig(level=level, format=LOGGING_FORMAT, **kwargs)
 
 
 def id_generator(size=8, chars=string.ascii_lowercase + string.digits):
