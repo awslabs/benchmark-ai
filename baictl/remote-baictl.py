@@ -13,6 +13,7 @@ import base64
 import logging
 import config
 import argparse
+import time
 
 
 CFN_SPLIT_STRING = "|||"
@@ -42,9 +43,12 @@ def main():
         cloudformation_yaml_path=CLOUDFORMATION_YAML_PATH,
         baictl_command=generate_baictl_command(config=config, mode=args.mode),
     )
+    cloudwatch_log_group = cloudformation_output['BaictlLogGroupName']
     docker_cli, docker_registry = login_ecr(boto_session=boto_session)
     publish_docker_image(docker_cli=docker_cli, docker_tag=docker_tag, docker_registry=docker_registry)
-    run_ecs_task(boto_session=boto_session, cloudformation_output=cloudformation_output)
+    ecs_task = run_ecs_task(boto_session=boto_session, cloudformation_output=cloudformation_output, ecs_cluster="baictl-ecs-cluster")
+    cloudwatch_log_stream = parse_ecs_response(ecs_task)
+    get_cloudwatch_logs(boto_session=boto_session, cloudwatch_log_group=cloudwatch_log_group, cloudwatch_log_stream=cloudwatch_log_stream)
     destroy_cloudformation()
 
 
@@ -93,6 +97,7 @@ def login_ecr(boto_session):
 
 
 def build_docker_image(docker_cli, docker_registry):
+    logging.info("Building Docker image")
     docker_tag = docker_registry.replace("https://", "") + "/" + DOCKER_IMAGE_TAG + ":latest"
 
     # TODO: Allow to use --cache-from to speed up this process bu using a prebuild remote image. It's important
@@ -210,11 +215,12 @@ def publish_docker_image(docker_cli, docker_tag, docker_registry):
             raise Exception(line["errorDetail"]["message"])
 
 
-def run_ecs_task(boto_session, cloudformation_output):
+def run_ecs_task(boto_session, cloudformation_output, ecs_cluster):
     ecs_client = boto_session.client("ecs")
 
-    ecs_client.run_task(
-        cluster="baictl-ecs-cluster",
+    logging.info("Running ECS Task to create infrastructure")
+    resp = ecs_client.run_task(
+        cluster=ecs_cluster,
         taskDefinition=cloudformation_output["TaskDefinition"],
         launchType="FARGATE",
         networkConfiguration={
@@ -225,12 +231,45 @@ def run_ecs_task(boto_session, cloudformation_output):
             }
         },
     )
-    # TODO: Stream logs?
+    
+    return resp
 
 
 def destroy_cloudformation():
     # TODO: Ask whether CloudFormation stack should be destroyed again - this requires the ability to wait for the ECS task to finish first
     pass
+
+def get_cloudwatch_logs(boto_session, cloudwatch_log_group, cloudwatch_log_stream):
+    logs_client = boto_session.client("logs")
+    logging.info("Waiting for logs, this should take less than 120 seconds")
+
+    # Wait 5 minutes for cloudwatch log stream to show up
+    log_stream_wait_seconds = 300
+    for wait_seconds in range(0, log_stream_wait_seconds, 10):
+        log_streams = logs_client.describe_log_streams(
+            logGroupName=cloudwatch_log_group,
+            orderBy='LastEventTime',
+            descending=True
+        )['logStreams']
+
+        log_streams_names = []
+        for stream in log_streams:
+            log_streams_names.append(stream['logStreamName'])
+
+        if cloudwatch_log_stream in log_streams_names:
+            logging.info("Cloudwatch log for run here: https://console.aws.amazon.com/cloudwatch/home#logEventViewer:group={};stream={}".format(cloudwatch_log_group, cloudwatch_log_stream))
+            break
+        logging.info("Waited {} seconds for Cloudwatch log stream...".format(wait_seconds))
+        time.sleep(10)
+    else:
+        logging.error("Can not find Cloudwatch log Stream {} -> {}".format(cloudwatch_log_group, cloudwatch_log_stream))
+
+def parse_ecs_response(ecs_task):
+    ecs_prefix_name = ecs_task['tasks'][0]['overrides']['containerOverrides'][0]['name']
+    ecs_container_name = ecs_task['tasks'][0]['containers'][0]['name']
+    ecs_task_id = ecs_task['tasks'][0]['taskArn'].split("/")[-1]
+    cloudwatch_log_stream = ecs_prefix_name + "/" + ecs_container_name + "/" + ecs_task_id
+    return cloudwatch_log_stream
 
 
 if __name__ == "__main__":
