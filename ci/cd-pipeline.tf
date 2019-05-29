@@ -127,7 +127,7 @@ resource "aws_codebuild_project" "ci-unit-tests-master" {
     auth {
       type = "OAUTH"
     }
-    buildspec           = "${element(var.projects, count.index)}/buildspec.yml"
+    buildspec = data.template_file.buildspec[count.index].rendered
     report_build_status = true
   }
 
@@ -135,5 +135,14 @@ resource "aws_codebuild_project" "ci-unit-tests-master" {
     GithubRepo = "benchmark-ai"
     GithubOrg  = "MXNetEdge"
     Workspace  = terraform.workspace
+  }
+}
+
+data "template_file" "buildspec" {
+  count = length(var.projects)
+  template = file("${path.module}/buildspec.tpl.yml")
+
+  vars = {
+    project = element(var.projects, count.index)
   }
 }
