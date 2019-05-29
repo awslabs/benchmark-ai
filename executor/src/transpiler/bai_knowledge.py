@@ -13,7 +13,7 @@ from executor.config import ExecutorConfig
 from executor import SERVICE_NAME
 
 
-JOB_ID_PREFIX = "benchmark_"
+JOB_ID_PREFIX = "benchmark-"
 
 
 class BaiKubernetesObjectBuilder:

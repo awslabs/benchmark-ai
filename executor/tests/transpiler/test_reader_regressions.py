@@ -12,7 +12,7 @@ from typing import List
 
 
 PULLER_S3_URI = "s3://puller-data/object-name/dir"
-JOB_ID = "JOB_ID"
+JOB_ID = "JOB-ID"
 
 
 @pytest.mark.parametrize("filename", ["hello-world.toml", "training.toml", "horovod.toml", "cronjob.toml"])
