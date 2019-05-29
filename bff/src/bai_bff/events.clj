@@ -39,8 +39,7 @@
   not do any in place changes, such as when these data sources are
   fetched and augmented with additional information.</i>"
   [event]
-  (-> event
-      (assoc-in [:payload :datasets] (filter seq (map #(select-keys % [:src :md5]) (some-> event :payload :toml :contents :data :sources))))))
+  (assoc-in event [:payload :datasets] (remove empty? (map #(select-keys % [:src :md5]) (some-> event :payload :toml :contents :data :sources)))))
 
 (defn add-my-visited-entry
   "Adds the entry for this service at the end of the event's vector of
@@ -49,8 +48,7 @@
   event's \"date\" field is of the client's submission."
   [event]
   (let [svc "bai-bff"]
-    (-> event
-        (assoc-in [:visited] (conj (get-in event [:visited]) {:svc svc :tstamp (:tstamp event) :version VERSION :node (env :hostname)})))))
+    (assoc-in event [:visited] (conj (get-in event [:visited]) {:svc svc :tstamp (:tstamp event) :version VERSION :node (env :hostname)}))))
 
 (defn message->submit-descriptor-event
   "Takes a \"message\" from the client (as a keyword map), from the wild
@@ -85,7 +83,7 @@
   [req message-body]
   (let [tstamp (System/currentTimeMillis)
         authenticated false] ;NOTE auth should have been taken care of by middleware.
-    (->
+    (add-my-visited-entry
      {:message_id      (uuid)                                     ; <--
       :client_id       (some-> message-body :client_id)
       :action_id       (uuid)                                     ; <--
@@ -97,5 +95,4 @@
       :tstamp          tstamp
       :visited         (some-> message-body :visited)             ; <--
       :payload         (some-> message-body :payload)
-      :type            "CMD_SUBMIT"}
-     (add-my-visited-entry))))
+      :type            "CMD_SUBMIT"})))
