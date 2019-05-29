@@ -8,7 +8,6 @@ variable "projects" {
     "baictl",
     "kafka-utils",
     "puller",
-    "reports",
     "executor",
     "watcher",
     "bff",
