@@ -55,37 +55,43 @@ def load_report_cfg(report_cfg_yaml):
   with open(report_cfg_yaml, mode="r", encoding="utf-8-sig") as cfg_file:
     return yaml.safe_load(cfg_file)
 
-def get_benchmark_types(report_cfg):
-  return set([benchmark['labels']['Type'] for benchmark in report_cfg['benchmarks']])
-
-def get_benchmark_metrics(report_cfg, benchmark_type):
-  benchmarks = [benchmark for benchmark in report_cfg['benchmarks'] if benchmark['labels']['Type'] == benchmark_type]
-  metrics = set()
-  for benchmark in benchmarks:
-    metrics.update(benchmark['metrics'].keys())
-  return metrics
-
-def get_benchmark_labels(report_cfg, benchmark_type):
-  benchmarks = [benchmark for benchmark in report_cfg['benchmarks'] if benchmark['labels']['Type'] == benchmark_type]
-  metrics = set()
-  for benchmark in benchmarks:
-    metrics.update(benchmark['labels'].keys())
-  return metrics
-
-def get_benchmarks_for_type(report_cfg, benchmark_type):
-  return [benchmark for benchmark in report_cfg['benchmarks'] if benchmark['labels']['Type'] == benchmark_type]
-
 def get_aggregates(es, benchmark_type, metrics, from_time):
   query = create_agg_query(benchmark_type, metrics, from_time)
   res = es.search(index=es_index, body=query)
   aggregates = res['aggregations']['benchmarck_aggs']['buckets']
   results = {}
-  for agg in aggregates:
-    r = {}
+  for aggregate in aggregates:
+    benchmark_id = aggregate['key']
+    metric_values = {}
     for metric in metrics:
-      r[metric] = agg[metric]['value']
-    results[agg['key']] = r
+      metric_values[metric] = aggregate[metric]['value']
+    results[benchmark_id] = metric_values
   return results
+
+
+def print_report(es, benchmark_type, benchmark_cfg, from_time):
+  metrics = set()
+  labels = set()
+
+  # collect the set of unique metrics and labels
+  # across all benchmarks for the report
+  for benchmark in benchmark_cfg:
+    metrics.update(benchmark['metrics'].keys())
+    labels.update(benchmark['labels'].keys())
+
+  aggregates = get_aggregates(es, benchmark_type, metrics, from_time)
+
+  header = [*labels, *metrics]
+
+  print(','.join(header))
+  for benchmark in benchmark_cfg:
+    benchmark_id = benchmark['benchmark_id']
+    row_obj = { **benchmark['labels'] }
+    if benchmark_id in aggregates:
+      row_obj.update(**aggregates[benchmark_id])
+    row = [str(row_obj[key]) if key in row_obj else '' for key in header]
+    print(','.join(row))
+
 
 def main():
   es = Elasticsearch(["localhost:9200"])
@@ -94,32 +100,11 @@ def main():
   from_time = current_time - timedelta(weeks=1)
 
   report_cfg = load_report_cfg('report_cfg.yaml')
-  benchmark_types = get_benchmark_types(report_cfg)
-  # print(benchmark_types)
-  metrics = get_benchmark_metrics(report_cfg, 'Training CV')
-  # print(metrics)
   
-  aggregate_metrics = get_aggregates(es, 'Training CV', metrics, from_time)
-  benchmarks = get_benchmarks_for_type(report_cfg, 'Training CV')
-  # labels = get_benchmark_labels(report_cfg, 'Training CV')
-  labels = ["Type","Framework","Framework Desc","Model","Precision","Benchmark Desc","Instance Type","Top 1 Val Acc","Top 1 Train Acc","Throughput (/s)","Time to Train (s)","CPU Memory (mb)","GPU Memory Max (mb)","GPU Memory Mean (mb)","Uptime (s)"]
-  header = [*labels, *metrics]
-  print(','.join(header))
-  for benchmark in benchmarks:
-    benchmark_id = benchmark['name']
-    out = {**benchmark['labels']}
-    if benchmark_id in aggregate_metrics:
-      out.update(aggregate_metrics[benchmark_id])
-    row = []
-    for key in header:
-      if key in out:
-        row.append(str(out[key]))
-      else:
-        row.append('')
-    print(','.join(row))
-  
+  for benchmark_type, benchmark_cfg in report_cfg.items():
+    print_report(es, benchmark_type, benchmark_cfg, from_time)
+    print()
 
-  
 
 if __name__ == '__main__':
   main()

@@ -9,24 +9,23 @@ def is_number(value):
   except ValueError:
     return False
 
+
 def get_benchmarks(report_table_csv):
-  report_cfg = {}
-  benchmark_count = 0
-  report_type = ''
+  
+  benchmark_type = ''
   benchmarks = []
+
   with open(report_table_csv, mode='r', encoding='utf-8-sig') as f:
     reader = csv.reader(f)
     header = next(reader)
 
-    for benchmark in reader:
-      report_type = benchmark[0]
+    for benchmark_number, benchmark in enumerate(reader):
+      benchmark_type = benchmark[0]
+      benchmark_id = '{}_benchmark_{}'.format(benchmark_type.replace(' ', ''), benchmark_number)
       labels = {}
       metrics = {}
-      index = 1
-      benchmark_count = benchmark_count + 1
-      for index in range(0, len(benchmark)):
-        value = benchmark[index]
-        
+
+      for index, value in enumerate(benchmark):        
         if not value:
           continue
 
@@ -36,23 +35,23 @@ def get_benchmarks(report_table_csv):
           labels[header[index]] = value
 
       benchmarks.append({
-        'name': '{}_benchmark_{}'.format(report_type.replace(' ', ''), benchmark_count),
+        'benchmark_id': benchmark_id,
         'labels': labels,
         'metrics': metrics
         })
-  return benchmarks
+
+  return {
+    benchmark_type: benchmarks
+  }
 
 def main():
   report_tables = glob('./*.csv')
-  benchmarks = []
+  benchmarks = {}
   for report_table in report_tables:
-    benchmarks.extend(get_benchmarks(report_table))
+    benchmarks.update(get_benchmarks(report_table))
 
-  cfg = {
-    'benchmarks': benchmarks
-  }
   with open('report_cfg.yaml', 'w') as yaml_file:
-    yaml.dump(cfg, yaml_file, default_flow_style=False)
+    yaml.dump(benchmarks, yaml_file, default_flow_style=False)
 
 
 if __name__ == '__main__':

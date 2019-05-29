@@ -5,6 +5,7 @@ import random
 import yaml
 from elasticsearch import Elasticsearch
 from functools import partial
+from itertools import chain
 from datetime import datetime, timedelta
 
 es_index = 'dummy-metrics'
@@ -13,11 +14,11 @@ doc_type = 'metric'
 
 class DummyBenchmark:
 
-  def __init__(self, id, labels={}):
-    self._id = id
+  def __init__(self, benchmark_id, labels={}):
+    self._benchmark_id = benchmark_id
     self._metrics = {}
     self._labels = {
-      'benchmark_id': id,
+      'benchmark_id': self._benchmark_id,
       **labels 
     }
 
@@ -60,15 +61,20 @@ def generate_logs(es, benchmark, start):
 
 
 def get_benchmarks(cfg_yaml):
-  benchmarks = []
+  dummy_benchmarks = []
   with open(cfg_yaml) as cfg_file:
       cfg = yaml.safe_load(cfg_file)
-      for benchmark in cfg['benchmarks']:
-        dummy = DummyBenchmark(benchmark['name'], benchmark['labels'])
-        for name, mean in benchmark['metrics'].items():
+      
+      # collect all benchmark configurations across all benchmark_types (i.e. reports)
+      benchmark_configs = list(chain(*[cfg[benchmark_type] for benchmark_type in cfg.keys()]))
+
+      # create the dummy configs
+      for benchmark_cfg in benchmark_configs:
+        dummy = DummyBenchmark(benchmark_cfg['benchmark_id'], benchmark_cfg['labels'])
+        for name, mean in benchmark_cfg['metrics'].items():
           dummy.add_metric(name, normal(mean, 0.05*mean))
-        benchmarks.append(dummy)
-  return benchmarks
+        dummy_benchmarks.append(dummy)
+  return dummy_benchmarks
 
 
 def main():
