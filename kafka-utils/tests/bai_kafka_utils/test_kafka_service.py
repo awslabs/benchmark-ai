@@ -8,7 +8,7 @@ from typing import List, Dict
 from unittest.mock import MagicMock, Mock, call
 
 import pytest
-from kafka import KafkaConsumer, KafkaProducer
+from kafka import KafkaConsumer, KafkaProducer, TopicPartition
 from pytest import fixture
 
 from bai_kafka_utils.events import (
@@ -56,9 +56,8 @@ class MockBenchmarkPayload(BenchmarkPayload):
     bar: int
 
 
-def create_mock_consumer_record(key, value, topic):
+def create_mock_consumer_record(key, value):
     MockConsumerRecord = collections.namedtuple("FakeConsumerRecord", ["key", "value"])
-    MockConsumerRecord.topic = topic
 
     return MockConsumerRecord(key=key, value=value)
 
@@ -81,12 +80,16 @@ def benchmark_event():
     )
 
 
+def create_topic_partition(topic: str):
+    return TopicPartition(topic=topic, partition=0)
+
+
 @fixture
 def kafka_consumer(benchmark_event: BenchmarkEvent):
     consumer = MagicMock(spec=KafkaConsumer)
-    mock_record = create_mock_consumer_record(value=benchmark_event, key=SOME_KEY, topic=CONSUMER_TOPIC)
+    mock_record = create_mock_consumer_record(key=SOME_KEY, value=benchmark_event)
 
-    consumer.poll = Mock(return_value={CONSUMER_TOPIC: [mock_record]})
+    consumer.poll = Mock(return_value={create_topic_partition(CONSUMER_TOPIC): [mock_record]})
     return consumer
 
 
@@ -97,9 +100,9 @@ def kafka_consumer_with_invalid_message(benchmark_event):
     # Add a good one to allow the stop handler to do it's job
     consumer.poll = Mock(
         return_value={
-            CONSUMER_TOPIC: [
-                create_mock_consumer_record(value=None, key=SOME_KEY, topic=CONSUMER_TOPIC),
-                create_mock_consumer_record(value=benchmark_event, key=SOME_KEY, topic=CONSUMER_TOPIC),
+            create_topic_partition(CONSUMER_TOPIC): [
+                create_mock_consumer_record(key=SOME_KEY, value=None),
+                create_mock_consumer_record(key=SOME_KEY, value=benchmark_event),
             ]
         }
     )
@@ -113,9 +116,9 @@ def kafka_consumer_with_two_topics(benchmark_event):
     # Add a good one to allow the stop handler to do it's job
     consumer.poll = Mock(
         return_value={
-            CONSUMER_TOPIC: [create_mock_consumer_record(value=benchmark_event, key=SOME_KEY, topic=CONSUMER_TOPIC)],
-            CMD_SUBMIT_TOPIC: [
-                create_mock_consumer_record(value=benchmark_event, key=SOME_KEY, topic=CMD_SUBMIT_TOPIC)
+            create_topic_partition(CONSUMER_TOPIC): [create_mock_consumer_record(key=SOME_KEY, value=benchmark_event)],
+            create_topic_partition(CMD_SUBMIT_TOPIC): [
+                create_mock_consumer_record(key=SOME_KEY, value=benchmark_event)
             ],
         }
     )
