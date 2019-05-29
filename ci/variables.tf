@@ -1,5 +1,5 @@
 variable "projects" {
-  type = "list"
+  type = list(string)
   default = [
     "client-lib",
     "metrics-pusher",
@@ -16,19 +16,20 @@ variable "projects" {
 }
 
 variable "github_token" {
-  type = "string"
+  type    = string
   default = ""
 }
 
 variable "region" {
-  type = "string"
+  type    = string
   default = "us-east-1"
 }
 
 variable "ci_docker_image" {
-  type = "map"
+  type = map(string)
   default = {
     "default" = "jlcont/bai-ci-python:260419"
-    "bff" = "gavin/bai-bff-dev"
+    "bff"     = "gavin/bai-bff-dev"
   }
 }
+
