@@ -149,7 +149,8 @@ class KafkaService:
             # KafkaConsumer.poll() might return more than one message
             records = self._consumer.poll()
 
-            for topic, record in records.items():
+            for topic_partition, record in records.items():
+                topic = topic_partition.topic
                 for msg in record:
                     if msg.value and not msg.value.type == topic:
                         logger.warning(f"Unexpected event type {msg.value.type} in topic {topic}")
