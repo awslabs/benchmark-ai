@@ -24,14 +24,15 @@ GEN_DOCS_PATH := docs-generated
 #---
 # Project metadata info
 #---
+VCS_PROG := git
 #(note: may set VERSION variable in above stanza to override the default below, which gets it from the nearest git tag of the form v.#.#.#<blah>)
-VERSION ?= $(shell git tag | sed -n -e 's/^$(PROJECT).*-v\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p' | sort -s -u -t. -k1,1n -k2,2n -k3,3n | tail -n 1)
-TAG := $(PROJECT)-v$(VERSION)-$(shell git rev-list $(PROJECT)-v$(VERSION)..HEAD --count)-g$(shell git rev-parse --short HEAD)
-BRANCH := $(shell git branch | grep '*' | sed -n 's/\*[ ]*//p' | xargs)
-COMMIT := $(shell git log -p -n1 | sed -n -e 's/^commit \(.*\)/\1/p'   | xargs)
-COMMIT_SHORT_HASH := $(shell git rev-parse --short HEAD)
-COMMIT_DATE :=   $(shell git log -p -n1 | sed -n -e 's/^Date: \(.*\)/\1/p'   | xargs)
-COMMIT_AUTHOR := $(shell git log -p -n1 | sed -n -e 's/^Author: \(.*\)/\1/p' | xargs)
+VERSION ?= $(shell $(VCS_PROG) tag | sed -n -e 's/^$(PROJECT).*-v\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p' | sort -s -u -t. -k1,1n -k2,2n -k3,3n | tail -n 1)
+TAG := $(PROJECT)-v$(VERSION)-$(shell $(VCS_PROG) rev-list $(PROJECT)-v$(VERSION)..HEAD --count)-g$(shell $(VCS_PROG) rev-parse --short HEAD)
+BRANCH := $(shell $(VCS_PROG) branch | grep '*' | sed -n 's/\*[ ]*//p' | xargs)
+COMMIT := $(shell $(VCS_PROG) log -p -n1 | sed -n -e 's/^commit \(.*\)/\1/p'   | xargs)
+COMMIT_SHORT_HASH := $(shell $(VCS_PROG) rev-parse --short HEAD)
+COMMIT_DATE :=   $(shell $(VCS_PROG) log -p -n1 | sed -n -e 's/^Date: \(.*\)/\1/p'   | xargs)
+COMMIT_AUTHOR := $(shell $(VCS_PROG) log -p -n1 | sed -n -e 's/^Author: \(.*\)/\1/p' | xargs)
 BUILD_DATE := $(shell date)
 
 #---
