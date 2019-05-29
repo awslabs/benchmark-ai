@@ -35,7 +35,7 @@ def k8s_dispatcher(fetcher_service_config: FetcherServiceConfig):
 
 
 @fixture
-def benchmark_event_dummy_payload():
+def benchmark_event_dummy_payload(kafka_service_config: KafkaServiceConfig):
     return BenchmarkEvent(
         action_id="ACTION_ID",
         message_id="DONTCARE",
@@ -46,7 +46,7 @@ def benchmark_event_dummy_payload():
         tstamp=42,
         visited=[],
         payload="DONTCARE",
-        type="DONTCARE",
+        type=kafka_service_config.consumer_topic,
     )
 
 
