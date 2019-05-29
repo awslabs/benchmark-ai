@@ -216,7 +216,7 @@ def create_from_object(desired_class: Type[T], source_object, **overriden_fields
 
 def get_topic_event_type(topic: str):
     topic_to_event_type = {
-        "BAI_APP_BFF": BenchmarkEvent,
+        "BAI_APP_BFF": FetcherBenchmarkEvent,
         "BAI_APP_FETCHER": FetcherBenchmarkEvent,
         "BAI_APP_EXECUTOR": ExecutorBenchmarkEvent,
         "BAI_APP_STATUS": StatusMessageBenchmarkEvent,
