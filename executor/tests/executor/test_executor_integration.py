@@ -39,13 +39,13 @@ def get_event_equals(src_event: BenchmarkEvent) -> Callable[[BenchmarkEvent], bo
 @pytest.mark.skip(
     reason="This test requires the executor service to be running on your machine, along with Kafka, ZK, etc"
 )
-def test_producer(benchmark_event: BenchmarkEvent, kafka_config: KafkaServiceConfig):
-    consumer, producer = create_kafka_consumer_producer(kafka_config)
+def test_producer(benchmark_event: BenchmarkEvent, kafka_service_config: KafkaServiceConfig):
+    consumer, producer = create_kafka_consumer_producer(kafka_service_config)
 
     expected_job = BenchmarkJob(id=JOB_ID, k8s_yaml="")
     expected_payload = ExecutorPayload.create_from_fetcher_payload(benchmark_event.payload, job=expected_job)
     expected_event = create_from_object(ExecutorBenchmarkEvent, benchmark_event, payload=expected_payload)
-    producer.send(kafka_config.producer_topic, benchmark_event, key=benchmark_event.client_id)
+    producer.send(kafka_service_config.producer_topic, benchmark_event, key=benchmark_event.client_id)
 
     filter_event = get_message_is_the_response(benchmark_event)
     is_expected_event = get_event_equals(expected_event)
