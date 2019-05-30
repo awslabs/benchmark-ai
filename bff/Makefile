@@ -27,13 +27,12 @@ GEN_DOCS_PATH := docs-generated
 VCS_PROG := git
 #(note: may set VERSION variable in above stanza to override the default below, which gets it from the nearest git tag of the form v.#.#.#<blah>)
 VERSION ?= $(shell $(VCS_PROG) tag | sed -n -e 's/^$(PROJECT).*-v\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p' | sort -s -u -t. -k1,1n -k2,2n -k3,3n | tail -n 1)
-TAG := $(PROJECT)-v$(VERSION)-$(shell $(VCS_PROG) rev-list $(PROJECT)-v$(VERSION)..HEAD --count)-g$(shell $(VCS_PROG) rev-parse --short HEAD)
 COMMIT_SHORT_HASH := $(shell $(VCS_PROG) rev-parse --short HEAD)
 #TAG := $(PROJECT)-v$(VERSION)-$(shell $(VCS_PROG) rev-list $(PROJECT)-v$(VERSION)..HEAD --count)-g$(COMMIT_SHORT_HASH)
 TAG := $(VERSION)-$(COMMIT_SHORT_HASH)
+CHANGE_CAUSE := $(shell $(VCS_PROG) log -1 --pretty=%B)
 BRANCH := $(shell $(VCS_PROG) branch | grep '*' | sed -n 's/\*[ ]*//p' | xargs)
 COMMIT := $(shell $(VCS_PROG) log -p -n1 | sed -n -e 's/^commit \(.*\)/\1/p'   | xargs)
-COMMIT_SHORT_HASH := $(shell $(VCS_PROG) rev-parse --short HEAD)
 COMMIT_DATE :=   $(shell $(VCS_PROG) log -p -n1 | sed -n -e 's/^Date: \(.*\)/\1/p'   | xargs)
 COMMIT_AUTHOR := $(shell $(VCS_PROG) log -p -n1 | sed -n -e 's/^Author: \(.*\)/\1/p' | xargs)
 BUILD_DATE := $(shell date)
@@ -128,6 +127,7 @@ show-vars:
 	@echo "REPO_SITE  = $(REPO_SITE)"
 	@echo "BRANCH = $(BRANCH)"
 	@echo "TAG    = $(TAG)"
+	@echo "CHANGE_CAUSE = $(CHANGE_CAUSE)"
 	@echo "COMMIT = $(COMMIT)"
 	@echo "COMMIT_AUTHOR = $(COMMIT_AUTHOR)"
 	@echo "COMMIT_DATE   = $(COMMIT_DATE)"
@@ -259,6 +259,7 @@ build-deploy-container: dist
 	@sed -e 's|@@PROJECT@@|$(PROJECT)|g' \
 	     -e 's|@@VERSION@@|$(VERSION)|g' \
 	     -e 's|@@TAG@@|$(TAG)|g' \
+             -e 's|@@CHANGE_CAUSE@|$(CHANGE_CAUSE)|g' \
 	     -e 's|@@REPO_SITE@@|$(REPO_SITE)|g' \
 	     -e 's|@@ORGANIZATION@@|$(ORGANIZATION)|g' \
 	     -e 's|@@AUTHOR@@|$(AUTHOR)|g' \
@@ -329,7 +330,7 @@ rollback:
 	@echo "------------------------"
 	@echo "K8S Rollback to the last deployment..."
 	@echo "------------------------"
-	#kubectl $(K8S_KUBECTL_ARGS) <TODO>
+	#kubectl $(K8S_KUBECTL_ARGS) rollout undo deployments $(PROJECT)
 
 
 

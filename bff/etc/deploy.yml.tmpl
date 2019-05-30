@@ -12,6 +12,7 @@ spec:
       service: @@PROJECT@@
       env: @@ENVIRONMENT@@
   replicas: 3
+  revisionHistoryLimit: 15
   template:
     metadata:
       labels:
