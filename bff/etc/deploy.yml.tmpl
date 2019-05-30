@@ -29,6 +29,7 @@ spec:
       annotations:
         benchmark-ai.@@PROJECT@@.git-tag: "@@REPO_SITE@@ @@TAG@@"
         benchmark-ai.@@PROJECT@@.docker-tag: "@@DOCKER_REGISTRY@@ @@DOCKER_TAG@@"
+        kubernetes.io/change-cause=@@CHANGE_CAUSE@@
     spec:
       affinity:
         podAntiAffinity:
@@ -51,18 +52,20 @@ spec:
             httpGet:
               path: /lively
               port: @@SVC_PORT@@
-            initialDelaySeconds: 240
+            initialDelaySeconds: 45
             timeoutSeconds: 5
             periodSeconds: 10
             failureThreshold: 3
+            successThreshold: 1
           readinessProbe:
             httpGet:
               path: /ready
               port: @@SVC_PORT@@
-            initialDelaySeconds: 240
+            initialDelaySeconds: 45
             timeoutSeconds: 1
             periodSeconds: 10
             failureThreshold: 3
+            successThreshold: 1
           env:
             - name: ENVIRONMENT
               value: "@@ENVIRONMENT@@"
