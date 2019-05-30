@@ -12,6 +12,12 @@ spec:
       service: @@PROJECT@@
       env: @@ENVIRONMENT@@
   replicas: 3
+  strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 0
+    maxUnavailable: 100%
+  progressDeadlineSeconds: 600
   revisionHistoryLimit: 15
   template:
     metadata:
