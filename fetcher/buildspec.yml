@@ -3,5 +3,4 @@ version: 0.2
 phases:
   build:
     commands:
-      - cd fetcher
-      - make
+      - ls -alt /lib/modules
