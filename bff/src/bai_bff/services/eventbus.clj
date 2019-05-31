@@ -66,7 +66,7 @@
           [client-key action-key] (mapv keyword [client_id action_id])]
       (if (and client-key action-key)
         (try
-          (assoc-in store [client-key action-key] (into [] (flatten (remove nil? (conj [] (some-> store client-key action-key) event)))))
+          (assoc-in store [client-key action-key] (vec (remove nil? (flatten (vector (some-> store client-key action-key) event)))))
           (catch NullPointerException e
             (.getMessage e)
             store))
