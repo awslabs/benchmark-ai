@@ -73,8 +73,9 @@ DOCKER_TEMPLATE := etc/Dockerfile.tmpl
 DOCKER_DEV_TEMPLATE := etc/Dockerfile_dev.tmpl
 
 #Run Environment (ref: deploy template and runit script)
+#                (log levels -> #{trace debug info warn error fatal report})
 ENVIRONMENT := test
-LOGGING_LEVEL := info #{:trace :debug :info :warn :error :fatal :report}
+LOGGING_LEVEL := trace
 SVC_PORT := 8080
 THREAD_POOL_SIZE := 6
 MAX_QUEUE_SIZE := 21
@@ -331,7 +332,7 @@ rollback:
 	@echo "------------------------"
 	@echo "K8S Rollback to the last deployment..."
 	@echo "------------------------"
-	#kubectl $(K8S_KUBECTL_ARGS) rollout undo deployments $(PROJECT)
+	kubectl $(K8S_KUBECTL_ARGS) rollout undo deployments $(PROJECT)
 
 
 

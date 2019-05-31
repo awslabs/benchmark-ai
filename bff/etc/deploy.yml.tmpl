@@ -11,7 +11,7 @@ spec:
       app: benchmark-ai
       service: @@PROJECT@@
       env: @@ENVIRONMENT@@
-  replicas: 3
+  replicas: 1
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -52,7 +52,7 @@ spec:
             httpGet:
               path: /lively
               port: @@SVC_PORT@@
-            initialDelaySeconds: 45
+            initialDelaySeconds: 180
             timeoutSeconds: 5
             periodSeconds: 10
             failureThreshold: 3
@@ -61,7 +61,7 @@ spec:
             httpGet:
               path: /ready
               port: @@SVC_PORT@@
-            initialDelaySeconds: 45
+            initialDelaySeconds: 180
             timeoutSeconds: 1
             periodSeconds: 10
             failureThreshold: 3
