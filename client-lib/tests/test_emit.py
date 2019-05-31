@@ -1,13 +1,13 @@
 import six
 import pytest
 
+# noinspection PyProtectedMember
+from benchmarkai import _emit_to_fifo, _emit_to_stdout, FifoNotCreatedInTimeError
+
 if six.PY2:
     import mock
 else:
     from unittest import mock
-
-# noinspection PyProtectedMember
-from benchmarkai import _emit_to_fifo, _emit_to_stdout, FifoNotCreatedInTimeError
 
 
 @pytest.mark.parametrize("param", [[1, 2], "string", None, {"set"}, 1, 1.5])

@@ -54,7 +54,8 @@ develop: venv
 test: develop
 	$(PYTEST) $(TEST_FLAGS) $(TEST_FOLDERS)
 
-coverage: develop
+coverage: develop _coverage
+_coverage:
 	$(PYTEST) $(TEST_FLAGS) $(TEST_FOLDERS) $(COVERAGE_FLAGS)
 
 lint: venv _lint
