@@ -47,7 +47,7 @@ define fn_k8s_deploy
 endef
 
 deploy.yml:
-	find ./deploy -name '*.yml' -exec sh -c "sed 's|@@DOCKER_IMAGE_TAG@@|$(DOCKER_IMAGE_TAG)|g' {}" > deploy.yml \;
+	find ./deploy -name '*.yml' -exec sh -c "sed -e 's|@@DOCKER_IMAGE_TAG@@|$(DOCKER_IMAGE_TAG)|g' -e '\$$a---' {}" > deploy.yml \;
 
 define fn_k8s_undeploy
 	$(KUBECTL) delete -f ./deploy $(KUBECTL_FLAGS)
