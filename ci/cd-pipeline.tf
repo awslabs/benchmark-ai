@@ -48,10 +48,10 @@ resource "aws_iam_role_policy_attachment" "codepipeline-attachment" {
 
 resource "aws_codepipeline" "codepipeline" {
   name     = "master"
-  role_arn = "${aws_iam_role.codepipeline.arn}"
+  role_arn = aws_iam_role.codepipeline.arn
 
   artifact_store {
-    location = "${aws_s3_bucket.build-artifacts.bucket}"
+    location = aws_s3_bucket.build-artifacts.bucket
     type     = "S3"
   }
 
@@ -114,8 +114,8 @@ resource "aws_codebuild_project" "ci-unit-tests-master" {
     compute_type = "BUILD_GENERAL1_SMALL"
     image = lookup(
       var.ci_docker_image,
-      element(var.projects, count.index),
-      var.ci_docker_image["default"],
+      var.projects[count.index],
+      var.ci_docker_image["default"]
     )
     type = "LINUX_CONTAINER"
   }
@@ -143,6 +143,6 @@ data "template_file" "buildspec" {
   template = file("${path.module}/buildspec.tpl.yml")
 
   vars = {
-    project = element(var.projects, count.index)
+    project = var.projects[count.index]
   }
 }
