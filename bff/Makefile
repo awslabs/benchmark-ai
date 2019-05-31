@@ -96,7 +96,10 @@ K8S_KUBECTL_ARGS := ${KUBECONFIG} #--kubeconfig=/Users/bellgav/.devo/kubeconfig
 
 compile: $(MAIN_CLASS_FILE)
 
-$(MAIN_CLASS_FILE): project.clj $(CLJ_FILES)
+ensure-lein:
+	chmod a+x $(LEIN)
+
+$(MAIN_CLASS_FILE): ensure-lein project.clj $(CLJ_FILES)
 	$(LEIN) compile
 	@touch $@
 
