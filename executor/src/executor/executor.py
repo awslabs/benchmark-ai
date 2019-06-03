@@ -20,6 +20,7 @@ from bai_kafka_utils.kafka_service import (
     KafkaServiceCallbackException,
 )
 from bai_kafka_utils.utils import DEFAULT_ENCODING, get_pod_name
+from transpiler.descriptor import DescriptorError
 
 logger = logging.getLogger(SERVICE_NAME)
 
@@ -34,13 +35,16 @@ class ExecutorEventHandler(KafkaServiceCallback):
         fetched_data_sources = event.payload.datasets
         job_id = event.action_id
 
-        yaml = create_job_yaml_spec(descriptor_contents, self.config, fetched_data_sources, job_id, event=event)
-
         try:
+            yaml = create_job_yaml_spec(descriptor_contents, self.config, fetched_data_sources, job_id, event=event)
             self._kubernetes_apply(yaml)
+        except DescriptorError as e:
+            logger.exception(f"Error parsing descriptor file")
+            kafka_service.send_status_message_event(event, Status.ERROR, str(e))
+            return
         except subprocess.CalledProcessError as e:
             logger.exception(f"Error executing benchmark")
-            kafka_service.send_status_message_event(event, Status.ERROR, e.output)
+            kafka_service.send_status_message_event(event, Status.ERROR, str(e))
             return
 
         response_event = self._create_response_event(event, job_id, yaml)

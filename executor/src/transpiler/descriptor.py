@@ -9,6 +9,10 @@ from crontab import CronSlices
 from transpiler.config import DescriptorConfig
 
 
+class DescriptorError(Exception):
+    pass
+
+
 class Descriptor:
     """
     The model class for a Descriptor.
@@ -28,7 +32,7 @@ class Descriptor:
             self.strategy = descriptor_data["hardware"]["strategy"]
             self.docker_image = descriptor_data["env"]["docker_image"]
         except KeyError as e:
-            raise KeyError(f"Required field is missing in the descriptor toml file: {e.args[0]}") from e
+            raise DescriptorError(f"Required field is missing in the descriptor toml file: {e.args[0]}") from e
 
         self.scheduling = descriptor_data["info"].get("scheduling", "single_run")
 
@@ -62,7 +66,7 @@ class Descriptor:
         Validates that this descriptor is valid
         """
         if self.strategy.lower() not in self.config.valid_strategies:
-            raise ValueError(f"Invalid strategy: {self.strategy} (must be one of {self.config.valid_strategies})")
+            raise DescriptorError(f"Invalid strategy: {self.strategy} (must be one of {self.config.valid_strategies})")
 
         if self.distributed:
             if self.num_instances <= 1:
@@ -70,7 +74,7 @@ class Descriptor:
 
         if self.scheduling != "single_run":
             if not CronSlices.is_valid(self.scheduling):
-                raise ValueError(
+                raise DescriptorError(
                     f"Invalid cron expression in scheduling field: {self.scheduling}. "
                     f'Please use Kubernetes cron job syntax or "single_run" for non-periodic runs'
                 )
@@ -85,11 +89,13 @@ class Descriptor:
         if instance_type in gpus_per_instance:
             return gpus_per_instance[instance_type]
         else:
-            raise ValueError(f"Invalid instance type: {instance_type}")
+            raise DescriptorError(f"Invalid instance type: {instance_type}")
 
     def find_data_source(self, src: str):
         for source in self.data_sources:
             if source["src"] == src:
                 return source
         else:
-            raise ValueError(f"Could not find data source with src: {src} \n" f"Data sources are: {self.data_sources}")
+            raise DescriptorError(
+                f"Could not find data source with src: {src} \n" f"Data sources are: {self.data_sources}"
+            )
