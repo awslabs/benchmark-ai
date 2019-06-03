@@ -125,8 +125,8 @@ resource "aws_iam_role_policy_attachment" "codebuild-attachment" {
 
 resource "aws_codebuild_project" "ci-unit-tests" {
   count         = length(var.projects)
-  name          = element(var.projects, count.index)
-  description   = "Unit tests build of ${element(var.projects, count.index)}"
+  name          = var.projects[count.index]
+  description   = "Unit tests build of ${var.projects[count.index]}"
   build_timeout = "10"
   service_role  = aws_iam_role.code-build-role.arn
   badge_enabled = true
@@ -139,8 +139,8 @@ resource "aws_codebuild_project" "ci-unit-tests" {
     compute_type = "BUILD_GENERAL1_SMALL"
     image = lookup(
       var.ci_docker_image,
-      element(var.projects, count.index),
-      var.ci_docker_image["default"],
+      var.projects[count.index],
+      var.ci_docker_image["default"]
     )
     type = "LINUX_CONTAINER"
   }
@@ -152,7 +152,7 @@ resource "aws_codebuild_project" "ci-unit-tests" {
     auth {
       type = "OAUTH"
     }
-    buildspec           = "${element(var.projects, count.index)}/buildspec.yml"
+    buildspec           = "${var.projects[count.index]}/buildspec.yml"
     report_build_status = true
   }
 
@@ -165,7 +165,7 @@ resource "aws_codebuild_project" "ci-unit-tests" {
 
 resource "aws_codebuild_webhook" "ci-unit-tests" {
   count        = length(var.projects)
-  project_name = element(aws_codebuild_project.ci-unit-tests.*.name, count.index)
+  project_name = aws_codebuild_project.ci-unit-tests.*.name[count.index]
 }
 
 locals {
@@ -195,10 +195,7 @@ resource "null_resource" "ci-unit-tests-filter" {
   }
 
   triggers = {
-    project_name = element(
-      aws_codebuild_webhook.ci-unit-tests.*.project_name,
-      count.index,
-    )
+    project_name = aws_codebuild_webhook.ci-unit-tests.*.project_name[count.index]
     filter_groups = jsonencode(local.filter_groups_prs)
   }
 }
