@@ -30,8 +30,9 @@ phases:
 artifacts:
   files:
     - deploy.yml
+    - deploy/**/*
   #name: $(date +%Y-%m-%d)
-  discard-paths: yes
+  discard-paths: no
   base-directory: ${project}
 #cache:
   #paths:
