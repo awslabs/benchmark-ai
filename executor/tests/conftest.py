@@ -5,9 +5,9 @@ import pytest
 
 from bai_kafka_utils.events import DataSet, BenchmarkDoc, FetcherPayload, BenchmarkEvent
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
-from transpiler.descriptor import Descriptor
+from transpiler.descriptor import Descriptor, DescriptorConfig
 from transpiler.bai_knowledge import EnvironmentInfo
-from transpiler.config import DescriptorConfig, BaiConfig
+from transpiler.config import BaiConfig
 
 
 ACTION_ID = "ACTION_ID"

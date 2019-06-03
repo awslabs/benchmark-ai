@@ -2,11 +2,15 @@ import csv
 import logging
 import os
 import toml
+from dataclasses import dataclass
 
-from typing import Dict
+from typing import Dict, List
 from crontab import CronSlices
 
-from transpiler.config import DescriptorConfig
+
+@dataclass
+class DescriptorConfig:
+    valid_strategies: List[str]
 
 
 class DescriptorError(Exception):

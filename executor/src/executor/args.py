@@ -1,7 +1,8 @@
 import os
 import configargparse
 
-from transpiler.config import DescriptorConfig, BaiConfig, EnvironmentInfo
+from transpiler.config import BaiConfig, EnvironmentInfo
+from transpiler.descriptor import DescriptorConfig
 from executor.config import ExecutorConfig
 
 

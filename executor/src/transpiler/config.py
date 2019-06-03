@@ -3,10 +3,7 @@ from urllib.parse import urlparse
 from bai_kafka_utils.events import DataSet
 from typing import List
 
-
-@dataclass
-class DescriptorConfig:
-    valid_strategies: List[str]
+from transpiler.descriptor import DescriptorError
 
 
 @dataclass
@@ -42,6 +39,6 @@ class BaiDataSource:
         self.path = path
 
         if self.scheme.lower() != "s3":
-            raise ValueError(
+            raise DescriptorError(
                 f"Unexpected scheme in data source src: {self.scheme}." f" Fetched dataset is {fetched_data_source}"
             )

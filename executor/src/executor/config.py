@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
-from transpiler.config import DescriptorConfig, BaiConfig, EnvironmentInfo
+from transpiler.config import BaiConfig, EnvironmentInfo
+from transpiler.descriptor import DescriptorConfig
 
 
 @dataclass
