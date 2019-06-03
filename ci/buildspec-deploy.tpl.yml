@@ -13,7 +13,7 @@ phases:
     commands:
       - ls
       - |
-        if [ $(stat --printf="%s" deploy.yml) -gt 0 ]; then
+        if [ -f "deploy.yml" ] && [ $(stat --printf="%s" deploy.yml) -gt 0 ]; then
           cat deploy.yml
           kubectl apply -f deploy.yml
         elif [ -f "deploy/stage_deploy.sh" ]; then

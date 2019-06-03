@@ -77,4 +77,8 @@ _format:
 	$(FORMAT) $(FORMAT_FLAGS) $(TEST_FOLDERS)
 	-$(FORMAT) $(FORMAT_FLAGS) $(INTEGRATION_TEST_FOLDERS)
 
+deploy.yml:
+	echo "Creating a dummy `deploy.yml` so that there are artifacts to be published"
+	touch deploy.yml
+
 default: install
