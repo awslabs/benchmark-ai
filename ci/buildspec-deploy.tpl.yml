@@ -12,10 +12,9 @@ phases:
   build:
     commands:
       - ls
-      - ls deploy
-      - cat deploy.yml
       - |
         if [ $(stat --printf="%s" deploy.yml) -gt 0 ]; then
+          cat deploy.yml
           kubectl apply -f deploy.yml
         elif [ -f "deploy/stage_deploy.sh" ]; then
           deploy/stage_deploy.sh prod
