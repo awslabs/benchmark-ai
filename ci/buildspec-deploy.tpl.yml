@@ -17,5 +17,7 @@ phases:
           cat deploy.yml
           kubectl apply -f deploy.yml
         elif [ -f "deploy/stage_deploy.sh" ]; then
-          deploy/stage_deploy.sh prod
+          bash deploy/stage_deploy.sh prod
+        else
+          echo "Nothing to deploy"
         fi
