@@ -10,5 +10,5 @@ _post_venv::
 	$(PIP) install -r requirements.txt
 
 deploy.yml:
-	# A dummy file since fetcher-job is not a Kubernetes service
+	# A dummy file since fetcher-job does not need this
 	touch deploy.yml
