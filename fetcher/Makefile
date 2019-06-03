@@ -46,3 +46,6 @@ _docker_package: _pre_docker_package
 docker_publish: docker_package
 	echo "Publishing $(DOCKER_REPOSITORY):latest"
 	[[ "$(STAGE)" == "local" ]] && echo "Skipping local publishing step - use local docker repo" || $(DOCKER) push $(DOCKER_REPOSITORY):latest
+
+deploy.yml:
+	echo "Skipping deploy.yml because deployment is 'Kustomized'"
