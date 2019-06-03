@@ -96,6 +96,29 @@ resource "aws_codepipeline" "codepipeline" {
       }
     }
   }
+
+  stage {
+    name = "Deploy"
+
+    dynamic "action" {
+      for_each = var.projects
+      iterator = project
+
+      content {
+        name = project.value
+        category = "Build"
+        owner = "AWS"
+        provider = "CodeBuild"
+        input_artifacts = ["build_output-${project.value}"]
+        output_artifacts = []
+        version = "1"
+
+        configuration = {
+          ProjectName = "${project.value}-deploy"
+        }
+      }
+    }
+  }
 }
 
 #############################################################
@@ -144,6 +167,49 @@ resource "aws_codebuild_project" "ci-unit-tests-master" {
 data "template_file" "buildspec-build" {
   count = length(var.projects)
   template = file("buildspec-build.tpl.yml")
+
+  vars = {
+    project = var.projects[count.index]
+  }
+}
+
+
+#############################################################
+# Deploy
+#############################################################
+resource "aws_codebuild_project" "ci-deploy-master" {
+  count         = length(var.projects)
+  name          = "${var.projects[count.index]}-deploy"
+  description   = "Deployment of ${var.projects[count.index]}"
+  build_timeout = "10"
+  service_role  = aws_iam_role.code-build-role.arn
+  badge_enabled = false
+
+  artifacts {
+    type = "NO_ARTIFACTS"
+  }
+
+  environment {
+    compute_type = "BUILD_GENERAL1_SMALL"
+    image = var.ci_docker_image["default"]
+    type = "LINUX_CONTAINER"
+  }
+
+  source {
+    type = "NO_SOURCE"
+    buildspec = data.template_file.buildspec-deploy[count.index].rendered
+  }
+
+  tags = {
+    GithubRepo = "benchmark-ai"
+    GithubOrg  = "MXNetEdge"
+    Workspace  = terraform.workspace
+  }
+}
+
+data "template_file" "buildspec-deploy" {
+  count = length(var.projects)
+  template = file("buildspec-deploy.tpl.yml")
 
   vars = {
     project = var.projects[count.index]

@@ -1,0 +1,18 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - conda create --yes -c conda-forge -p /opt/deploy kubernetes awscli
+      - export PATH=/opt/deploy/bin:$PATH
+  pre_build:
+    commands:
+      - aws eks update-kubeconfig --kubeconfig /tmp/kubeconfig --name benchmark-cluster
+      - export KUBECONFIG=/tmp/kubeconfig
+  build:
+    commands:
+      - cat deploy.yml
+      - |
+        if [ $(stat --printf="%s" deploy.yml) -gt 0 ]; then
+          kubectl apply -f deploy.yml
+        fi
