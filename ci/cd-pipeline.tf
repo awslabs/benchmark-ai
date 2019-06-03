@@ -98,10 +98,13 @@ resource "aws_codepipeline" "codepipeline" {
   }
 }
 
+#############################################################
+# Build
+#############################################################
 resource "aws_codebuild_project" "ci-unit-tests-master" {
   count         = length(var.projects)
-  name          = "${element(var.projects, count.index)}-master"
-  description   = "Master build of ${element(var.projects, count.index)}"
+  name          = "${var.projects[count.index]}-master"
+  description   = "Master build of ${var.projects[count.index]}"
   build_timeout = "10"
   service_role  = aws_iam_role.code-build-role.arn
   badge_enabled = true
@@ -127,7 +130,7 @@ resource "aws_codebuild_project" "ci-unit-tests-master" {
     auth {
       type = "OAUTH"
     }
-    buildspec = data.template_file.buildspec[count.index].rendered
+    buildspec = data.template_file.buildspec-build[count.index].rendered
     report_build_status = true
   }
 
@@ -138,9 +141,9 @@ resource "aws_codebuild_project" "ci-unit-tests-master" {
   }
 }
 
-data "template_file" "buildspec" {
+data "template_file" "buildspec-build" {
   count = length(var.projects)
-  template = file("${path.module}/buildspec.tpl.yml")
+  template = file("buildspec-build.tpl.yml")
 
   vars = {
     project = var.projects[count.index]
