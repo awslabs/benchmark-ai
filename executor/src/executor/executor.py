@@ -1,9 +1,12 @@
-import subprocess
+import abc
 import logging
+import subprocess
+
+from transpiler.bai_knowledge import create_job_yaml_spec
+from transpiler.descriptor import Descriptor
 
 from executor import SERVICE_NAME, __version__
 from executor.config import ExecutorConfig
-from transpiler.bai_knowledge import create_job_yaml_spec
 from bai_kafka_utils.events import (
     FetcherBenchmarkEvent,
     ExecutorPayload,
@@ -19,8 +22,10 @@ from bai_kafka_utils.kafka_service import (
     KafkaServiceConfig,
     KafkaServiceCallbackException,
 )
+
 from bai_kafka_utils.utils import DEFAULT_ENCODING, get_pod_name
 from transpiler.descriptor import DescriptorError
+
 
 logger = logging.getLogger(SERVICE_NAME)
 
@@ -29,8 +34,40 @@ class ExecutorEventHandler(KafkaServiceCallback):
     def __init__(self, executor_config: ExecutorConfig, producer_topic: str):
         self.config = executor_config
         self.producer_topic = producer_topic
+        self.execution_engines = {"kubernetes": KubernetesExecutionEngine(executor_config)}
 
     def handle_event(self, event: FetcherBenchmarkEvent, kafka_service: KafkaService):
+        descriptor = Descriptor(event.payload.toml.contents, self.config.descriptor_config)
+        engine = self.execution_engines[descriptor.execution_engine]
+
+        engine.run_benchmark(event, kafka_service, self)
+
+    def _create_response_event(self, input_event: FetcherBenchmarkEvent, job_id: str, yaml: str):
+        try:
+            job = BenchmarkJob(id=job_id, k8s_yaml=yaml)
+            response_payload = ExecutorPayload.create_from_fetcher_payload(input_event.payload, job)
+            return create_from_object(ExecutorBenchmarkEvent, input_event, payload=response_payload)
+        except ValueError as e:
+            logging.exception(f"Data type problem in the received event: {input_event}")
+            raise KafkaServiceCallbackException from e
+
+    def cleanup(self):
+        pass
+
+
+class ExecutionEngine(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
+    def run_benchmark(self, event: FetcherBenchmarkEvent, kafka_service: KafkaService, handler: ExecutorEventHandler):
+        pass
+
+
+class KubernetesExecutionEngine(ExecutionEngine):
+    def __init__(self, config: ExecutorConfig):
+        self.config = config
+
+    def run_benchmark(
+        self, event: FetcherBenchmarkEvent, kafka_service: KafkaService, event_handler: ExecutorEventHandler
+    ):
         descriptor_contents = event.payload.toml.contents
         fetched_data_sources = event.payload.datasets
         job_id = event.action_id
@@ -47,11 +84,11 @@ class ExecutorEventHandler(KafkaServiceCallback):
             kafka_service.send_status_message_event(event, Status.ERROR, str(e))
             return
 
-        response_event = self._create_response_event(event, job_id, yaml)
+        response_event = event_handler._create_response_event(event, job_id, yaml)
         kafka_service.send_status_message_event(
             response_event, Status.SUCCEEDED, f"Benchmark successfully submitted with job id {job_id}"
         )
-        kafka_service.send_event(response_event, topic=self.producer_topic)
+        kafka_service.send_event(response_event, topic=event_handler.producer_topic)
 
     def _kubernetes_apply(self, yaml: str):
         # Shelling out this command because the kubernetes python client does not have a good way to
@@ -63,18 +100,6 @@ class ExecutorEventHandler(KafkaServiceCallback):
         result = subprocess.check_output(cmd, input=yaml.encode(DEFAULT_ENCODING))
         logger.info(f"Kubectl output: {result}")
         logger.info(f"Job submitted with yaml: \n {yaml}")
-
-    def _create_response_event(self, input_event: FetcherBenchmarkEvent, job_id: str, yaml: str):
-        try:
-            job = BenchmarkJob(id=job_id, k8s_yaml=yaml)
-            response_payload = ExecutorPayload.create_from_fetcher_payload(input_event.payload, job)
-            return create_from_object(ExecutorBenchmarkEvent, input_event, payload=response_payload)
-        except ValueError as e:
-            logging.exception(f"Data type problem in the received event: {input_event}")
-            raise KafkaServiceCallbackException from e
-
-    def cleanup(self):
-        pass
 
 
 def create_executor(common_kafka_cfg: KafkaServiceConfig, executor_config: ExecutorConfig) -> KafkaService:

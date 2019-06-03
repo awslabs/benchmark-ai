@@ -1,10 +1,21 @@
 import textwrap
-
 import toml
 import pytest
 
-from bai_kafka_utils.events import DataSet, BenchmarkDoc, FetcherPayload, BenchmarkEvent
-from bai_kafka_utils.kafka_service import KafkaServiceConfig
+from unittest.mock import create_autospec
+from _pytest.fixtures import fixture
+
+from bai_kafka_utils.events import (
+    DataSet,
+    BenchmarkDoc,
+    FetcherPayload,
+    BenchmarkEvent,
+    create_from_object,
+    FetcherBenchmarkEvent,
+)
+from bai_kafka_utils.kafka_service import KafkaServiceConfig, KafkaService
+from executor.args import create_executor_config
+from executor.executor import ExecutorEventHandler
 from transpiler.descriptor import Descriptor, DescriptorConfig
 from transpiler.bai_knowledge import EnvironmentInfo
 from transpiler.config import BaiConfig
@@ -66,38 +77,43 @@ def bai_config():
 
 
 @pytest.fixture
-def descriptor(descriptor_config, base_data_sources):
-    return Descriptor(
-        toml.loads(
-            textwrap.dedent(
-                f"""\
-        spec_version = '0.1.0'
-        [info]
-        task_name = 'Title'
-        description = 'Description'
-        [hardware]
-        instance_type = 'p3.8xlarge'
-        strategy = 'single_node'
-        [env]
-        docker_image = 'jlcont/benchmarking:270219'
-        privileged = false
-        extended_shm = true
-        [ml]
-        benchmark_code = 'python /home/benchmark/image_classification.py'
-        args = '--model=resnet50_v2 --batch-size=32'
-        [data]
-        id = 'mnist'
-        [[data.sources]]
-        src = '{base_data_sources[0]['src']}'
-        path = '{base_data_sources[0]['path']}'
-        [[data.sources]]
-        src = '{base_data_sources[1]['src']}'
-        path = '{base_data_sources[1]['path']}'
-    """
-            )
-        ),
-        descriptor_config,
+def descriptor_string(base_data_sources):
+    return textwrap.dedent(
+        f"""\
+            spec_version = '0.1.0'
+            [info]
+            task_name = 'Title'
+            description = 'Description'
+            [hardware]
+            instance_type = 'p3.8xlarge'
+            strategy = 'single_node'
+            [env]
+            docker_image = 'jlcont/benchmarking:270219'
+            privileged = false
+            extended_shm = true
+            [ml]
+            benchmark_code = 'python /home/benchmark/image_classification.py'
+            args = '--model=resnet50_v2 --batch-size=32'
+            [data]
+            id = 'mnist'
+            [[data.sources]]
+            src = '{base_data_sources[0]['src']}'
+            path = '{base_data_sources[0]['path']}'
+            [[data.sources]]
+            src = '{base_data_sources[1]['src']}'
+            path = '{base_data_sources[1]['path']}'
+            """
     )
+
+
+@pytest.fixture
+def descriptor_dict(descriptor_string):
+    return toml.loads(descriptor_string)
+
+
+@pytest.fixture
+def descriptor(descriptor_config, descriptor_dict):
+    return Descriptor(descriptor_dict, descriptor_config)
 
 
 @pytest.fixture
@@ -123,6 +139,20 @@ def benchmark_event(shared_datadir):
 
 
 @pytest.fixture
+def benchmark_doc(descriptor_dict, descriptor_string) -> BenchmarkDoc:
+    return BenchmarkDoc(contents=descriptor_dict, doc=descriptor_string, sha1="123")
+
+
+@pytest.fixture
+def benchmark_event_with_data_sets(benchmark_event, benchmark_doc: BenchmarkDoc) -> FetcherBenchmarkEvent:
+    payload = FetcherPayload(
+        toml=benchmark_doc,
+        datasets=[DataSet(src="src1", dst="s3://bucket/object"), DataSet(src="src2", dst="s3://bucket/object2")],
+    )
+    return create_from_object(FetcherBenchmarkEvent, benchmark_event, payload=payload)
+
+
+@pytest.fixture
 def kafka_service_config():
     return KafkaServiceConfig(
         consumer_group_id="CONSUMER_GROUP_ID",
@@ -134,3 +164,14 @@ def kafka_service_config():
         cmd_return_topic="CMD_RETURN",
         status_topic="BAI_APP_STATUS",
     )
+
+
+@pytest.fixture
+def kafka_service() -> KafkaService:
+    return create_autospec(KafkaService)
+
+
+@fixture
+def executor_callback(config_args, kafka_service_config) -> ExecutorEventHandler:
+    config = create_executor_config(config_args)
+    return ExecutorEventHandler(config, kafka_service_config.producer_topic)

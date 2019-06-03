@@ -39,6 +39,7 @@ class Descriptor:
             raise DescriptorError(f"Required field is missing in the descriptor toml file: {e.args[0]}") from e
 
         self.scheduling = descriptor_data["info"].get("scheduling", "single_run")
+        self.execution_engine = descriptor_data["info"].get("execution_engine", "kubernetes")
 
         self.distributed = "distributed" in descriptor_data["hardware"]
         distributed_data = descriptor_data["hardware"].get("distributed", {})

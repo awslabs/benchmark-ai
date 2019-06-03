@@ -20,6 +20,7 @@ description = """ \
     Full job description.\
     """
 scheduling = 'single_run'
+execution_engine = 'kubernetes'
 
 # 1. Hardware
 [hardware]
@@ -82,6 +83,7 @@ path = "/data/tf-imagenet/val"
 | info                   | task_name      | Name of the benchmark job                                                                                                                              | String                                                      | Required          |
 | info                   | description    | Description (informative field)                                                                                                                        | String                                                      | Required          |
 | info                   | scheduling     | Job scheduling: whether to run it a single time or periodically and when    | [Cron expression](https://kubernetes.io/docs/tasks/job/automated-tasks-with-cron-jobs/#schedule) to schedule a job, 'single_run' to run it right away (default)| Optional |
+| info                  | execution_engine| Defines how to execute the benchmark: using the regular BAI Kubernetes engine or SageMaker                                                             | One of ['kubernetes', 'sagemaker'] (default: kubernetes)    | Optional          |
 | hardware               | instance_type  | Type of EC2 instance where the job is to run                                                                                                           | EC2 instance [API name](https://ec2instances.info)          | Required          |
 | hardware               | strategy       | Whether to run on single node or distributed. In the latter case, a distributed strategy, such as horovod or mxnet_parameter_server, must be specified | One of ['single_node', 'horovod', 'mxnet_parameter_server'] | Required          |
 | hardware > distributed | num_instances  | Number of nodes to use for distributed training                                                                                                        | Int                                                         | Optional          |
