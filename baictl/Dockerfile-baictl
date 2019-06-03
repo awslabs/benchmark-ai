@@ -23,7 +23,6 @@ RUN /opt/conda/bin/conda config --add channels conda-forge && \
 # TODO: https://issues.amazon.com/issues/MXBLN-1149
 COPY --from=lachlanevenson/k8s-kubectl:v1.14.2 /usr/local/bin/kubectl /usr/local/bin/kubectl
 
-
 ######################
 # Baictl environment #
 ######################
