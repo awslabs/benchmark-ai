@@ -1,7 +1,11 @@
 FROM clojure
 RUN apt-get update && apt-get install -y \
         make
-RUN mkdir -p /srv/app
+RUN mkdir -p /srv/app /root/.lein/self-installs
+
+# - To make it so you don't have to fetch lein jar put it in etc and uncomment next line
+#COPY etc/leiningen-2.9.1-standalone.jar /root/.lein/self-installs
+
 WORKDIR /srv/app
 COPY project.clj /srv/app/
 RUN lein deps
