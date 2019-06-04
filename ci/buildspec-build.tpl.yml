@@ -1,13 +1,5 @@
 version: 0.2
 
-env:
-  variables:
-    COMMIT_SHORT_HASH: $CODEBUILD_RESOLVED_SOURCE_VERSION
-    VERSION: "latest"
-  #parameter-store:
-     # key: "value"
-     # key: "value"
-
 phases:
   #install:
     #runtime-versions:
@@ -26,7 +18,7 @@ phases:
       - make
   post_build:
     commands:
-      - make deploy.yml
+      - make deploy.yml COMMIT_SHORT_HASH=$CODEBUILD_RESOLVED_SOURCE_VERSION VERSION=latest
 artifacts:
   files:
     - deploy.yml
