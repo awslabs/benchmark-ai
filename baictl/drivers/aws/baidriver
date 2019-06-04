@@ -207,17 +207,17 @@ port_forward() {
 
 _port_forward_grafana(){
     printf "Navigate to 127.0.0.1:3000 to access the Grafana dashboard\nCtrl+C to cancel the session.\n"
-    kubectl port-forward deployment/prometheus-operator-1-grafana 3000
+    ${kubectl} port-forward deployment/prometheus-operator-1-grafana 3000
 }
 
 _port_forward_alertmanager(){
     printf "Navigate to 127.0.0.1:9093 to access the AlertManager dashboard\nCtrl+C to cancel the session.\n"
-    kubectl port-forward deployment/prometheus-operator-1-alertmanager 9093
+    ${kubectl} port-forward deployment/prometheus-operator-1-alertmanager 9093
 }
 
 _port_forward_prometheus(){
     printf "Navigate to 127.0.0.1:9090 to access the Prometheus dashboard\nCtrl+C to cancel the session.\n"
-    kubectl port-forward deployment/prometheus-operator-1-prometheus 9090
+    ${kubectl} port-forward deployment/prometheus-operator-1-prometheus 9090
 }
 
 _create_kafka_topics(){
@@ -256,7 +256,7 @@ _install_kubeflow_operators() {
         cd ks_app || return 1
 
         echo "-> Creating kubeflow namespace"
-        __create_kubeflow_namespace | kubectl apply -f -
+        __create_kubeflow_namespace | ${kubectl} apply -f -
 
         echo "-> Applying kubeflow stuff"
         ks registry add kubeflow https://github.com/kubeflow/kubeflow/tree/v0.4.1/kubeflow && \
