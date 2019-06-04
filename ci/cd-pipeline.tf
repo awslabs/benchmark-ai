@@ -153,7 +153,7 @@ resource "aws_codebuild_project" "ci-unit-tests-master" {
     auth {
       type = "OAUTH"
     }
-    buildspec = data.template_file.buildspec-build[count.index].rendered
+    buildspec = "${var.projects[count.index]}/buildspec.yml"
     report_build_status = true
   }
 
