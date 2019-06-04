@@ -1,0 +1,6 @@
+name: kafka-s3-exporter
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - kafka-python 1.4.*

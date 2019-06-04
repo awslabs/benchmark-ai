@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kafka-s3-exporter
+spec:
+    containers:
+      - image: chancebair/kafka-s3-exporter:latest
+        name: kafka-s3-exporter
+        ports: 
+          - containerPort: 9094
+            name: broker
+            protocol: TCP
+        env:
+          - name: CONNECT_BOOTSTRAP_SERVERS
+            valueFrom:
+              configMapKeyRef:
+                  name: outputs-infrastructure
+                  key: msk_bootstrap_brokers

@@ -307,6 +307,7 @@ def destroy_cloudformation():
     # TODO: Ask whether CloudFormation stack should be destroyed again - this requires the ability to wait for the ECS task to finish first
     pass
 
+
 def get_cloudwatch_logs(boto_session, cloudwatch_log_group, cloudwatch_log_stream, aws_region):
     logs_client = boto_session.client("logs")
     LOG_STREAM_INCREMENT_SECONDS = 10

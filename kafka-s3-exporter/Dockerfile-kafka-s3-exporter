@@ -1,0 +1,18 @@
+FROM confluentinc/cp-kafka-connect-base:5.2.1
+
+RUN confluent-hub install confluentinc/kafka-connect-s3:latest --no-prompt
+
+ENV CONNECT_BOOTSTRAP_SERVERS="b-2.benchmark-cluster.ds33ls.c2.kafka.eu-west-1.amazonaws.com:9094,b-1.benchmark-cluster.ds33ls.c2.kafka.eu-west-1.amazonaws.com:9094,b-3.benchmark-cluster.ds33ls.c2.kafka.eu-west-1.amazonaws.com:9094" \
+    CONNECT_GROUP_ID="idkbro" \
+    CONNECT_CONFIG_STORAGE_TOPIC="idkbro-config" \
+    CONNECT_OFFSET_STORAGE_TOPIC="idkbro-offsets" \
+    CONNECT_STATUS_STORAGE_TOPIC="idkbro-status" \
+    CONNECT_KEY_CONVERTER="org.apache.kafka.connect.json.JsonConverter" \
+    CONNECT_VALUE_CONVERTER="org.apache.kafka.connect.json.JsonConverter" \
+    CONNECT_INTERNAL_KEY_CONVERTER="org.apache.kafka.connect.json.JsonConverter" \
+    CONNECT_INTERNAL_VALUE_CONVERTER="org.apache.kafka.connect.json.JsonConverter" \
+    CONNECT_REST_ADVERTISED_HOST_NAME="kafka-s3-exporter" \
+    KAFKA_VERSION=2.1.0
+
+# TODO: Find root docker file 
+# COPY ./s3-sink.properties /etc/kafka-connect-s3/quickstart-s3.properties
