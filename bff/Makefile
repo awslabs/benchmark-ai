@@ -30,11 +30,11 @@ VERSION ?= $(shell $(VCS_PROG) tag | sed -n -e 's/^$(PROJECT).*-v\([0-9]*\.[0-9]
 COMMIT_SHORT_HASH := $(shell $(VCS_PROG) rev-parse --short HEAD)
 #TAG := $(PROJECT)-v$(VERSION)-$(shell $(VCS_PROG) rev-list $(PROJECT)-v$(VERSION)..HEAD --count)-g$(COMMIT_SHORT_HASH)
 TAG := $(VERSION)-$(COMMIT_SHORT_HASH)
-CHANGE_CAUSE := $(shell $(VCS_PROG) log -1 --pretty=%B)
+CHANGE_CAUSE := $(shell $(VCS_PROG) log -n1 --pretty=short | xargs | sed -n -e 's/.*>.[ ]*\(.*\)/\1/p')
 BRANCH := $(shell $(VCS_PROG) branch | grep '*' | sed -n 's/\*[ ]*//p' | xargs)
-COMMIT := $(shell $(VCS_PROG) log -p -n1 | sed -n -e 's/^commit \(.*\)/\1/p'   | xargs)
-COMMIT_DATE :=   $(shell $(VCS_PROG) log -p -n1 | sed -n -e 's/^Date: \(.*\)/\1/p'   | xargs)
-COMMIT_AUTHOR := $(shell $(VCS_PROG) log -p -n1 | sed -n -e 's/^Author: \(.*\)/\1/p' | xargs)
+COMMIT := $(shell $(VCS_PROG) log -n1 | sed -n -e 's/^commit \(.*\)/\1/p'   | xargs)
+COMMIT_DATE :=   $(shell $(VCS_PROG) log -n1 | sed -n -e 's/^Date: \(.*\)/\1/p'   | xargs)
+COMMIT_AUTHOR := $(shell $(VCS_PROG) log -n1 | sed -n -e 's/^Author: \(.*\)/\1/p' | xargs)
 BUILD_DATE := $(shell date)
 
 #---
@@ -96,10 +96,8 @@ K8S_KUBECTL_ARGS := ${KUBECONFIG} #--kubeconfig=/Users/bellgav/.devo/kubeconfig
 
 compile: $(MAIN_CLASS_FILE)
 
-ensure-lein:
-	chmod a+x $(LEIN)
-
-$(MAIN_CLASS_FILE): ensure-lein project.clj $(CLJ_FILES)
+$(MAIN_CLASS_FILE): project.clj $(CLJ_FILES)
+	$(shell chmod 755 $(LEIN))
 	$(LEIN) compile
 	@touch $@
 
@@ -193,6 +191,7 @@ $(JAR_FILE): $(MAIN_CLASS_FILE)
 	@echo "------------------------"
 	LEIN_SNAPSHOTS_IN_RELEASE=1 ${LEIN} with-profile $(PROFILE) uberjar
 	@unzip -q -c $(JAR_FILE) META-INF/MANIFEST.MF
+	@touch $@
 
 
 dist:	$(JAR_FILE)
@@ -263,7 +262,7 @@ build-deploy-container: dist
 	@sed -e 's|@@PROJECT@@|$(PROJECT)|g' \
 	     -e 's|@@VERSION@@|$(VERSION)|g' \
 	     -e 's|@@TAG@@|$(TAG)|g' \
-             -e 's|@@CHANGE_CAUSE@|$(CHANGE_CAUSE)|g' \
+             -e 's|@@CHANGE_CAUSE@@|$(CHANGE_CAUSE)|g' \
 	     -e 's|@@REPO_SITE@@|$(REPO_SITE)|g' \
 	     -e 's|@@ORGANIZATION@@|$(ORGANIZATION)|g' \
 	     -e 's|@@AUTHOR@@|$(AUTHOR)|g' \
@@ -341,4 +340,4 @@ rollback:
 
 # (may want to put in the k8s cycle here as well scale up and down)
 #----------------------------------------------------------------
-.PHONY: test all docs release clean clean-all compile dist cd-pipeline cd-prepare cd-publish cd-promote container-test
+.PHONY: test all docs release clean clean-all compile dist cd-pipeline cd-prepare cd-publish cd-promote container-test dist
