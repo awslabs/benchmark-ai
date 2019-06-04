@@ -197,21 +197,12 @@ resource "aws_codebuild_project" "ci-deploy-master" {
 
   source {
     type = "NO_SOURCE"
-    buildspec = data.template_file.buildspec-deploy[count.index].rendered
+    buildspec = file("buildspec-deploy.yml")
   }
 
   tags = {
     GithubRepo = "benchmark-ai"
     GithubOrg  = "MXNetEdge"
     Workspace  = terraform.workspace
-  }
-}
-
-data "template_file" "buildspec-deploy" {
-  count = length(var.projects)
-  template = file("buildspec-deploy.tpl.yml")
-
-  vars = {
-    project = var.projects[count.index]
   }
 }
