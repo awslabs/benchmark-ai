@@ -96,6 +96,9 @@ create_infra() {
     ${kubectl} apply -f $project_dir/metrics-pusher/metrics-pusher-roles.yaml
     ${kubectl} apply -f https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended/kubernetes-dashboard.yaml
 
+    echo "==> Adding permission for CodeBuild role to deploy into the Kubernetes cluster"
+    _add_codebuild_role || return 1
+
     _create_configmap_yaml_from_terraform_outputs | $kubectl apply -f -
 
     echo "==> Installing kubeflow operators"
@@ -233,6 +236,14 @@ _create_kafka_topics(){
         echo "---- Topic: ${topic}... DONE"
     done
 
+}
+
+_add_codebuild_role(){
+    local account_id=$(aws sts get-caller-identity | jq -r '.Account') || return 1
+
+    local bash_src=$(readlink -f ${BASH_SOURCE})
+    local src_dir=$(dirname "${bash_src}")
+    python3 ${src_dir}/add_permission_to_aws_auth_configmap.py --role-arn "arn:aws:iam::${account_id}:role/code-build-role" --role-username build --role-groups system:masters || return 1
 }
 
 __create_kubeflow_namespace(){
