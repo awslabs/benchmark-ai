@@ -1,3 +1,8 @@
+"""
+A script to manipulate the `aws-auth` configmap that is created by EKS.
+
+See the docs for more info: https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html
+"""
 import sys
 import tempfile
 
