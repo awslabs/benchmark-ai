@@ -20,6 +20,9 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
 RUN /opt/conda/bin/conda config --add channels conda-forge && \
     /opt/conda/bin/conda update -y -n base conda
 
+# TODO: https://issues.amazon.com/issues/MXBLN-1149
+COPY --from=lachlanevenson/k8s-kubectl:v1.14.2 /usr/local/bin/kubectl /usr/local/bin/kubectl
+
 ######################
 # Baictl environment #
 ######################

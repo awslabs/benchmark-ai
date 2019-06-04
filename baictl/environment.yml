@@ -6,7 +6,8 @@ dependencies:
   - jq >=1.6
   - terraform >=0.11
   - aws-iam-authenticator >=1.11
-  - kubernetes >= 1.13
+  # TODO: https://issues.amazon.com/issues/MXBLN-1149
+  # - kubernetes >= 1.13
   - kubernetes-helm >= 2.13.1
   - ruamel.yaml >= 0.15
   # OS X has no realpath or md5sum.
