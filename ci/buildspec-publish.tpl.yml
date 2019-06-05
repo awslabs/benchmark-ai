@@ -1,0 +1,22 @@
+version: 0.2
+
+env:
+  variables:
+    DOCKERHUB_ORG: ${account_id}.dkr.ecr.${region}.amazonaws.com
+phases:
+  install:
+    runtime-versions:
+      docker: 18
+  build:
+    commands:
+      - env
+      - cd ${project}
+      - make deploy.yml COMMIT_SHORT_HASH=$${CODEBUILD_RESOLVED_SOURCE_VERSION} VERSION=latest DOCKERHUB_ORG=$${DOCKERHUB_ORG}
+      - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
+      - make publish COMMIT_SHORT_HASH=$${CODEBUILD_RESOLVED_SOURCE_VERSION} VERSION=latest DOCKERHUB_ORG=$${DOCKERHUB_ORG}
+artifacts:
+  files:
+    - deploy.yml
+    - deploy/**/*
+  discard-paths: no
+  base-directory: ${project}

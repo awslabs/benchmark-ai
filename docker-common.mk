@@ -26,7 +26,7 @@ _post_docker_package:: _docker_package
 
 docker_package: _post_docker_package
 
-publish: package docker_publish
+publish: docker_publish
 
 docker_publish: docker_package
 	echo "Publishing $(DOCKER_IMAGE_TAG)"
