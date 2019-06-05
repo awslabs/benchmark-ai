@@ -37,15 +37,5 @@ override define fn_k8s_undeploy
 	$(DEPLOY_CONDA_RUN) $(BENCHMARK_DIR)/stage_deploy.sh $(STAGE) delete
 endef
 
-
-# HACK: Overriding also package and publish because the sed approach to automatically replace tags is difficult
-# to use here due to the Kustomize-ness
-_docker_package: _pre_docker_package
-	$(DOCKER) build $(BENCHMARK_DIR) -f $(BENCHMARK_DIR)/Dockerfile-$(PROJECT) -t $(DOCKER_REPOSITORY):latest
-
-docker_publish: docker_package
-	echo "Publishing $(DOCKER_REPOSITORY):latest"
-	[[ "$(STAGE)" == "local" ]] && echo "Skipping local publishing step - use local docker repo" || $(DOCKER) push $(DOCKER_REPOSITORY):latest
-
 deploy.yml:
 	find ./deploy -name '*.yml' -exec sh -c "sed -i -e 's|@@DOCKER_IMAGE_TAG@@|$(DOCKER_IMAGE_TAG)|g' {}" \;
