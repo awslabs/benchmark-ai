@@ -2,7 +2,7 @@ ENV_NAME = fetcher
 
 include ../python-common.mk
 
-PROJECT=fetcher-dispatcher
+PROJECT=fetcher
 
 include ../docker-common.mk
 
