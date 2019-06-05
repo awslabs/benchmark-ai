@@ -7,35 +7,9 @@ print_unsupported_verb() {
 }
 
 _create_configmap_yaml_from_terraform_outputs() {
-    local outputs=$(terraform output -json)
-    local configmap_data=""
-    for row in $(echo "${outputs}" | jq -r 'to_entries | .[] | @base64'); do
-        # Use base64 because the output might contain a \n, which will break this whole loop
-        _jq() {
-            echo ${row} | base64 --decode | jq -r ${1}
-        }
-
-        key=$(_jq '.key')
-        value=$(_jq '.value.value')
-        sensitive=$(_jq '.value.sensitive')
-        # Avoid sensitive and values with newlines
-        if [[ ($sensitive == "false") && ("$value" != *$'\n'*) ]]; then
-            configmap_data="$configmap_data\n  $key: $value"
-        fi
-    done
-
-    # printf => To interpret the \n symbols in the variable
-    # tail => To skip the first line, which should be empty
-    configmap_data=$(printf "$configmap_data" | tail -n +2)
-
-cat << EOF
-apiVersion: v1
-data:
-$configmap_data
-kind: ConfigMap
-metadata:
-  name: outputs-infrastructure
-EOF
+    local bash_src=$(readlink -f ${BASH_SOURCE})
+    local src_dir=$(dirname "${bash_src}")
+    python3 ${src_dir}/add_terraform_outputs_as_configmap.py outputs-infrastructure || return 1
 }
 
 create_infra() {
@@ -99,7 +73,8 @@ create_infra() {
     echo "==> Adding permission for CodeBuild role to deploy into the Kubernetes cluster"
     _add_codebuild_role || return 1
 
-    _create_configmap_yaml_from_terraform_outputs | $kubectl apply -f -
+    echo "==> Creating configmap from Terraform outputs"
+    _create_configmap_yaml_from_terraform_outputs || return 1
 
     echo "==> Installing kubeflow operators"
     _install_kubeflow_operators || return 1
