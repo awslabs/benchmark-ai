@@ -12,11 +12,14 @@ def test_args_azs(config_args):
 def test_list_arg(config_args):
     args = get_args(config_args)
     assert args.valid_strategies == ["single_node", "horovod"]
+    assert args.valid_execution_engines == ["kubernetes"]
 
 
 def test_create_descriptor_config(config_args):
     args = get_args(config_args)
-    expected_config = DescriptorConfig(valid_strategies=args.valid_strategies)
+    expected_config = DescriptorConfig(
+        valid_strategies=args.valid_strategies, valid_execution_engines=args.valid_execution_engines
+    )
     descriptor_config = create_descriptor_config(args)
     assert descriptor_config == expected_config
 
@@ -37,7 +40,9 @@ def test_create_executor_config(config_args):
     executor_config = create_executor_config(config_args)
 
     args = get_args(config_args)
-    expected_descriptor_config = DescriptorConfig(valid_strategies=args.valid_strategies)
+    expected_descriptor_config = DescriptorConfig(
+        valid_strategies=args.valid_strategies, valid_execution_engines=args.valid_execution_engines
+    )
     expected_bai_config = BaiConfig(
         puller_docker_image=args.puller_docker_image,
         puller_mount_chmod=args.puller_mount_chmod,

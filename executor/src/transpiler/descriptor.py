@@ -11,6 +11,7 @@ from crontab import CronSlices
 @dataclass
 class DescriptorConfig:
     valid_strategies: List[str]
+    valid_execution_engines: List[str]
 
 
 class DescriptorError(Exception):
@@ -76,6 +77,12 @@ class Descriptor:
         if self.distributed:
             if self.num_instances <= 1:
                 logging.warning(f"Specified a distributed strategy but using {self.num_instances} nodes")
+
+        if self.execution_engine not in self.config.valid_execution_engines:
+            raise DescriptorError(
+                f"Invalid execution engine: {self.execution_engine} "
+                f"(must be one of {self.config.valid_execution_engines})"
+            )
 
         if self.scheduling != "single_run":
             if not CronSlices.is_valid(self.scheduling):

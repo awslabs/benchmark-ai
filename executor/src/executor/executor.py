@@ -37,9 +37,13 @@ class ExecutorEventHandler(KafkaServiceCallback):
         self.execution_engines = {"kubernetes": KubernetesExecutionEngine(executor_config)}
 
     def handle_event(self, event: FetcherBenchmarkEvent, kafka_service: KafkaService):
-        descriptor = Descriptor(event.payload.toml.contents, self.config.descriptor_config)
-        engine = self.execution_engines[descriptor.execution_engine]
+        try:
+            descriptor = Descriptor(event.payload.toml.contents, self.config.descriptor_config)
+        except DescriptorError as e:
+            logging.exception(f"Error reading descriptor: {str(e)}")
+            raise KafkaServiceCallbackException from e
 
+        engine = self.execution_engines[descriptor.execution_engine]
         engine.run_benchmark(event, kafka_service, self)
 
     def _create_response_event(self, input_event: FetcherBenchmarkEvent, job_id: str, yaml: str):

@@ -66,7 +66,7 @@ def config_args(shared_datadir):
 
 @pytest.fixture
 def descriptor_config():
-    config_values = {"valid_strategies": ["single_node", "horovod"]}
+    config_values = {"valid_strategies": ["single_node", "horovod"], "valid_execution_engines": ["kubernetes"]}
 
     return DescriptorConfig(**config_values)
 

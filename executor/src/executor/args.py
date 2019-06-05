@@ -57,6 +57,14 @@ def get_args(argv):
         help="List of valid strategies such as single_node or horovod",
     )
 
+    parser.add(
+        "--transpiler-valid-execution-engines",
+        type=list_str,
+        env_var="TRANSPILER_VALID_EXECUTION_ENGINES",
+        dest="valid_execution_engines",
+        help="List of valid execution engines, such as kubernetes or sagemaker",
+    )
+
     parser.add("--kubectl", env_var="KUBECTL", help="Path to kubectl in the deployment pod")
 
     parsed_args, _ = parser.parse_known_args(argv)
@@ -64,7 +72,9 @@ def get_args(argv):
 
 
 def create_descriptor_config(args):
-    return DescriptorConfig(valid_strategies=args.valid_strategies)
+    return DescriptorConfig(
+        valid_strategies=args.valid_strategies, valid_execution_engines=args.valid_execution_engines
+    )
 
 
 def create_bai_config(args):

@@ -4,3 +4,4 @@ transpiler-puller-docker-image: stsukrov/puller
 
 # descriptor config
 transpiler-valid-strategies: single_node,horovod
+transpiler-valid-execution-engines: kubernetes
