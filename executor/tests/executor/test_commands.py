@@ -14,6 +14,7 @@ from executor import SERVICE_NAME
 KUBECTL = "kubectl"
 PRODUCER_TOPIC = "OUT_TOPIC"
 ACTION_ID = "ACTION_ID"
+CLIENT_ID = "CLIENT_ID"
 WRONG_COMMAND = "WRONG_COMMAND"
 RETURN_CODE_SUCCESS = 0
 RETURN_VALUE = "Return value"
@@ -27,7 +28,9 @@ def delete_cmd_request_payload():
 
 @pytest.fixture
 def delete_cmd_request_event(benchmark_event, delete_cmd_request_payload):
-    return create_from_object(CommandRequestEvent, benchmark_event, payload=delete_cmd_request_payload)
+    return create_from_object(
+        CommandRequestEvent, benchmark_event, payload=delete_cmd_request_payload, client_id=CLIENT_ID
+    )
 
 
 @pytest.fixture
@@ -37,12 +40,12 @@ def command_handler():
 
 def test_commands_handle_event(mocker, command_handler, delete_cmd_request_event, kafka_service):
     mock_send_response = mocker.patch("executor.commands.ExecutorCommandHandler._send_response_event")
-    mock_delete_job = mocker.patch("executor.commands.ExecutorCommandHandler._delete_job")
+    mock_delete_benchmark = mocker.patch("executor.commands.ExecutorCommandHandler._delete_benchmark")
 
     command_handler.handle_event(delete_cmd_request_event, kafka_service)
 
-    assert mock_delete_job.called_once()
-    mock_delete_job.assert_called_with([ACTION_ID])
+    assert mock_delete_benchmark.called_once()
+    mock_delete_benchmark.assert_called_with([ACTION_ID], CLIENT_ID)
     assert mock_send_response.called_once()
 
 
@@ -59,7 +62,7 @@ def test_argument_missing(command_handler, delete_cmd_request_event, kafka_servi
         command_handler.handle_event(delete_cmd_request_event, kafka_service)
 
 
-def test_delete_job(mocker, command_handler, delete_cmd_request_event, kafka_service):
+def test_delete_benchmark(mocker, command_handler, delete_cmd_request_event, kafka_service):
     mock_check_output = mocker.patch("executor.executor.subprocess.check_output")
 
     command_handler.handle_event(delete_cmd_request_event, kafka_service)
@@ -69,15 +72,17 @@ def test_delete_job(mocker, command_handler, delete_cmd_request_event, kafka_ser
         "delete",
         command_handler.ALL_K8S_RESOURCE_TYPES,
         "--selector",
-        command_handler._create_label_selector(ACTION_ID),
+        command_handler._create_label_selector(ACTION_ID, CLIENT_ID),
     ]
     assert mock_check_output.called_with(expected_call)
 
 
 def test_create_label_selector(command_handler):
-    label_selector = command_handler._create_label_selector(ACTION_ID)
+    label_selector = command_handler._create_label_selector(ACTION_ID, CLIENT_ID)
     expected_label_selector = (
-        f"{command_handler.LABEL_ACTION_ID}={ACTION_ID},{command_handler.LABEL_CREATED_BY}={SERVICE_NAME}"
+        f"{command_handler.LABEL_ACTION_ID}={ACTION_ID},"
+        f"{command_handler.LABEL_CREATED_BY}={SERVICE_NAME},"
+        f"{command_handler.LABEL_CLIENT_ID}={CLIENT_ID}"
     )
     assert label_selector == expected_label_selector
 
