@@ -48,4 +48,4 @@ docker_publish: docker_package
 	[[ "$(STAGE)" == "local" ]] && echo "Skipping local publishing step - use local docker repo" || $(DOCKER) push $(DOCKER_REPOSITORY):latest
 
 deploy.yml:
-	echo "Skipping deploy.yml because deployment is 'Kustomized'"
+	find ./deploy -name '*.yml' -exec sh -c "sed -i -e 's|@@DOCKER_IMAGE_TAG@@|$(DOCKER_IMAGE_TAG)|g' {}" \;

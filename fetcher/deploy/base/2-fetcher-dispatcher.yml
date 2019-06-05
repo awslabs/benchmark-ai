@@ -30,7 +30,7 @@ spec:
         - name: fetcher-dispatcher
           imagePullPolicy: Always
           # TODO: We shouldn't use the :latest tag but the commit short sha
-          image: benchmarkai/fetcher-dispatcher:latest
+          image: @@DOCKER_IMAGE_TAG@@
           env:
             - name: FETCHER_JOB_IMAGE
               valueFrom:
