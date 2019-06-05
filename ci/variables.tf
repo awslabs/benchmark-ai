@@ -32,3 +32,9 @@ variable "ci_docker_image" {
   }
 }
 
+variable "ecr_repo" {
+  type = map(string)
+  default = {
+    "bff" = "bai-bff"
+  }
+}
