@@ -144,7 +144,7 @@ _generate_submit_event() {
         "toml" : {
             "descriptor_filename" : "${descriptor_filename##*/}",
             "sha1" : "$(sha1sum ${descriptor_filename} | awk '{print $1}')",
-            "doc"  : "$(base64  ${descriptor_filename})"
+            "doc"  : "$(base64 $([[ $(uname) != "Darwin" ]] && echo -n "--wrap=0")  ${descriptor_filename})"
         }
     }
 }
