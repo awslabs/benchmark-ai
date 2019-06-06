@@ -136,7 +136,11 @@ _generate_submit_event() {
     local client_username=$(whoami)
     local date=$(date -u +"%a %b %d %H:%M:%S %Z %Y")
     local sha1=$(sha1sum ${descriptor_filename} | awk '{print $1}')
-    local doc=$(base64 --wrap=0 ${descriptor_filename})
+    if [[ $(uname) == "Darwin" ]]; then
+        local doc=$(base64 ${descriptor_filename})
+    else
+        local doc=$(base64 --wrap=0 ${descriptor_filename})
+    fi
     local event=$(cat <<-EOF
 {
     "message_id" : "${message_id}",
