@@ -94,7 +94,7 @@ resource "aws_iam_role" "code-build-role" {
   EOF
 }
 
-resource "aws_iam_role_policy" "code-build-role-policy" {
+resource "aws_iam_role_policy" "code-build-role-policy-logs-permissions" {
   name = "logs-permissions"
   role = aws_iam_role.code-build-role.name
 
@@ -118,9 +118,40 @@ resource "aws_iam_role_policy" "code-build-role-policy" {
   EOF
 }
 
-resource "aws_iam_role_policy_attachment" "codebuild-attachment" {
+resource "aws_iam_role_policy" "code-build-role-policy-eks-all-actions" {
+  name = "eks-all-actions"
+  role = aws_iam_role.code-build-role.name
+
+  policy = <<-EOF
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "eks:ListClusters",
+                "eks:CreateCluster"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "eks:*",
+            "Resource": "arn:aws:eks:us-east-1:${data.aws_caller_identity.current.account_id}:cluster/benchmark-cluster"
+        }
+    ]
+  }
+  EOF
+}
+
+resource "aws_iam_role_policy_attachment" "build-artifacts" {
   role = aws_iam_role.code-build-role.name
   policy_arn = aws_iam_policy.build-artifacts.arn
+}
+
+resource "aws_iam_role_policy_attachment" "ecr-permissions" {
+  role = aws_iam_role.code-build-role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
 }
 
 resource "aws_codebuild_project" "ci-unit-tests" {
