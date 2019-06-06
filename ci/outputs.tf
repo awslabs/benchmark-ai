@@ -5,3 +5,6 @@ output "ci-unit-tests-badge-url" {
   )
 }
 
+output "chime-hook-url-arn" {
+  value = aws_secretsmanager_secret.secret-chime-hook-url.arn
+}
