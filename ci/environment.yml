@@ -1,0 +1,6 @@
+name: ci
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - terraform 0.12.*
