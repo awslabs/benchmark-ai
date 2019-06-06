@@ -1,0 +1,9 @@
+name: bai-client
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - requests
+  - pip
+  - pip:
+    - dataclasses-json
