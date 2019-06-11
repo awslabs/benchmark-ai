@@ -1,5 +1,6 @@
 import base64
 import json
+import logging
 
 import datetime
 import getpass
@@ -17,6 +18,8 @@ from bai_kafka_utils.events import VisitedService, BenchmarkPayload, BenchmarkDo
 from .__version__ import __version__
 
 SERVICE_NAME = "bai-client"
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass_json
@@ -107,6 +110,8 @@ class BaiClient:
         event = create_submit_event(descriptor_filename)
         event_to_json = event.to_json()
         with requests.Session() as session:
+            logger.info(f"Submitting {path}")
+            logger.debug(f"Submit event for {path}: {event}")
             response = session.post(self.endpoint + "/api/job/descriptor", data=event_to_json)
             self._handle_response(response)
             return response.text
