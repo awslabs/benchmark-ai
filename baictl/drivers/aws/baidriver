@@ -190,12 +190,12 @@ _port_forward_grafana(){
 
 _port_forward_alertmanager(){
     printf "Navigate to 127.0.0.1:9093 to access the AlertManager dashboard\nCtrl+C to cancel the session.\n"
-    ${kubectl} port-forward deployment/prometheus-operator-1-alertmanager 9093
+    ${kubectl} port-forward alertmanager-prometheus-operator-1-alertmanager-0 9093
 }
 
 _port_forward_prometheus(){
     printf "Navigate to 127.0.0.1:9090 to access the Prometheus dashboard\nCtrl+C to cancel the session.\n"
-    ${kubectl} port-forward deployment/prometheus-operator-1-prometheus 9090
+    ${kubectl} port-forward prometheus-prometheus-operator-1-prometheus-0 9090
 }
 
 _create_kafka_topics(){
