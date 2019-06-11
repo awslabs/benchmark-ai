@@ -68,6 +68,12 @@ def create_submit_event(descriptor_filename) -> SubmitEvent:
 
 
 class BaiClient:
+    """
+    A "low-level" client for BAI.
+
+    Each method is meant to be a 1:1 translation of the REST api provided by BAI.
+    """
+
     BAI_HOME = Path.home() / ".bai"
 
     def __init__(self, endpoint=None):
