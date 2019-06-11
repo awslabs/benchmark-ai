@@ -89,7 +89,7 @@ KAFKA_SINK_TOPICS := BAI_APP_BFF,CMD_SUBMIT
 #docker run -it --rm -v "$PWD":/srv/app -w /srv/app gavin/bai-bff-dev <command>
 
 #HACK!!!!
-K8S_KUBECTL_ARGS := ${KUBECONFIG} #--kubeconfig=/Users/bellgav/.devo/kubeconfig
+K8S_KUBECTL_ARGS := --kubeconfig=${KUBECONFIG} #--kubeconfig=/Users/bellgav/.devo/kubeconfig
 #----------------------------------------------------------------
 # The pipeline: clean-all -> build -> test -> package -> publish -> deploy
 #----------------------------------------------------------------
