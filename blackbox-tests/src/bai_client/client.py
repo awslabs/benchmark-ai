@@ -1,23 +1,20 @@
 import base64
 import json
 import logging
-
 import datetime
 import getpass
 import hashlib
 import socket
-from dataclasses import dataclass
-from typing import List, Dict
-
-from dataclasses_json import dataclass_json
-from pathlib import Path
 import uuid
 import requests
-
+from dataclasses import dataclass
+from typing import List, Dict
+from dataclasses_json import dataclass_json
+from pathlib import Path
 from bai_kafka_utils.events import VisitedService, BenchmarkPayload, BenchmarkDoc, StatusMessageBenchmarkEvent
 from .__version__ import __version__
 
-SERVICE_NAME = "bai-client"
+SERVICE_NAME = "bai-client-python"
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +35,8 @@ class SubmitEvent:
 def _sha1sum(string: str):
     sha1 = hashlib.sha1()
     sha1.update(string.encode("utf-8"))
-    return sha1.hexdigest()
+    hexdigest = sha1.hexdigest()
+    return hexdigest
 
 
 def get_client_id() -> str:
@@ -76,10 +74,18 @@ def _convert_status_json_response(json_string: str) -> List[StatusMessageBenchma
 
     # Deserializing and serializing each element looks like a very nasty hack, but I find it to be more elegant than
     # using `dacite` because dacite does not handle the convertion from `str` => `Enum`.
-    return [
-        StatusMessageBenchmarkEvent.from_json(json.dumps(status_message_as_dict))
-        for status_message_as_dict in status_messages
-    ]
+    ret = []
+    for status_message_as_dict in status_messages:
+        dumped_json = json.dumps(status_message_as_dict)
+        try:
+            status_message_event = StatusMessageBenchmarkEvent.from_json(dumped_json)
+        except Exception:
+            logger.error(f"Failed to deserialize the following json: {dumped_json}\n")
+            continue
+            # HACK: should probably raise the exception here, but BFF must comply with the schema
+            # raise
+        ret.append(status_message_event)
+    return ret
 
 
 class BaiClient:
@@ -100,7 +106,7 @@ class BaiClient:
                 endpoint = "http://localhost:8080"
         self.endpoint = endpoint
 
-    def submit(self, descriptor_filename) -> str:
+    def submit(self, descriptor_filename: str) -> str:
         """
         :return: The action id
         """
@@ -120,7 +126,7 @@ class BaiClient:
         if client_id is None:
             client_id = get_client_id()
         with requests.Session() as session:
-            response = session.get(self.endpoint + f"/api/job/{client_id}/{action_id}")
+            response = session.get(self.endpoint + f"/api/job/{client_id}/{action_id}?since=0")
             self._handle_response(response)
             return _convert_status_json_response(response.text)
 

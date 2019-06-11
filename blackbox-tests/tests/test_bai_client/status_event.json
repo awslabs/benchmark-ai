@@ -1,30 +1,9 @@
 [
   {
-    "action_id": "5132b556-f759-48fa-895a-614974a31f70",
-    "authenticated": false,
-    "client_id": "55fa1af2a811b6f169c0f106da47849a1334a494",
-    "client_username": "muenze",
-    "client_version": "0.1",
-    "message": "fetcher-dispatcher service, node fetcher-dispatcher-5b9cdb9d-8m6zq: Processing event...",
-    "message_id": "5d7427c2-f8ba-4514-b6a4-5d3581ec884c",
+    "date": "Wed Jun 19 13:32:09  2019",
     "payload": {
-      "datasets": [],
       "toml": {
         "contents": {
-          "env": {
-            "docker_image": "benchmarkai/hello-world:latest"
-          },
-          "hardware": {
-            "instance_type": "t3.small",
-            "strategy": "single_node"
-          },
-          "info": {
-            "description": " A hello world example of using Benchmark AI",
-            "task_name": "Hello world"
-          },
-          "ml": {
-            "benchmark_code": "python3 hello-world.py"
-          },
           "output": {
             "metrics": [
               "epoch",
@@ -33,64 +12,62 @@
               "accuracy"
             ]
           },
-          "spec_version": "0.1.0"
+          "spec_version": "0.1.0",
+          "env": {
+            "docker_image": "benchmarkai/hello-world:latest"
+          },
+          "info": {
+            "task_name": "Hello world",
+            "description": " A hello world example of using Benchmark AI"
+          },
+          "hardware": {
+            "strategy": "single_node",
+            "instance_type": "t3.small"
+          },
+          "ml": {
+            "benchmark_code": "python3 hello-world.py"
+          }
         },
-        "descriptor_filename": "/home/ANT.AMAZON.COM/muenze/Projects/benchmark-ai/sample-benchmarks/hello-world/descriptor.toml",
         "doc": "IyBCZW5jaG1hcmtBSSBtZXRhCnNwZWNfdmVyc2lvbiA9ICIwLjEuMCIKCiMgVGhlc2UgZmllbGRzIGRvbid0IGhhdmUgYW55IGltcGFjdCBvbiB0aGUgam9iIHRvIHJ1biwgdGhleSBjb250YWluCiMgbWVyZWx5IGluZm9ybWF0aXZlIGRhdGEgc28gdGhlIGJlbmNobWFyayBjYW4gYmUgY2F0ZWdvcml6ZWQgd2hlbiBkaXNwbGF5ZWQKIyBpbiB0aGUgZGFzaGJvYXJkLgpbaW5mb10KdGFza19uYW1lID0gIkhlbGxvIHdvcmxkIgpkZXNjcmlwdGlvbiA9ICIiIiBcCiAgICBBIGhlbGxvIHdvcmxkIGV4YW1wbGUgb2YgdXNpbmcgQmVuY2htYXJrIEFJXAogICAgIiIiCgojIDEuIEhhcmR3YXJlCltoYXJkd2FyZV0KaW5zdGFuY2VfdHlwZSA9ICJ0My5zbWFsbCIKc3RyYXRlZ3kgPSAic2luZ2xlX25vZGUiCgojIDIuIEVudmlyb25tZW50CltlbnZdCiMgRG9ja2VyIGh1YiA8aHViLXVzZXI+LzxyZXBvLW5hbWU+Ojx0YWc+IApkb2NrZXJfaW1hZ2UgPSAiYmVuY2htYXJrYWkvaGVsbG8td29ybGQ6bGF0ZXN0IgoKIyAzLiBNYWNoaW5lIGxlYXJuaW5nIHJlbGF0ZWQgc2V0dGluZ3M6IAojIGRhdGFzZXQsIGJlbmNobWFyayBjb2RlIGFuZCBwYXJhbWV0ZXJzIGl0IHRha2VzClttbF0KYmVuY2htYXJrX2NvZGUgPSAicHl0aG9uMyBoZWxsby13b3JsZC5weSIKCiMgNC4gT3V0cHV0CltvdXRwdXRdCiMgRGVmaW5lIHdoaWNoIG1ldHJpY3Mgd2lsbCBiZSB0cmFja2VkIGluIHRoaXMgYmVuY2htYXJrCm1ldHJpY3MgPSBbImVwb2NoIiwgInRyYWluX2xvc3MiLCAibG9zcyIsICJhY2N1cmFjeSJdCg==",
         "sha1": "fb2a4584049fdfe1a03ad54371e959560b82c802",
+        "descriptor_filename": "/home/ANT.AMAZON.COM/muenze/Projects/benchmark-ai/sample-benchmarks/hello-world/descriptor.toml",
         "verified": false
-      }
+      },
+      "datasets": []
     },
-    "status": "PENDING",
-    "tstamp": 1560244102914,
+    "tstamp": 1560951129853,
     "type": "BAI_APP_STATUS",
+    "action_id": "1e3632cc-52c6-45af-a9b8-ffa3233f82cf",
     "visited": [
       {
-        "node": null,
         "svc": "bai-client",
-        "tstamp": 1560236902,
-        "version": "0.1"
+        "tstamp": 1560943929,
+        "version": "0.1",
+        "node": null
       },
       {
-        "node": "bai-bff-56d58b5874-5xdx8",
         "svc": "bai-bff",
-        "tstamp": 1560244102914,
-        "version": "latest"
+        "tstamp": 1560951129847,
+        "version": "latest",
+        "node": "bai-bff-5f9cc5dbf-nfhjd"
       },
       {
-        "node": "fetcher-dispatcher-5b9cdb9d-8m6zq",
-        "svc": "fetcher-dispatcher",
-        "tstamp": 1560244103145,
-        "version": "1.0"
+        "svc": "bai-bff",
+        "tstamp": 1560951129853,
+        "version": "latest",
+        "node": "bai-bff-5f9cc5dbf-nfhjd"
       }
-    ]
+    ],
+    "message_id": "b8290c95-bc95-4fad-9780-99b15030b60b",
+    "status": "SUBMITTED",
+    "client_id": "55fa1af2a811b6f169c0f106da47849a1334a494",
+    "message": "Submission has been successfully received..."
   },
   {
-    "action_id": "5132b556-f759-48fa-895a-614974a31f70",
     "authenticated": false,
-    "client_id": "55fa1af2a811b6f169c0f106da47849a1334a494",
-    "client_username": "muenze",
-    "client_version": "0.1",
-    "message": "Nothing to fetch",
-    "message_id": "86b6136d-a85d-40a1-9e97-760e20c414e2",
     "payload": {
-      "datasets": [],
       "toml": {
         "contents": {
-          "env": {
-            "docker_image": "benchmarkai/hello-world:latest"
-          },
-          "hardware": {
-            "instance_type": "t3.small",
-            "strategy": "single_node"
-          },
-          "info": {
-            "description": " A hello world example of using Benchmark AI",
-            "task_name": "Hello world"
-          },
-          "ml": {
-            "benchmark_code": "python3 hello-world.py"
-          },
           "output": {
             "metrics": [
               "epoch",
@@ -99,64 +76,130 @@
               "accuracy"
             ]
           },
-          "spec_version": "0.1.0"
+          "spec_version": "0.1.0",
+          "env": {
+            "docker_image": "benchmarkai/hello-world:latest"
+          },
+          "info": {
+            "task_name": "Hello world",
+            "description": " A hello world example of using Benchmark AI"
+          },
+          "hardware": {
+            "strategy": "single_node",
+            "instance_type": "t3.small"
+          },
+          "ml": {
+            "benchmark_code": "python3 hello-world.py"
+          }
         },
-        "descriptor_filename": "/home/ANT.AMAZON.COM/muenze/Projects/benchmark-ai/sample-benchmarks/hello-world/descriptor.toml",
         "doc": "IyBCZW5jaG1hcmtBSSBtZXRhCnNwZWNfdmVyc2lvbiA9ICIwLjEuMCIKCiMgVGhlc2UgZmllbGRzIGRvbid0IGhhdmUgYW55IGltcGFjdCBvbiB0aGUgam9iIHRvIHJ1biwgdGhleSBjb250YWluCiMgbWVyZWx5IGluZm9ybWF0aXZlIGRhdGEgc28gdGhlIGJlbmNobWFyayBjYW4gYmUgY2F0ZWdvcml6ZWQgd2hlbiBkaXNwbGF5ZWQKIyBpbiB0aGUgZGFzaGJvYXJkLgpbaW5mb10KdGFza19uYW1lID0gIkhlbGxvIHdvcmxkIgpkZXNjcmlwdGlvbiA9ICIiIiBcCiAgICBBIGhlbGxvIHdvcmxkIGV4YW1wbGUgb2YgdXNpbmcgQmVuY2htYXJrIEFJXAogICAgIiIiCgojIDEuIEhhcmR3YXJlCltoYXJkd2FyZV0KaW5zdGFuY2VfdHlwZSA9ICJ0My5zbWFsbCIKc3RyYXRlZ3kgPSAic2luZ2xlX25vZGUiCgojIDIuIEVudmlyb25tZW50CltlbnZdCiMgRG9ja2VyIGh1YiA8aHViLXVzZXI+LzxyZXBvLW5hbWU+Ojx0YWc+IApkb2NrZXJfaW1hZ2UgPSAiYmVuY2htYXJrYWkvaGVsbG8td29ybGQ6bGF0ZXN0IgoKIyAzLiBNYWNoaW5lIGxlYXJuaW5nIHJlbGF0ZWQgc2V0dGluZ3M6IAojIGRhdGFzZXQsIGJlbmNobWFyayBjb2RlIGFuZCBwYXJhbWV0ZXJzIGl0IHRha2VzClttbF0KYmVuY2htYXJrX2NvZGUgPSAicHl0aG9uMyBoZWxsby13b3JsZC5weSIKCiMgNC4gT3V0cHV0CltvdXRwdXRdCiMgRGVmaW5lIHdoaWNoIG1ldHJpY3Mgd2lsbCBiZSB0cmFja2VkIGluIHRoaXMgYmVuY2htYXJrCm1ldHJpY3MgPSBbImVwb2NoIiwgInRyYWluX2xvc3MiLCAibG9zcyIsICJhY2N1cmFjeSJdCg==",
         "sha1": "fb2a4584049fdfe1a03ad54371e959560b82c802",
+        "descriptor_filename": "/home/ANT.AMAZON.COM/muenze/Projects/benchmark-ai/sample-benchmarks/hello-world/descriptor.toml",
         "verified": false
-      }
+      },
+      "datasets": []
     },
+    "tstamp": 1560951129847,
+    "client_username": "muenze",
+    "type": "BAI_APP_STATUS",
+    "action_id": "1e3632cc-52c6-45af-a9b8-ffa3233f82cf",
+    "visited": [
+      {
+        "svc": "bai-client",
+        "tstamp": 1560943929,
+        "version": "0.1",
+        "node": null
+      },
+      {
+        "svc": "bai-bff",
+        "tstamp": 1560951129847,
+        "version": "latest",
+        "node": "bai-bff-5f9cc5dbf-nfhjd"
+      },
+      {
+        "svc": "fetcher-dispatcher",
+        "tstamp": 1560951129863,
+        "version": "1.0",
+        "node": "fetcher-dispatcher-8446f8fdb7-zszzj"
+      }
+    ],
+    "message_id": "634484e4-38a8-4d35-baa1-0be09c78d7b4",
+    "status": "PENDING",
+    "client_id": "55fa1af2a811b6f169c0f106da47849a1334a494",
+    "client_version": "0.1",
+    "message": "fetcher-dispatcher service, node fetcher-dispatcher-8446f8fdb7-zszzj: Processing event..."
+  },
+  {
+    "authenticated": false,
+    "payload": {
+      "toml": {
+        "contents": {
+          "output": {
+            "metrics": [
+              "epoch",
+              "train_loss",
+              "loss",
+              "accuracy"
+            ]
+          },
+          "spec_version": "0.1.0",
+          "env": {
+            "docker_image": "benchmarkai/hello-world:latest"
+          },
+          "info": {
+            "task_name": "Hello world",
+            "description": " A hello world example of using Benchmark AI"
+          },
+          "hardware": {
+            "strategy": "single_node",
+            "instance_type": "t3.small"
+          },
+          "ml": {
+            "benchmark_code": "python3 hello-world.py"
+          }
+        },
+        "doc": "IyBCZW5jaG1hcmtBSSBtZXRhCnNwZWNfdmVyc2lvbiA9ICIwLjEuMCIKCiMgVGhlc2UgZmllbGRzIGRvbid0IGhhdmUgYW55IGltcGFjdCBvbiB0aGUgam9iIHRvIHJ1biwgdGhleSBjb250YWluCiMgbWVyZWx5IGluZm9ybWF0aXZlIGRhdGEgc28gdGhlIGJlbmNobWFyayBjYW4gYmUgY2F0ZWdvcml6ZWQgd2hlbiBkaXNwbGF5ZWQKIyBpbiB0aGUgZGFzaGJvYXJkLgpbaW5mb10KdGFza19uYW1lID0gIkhlbGxvIHdvcmxkIgpkZXNjcmlwdGlvbiA9ICIiIiBcCiAgICBBIGhlbGxvIHdvcmxkIGV4YW1wbGUgb2YgdXNpbmcgQmVuY2htYXJrIEFJXAogICAgIiIiCgojIDEuIEhhcmR3YXJlCltoYXJkd2FyZV0KaW5zdGFuY2VfdHlwZSA9ICJ0My5zbWFsbCIKc3RyYXRlZ3kgPSAic2luZ2xlX25vZGUiCgojIDIuIEVudmlyb25tZW50CltlbnZdCiMgRG9ja2VyIGh1YiA8aHViLXVzZXI+LzxyZXBvLW5hbWU+Ojx0YWc+IApkb2NrZXJfaW1hZ2UgPSAiYmVuY2htYXJrYWkvaGVsbG8td29ybGQ6bGF0ZXN0IgoKIyAzLiBNYWNoaW5lIGxlYXJuaW5nIHJlbGF0ZWQgc2V0dGluZ3M6IAojIGRhdGFzZXQsIGJlbmNobWFyayBjb2RlIGFuZCBwYXJhbWV0ZXJzIGl0IHRha2VzClttbF0KYmVuY2htYXJrX2NvZGUgPSAicHl0aG9uMyBoZWxsby13b3JsZC5weSIKCiMgNC4gT3V0cHV0CltvdXRwdXRdCiMgRGVmaW5lIHdoaWNoIG1ldHJpY3Mgd2lsbCBiZSB0cmFja2VkIGluIHRoaXMgYmVuY2htYXJrCm1ldHJpY3MgPSBbImVwb2NoIiwgInRyYWluX2xvc3MiLCAibG9zcyIsICJhY2N1cmFjeSJdCg==",
+        "sha1": "fb2a4584049fdfe1a03ad54371e959560b82c802",
+        "descriptor_filename": "/home/ANT.AMAZON.COM/muenze/Projects/benchmark-ai/sample-benchmarks/hello-world/descriptor.toml",
+        "verified": false
+      },
+      "datasets": []
+    },
+    "tstamp": 1560951129847,
+    "client_username": "muenze",
+    "type": "BAI_APP_STATUS",
+    "action_id": "1e3632cc-52c6-45af-a9b8-ffa3233f82cf",
+    "visited": [
+      {
+        "svc": "bai-client",
+        "tstamp": 1560943929,
+        "version": "0.1",
+        "node": null
+      },
+      {
+        "svc": "bai-bff",
+        "tstamp": 1560951129847,
+        "version": "latest",
+        "node": "bai-bff-5f9cc5dbf-nfhjd"
+      },
+      {
+        "svc": "fetcher-dispatcher",
+        "tstamp": 1560951129866,
+        "version": "1.0",
+        "node": "fetcher-dispatcher-8446f8fdb7-zszzj"
+      }
+    ],
+    "message_id": "3528ea79-f1c9-4992-ac5d-954cdd1ef119",
     "status": "SUCCEEDED",
-    "tstamp": 1560244102914,
-    "type": "BAI_APP_STATUS",
-    "visited": [
-      {
-        "node": null,
-        "svc": "bai-client",
-        "tstamp": 1560236902,
-        "version": "0.1"
-      },
-      {
-        "node": "bai-bff-56d58b5874-5xdx8",
-        "svc": "bai-bff",
-        "tstamp": 1560244102914,
-        "version": "latest"
-      },
-      {
-        "node": "fetcher-dispatcher-5b9cdb9d-8m6zq",
-        "svc": "fetcher-dispatcher",
-        "tstamp": 1560244103185,
-        "version": "1.0"
-      }
-    ]
+    "client_id": "55fa1af2a811b6f169c0f106da47849a1334a494",
+    "client_version": "0.1",
+    "message": "Nothing to fetch"
   },
   {
-    "action_id": "5132b556-f759-48fa-895a-614974a31f70",
     "authenticated": false,
-    "client_id": "55fa1af2a811b6f169c0f106da47849a1334a494",
-    "client_username": "muenze",
-    "client_version": "0.1",
-    "message": "executor service, node executor-ff658fccf-msvw5: Processing event...",
-    "message_id": "4b4ae4e2-467c-42ba-8e06-81595566f521",
     "payload": {
-      "datasets": [],
       "toml": {
         "contents": {
-          "env": {
-            "docker_image": "benchmarkai/hello-world:latest"
-          },
-          "hardware": {
-            "instance_type": "t3.small",
-            "strategy": "single_node"
-          },
-          "info": {
-            "description": " A hello world example of using Benchmark AI",
-            "task_name": "Hello world"
-          },
-          "ml": {
-            "benchmark_code": "python3 hello-world.py"
-          },
           "output": {
             "metrics": [
               "epoch",
@@ -165,152 +208,147 @@
               "accuracy"
             ]
           },
-          "spec_version": "0.1.0"
+          "spec_version": "0.1.0",
+          "env": {
+            "docker_image": "benchmarkai/hello-world:latest"
+          },
+          "info": {
+            "task_name": "Hello world",
+            "description": " A hello world example of using Benchmark AI"
+          },
+          "hardware": {
+            "strategy": "single_node",
+            "instance_type": "t3.small"
+          },
+          "ml": {
+            "benchmark_code": "python3 hello-world.py"
+          }
         },
-        "descriptor_filename": "/home/ANT.AMAZON.COM/muenze/Projects/benchmark-ai/sample-benchmarks/hello-world/descriptor.toml",
         "doc": "IyBCZW5jaG1hcmtBSSBtZXRhCnNwZWNfdmVyc2lvbiA9ICIwLjEuMCIKCiMgVGhlc2UgZmllbGRzIGRvbid0IGhhdmUgYW55IGltcGFjdCBvbiB0aGUgam9iIHRvIHJ1biwgdGhleSBjb250YWluCiMgbWVyZWx5IGluZm9ybWF0aXZlIGRhdGEgc28gdGhlIGJlbmNobWFyayBjYW4gYmUgY2F0ZWdvcml6ZWQgd2hlbiBkaXNwbGF5ZWQKIyBpbiB0aGUgZGFzaGJvYXJkLgpbaW5mb10KdGFza19uYW1lID0gIkhlbGxvIHdvcmxkIgpkZXNjcmlwdGlvbiA9ICIiIiBcCiAgICBBIGhlbGxvIHdvcmxkIGV4YW1wbGUgb2YgdXNpbmcgQmVuY2htYXJrIEFJXAogICAgIiIiCgojIDEuIEhhcmR3YXJlCltoYXJkd2FyZV0KaW5zdGFuY2VfdHlwZSA9ICJ0My5zbWFsbCIKc3RyYXRlZ3kgPSAic2luZ2xlX25vZGUiCgojIDIuIEVudmlyb25tZW50CltlbnZdCiMgRG9ja2VyIGh1YiA8aHViLXVzZXI+LzxyZXBvLW5hbWU+Ojx0YWc+IApkb2NrZXJfaW1hZ2UgPSAiYmVuY2htYXJrYWkvaGVsbG8td29ybGQ6bGF0ZXN0IgoKIyAzLiBNYWNoaW5lIGxlYXJuaW5nIHJlbGF0ZWQgc2V0dGluZ3M6IAojIGRhdGFzZXQsIGJlbmNobWFyayBjb2RlIGFuZCBwYXJhbWV0ZXJzIGl0IHRha2VzClttbF0KYmVuY2htYXJrX2NvZGUgPSAicHl0aG9uMyBoZWxsby13b3JsZC5weSIKCiMgNC4gT3V0cHV0CltvdXRwdXRdCiMgRGVmaW5lIHdoaWNoIG1ldHJpY3Mgd2lsbCBiZSB0cmFja2VkIGluIHRoaXMgYmVuY2htYXJrCm1ldHJpY3MgPSBbImVwb2NoIiwgInRyYWluX2xvc3MiLCAibG9zcyIsICJhY2N1cmFjeSJdCg==",
         "sha1": "fb2a4584049fdfe1a03ad54371e959560b82c802",
+        "descriptor_filename": "/home/ANT.AMAZON.COM/muenze/Projects/benchmark-ai/sample-benchmarks/hello-world/descriptor.toml",
         "verified": false
-      }
+      },
+      "datasets": []
     },
-    "status": "PENDING",
-    "tstamp": 1560244102914,
+    "tstamp": 1560951129847,
+    "client_username": "muenze",
     "type": "BAI_APP_STATUS",
+    "action_id": "1e3632cc-52c6-45af-a9b8-ffa3233f82cf",
     "visited": [
       {
-        "node": null,
         "svc": "bai-client",
-        "tstamp": 1560236902,
-        "version": "0.1"
+        "tstamp": 1560943929,
+        "version": "0.1",
+        "node": null
       },
       {
-        "node": "bai-bff-56d58b5874-5xdx8",
         "svc": "bai-bff",
-        "tstamp": 1560244102914,
-        "version": "latest"
+        "tstamp": 1560951129847,
+        "version": "latest",
+        "node": "bai-bff-5f9cc5dbf-nfhjd"
       },
       {
-        "node": "fetcher-dispatcher-5b9cdb9d-8m6zq",
         "svc": "fetcher-dispatcher",
-        "tstamp": 1560244103187,
-        "version": "1.0"
+        "tstamp": 1560951129872,
+        "version": "1.0",
+        "node": "fetcher-dispatcher-8446f8fdb7-zszzj"
       },
       {
-        "node": "executor-ff658fccf-msvw5",
         "svc": "executor",
-        "tstamp": 1560244103303,
-        "version": "1.0"
+        "tstamp": 1560951129882,
+        "version": "1.0",
+        "node": "executor-6d8889cb46-kh9nn"
       }
-    ]
+    ],
+    "message_id": "3abda9dd-fe02-48a6-95d8-a64f894f79f6",
+    "status": "PENDING",
+    "client_id": "55fa1af2a811b6f169c0f106da47849a1334a494",
+    "client_version": "0.1",
+    "message": "executor service, node executor-6d8889cb46-kh9nn: Processing event..."
   },
   {
-    "action_id": "5132b556-f759-48fa-895a-614974a31f70",
     "authenticated": false,
-    "client_id": "55fa1af2a811b6f169c0f106da47849a1334a494",
-    "client_username": "muenze",
-    "client_version": "0.1",
-    "message": "Benchmark successfully submitted with job id 5132b556-f759-48fa-895a-614974a31f70",
-    "message_id": "0cb645d9-72ff-4302-963d-3784d186dbe4",
     "payload": {
+      "toml": {
+        "contents": {
+          "output": {
+            "metrics": [
+              "epoch",
+              "train_loss",
+              "loss",
+              "accuracy"
+            ]
+          },
+          "spec_version": "0.1.0",
+          "env": {
+            "docker_image": "benchmarkai/hello-world:latest"
+          },
+          "info": {
+            "task_name": "Hello world",
+            "description": " A hello world example of using Benchmark AI"
+          },
+          "hardware": {
+            "strategy": "single_node",
+            "instance_type": "t3.small"
+          },
+          "ml": {
+            "benchmark_code": "python3 hello-world.py"
+          }
+        },
+        "doc": "IyBCZW5jaG1hcmtBSSBtZXRhCnNwZWNfdmVyc2lvbiA9ICIwLjEuMCIKCiMgVGhlc2UgZmllbGRzIGRvbid0IGhhdmUgYW55IGltcGFjdCBvbiB0aGUgam9iIHRvIHJ1biwgdGhleSBjb250YWluCiMgbWVyZWx5IGluZm9ybWF0aXZlIGRhdGEgc28gdGhlIGJlbmNobWFyayBjYW4gYmUgY2F0ZWdvcml6ZWQgd2hlbiBkaXNwbGF5ZWQKIyBpbiB0aGUgZGFzaGJvYXJkLgpbaW5mb10KdGFza19uYW1lID0gIkhlbGxvIHdvcmxkIgpkZXNjcmlwdGlvbiA9ICIiIiBcCiAgICBBIGhlbGxvIHdvcmxkIGV4YW1wbGUgb2YgdXNpbmcgQmVuY2htYXJrIEFJXAogICAgIiIiCgojIDEuIEhhcmR3YXJlCltoYXJkd2FyZV0KaW5zdGFuY2VfdHlwZSA9ICJ0My5zbWFsbCIKc3RyYXRlZ3kgPSAic2luZ2xlX25vZGUiCgojIDIuIEVudmlyb25tZW50CltlbnZdCiMgRG9ja2VyIGh1YiA8aHViLXVzZXI+LzxyZXBvLW5hbWU+Ojx0YWc+IApkb2NrZXJfaW1hZ2UgPSAiYmVuY2htYXJrYWkvaGVsbG8td29ybGQ6bGF0ZXN0IgoKIyAzLiBNYWNoaW5lIGxlYXJuaW5nIHJlbGF0ZWQgc2V0dGluZ3M6IAojIGRhdGFzZXQsIGJlbmNobWFyayBjb2RlIGFuZCBwYXJhbWV0ZXJzIGl0IHRha2VzClttbF0KYmVuY2htYXJrX2NvZGUgPSAicHl0aG9uMyBoZWxsby13b3JsZC5weSIKCiMgNC4gT3V0cHV0CltvdXRwdXRdCiMgRGVmaW5lIHdoaWNoIG1ldHJpY3Mgd2lsbCBiZSB0cmFja2VkIGluIHRoaXMgYmVuY2htYXJrCm1ldHJpY3MgPSBbImVwb2NoIiwgInRyYWluX2xvc3MiLCAibG9zcyIsICJhY2N1cmFjeSJdCg==",
+        "sha1": "fb2a4584049fdfe1a03ad54371e959560b82c802",
+        "descriptor_filename": "/home/ANT.AMAZON.COM/muenze/Projects/benchmark-ai/sample-benchmarks/hello-world/descriptor.toml",
+        "verified": false
+      },
       "datasets": [],
       "job": {
-        "id": "5132b556-f759-48fa-895a-614974a31f70",
-        "k8s_yaml": "apiVersion: batch/v1\nkind: Job\nmetadata:\n  name: benchmark-5132b556-f759-48fa-895a-614974a31f70\nspec:\n  template:\n    metadata:\n      labels:\n        app: benchmark-ai\n        action-id: 5132b556-f759-48fa-895a-614974a31f70\n        client-id: 55fa1af2a811b6f169c0f106da47849a1334a494\n        created-by: executor\n    spec:\n      serviceAccountName: metrics-pusher\n      affinity:\n        podAntiAffinity:\n          requiredDuringSchedulingIgnoredDuringExecution:\n          - labelSelector:\n              matchExpressions:\n              - key: app\n                operator: In\n                values:\n                - benchmark-ai\n            topologyKey: kubernetes.io/hostname\n      initContainers: []\n      containers:\n      - name: benchmark\n        image: benchmarkai/hello-world:latest\n        command:\n        - python3\n        - hello-world.py\n        securityContext:\n          privileged: false\n        env:\n        - name: BENCHMARK_AI\n          value: fifo\n        - name: BENCHMARK_AI_FIFO_FILEPATH\n          value: /tmp/benchmark-ai/fifo\n        - name: BENCHMARK_AI_FIFO_MAX_WAIT_TIME\n          value: '60'\n        volumeMounts:\n        - mountPath: /tmp/benchmark-ai\n          name: benchmark-ai\n        - name: dshm\n          mountPath: /dev/shm\n      - name: sidecar\n        image: benchmarkai/metrics-pusher:ffed580\n        env:\n        - name: BENCHMARK_AI_FIFO_FILEPATH\n          value: /tmp/benchmark-ai/fifo\n        - name: BACKEND\n          value: elasticsearch\n        - name: BACKEND_ARG_JOB_ID\n          value: benchmark-5132b556-f759-48fa-895a-614974a31f70\n        - name: BACKEND_ARG_HOSTNAME\n          valueFrom:\n            configMapKeyRef:\n              name: outputs-infrastructure\n              key: es_endpoint\n        - name: BACKEND_ARG_PORT\n          value: '443'\n        - name: POD_NAME\n          valueFrom:\n            fieldRef:\n              fieldPath: metadata.name\n        - name: POD_NAMESPACE\n          valueFrom:\n            fieldRef:\n              fieldPath: metadata.namespace\n        volumeMounts:\n        - mountPath: /tmp/benchmark-ai\n          name: benchmark-ai\n      nodeSelector:\n        beta.kubernetes.io/instance-type: t3.small\n        node.type: bai-worker\n        failure-domain.beta.kubernetes.io/zone: us-east-1d\n      restartPolicy: Never\n      volumes:\n      - name: benchmark-ai\n        emptyDir: {}\n      - name: dshm\n        emptyDir:\n          medium: Memory\n  backoffLimit: 4\n",
+        "id": "benchmark-1e3632cc-52c6-45af-a9b8-ffa3233f82cf",
+        "k8s_yaml": "apiVersion: batch/v1\nkind: Job\nmetadata:\n  name: benchmark-1e3632cc-52c6-45af-a9b8-ffa3233f82cf\nspec:\n  template:\n    metadata:\n      labels:\n        app: benchmark-ai\n        action-id: 1e3632cc-52c6-45af-a9b8-ffa3233f82cf\n        client-id: 55fa1af2a811b6f169c0f106da47849a1334a494\n        created-by: executor\n    spec:\n      serviceAccountName: metrics-pusher\n      affinity:\n        podAntiAffinity:\n          requiredDuringSchedulingIgnoredDuringExecution:\n          - labelSelector:\n              matchExpressions:\n              - key: app\n                operator: In\n                values:\n                - benchmark-ai\n            topologyKey: kubernetes.io/hostname\n      initContainers: []\n      containers:\n      - name: benchmark\n        image: benchmarkai/hello-world:latest\n        command:\n        - python3\n        - hello-world.py\n        securityContext:\n          privileged: false\n        env:\n        - name: BENCHMARK_AI\n          value: fifo\n        - name: BENCHMARK_AI_FIFO_FILEPATH\n          value: /tmp/benchmark-ai/fifo\n        - name: BENCHMARK_AI_FIFO_MAX_WAIT_TIME\n          value: '60'\n        volumeMounts:\n        - mountPath: /tmp/benchmark-ai\n          name: benchmark-ai\n        - name: dshm\n          mountPath: /dev/shm\n      - name: sidecar\n        image: benchmarkai/metrics-pusher:ffed580\n        env:\n        - name: BENCHMARK_AI_FIFO_FILEPATH\n          value: /tmp/benchmark-ai/fifo\n        - name: BACKEND\n          value: elasticsearch\n        - name: BACKEND_ARG_JOB_ID\n          value: benchmark-1e3632cc-52c6-45af-a9b8-ffa3233f82cf\n        - name: BACKEND_ARG_HOSTNAME\n          valueFrom:\n            configMapKeyRef:\n              name: outputs-infrastructure\n              key: es_endpoint\n        - name: BACKEND_ARG_PORT\n          value: '443'\n        - name: POD_NAME\n          valueFrom:\n            fieldRef:\n              fieldPath: metadata.name\n        - name: POD_NAMESPACE\n          valueFrom:\n            fieldRef:\n              fieldPath: metadata.namespace\n        volumeMounts:\n        - mountPath: /tmp/benchmark-ai\n          name: benchmark-ai\n      nodeSelector:\n        beta.kubernetes.io/instance-type: t3.small\n        node.type: bai-worker\n        failure-domain.beta.kubernetes.io/zone: eu-west-1b\n      restartPolicy: Never\n      volumes:\n      - name: benchmark-ai\n        emptyDir: {}\n      - name: dshm\n        emptyDir:\n          medium: Memory\n  backoffLimit: 4\n",
         "output": null
-      },
-      "toml": {
-        "contents": {
-          "env": {
-            "docker_image": "benchmarkai/hello-world:latest"
-          },
-          "hardware": {
-            "instance_type": "t3.small",
-            "strategy": "single_node"
-          },
-          "info": {
-            "description": " A hello world example of using Benchmark AI",
-            "task_name": "Hello world"
-          },
-          "ml": {
-            "benchmark_code": "python3 hello-world.py"
-          },
-          "output": {
-            "metrics": [
-              "epoch",
-              "train_loss",
-              "loss",
-              "accuracy"
-            ]
-          },
-          "spec_version": "0.1.0"
-        },
-        "descriptor_filename": "/home/ANT.AMAZON.COM/muenze/Projects/benchmark-ai/sample-benchmarks/hello-world/descriptor.toml",
-        "doc": "IyBCZW5jaG1hcmtBSSBtZXRhCnNwZWNfdmVyc2lvbiA9ICIwLjEuMCIKCiMgVGhlc2UgZmllbGRzIGRvbid0IGhhdmUgYW55IGltcGFjdCBvbiB0aGUgam9iIHRvIHJ1biwgdGhleSBjb250YWluCiMgbWVyZWx5IGluZm9ybWF0aXZlIGRhdGEgc28gdGhlIGJlbmNobWFyayBjYW4gYmUgY2F0ZWdvcml6ZWQgd2hlbiBkaXNwbGF5ZWQKIyBpbiB0aGUgZGFzaGJvYXJkLgpbaW5mb10KdGFza19uYW1lID0gIkhlbGxvIHdvcmxkIgpkZXNjcmlwdGlvbiA9ICIiIiBcCiAgICBBIGhlbGxvIHdvcmxkIGV4YW1wbGUgb2YgdXNpbmcgQmVuY2htYXJrIEFJXAogICAgIiIiCgojIDEuIEhhcmR3YXJlCltoYXJkd2FyZV0KaW5zdGFuY2VfdHlwZSA9ICJ0My5zbWFsbCIKc3RyYXRlZ3kgPSAic2luZ2xlX25vZGUiCgojIDIuIEVudmlyb25tZW50CltlbnZdCiMgRG9ja2VyIGh1YiA8aHViLXVzZXI+LzxyZXBvLW5hbWU+Ojx0YWc+IApkb2NrZXJfaW1hZ2UgPSAiYmVuY2htYXJrYWkvaGVsbG8td29ybGQ6bGF0ZXN0IgoKIyAzLiBNYWNoaW5lIGxlYXJuaW5nIHJlbGF0ZWQgc2V0dGluZ3M6IAojIGRhdGFzZXQsIGJlbmNobWFyayBjb2RlIGFuZCBwYXJhbWV0ZXJzIGl0IHRha2VzClttbF0KYmVuY2htYXJrX2NvZGUgPSAicHl0aG9uMyBoZWxsby13b3JsZC5weSIKCiMgNC4gT3V0cHV0CltvdXRwdXRdCiMgRGVmaW5lIHdoaWNoIG1ldHJpY3Mgd2lsbCBiZSB0cmFja2VkIGluIHRoaXMgYmVuY2htYXJrCm1ldHJpY3MgPSBbImVwb2NoIiwgInRyYWluX2xvc3MiLCAibG9zcyIsICJhY2N1cmFjeSJdCg==",
-        "sha1": "fb2a4584049fdfe1a03ad54371e959560b82c802",
-        "verified": false
       }
     },
-    "status": "SUCCEEDED",
-    "tstamp": 1560244102914,
+    "tstamp": 1560951129847,
+    "client_username": "muenze",
     "type": "BAI_APP_STATUS",
+    "action_id": "1e3632cc-52c6-45af-a9b8-ffa3233f82cf",
     "visited": [
       {
-        "node": null,
         "svc": "bai-client",
-        "tstamp": 1560236902,
-        "version": "0.1"
+        "tstamp": 1560943929,
+        "version": "0.1",
+        "node": null
       },
       {
-        "node": "bai-bff-56d58b5874-5xdx8",
         "svc": "bai-bff",
-        "tstamp": 1560244102914,
-        "version": "latest"
+        "tstamp": 1560951129847,
+        "version": "latest",
+        "node": "bai-bff-5f9cc5dbf-nfhjd"
       },
       {
-        "node": "fetcher-dispatcher-5b9cdb9d-8m6zq",
         "svc": "fetcher-dispatcher",
-        "tstamp": 1560244103187,
-        "version": "1.0"
+        "tstamp": 1560951129872,
+        "version": "1.0",
+        "node": "fetcher-dispatcher-8446f8fdb7-zszzj"
       },
       {
-        "node": "executor-ff658fccf-msvw5",
         "svc": "executor",
-        "tstamp": 1560244105213,
-        "version": "1.0"
+        "tstamp": 1560951130242,
+        "version": "1.0",
+        "node": "executor-6d8889cb46-kh9nn"
       }
-    ]
+    ],
+    "message_id": "7ea9b5df-4d34-4ffe-b8df-320b5cefd0b7",
+    "status": "SUCCEEDED",
+    "client_id": "55fa1af2a811b6f169c0f106da47849a1334a494",
+    "client_version": "0.1",
+    "message": "Benchmark successfully submitted with job id benchmark-1e3632cc-52c6-45af-a9b8-ffa3233f82cf"
   },
   {
-    "action_id": "5132b556-f759-48fa-895a-614974a31f70",
     "authenticated": false,
-    "client_id": "55fa1af2a811b6f169c0f106da47849a1334a494",
-    "client_username": "muenze",
-    "client_version": "0.1",
-    "message": "watcher service, node watcher-7595b49c4c-t28t7: Processing event...",
-    "message_id": "273a5b8e-4d38-40c2-ae6d-78d287477bb1",
     "payload": {
-      "datasets": [],
-      "job": {
-        "id": "5132b556-f759-48fa-895a-614974a31f70",
-        "k8s_yaml": "apiVersion: batch/v1\nkind: Job\nmetadata:\n  name: benchmark-5132b556-f759-48fa-895a-614974a31f70\nspec:\n  template:\n    metadata:\n      labels:\n        app: benchmark-ai\n        action-id: 5132b556-f759-48fa-895a-614974a31f70\n        client-id: 55fa1af2a811b6f169c0f106da47849a1334a494\n        created-by: executor\n    spec:\n      serviceAccountName: metrics-pusher\n      affinity:\n        podAntiAffinity:\n          requiredDuringSchedulingIgnoredDuringExecution:\n          - labelSelector:\n              matchExpressions:\n              - key: app\n                operator: In\n                values:\n                - benchmark-ai\n            topologyKey: kubernetes.io/hostname\n      initContainers: []\n      containers:\n      - name: benchmark\n        image: benchmarkai/hello-world:latest\n        command:\n        - python3\n        - hello-world.py\n        securityContext:\n          privileged: false\n        env:\n        - name: BENCHMARK_AI\n          value: fifo\n        - name: BENCHMARK_AI_FIFO_FILEPATH\n          value: /tmp/benchmark-ai/fifo\n        - name: BENCHMARK_AI_FIFO_MAX_WAIT_TIME\n          value: '60'\n        volumeMounts:\n        - mountPath: /tmp/benchmark-ai\n          name: benchmark-ai\n        - name: dshm\n          mountPath: /dev/shm\n      - name: sidecar\n        image: benchmarkai/metrics-pusher:ffed580\n        env:\n        - name: BENCHMARK_AI_FIFO_FILEPATH\n          value: /tmp/benchmark-ai/fifo\n        - name: BACKEND\n          value: elasticsearch\n        - name: BACKEND_ARG_JOB_ID\n          value: benchmark-5132b556-f759-48fa-895a-614974a31f70\n        - name: BACKEND_ARG_HOSTNAME\n          valueFrom:\n            configMapKeyRef:\n              name: outputs-infrastructure\n              key: es_endpoint\n        - name: BACKEND_ARG_PORT\n          value: '443'\n        - name: POD_NAME\n          valueFrom:\n            fieldRef:\n              fieldPath: metadata.name\n        - name: POD_NAMESPACE\n          valueFrom:\n            fieldRef:\n              fieldPath: metadata.namespace\n        volumeMounts:\n        - mountPath: /tmp/benchmark-ai\n          name: benchmark-ai\n      nodeSelector:\n        beta.kubernetes.io/instance-type: t3.small\n        node.type: bai-worker\n        failure-domain.beta.kubernetes.io/zone: us-east-1d\n      restartPolicy: Never\n      volumes:\n      - name: benchmark-ai\n        emptyDir: {}\n      - name: dshm\n        emptyDir:\n          medium: Memory\n  backoffLimit: 4\n",
-        "output": null
-      },
       "toml": {
         "contents": {
-          "env": {
-            "docker_image": "benchmarkai/hello-world:latest"
-          },
-          "hardware": {
-            "instance_type": "t3.small",
-            "strategy": "single_node"
-          },
-          "info": {
-            "description": " A hello world example of using Benchmark AI",
-            "task_name": "Hello world"
-          },
-          "ml": {
-            "benchmark_code": "python3 hello-world.py"
-          },
           "output": {
             "metrics": [
               "epoch",
@@ -319,48 +357,157 @@
               "accuracy"
             ]
           },
-          "spec_version": "0.1.0"
+          "spec_version": "0.1.0",
+          "env": {
+            "docker_image": "benchmarkai/hello-world:latest"
+          },
+          "info": {
+            "task_name": "Hello world",
+            "description": " A hello world example of using Benchmark AI"
+          },
+          "hardware": {
+            "strategy": "single_node",
+            "instance_type": "t3.small"
+          },
+          "ml": {
+            "benchmark_code": "python3 hello-world.py"
+          }
         },
-        "descriptor_filename": "/home/ANT.AMAZON.COM/muenze/Projects/benchmark-ai/sample-benchmarks/hello-world/descriptor.toml",
         "doc": "IyBCZW5jaG1hcmtBSSBtZXRhCnNwZWNfdmVyc2lvbiA9ICIwLjEuMCIKCiMgVGhlc2UgZmllbGRzIGRvbid0IGhhdmUgYW55IGltcGFjdCBvbiB0aGUgam9iIHRvIHJ1biwgdGhleSBjb250YWluCiMgbWVyZWx5IGluZm9ybWF0aXZlIGRhdGEgc28gdGhlIGJlbmNobWFyayBjYW4gYmUgY2F0ZWdvcml6ZWQgd2hlbiBkaXNwbGF5ZWQKIyBpbiB0aGUgZGFzaGJvYXJkLgpbaW5mb10KdGFza19uYW1lID0gIkhlbGxvIHdvcmxkIgpkZXNjcmlwdGlvbiA9ICIiIiBcCiAgICBBIGhlbGxvIHdvcmxkIGV4YW1wbGUgb2YgdXNpbmcgQmVuY2htYXJrIEFJXAogICAgIiIiCgojIDEuIEhhcmR3YXJlCltoYXJkd2FyZV0KaW5zdGFuY2VfdHlwZSA9ICJ0My5zbWFsbCIKc3RyYXRlZ3kgPSAic2luZ2xlX25vZGUiCgojIDIuIEVudmlyb25tZW50CltlbnZdCiMgRG9ja2VyIGh1YiA8aHViLXVzZXI+LzxyZXBvLW5hbWU+Ojx0YWc+IApkb2NrZXJfaW1hZ2UgPSAiYmVuY2htYXJrYWkvaGVsbG8td29ybGQ6bGF0ZXN0IgoKIyAzLiBNYWNoaW5lIGxlYXJuaW5nIHJlbGF0ZWQgc2V0dGluZ3M6IAojIGRhdGFzZXQsIGJlbmNobWFyayBjb2RlIGFuZCBwYXJhbWV0ZXJzIGl0IHRha2VzClttbF0KYmVuY2htYXJrX2NvZGUgPSAicHl0aG9uMyBoZWxsby13b3JsZC5weSIKCiMgNC4gT3V0cHV0CltvdXRwdXRdCiMgRGVmaW5lIHdoaWNoIG1ldHJpY3Mgd2lsbCBiZSB0cmFja2VkIGluIHRoaXMgYmVuY2htYXJrCm1ldHJpY3MgPSBbImVwb2NoIiwgInRyYWluX2xvc3MiLCAibG9zcyIsICJhY2N1cmFjeSJdCg==",
         "sha1": "fb2a4584049fdfe1a03ad54371e959560b82c802",
+        "descriptor_filename": "/home/ANT.AMAZON.COM/muenze/Projects/benchmark-ai/sample-benchmarks/hello-world/descriptor.toml",
         "verified": false
+      },
+      "datasets": [],
+      "job": {
+        "id": "benchmark-1e3632cc-52c6-45af-a9b8-ffa3233f82cf",
+        "k8s_yaml": "apiVersion: batch/v1\nkind: Job\nmetadata:\n  name: benchmark-1e3632cc-52c6-45af-a9b8-ffa3233f82cf\nspec:\n  template:\n    metadata:\n      labels:\n        app: benchmark-ai\n        action-id: 1e3632cc-52c6-45af-a9b8-ffa3233f82cf\n        client-id: 55fa1af2a811b6f169c0f106da47849a1334a494\n        created-by: executor\n    spec:\n      serviceAccountName: metrics-pusher\n      affinity:\n        podAntiAffinity:\n          requiredDuringSchedulingIgnoredDuringExecution:\n          - labelSelector:\n              matchExpressions:\n              - key: app\n                operator: In\n                values:\n                - benchmark-ai\n            topologyKey: kubernetes.io/hostname\n      initContainers: []\n      containers:\n      - name: benchmark\n        image: benchmarkai/hello-world:latest\n        command:\n        - python3\n        - hello-world.py\n        securityContext:\n          privileged: false\n        env:\n        - name: BENCHMARK_AI\n          value: fifo\n        - name: BENCHMARK_AI_FIFO_FILEPATH\n          value: /tmp/benchmark-ai/fifo\n        - name: BENCHMARK_AI_FIFO_MAX_WAIT_TIME\n          value: '60'\n        volumeMounts:\n        - mountPath: /tmp/benchmark-ai\n          name: benchmark-ai\n        - name: dshm\n          mountPath: /dev/shm\n      - name: sidecar\n        image: benchmarkai/metrics-pusher:ffed580\n        env:\n        - name: BENCHMARK_AI_FIFO_FILEPATH\n          value: /tmp/benchmark-ai/fifo\n        - name: BACKEND\n          value: elasticsearch\n        - name: BACKEND_ARG_JOB_ID\n          value: benchmark-1e3632cc-52c6-45af-a9b8-ffa3233f82cf\n        - name: BACKEND_ARG_HOSTNAME\n          valueFrom:\n            configMapKeyRef:\n              name: outputs-infrastructure\n              key: es_endpoint\n        - name: BACKEND_ARG_PORT\n          value: '443'\n        - name: POD_NAME\n          valueFrom:\n            fieldRef:\n              fieldPath: metadata.name\n        - name: POD_NAMESPACE\n          valueFrom:\n            fieldRef:\n              fieldPath: metadata.namespace\n        volumeMounts:\n        - mountPath: /tmp/benchmark-ai\n          name: benchmark-ai\n      nodeSelector:\n        beta.kubernetes.io/instance-type: t3.small\n        node.type: bai-worker\n        failure-domain.beta.kubernetes.io/zone: eu-west-1b\n      restartPolicy: Never\n      volumes:\n      - name: benchmark-ai\n        emptyDir: {}\n      - name: dshm\n        emptyDir:\n          medium: Memory\n  backoffLimit: 4\n",
+        "output": null
       }
     },
-    "status": "PENDING",
-    "tstamp": 1560244102914,
+    "tstamp": 1560951129847,
+    "client_username": "muenze",
     "type": "BAI_APP_STATUS",
+    "action_id": "1e3632cc-52c6-45af-a9b8-ffa3233f82cf",
     "visited": [
       {
-        "node": null,
         "svc": "bai-client",
-        "tstamp": 1560236902,
-        "version": "0.1"
+        "tstamp": 1560943929,
+        "version": "0.1",
+        "node": null
       },
       {
-        "node": "bai-bff-56d58b5874-5xdx8",
         "svc": "bai-bff",
-        "tstamp": 1560244102914,
-        "version": "latest"
+        "tstamp": 1560951129847,
+        "version": "latest",
+        "node": "bai-bff-5f9cc5dbf-nfhjd"
       },
       {
-        "node": "fetcher-dispatcher-5b9cdb9d-8m6zq",
         "svc": "fetcher-dispatcher",
-        "tstamp": 1560244103187,
-        "version": "1.0"
+        "tstamp": 1560951129872,
+        "version": "1.0",
+        "node": "fetcher-dispatcher-8446f8fdb7-zszzj"
       },
       {
-        "node": "executor-ff658fccf-msvw5",
         "svc": "executor",
-        "tstamp": 1560244105254,
-        "version": "1.0"
+        "tstamp": 1560951130250,
+        "version": "1.0",
+        "node": "executor-6d8889cb46-kh9nn"
       },
       {
-        "node": "watcher-7595b49c4c-t28t7",
         "svc": "watcher",
-        "tstamp": 1560244105377,
-        "version": "0.1.0"
+        "tstamp": 1560951130286,
+        "version": "0.1.0",
+        "node": "watcher-58cbf7974d-4xtcp"
       }
-    ]
+    ],
+    "message_id": "684c9dec-9ac9-42c4-800e-66158a98056c",
+    "status": "PENDING",
+    "client_id": "55fa1af2a811b6f169c0f106da47849a1334a494",
+    "client_version": "0.1",
+    "message": "watcher service, node watcher-58cbf7974d-4xtcp: Processing event..."
+  },
+  {
+    "authenticated": false,
+    "payload": {
+      "toml": {
+        "contents": {
+          "output": {
+            "metrics": [
+              "epoch",
+              "train_loss",
+              "loss",
+              "accuracy"
+            ]
+          },
+          "spec_version": "0.1.0",
+          "env": {
+            "docker_image": "benchmarkai/hello-world:latest"
+          },
+          "info": {
+            "task_name": "Hello world",
+            "description": " A hello world example of using Benchmark AI"
+          },
+          "hardware": {
+            "strategy": "single_node",
+            "instance_type": "t3.small"
+          },
+          "ml": {
+            "benchmark_code": "python3 hello-world.py"
+          }
+        },
+        "doc": "IyBCZW5jaG1hcmtBSSBtZXRhCnNwZWNfdmVyc2lvbiA9ICIwLjEuMCIKCiMgVGhlc2UgZmllbGRzIGRvbid0IGhhdmUgYW55IGltcGFjdCBvbiB0aGUgam9iIHRvIHJ1biwgdGhleSBjb250YWluCiMgbWVyZWx5IGluZm9ybWF0aXZlIGRhdGEgc28gdGhlIGJlbmNobWFyayBjYW4gYmUgY2F0ZWdvcml6ZWQgd2hlbiBkaXNwbGF5ZWQKIyBpbiB0aGUgZGFzaGJvYXJkLgpbaW5mb10KdGFza19uYW1lID0gIkhlbGxvIHdvcmxkIgpkZXNjcmlwdGlvbiA9ICIiIiBcCiAgICBBIGhlbGxvIHdvcmxkIGV4YW1wbGUgb2YgdXNpbmcgQmVuY2htYXJrIEFJXAogICAgIiIiCgojIDEuIEhhcmR3YXJlCltoYXJkd2FyZV0KaW5zdGFuY2VfdHlwZSA9ICJ0My5zbWFsbCIKc3RyYXRlZ3kgPSAic2luZ2xlX25vZGUiCgojIDIuIEVudmlyb25tZW50CltlbnZdCiMgRG9ja2VyIGh1YiA8aHViLXVzZXI+LzxyZXBvLW5hbWU+Ojx0YWc+IApkb2NrZXJfaW1hZ2UgPSAiYmVuY2htYXJrYWkvaGVsbG8td29ybGQ6bGF0ZXN0IgoKIyAzLiBNYWNoaW5lIGxlYXJuaW5nIHJlbGF0ZWQgc2V0dGluZ3M6IAojIGRhdGFzZXQsIGJlbmNobWFyayBjb2RlIGFuZCBwYXJhbWV0ZXJzIGl0IHRha2VzClttbF0KYmVuY2htYXJrX2NvZGUgPSAicHl0aG9uMyBoZWxsby13b3JsZC5weSIKCiMgNC4gT3V0cHV0CltvdXRwdXRdCiMgRGVmaW5lIHdoaWNoIG1ldHJpY3Mgd2lsbCBiZSB0cmFja2VkIGluIHRoaXMgYmVuY2htYXJrCm1ldHJpY3MgPSBbImVwb2NoIiwgInRyYWluX2xvc3MiLCAibG9zcyIsICJhY2N1cmFjeSJdCg==",
+        "sha1": "fb2a4584049fdfe1a03ad54371e959560b82c802",
+        "descriptor_filename": "/home/ANT.AMAZON.COM/muenze/Projects/benchmark-ai/sample-benchmarks/hello-world/descriptor.toml",
+        "verified": false
+      },
+      "datasets": [],
+      "job": {
+        "id": "benchmark-1e3632cc-52c6-45af-a9b8-ffa3233f82cf",
+        "k8s_yaml": "apiVersion: batch/v1\nkind: Job\nmetadata:\n  name: benchmark-1e3632cc-52c6-45af-a9b8-ffa3233f82cf\nspec:\n  template:\n    metadata:\n      labels:\n        app: benchmark-ai\n        action-id: 1e3632cc-52c6-45af-a9b8-ffa3233f82cf\n        client-id: 55fa1af2a811b6f169c0f106da47849a1334a494\n        created-by: executor\n    spec:\n      serviceAccountName: metrics-pusher\n      affinity:\n        podAntiAffinity:\n          requiredDuringSchedulingIgnoredDuringExecution:\n          - labelSelector:\n              matchExpressions:\n              - key: app\n                operator: In\n                values:\n                - benchmark-ai\n            topologyKey: kubernetes.io/hostname\n      initContainers: []\n      containers:\n      - name: benchmark\n        image: benchmarkai/hello-world:latest\n        command:\n        - python3\n        - hello-world.py\n        securityContext:\n          privileged: false\n        env:\n        - name: BENCHMARK_AI\n          value: fifo\n        - name: BENCHMARK_AI_FIFO_FILEPATH\n          value: /tmp/benchmark-ai/fifo\n        - name: BENCHMARK_AI_FIFO_MAX_WAIT_TIME\n          value: '60'\n        volumeMounts:\n        - mountPath: /tmp/benchmark-ai\n          name: benchmark-ai\n        - name: dshm\n          mountPath: /dev/shm\n      - name: sidecar\n        image: benchmarkai/metrics-pusher:ffed580\n        env:\n        - name: BENCHMARK_AI_FIFO_FILEPATH\n          value: /tmp/benchmark-ai/fifo\n        - name: BACKEND\n          value: elasticsearch\n        - name: BACKEND_ARG_JOB_ID\n          value: benchmark-1e3632cc-52c6-45af-a9b8-ffa3233f82cf\n        - name: BACKEND_ARG_HOSTNAME\n          valueFrom:\n            configMapKeyRef:\n              name: outputs-infrastructure\n              key: es_endpoint\n        - name: BACKEND_ARG_PORT\n          value: '443'\n        - name: POD_NAME\n          valueFrom:\n            fieldRef:\n              fieldPath: metadata.name\n        - name: POD_NAMESPACE\n          valueFrom:\n            fieldRef:\n              fieldPath: metadata.namespace\n        volumeMounts:\n        - mountPath: /tmp/benchmark-ai\n          name: benchmark-ai\n      nodeSelector:\n        beta.kubernetes.io/instance-type: t3.small\n        node.type: bai-worker\n        failure-domain.beta.kubernetes.io/zone: eu-west-1b\n      restartPolicy: Never\n      volumes:\n      - name: benchmark-ai\n        emptyDir: {}\n      - name: dshm\n        emptyDir:\n          medium: Memory\n  backoffLimit: 4\n",
+        "output": null
+      }
+    },
+    "tstamp": 1560951129847,
+    "client_username": "muenze",
+    "type": "BAI_APP_STATUS",
+    "action_id": "1e3632cc-52c6-45af-a9b8-ffa3233f82cf",
+    "visited": [
+      {
+        "svc": "bai-client",
+        "tstamp": 1560943929,
+        "version": "0.1",
+        "node": null
+      },
+      {
+        "svc": "bai-bff",
+        "tstamp": 1560951129847,
+        "version": "latest",
+        "node": "bai-bff-5f9cc5dbf-nfhjd"
+      },
+      {
+        "svc": "fetcher-dispatcher",
+        "tstamp": 1560951129872,
+        "version": "1.0",
+        "node": "fetcher-dispatcher-8446f8fdb7-zszzj"
+      },
+      {
+        "svc": "executor",
+        "tstamp": 1560951130250,
+        "version": "1.0",
+        "node": "executor-6d8889cb46-kh9nn"
+      },
+      {
+        "svc": "watcher",
+        "tstamp": 1560951130338,
+        "version": "0.1.0",
+        "node": "watcher-58cbf7974d-4xtcp"
+      }
+    ],
+    "message_id": "b6b95b92-8fbe-420b-aa60-4c6e4643f7a0",
+    "status": "PENDING",
+    "client_id": "55fa1af2a811b6f169c0f106da47849a1334a494",
+    "client_version": "0.1",
+    "message": "Job is pending nodes to scale"
   }
 ]
