@@ -1,18 +1,19 @@
 import base64
+import json
 
 import datetime
 import getpass
 import hashlib
 import socket
 from dataclasses import dataclass
-from typing import Any, List
+from typing import List, Dict
 
 from dataclasses_json import dataclass_json
 from pathlib import Path
 import uuid
 import requests
 
-from bai_kafka_utils.events import VisitedService, BenchmarkPayload, BenchmarkDoc
+from bai_kafka_utils.events import VisitedService, BenchmarkPayload, BenchmarkDoc, StatusMessageBenchmarkEvent
 from .__version__ import __version__
 
 SERVICE_NAME = "bai-client"
@@ -67,6 +68,17 @@ def create_submit_event(descriptor_filename) -> SubmitEvent:
     )
 
 
+def _convert_status_json_response(json_string: str) -> List[StatusMessageBenchmarkEvent]:
+    status_messages: List[Dict] = json.loads(json_string)
+
+    # Deserializing and serializing each element looks like a very nasty hack, but I find it to be more elegant than
+    # using `dacite` because dacite does not handle the convertion from `str` => `Enum`.
+    return [
+        StatusMessageBenchmarkEvent.from_json(json.dumps(status_message_as_dict))
+        for status_message_as_dict in status_messages
+    ]
+
+
 class BaiClient:
     """
     A "low-level" client for BAI.
@@ -96,6 +108,17 @@ class BaiClient:
         event_to_json = event.to_json()
         with requests.Session() as session:
             response = session.post(self.endpoint + "/api/job/descriptor", data=event_to_json)
-            if response.status_code != 200:
-                raise ValueError(f"Bad response: {response.status_code} - {response.reason}")
+            self._handle_response(response)
             return response.text
+
+    def status(self, action_id: str, client_id: str = None) -> List[StatusMessageBenchmarkEvent]:
+        if client_id is None:
+            client_id = get_client_id()
+        with requests.Session() as session:
+            response = session.get(self.endpoint + f"/api/job/{client_id}/{action_id}")
+            self._handle_response(response)
+            return _convert_status_json_response(response.text)
+
+    def _handle_response(self, response):
+        if response.status_code != 200:
+            raise ValueError(f"Bad response: {response.status_code} - {response.reason}")
