@@ -7,7 +7,7 @@ print_unsupported_verb() {
 }
 
 _create_configmap_yaml_from_terraform_outputs() {
-    local bash_src=$(readlink -f ${BASH_SOURCE})
+    local bash_src=$(realpath ${BASH_SOURCE})
     local src_dir=$(dirname "${bash_src}")
     python3 ${src_dir}/add_terraform_outputs_as_configmap.py outputs-infrastructure || return 1
 }
@@ -216,7 +216,7 @@ _create_kafka_topics(){
 _add_codebuild_role(){
     local account_id=$(aws sts get-caller-identity | jq -r '.Account') || return 1
 
-    local bash_src=$(readlink -f ${BASH_SOURCE})
+    local bash_src=$(realpath ${BASH_SOURCE})
     local src_dir=$(dirname "${bash_src}")
     python3 ${src_dir}/add_permission_to_aws_auth_configmap.py --role-arn "arn:aws:iam::${account_id}:role/code-build-role" --role-username build --role-groups system:masters || return 1
 }
@@ -528,7 +528,7 @@ run_benchmark() {
     [ -z "$descriptor" ] && printf "Missing required argument --descriptor\n" && return 1
 
     (
-        local bash_src=$(readlink -f ${BASH_SOURCE})
+        local bash_src=$(realpath ${BASH_SOURCE})
         local src_dir=$(dirname "${bash_src}")
 
         export PYTHONPATH=${src_dir}/../../../executor/src:${src_dir}/../../../kafka-utils/src
