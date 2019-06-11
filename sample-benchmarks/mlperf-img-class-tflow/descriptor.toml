@@ -18,12 +18,16 @@ strategy = "single_node"
 # 2. Environment
 [env]
 # Docker hub <hub-user>/<repo-name>:<tag>
+# You can find the Dockerfile definition in mlperf/training repo
+# https://github.com/mlperf/training
+# under training/image_classification/tensorflow/Dockerfile
+# source sha e8237dc
 docker_image = "benchmarkai/mlperf-img-class-tflow:latest"
 
 # 3. Machine learning related settings:
 # dataset, benchmark code and parameters it takes
 [ml]
-benchmark_code = "./run_and_time.sh 2"
+benchmark_code = "/research/resnet/run_and_time.sh 2"
 
 # [Opt] 4. Dataset
 [data]
@@ -38,25 +42,25 @@ id = "ImageNet"
 # Data download URI.
 src = "https://s3.amazonaws.com/aws-ml-platform-datasets/imagenet/480px-q95/val-480px-q95.rec"
 # Path where the dataset is stored in the container FS
-path = "/imn"
+path = "/imn/val-480px-q95.rec"
 
 [[data.sources]]
 # Data download URI.
 src = "https://s3.amazonaws.com/aws-ml-platform-datasets/imagenet/480px-q95/train-480px-q95.rec"
 # Path where the dataset is stored in the container FS
-path = "/imn"
+path = "/imn/train-480px-q95.rec"
 
 [[data.sources]]
 # Data download URI.
 src = "https://s3.amazonaws.com/aws-ml-platform-datasets/imagenet/480px-q95/train-480px-q95.idx"
 # Path where the dataset is stored in the container FS
-path = "/imn"
+path = "/imn/train-480px-q95.idx"
 
 [[data.sources]]
 # Data download URI.
 src = "https://s3.amazonaws.com/aws-ml-platform-datasets/imagenet/480px-q95/val-480px-q95.idx"
 # Path where the dataset is stored in the container FS
-path = "/imn"
+path = "/imn/val-480px-q95.idx"
 
 # ...
 
