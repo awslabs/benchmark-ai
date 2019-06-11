@@ -9,7 +9,10 @@ print_unsupported_verb() {
 _create_configmap_yaml_from_terraform_outputs() {
     local bash_src=$(realpath ${BASH_SOURCE})
     local src_dir=$(dirname "${bash_src}")
-    python3 ${src_dir}/add_terraform_outputs_as_configmap.py outputs-infrastructure || return 1
+    (
+        export KUBECONFIG=${kubeconfig}
+        python3 ${src_dir}/add_terraform_outputs_as_configmap.py outputs-infrastructure || return 1
+    )
 }
 
 create_infra() {
@@ -218,7 +221,10 @@ _add_codebuild_role(){
 
     local bash_src=$(realpath ${BASH_SOURCE})
     local src_dir=$(dirname "${bash_src}")
-    python3 ${src_dir}/add_permission_to_aws_auth_configmap.py --role-arn "arn:aws:iam::${account_id}:role/code-build-role" --role-username build --role-groups system:masters || return 1
+    (
+        export KUBECONFIG=${kubeconfig}
+        python3 ${src_dir}/add_permission_to_aws_auth_configmap.py --role-arn "arn:aws:iam::${account_id}:role/code-build-role" --role-username build --role-groups system:masters || return 1
+    )
 }
 
 __create_kubeflow_namespace(){
