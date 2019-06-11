@@ -14,8 +14,7 @@ from bai_kafka_utils.events import (
 from bai_kafka_utils.kafka_service import KafkaService
 from bai_kafka_utils.utils import DEFAULT_ENCODING
 from executor.args import create_executor_config
-from executor.executor import ExecutorEventHandler, create_executor
-
+from executor.executor import ExecutorEventHandler, create_executor, JOB_ID_PREFIX
 
 LOGGING_LEVEL = "DEBUG"
 
@@ -72,7 +71,7 @@ def test_executor_event_handler_handle_event(
     mock_check_output = mocker.patch("executor.executor.subprocess.check_output")
     mock_create_yaml = mocker.patch("executor.executor.create_job_yaml_spec", return_value=JOB_YAML)
 
-    expected_job = BenchmarkJob(id=benchmark_event_with_data_sets.action_id, k8s_yaml=JOB_YAML)
+    expected_job = BenchmarkJob(id=JOB_ID_PREFIX + benchmark_event_with_data_sets.action_id, k8s_yaml=JOB_YAML)
     expected_payload = ExecutorPayload.create_from_fetcher_payload(benchmark_event_with_data_sets.payload, expected_job)
 
     executor_callback.handle_event(benchmark_event_with_data_sets, kafka_service)
@@ -81,6 +80,7 @@ def test_executor_event_handler_handle_event(
     mock_create_yaml.assert_called_once()
     mock_check_output.assert_called_once()
     assert event_to_send.action_id == benchmark_event_with_data_sets.action_id
+    assert event_to_send.payload.job == expected_payload.job
     assert event_to_send.payload == expected_payload
 
 

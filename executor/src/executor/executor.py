@@ -25,6 +25,9 @@ from transpiler.descriptor import DescriptorError
 logger = logging.getLogger(SERVICE_NAME)
 
 
+JOB_ID_PREFIX = "benchmark-"
+
+
 class ExecutorEventHandler(KafkaServiceCallback):
     def __init__(self, executor_config: ExecutorConfig, producer_topic: str):
         self.config = executor_config
@@ -33,7 +36,7 @@ class ExecutorEventHandler(KafkaServiceCallback):
     def handle_event(self, event: FetcherBenchmarkEvent, kafka_service: KafkaService):
         descriptor_contents = event.payload.toml.contents
         fetched_data_sources = event.payload.datasets
-        job_id = event.action_id
+        job_id = JOB_ID_PREFIX + event.action_id
 
         try:
             yaml = create_job_yaml_spec(descriptor_contents, self.config, fetched_data_sources, job_id, event=event)
