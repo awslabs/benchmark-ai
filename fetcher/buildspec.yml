@@ -1,25 +1,26 @@
 version: 0.2
 
 phases:
-  install:
-    commands:
-      - start-dind.sh | tee /dind.log
-      - dind-cluster-v1.12.sh up | tee /cluster.log
   build:
     commands:
       - cd fetcher
       - make
   post_build:
     commands:
-      - make deploy STAGE=local LOCAL_DEPLOY="./deploy/dind_push_image.sh kube-node-1" | tee /build.log
+      - start-dind.sh | tee /dind.log
+      - dind-cluster-v1.12.sh up | tee /cluster.log
+      - make deploy STAGE=local LOCAL_DEPLOY="./deploy/dind_push_image.sh kube-node-1 " | tee /build.log
       - kubectl get pods
-      - sleep 60s
-      - kubectl get pods > /somefile.txt
-      - make integration_tests STAGE=local LOCAL_DEPLOY="./deploy/dind_push_image.sh kube-node-1" | tee /it.log
+      - sleep 30s
+      - kubectl get pods > /somefile1.txt
+      - sleep 10s
+      - kubectl get pods > /somefile2.txt
+      - make integration_tests STAGE=local LOCAL_DEPLOY="../deploy/dind_push_image.sh kube-node-1 " | tee /it.log
 artifacts:
   #!!!
   files:
-    - /somefile.txt
+    - /somefile1.txt
+    - /somefile2.txt
     - /it.log
     - /dind.log
     - /cluster.log
