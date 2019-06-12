@@ -2,6 +2,7 @@
   (:require [bai-bff.services :refer [RunService Sink]]
             [bai-bff.services.eventbus :refer [send-event-channel-atom]]
             [bai-bff.utils.utils :refer [assert-configured!]]
+            [bai-bff.utils.kafka :refer :all]
             [cheshire.core :as json]
             [taoensso.timbre :as log]
             [environ.core :refer [env]]
@@ -10,32 +11,13 @@
             [clojure.core.async :as a :refer [>! <! >!! <!! go chan buffer close! thread
                                               alts! alts!! timeout]])
   (:import (org.apache.kafka.clients CommonClientConfigs)
-           (org.apache.kafka.clients.producer KafkaProducer ProducerRecord)
-           (org.apache.kafka.clients.admin AdminClient AdminClientConfig NewTopic CreateTopicsResult)))
+           (org.apache.kafka.clients.producer KafkaProducer ProducerRecord)))
 
 (def kafka-keys
   #{:kafka-bootstrap-servers
     :kafka-sink-topics})
 
     ;NOTE: You should set "max.in.flight.requests.per.connection" to 1, esp. if "retries" is > 0 if you want to preserve order!
-
-(defn- create-kafka-topics [set-of-topic-names]
-  (log/trace "create-kafka-topics  ["set-of-topic-names"]")
-  (let [^AdminClient admin-client (AdminClient/create (doto (java.util.Properties.)
-                                                        (.put AdminClientConfig/BOOTSTRAP_SERVERS_CONFIG, (env :kafka-bootstrap-servers))))
-        num-partitions     3 ;;TODO how can we not hard code them? config-map? environment?
-        replication-factor 3 ;;TODO how can we not hard code them? config-map? environment?
-        all-existing-topic-names (.get (.names (.listTopics admin-client)))] ;; <-- block here on future until realized
-    (log/trace "Listing of all current topics: "all-existing-topic-names)
-    (when-let [missing-topics (seq (difference set-of-topic-names all-existing-topic-names))]
-      (log/trace "Missing topics to be created... "missing-topics)
-      (let [^CreateTopicsResult result (.createTopics admin-client (mapv #(NewTopic. % num-partitions replication-factor) missing-topics))]
-        (doseq [entry (.values result)]
-          (try
-            (.get (.getValue entry))  ;; <-- block here on future until realized
-            (log/info (format "topic [%s] has been successfully created!" (.getKey entry)))
-            (catch Exception e (log/warn (format "Problem creating topic [%s]: Perhaps, it has already been created "(.getKey entry))))))))
-    (.close admin-client)))
 
 (defrecord KafkaSinkService [producer worker-thread started?]
   RunService
