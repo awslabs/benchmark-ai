@@ -180,3 +180,5 @@ Outputs:
   VpcDefaultSecurityGroupArn:
     Value: !GetAtt VPC.DefaultSecurityGroup
 
+  BaictlLogGroupName:
+    Value: !Ref BaictlLogGroup
