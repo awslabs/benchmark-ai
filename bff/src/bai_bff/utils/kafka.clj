@@ -1,0 +1,23 @@
+(ns bai-bff.utils.kafka
+  (:require [taoensso.timbre :as log]
+            [environ.core :refer [env]]
+            [clojure.set  :refer [difference]])
+  (:import (org.apache.kafka.clients.admin AdminClient AdminClientConfig NewTopic CreateTopicsResult)))
+
+(defn create-kafka-topics [set-of-topic-names]
+  (log/trace "create-kafka-topics  ["set-of-topic-names"]")
+  (let [^AdminClient admin-client (AdminClient/create (doto (java.util.Properties.)
+                                                        (.put AdminClientConfig/BOOTSTRAP_SERVERS_CONFIG, (env :kafka-bootstrap-servers))))
+        num-partitions     3 ;;TODO how can we not hard code them? config-map? environment?
+        replication-factor 3 ;;TODO how can we not hard code them? config-map? environment?
+        all-existing-topic-names (.get (.names (.listTopics admin-client)))] ;; <-- block here on future until realized
+    (log/trace "Listing of all current topics: "all-existing-topic-names)
+    (when-let [missing-topics (seq (difference set-of-topic-names all-existing-topic-names))]
+      (log/trace "Missing topics to be created... "missing-topics)
+      (let [^CreateTopicsResult result (.createTopics admin-client (mapv #(NewTopic. % num-partitions replication-factor) missing-topics))]
+        (doseq [entry (.values result)]
+          (try
+            (.get (.getValue entry))  ;; <-- block here on future until realized
+            (log/info (format "topic [%s] has been successfully created!" (.getKey entry)))
+            (catch Exception e (log/warn (format "Problem creating topic [%s]: Perhaps, it has already been created "(.getKey entry))))))))
+    (.close admin-client)))
