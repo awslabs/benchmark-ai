@@ -7,14 +7,19 @@ phases:
       - make
   post_build:
     commands:
-      - start-dind.sh
-      - dind-cluster-v1.12.sh up
-      - make deploy STAGE=local LOCAL_DEPLOY="./deploy/dind_push_image.sh kube-node-1"
+      - start-dind.sh | tee /dind.log
+      - dind-cluster-v1.12.sh up | tee /cluster.log
+      - make deploy STAGE=local LOCAL_DEPLOY="./deploy/dind_push_image.sh kube-node-1" | tee /build.log
       - kubectl get pods
       - sleep 60s
       - kubectl get pods > /somefile.txt
+      - make integration_tests STAGE=local LOCAL_DEPLOY="./deploy/dind_push_image.sh kube-node-1" | tee /it.log
 artifacts:
   #!
   files:
     - /somefile.txt
+    - /it.log
+    - /dind.log
+    - /cluster.log
+    - /build.log
   name: getpodsoutput
