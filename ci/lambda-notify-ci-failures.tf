@@ -123,8 +123,7 @@ resource "aws_cloudwatch_event_rule" "code-pipeline" {
   PATTERN
 }
 
-resource "aws_cloudwatch_event_target" "yada" {
-  target_id = "Yada"
+resource "aws_cloudwatch_event_target" "invoke-bot-on-codepipeline-rule" {
   rule      = aws_cloudwatch_event_rule.code-pipeline.name
   arn       = aws_lambda_function.notify-to-chime-on-build-failures.arn
 }
