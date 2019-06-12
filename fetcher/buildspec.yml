@@ -5,3 +5,7 @@ phases:
     commands:
       - cd fetcher
       - make
+      - start-dind.sh
+      - dind-cluster-v1.12.sh up
+      - make deploy STAGE=local LOCAL_DEPLOY="./deploy/dind_push_image.sh kube-node-1"
+      - make integration_tests STAGE=local LOCAL_DEPLOY="../deploy/dind_push_image.sh kube-node-1"

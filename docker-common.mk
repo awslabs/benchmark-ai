@@ -12,6 +12,8 @@ COMMIT_SHORT_HASH ?= $(shell git rev-parse --short HEAD)
 DOCKER_IMAGE_LABEL ?= $(COMMIT_SHORT_HASH)
 DOCKER_IMAGE_TAG = $(DOCKER_REPOSITORY):$(DOCKER_IMAGE_LABEL)
 
+LOCAL_DEPLOY = echo "Skipping local publishing step - use local docker repo"
+
 # package is a high level command while docker_package can be executed separately
 package: build docker_package
 
@@ -30,7 +32,7 @@ publish: docker_publish
 
 docker_publish: docker_package
 	echo "Publishing $(DOCKER_IMAGE_TAG)"
-	[[ "$(STAGE)" == "local" ]] && echo "Skipping local publishing step - use local docker repo" || $(DOCKER) push $(DOCKER_IMAGE_TAG)
+	[[ "$(STAGE)" == "local" ]] && $(LOCAL_DEPLOY) $(DOCKER_IMAGE_TAG) || $(DOCKER) push $(DOCKER_IMAGE_TAG)
 
 _deploy_venv:
 	conda env update --file $(BENCHMARK_DIR)/deploy-environment.yml --prune --name $(DEPLOY_ENV_NAME)
