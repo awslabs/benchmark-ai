@@ -20,6 +20,7 @@ CFN_SPLIT_STRING = "|||"
 DOCKER_IMAGE_TAG = "benchmark-ai/baictl"
 CLOUDFORMATION_YAML_PATH = os.path.join(os.path.split(os.path.realpath(__file__))[0], "cfn-baictl-ecs.yml")
 CONFIG_YAML_PATH = os.path.join(os.path.split(os.path.realpath(__file__))[0], "config.yml")
+ECS_CLUSTER_NAME = "baictl-ecs-cluster"
 
 
 def main():
@@ -46,7 +47,7 @@ def main():
     cloudwatch_log_group = cloudformation_output['BaictlLogGroupName']
     docker_cli, docker_registry = login_ecr(boto_session=boto_session)
     publish_docker_image(docker_cli=docker_cli, docker_tag=docker_tag, docker_registry=docker_registry)
-    ecs_task_response = run_ecs_task(boto_session=boto_session, cloudformation_output=cloudformation_output, ecs_cluster_name="baictl-ecs-cluster")
+    ecs_task_response = run_ecs_task(boto_session=boto_session, cloudformation_output=cloudformation_output, ecs_cluster_name=ECS_CLUSTER_NAME)
     cloudwatch_log_stream = parse_ecs_response(ecs_task_response)
     get_cloudwatch_logs(boto_session=boto_session, cloudwatch_log_group=cloudwatch_log_group, cloudwatch_log_stream=cloudwatch_log_stream)
     destroy_cloudformation()
