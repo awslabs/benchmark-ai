@@ -48,3 +48,5 @@ spec:
               value: "1"
             - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
               value: "1"
+            - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
+              value: false

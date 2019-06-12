@@ -2,7 +2,10 @@ import logging
 
 import kafka
 from kafka import KafkaConsumer, KafkaProducer
+from kafka.admin import KafkaAdminClient, NewTopic
 from typing import List, Tuple
+
+from kafka.errors import TopicAlreadyExistsError
 
 from bai_kafka_utils.events import BenchmarkEvent, get_topic_event_type
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
@@ -15,6 +18,10 @@ logger = logging.getLogger(__name__)
 # Setting to a really high number (3 years) because we don't want it to ever close.
 MAX_IDLE_TIME_MS = 100000000000
 
+# TODO: take num_partitions and replication_factor from terraform output instead of hardcoding them
+NUM_PARTITIONS = 3
+REPLICATION_FACTOR = 3
+
 
 class WrongBenchmarkEventTypeException(Exception):
     pass
@@ -24,6 +31,10 @@ class WrongBenchmarkEventTypeException(Exception):
 def create_kafka_consumer_producer(kafka_cfg: KafkaServiceConfig) -> Tuple[KafkaConsumer, KafkaProducer]:
     # Each service's Kafka consumer subscribes to both the service's input topic and the cmd_submit topic
     consumer_topics = [kafka_cfg.consumer_topic, kafka_cfg.cmd_submit_topic]
+
+    required_topics = [kafka_cfg.producer_topic]
+    create_kafka_topic(required_topics, kafka_cfg.bootstrap_servers)
+
     return (
         create_kafka_consumer(kafka_cfg.bootstrap_servers, kafka_cfg.consumer_group_id, consumer_topics),
         create_kafka_producer(kafka_cfg.bootstrap_servers),
@@ -74,3 +85,17 @@ def create_kafka_producer(bootstrap_servers: List[str]) -> kafka.KafkaProducer:
         connections_max_idle_ms=MAX_IDLE_TIME_MS,
         key_serializer=key_serializer,
     )
+
+
+def create_kafka_topic(
+    new_topic: str, bootstrap_servers: List[str], num_partitions=NUM_PARTITIONS, replication_factor=REPLICATION_FACTOR
+):
+    # TODO: add client_id arg for improved debugging
+    admin_client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
+    topic_list = [NewTopic(name=new_topic, num_partitions=num_partitions, replication_factor=replication_factor)]
+
+    try:
+        admin_client.create_topics(new_topics=topic_list)
+        logger.info(f"Created kafka topic {new_topic}")
+    except TopicAlreadyExistsError:
+        logger.warning(f"Kafka topic {new_topic} already exists")

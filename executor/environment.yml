@@ -8,7 +8,6 @@ dependencies:
   - toml 0.9.*
   - addict 2.2.*
   - kazoo 2.5.*
-  - kafka-python 1.4.*
   - boto3 1.9.*
   - python-kubernetes 9.0.*
   - ConfigArgParse >= 0.13
@@ -18,3 +17,6 @@ dependencies:
   - pip:
     - dataclasses-json >= 0.2
     - dacite
+    # Installing kafka-python from github because there is a bug with topic creation which is only fixed on master
+    # https://github.com/dpkp/kafka-python/issues/1657#issuecomment-463290906
+    - git+git://github.com/dpkp/kafka-python.git@f126e5bfcc8f41ee5ea29b41ec6eabbc3f441647
