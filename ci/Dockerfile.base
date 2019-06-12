@@ -1,5 +1,48 @@
 FROM continuumio/miniconda3
 
 RUN conda install --channel conda-forge --name base conda==4.6.14 --yes
+
+#MAKE
 RUN apt-get update && apt-get install make
+
+#DOCKER for integration tests
+ARG DOCKER_CHANNEL=stable
+# We pin this version due to (unfortunate) incompatibility of the later versions
+# See here: https://github.com/docker/for-linux/issues/219
+# Need to dive deeper
+ARG DOCKER_VERSION=17.09.1
+
+RUN apt-get install -y --no-install-recommends \
+  apt-transport-https \
+  ca-certificates \
+  curl \
+  gnupg2 \
+  software-properties-common
+RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add -
+RUN add-apt-repository \
+   "deb [arch=amd64] https://download.docker.com/linux/debian \
+   $(lsb_release -cs) \
+   ${DOCKER_CHANNEL}"
+RUN apt-get update && apt-get install -y --no-install-recommends docker-ce=${DOCKER_VERSION}~ce-0~debian && \
+  docker -v && \
+  dockerd -v
+
+COPY start-dind.sh /usr/local/bin/start-dind.sh
+RUN chmod +x /usr/local/bin/start-dind.sh
+
+VOLUME /var/lib/docker
+
+#kubeadm local CLUSTER 
+RUN curl -L https://github.com/kubernetes-sigs/kubeadm-dind-cluster/releases/download/v0.2.0/dind-cluster-v1.12.sh -o /usr/local/bin/dind-cluster-v1.12.sh && \
+    chmod +x /usr/local/bin/dind-cluster-v1.12.sh
+#One node is enough
+ENV NUM_NODES=1 
+#Who needs ui dashboard in CI?
+ENV SKIP_DASHBOARD=true
+
+#kubectl version 1.14 to have native kustomize
+RUN apt-get install -y apt-transport-https
+RUN curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+RUN echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | tee -a /etc/apt/sources.list.d/kubernetes.list
+RUN apt-get update && apt-get install -y kubectl=1.14.*
 
