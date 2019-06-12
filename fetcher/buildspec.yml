@@ -11,6 +11,7 @@ phases:
       - dind-cluster-v1.12.sh up
       - make deploy STAGE=local LOCAL_DEPLOY="./deploy/dind_push_image.sh kube-node-1"
       - kubectl get pods
+      - sleep 60s
       - kubectl get pods > /somefile.txt
 artifacts:
   #!
