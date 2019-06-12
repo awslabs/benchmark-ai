@@ -15,7 +15,7 @@ phases:
       - kubectl get pods > /somefile.txt
       - make integration_tests STAGE=local LOCAL_DEPLOY="./deploy/dind_push_image.sh kube-node-1" | tee /it.log
 artifacts:
-  #!
+  #!!!
   files:
     - /somefile.txt
     - /it.log
