@@ -21,6 +21,7 @@ DOCKER_IMAGE_TAG = "benchmark-ai/baictl"
 CLOUDFORMATION_YAML_PATH = os.path.join(os.path.split(os.path.realpath(__file__))[0], "cfn-baictl-ecs.yml")
 CONFIG_YAML_PATH = os.path.join(os.path.split(os.path.realpath(__file__))[0], "config.yml")
 ECS_CLUSTER_NAME = "baictl-ecs-cluster"
+LOG_STREAM_WAIT_SECONDS = 300
 
 
 def main():
@@ -242,11 +243,11 @@ def destroy_cloudformation():
 
 def get_cloudwatch_logs(boto_session, cloudwatch_log_group, cloudwatch_log_stream, aws_region):
     logs_client = boto_session.client("logs")
+    LOG_STREAM_INCREMENT_SECONDS = 10
     logging.info("Waiting for logs, this should take less than 120 seconds")
 
     # Wait 5 minutes for cloudwatch log stream to show up
-    log_stream_wait_seconds = 300
-    for wait_seconds in range(0, log_stream_wait_seconds, 10):
+    for wait_seconds in range(0, LOG_STREAM_WAIT_SECONDS, LOG_STREAM_INCREMENT_SECONDS):
         log_streams = logs_client.describe_log_streams(
             logGroupName=cloudwatch_log_group,
             orderBy='LastEventTime',
@@ -261,7 +262,7 @@ def get_cloudwatch_logs(boto_session, cloudwatch_log_group, cloudwatch_log_strea
             logging.info("Cloudwatch log for run here: https://console.aws.amazon.com/cloudwatch/home?region={}#logEventViewer:group={};stream={}".format(aws_region,cloudwatch_log_group, cloudwatch_log_stream))
             break
         logging.info("Waited {} seconds for Cloudwatch log stream...".format(wait_seconds))
-        time.sleep(10)
+        time.sleep(LOG_STREAM_INCREMENT_SECONDS)
     else:
         logging.error("Can not find Cloudwatch log Stream {} -> {}".format(cloudwatch_log_group, cloudwatch_log_stream))
 
