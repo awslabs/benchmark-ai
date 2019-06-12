@@ -46,8 +46,8 @@ def main():
     cloudwatch_log_group = cloudformation_output['BaictlLogGroupName']
     docker_cli, docker_registry = login_ecr(boto_session=boto_session)
     publish_docker_image(docker_cli=docker_cli, docker_tag=docker_tag, docker_registry=docker_registry)
-    ecs_task = run_ecs_task(boto_session=boto_session, cloudformation_output=cloudformation_output, ecs_cluster="baictl-ecs-cluster")
-    cloudwatch_log_stream = parse_ecs_response(ecs_task)
+    ecs_task_response = run_ecs_task(boto_session=boto_session, cloudformation_output=cloudformation_output, ecs_cluster_name="baictl-ecs-cluster")
+    cloudwatch_log_stream = parse_ecs_response(ecs_task_response)
     get_cloudwatch_logs(boto_session=boto_session, cloudwatch_log_group=cloudwatch_log_group, cloudwatch_log_stream=cloudwatch_log_stream)
     destroy_cloudformation()
 
@@ -215,12 +215,12 @@ def publish_docker_image(docker_cli, docker_tag, docker_registry):
             raise Exception(line["errorDetail"]["message"])
 
 
-def run_ecs_task(boto_session, cloudformation_output, ecs_cluster):
+def run_ecs_task(boto_session, cloudformation_output, ecs_cluster_name):
     ecs_client = boto_session.client("ecs")
 
     logging.info("Running ECS Task to create infrastructure")
     resp = ecs_client.run_task(
-        cluster=ecs_cluster,
+        cluster=ecs_cluster_name,
         taskDefinition=cloudformation_output["TaskDefinition"],
         launchType="FARGATE",
         networkConfiguration={
@@ -264,10 +264,12 @@ def get_cloudwatch_logs(boto_session, cloudwatch_log_group, cloudwatch_log_strea
     else:
         logging.error("Can not find Cloudwatch log Stream {} -> {}".format(cloudwatch_log_group, cloudwatch_log_stream))
 
-def parse_ecs_response(ecs_task):
-    ecs_prefix_name = ecs_task['tasks'][0]['overrides']['containerOverrides'][0]['name']
-    ecs_container_name = ecs_task['tasks'][0]['containers'][0]['name']
-    ecs_task_id = ecs_task['tasks'][0]['taskArn'].split("/")[-1]
+    # TODO: Stream Logs?
+
+def parse_ecs_response(ecs_task_response):
+    ecs_prefix_name = ecs_task_response['tasks'][0]['overrides']['containerOverrides'][0]['name']
+    ecs_container_name = ecs_task_response['tasks'][0]['containers'][0]['name']
+    ecs_task_id = ecs_task_response['tasks'][0]['taskArn'].split("/")[-1]
     cloudwatch_log_stream = ecs_prefix_name + "/" + ecs_container_name + "/" + ecs_task_id
     return cloudwatch_log_stream
 
