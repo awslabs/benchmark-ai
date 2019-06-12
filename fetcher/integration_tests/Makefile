@@ -1,3 +1,4 @@
+SHELL :=/bin/bash
 PROJECT = fetcher-it
 ENV_NAME = fetcherit
 
