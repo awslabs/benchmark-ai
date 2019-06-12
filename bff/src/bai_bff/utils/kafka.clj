@@ -23,9 +23,9 @@
             (.get (.getValue entry))  ;; <-- block here on future until realized
             (log/info (format "topic [%s] has been successfully created!" (.getKey entry)))
             (catch InterruptedException e (log/warn (format "Problem creating topic [%s]: Perhaps, it has already been created "(.getKey entry)))
-                   (when-not(instance? TopicExistsException e)
+                   (when-not(instance? TopicExistsException (.getCause e))
                      (throw (RuntimeException. (str "I can't seem to create a Kafka topic for some crazy reason: "(.getMessage e)) e))))
             (catch ExecutionException e   (log/warn (format "Problem creating topic [%s]: Perhaps, it has already been created "(.getKey entry)))
-                   (when-not(instance? TopicExistsException e)
+                   (when-not(instance? TopicExistsException (.getCause e))
                      (throw (RuntimeException. (str "I can't seem to create a Kafka topic for some crazy reason: "(.getMessage e)) e)))) ))))
     (.close admin-client)))
