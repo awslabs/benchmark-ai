@@ -49,7 +49,7 @@ def main():
     publish_docker_image(docker_cli=docker_cli, docker_tag=docker_tag, docker_registry=docker_registry)
     ecs_task_response = run_ecs_task(boto_session=boto_session, cloudformation_output=cloudformation_output, ecs_cluster_name=ECS_CLUSTER_NAME)
     cloudwatch_log_stream = parse_ecs_response(ecs_task_response)
-    get_cloudwatch_logs(boto_session=boto_session, cloudwatch_log_group=cloudwatch_log_group, cloudwatch_log_stream=cloudwatch_log_stream)
+    get_cloudwatch_logs(boto_session=boto_session, cloudwatch_log_group=cloudwatch_log_group, cloudwatch_log_stream=cloudwatch_log_stream, aws_region=config.get_aws_region())
     destroy_cloudformation()
 
 
@@ -240,7 +240,7 @@ def destroy_cloudformation():
     # TODO: Ask whether CloudFormation stack should be destroyed again - this requires the ability to wait for the ECS task to finish first
     pass
 
-def get_cloudwatch_logs(boto_session, cloudwatch_log_group, cloudwatch_log_stream):
+def get_cloudwatch_logs(boto_session, cloudwatch_log_group, cloudwatch_log_stream, aws_region):
     logs_client = boto_session.client("logs")
     logging.info("Waiting for logs, this should take less than 120 seconds")
 
@@ -258,7 +258,7 @@ def get_cloudwatch_logs(boto_session, cloudwatch_log_group, cloudwatch_log_strea
             log_streams_names.append(stream['logStreamName'])
 
         if cloudwatch_log_stream in log_streams_names:
-            logging.info("Cloudwatch log for run here: https://console.aws.amazon.com/cloudwatch/home#logEventViewer:group={};stream={}".format(cloudwatch_log_group, cloudwatch_log_stream))
+            logging.info("Cloudwatch log for run here: https://console.aws.amazon.com/cloudwatch/home?region={}#logEventViewer:group={};stream={}".format(aws_region,cloudwatch_log_group, cloudwatch_log_stream))
             break
         logging.info("Waited {} seconds for Cloudwatch log stream...".format(wait_seconds))
         time.sleep(10)
