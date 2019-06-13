@@ -19,7 +19,7 @@ phases:
       - make
       # Deploy to local "minikube"
       # Since we don't push anything, we don't care about the hash - so no dependency on git
-      - make deploy STAGE=local LOCAL_DEPLOY="./deploy/dind_push_image.sh kube-node-1 " COMMIT_SHORT_HASH="local-latest"
+      - make deploy STAGE=local LOCAL_DEPLOY="bash ./deploy/dind_push_image.sh kube-node-1 " COMMIT_SHORT_HASH="local-latest"
       # All the containers are probably just creating
       - kubectl get pods
       - sleep 30s
@@ -30,4 +30,4 @@ phases:
       # Sleep over it again - yup, yup, sleep is the most important tool in multi-threaded programming.
       - sleep 10s
       - kubectl get pods
-      - make integration_tests STAGE=local LOCAL_DEPLOY="../deploy/dind_push_image.sh kube-node-1 "
+      - make integration_tests STAGE=local LOCAL_DEPLOY="bash ../deploy/dind_push_image.sh kube-node-1 "
