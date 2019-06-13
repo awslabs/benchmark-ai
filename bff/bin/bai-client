@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 DEBUG=${DEBUG:-0}
 VERBOSE=${VERBOSE:-0}
@@ -9,7 +9,23 @@ declare -r MY_SHA1=$(sha1sum ${0} | awk '{print $1}')
 declare -r BAI_HOME=${HOME}/.bai
 declare -r BAI_HISTORY=${BAI_HOME}/history
 declare -r BAI_ACTION_IDS=${BAI_HOME}/action_ids
+declare -r BAI_DATABASE=${BAI_HOME}/db
 declare -r BAI_SERVICE_ENDPOINT_CONFIG=${BAI_HOME}/service_endpoint
+
+## EMOJIS ##  https://apps.timwhitlock.info/emoji/tables/unicode
+declare -A emoji
+emoji[fetcher-dispatcher]="\xF0\x9F\x90\x95 "
+emoji[executor]="\xE2\x9A\xA1 "
+emoji[bai-bff]="\xE2\x9C\x8A "
+emoji[watcher]="\xF0\x9F\x91\x80 "
+emoji[bai-bff-error]="\xF0\x9F\x92\x94 "
+emoji[FAIL]="\xE2\x9D\x8C "
+emoji[SUCCESS]="\xE2\x9C\x85 "
+emoji[WAIT]="\xF0\x9F\x95\x9D "
+emoji[GOOD]="\xF0\x9F\x98\x8E "
+emoji[WARN]="\xF0\x9F\x94\xA5 "
+emoji[ERROR]="\xF0\x9F\x92\xA5 "
+emoji[SUCESS_ALL]="\xF0\x9F\x8E\x89 "
 
 banner() {
     printf '
@@ -49,8 +65,21 @@ This is the command-line, client-side interface to the Bechmark AI service...
           --show-registered-service-endpoint : The hostname|IP:PORT of bai service you are using
           --help                   : (this output)
 
+          (please use gnu tools for best results)
+
 ' "${0##*/}" "${0##*/}"
     exit 0
+}
+
+show_legend() {
+    echo "----------------"
+    echo "Emoji legend:"
+    echo "----------------"
+    for key in ${!emoji[@]}; do
+        printf "%b = %s\n " "${emoji[${key}]}" "${key}"
+    done
+    echo "----------------"
+    echo
 }
 
 check_tools() {
@@ -82,6 +111,7 @@ _setup() {
     touch "${BAI_HOME}/action_ids"
     touch "${BAI_HOME}/history"
     touch "${BAI_HOME}/service_endpoint"
+    touch "${BAI_HOME}/db"
 }
 
 #---------------------------------------------------------
@@ -220,12 +250,14 @@ submit() {
         current_service_endpoint="localhost:8080"
     fi
 
+    local cmd
     local data=$(_generate_submit_event ${descriptor_filename})
     if [[ -n "${data}" ]]; then
         cmd="curl -s -X POST -H Content-Type: application/json -d '"${data}"' http://"${current_service_endpoint}"/api/job/descriptor"
         ((VERBOSE)) && echo ${cmd}
-        eval ${cmd} |tee -a ${BAI_ACTION_IDS}
-        echo $?
+        cat <<EOF |tee -a ${BAI_ACTION_IDS}
+$(echo $(eval ${cmd}))
+EOF
     else
         printf '\033[01;31m[ERROR]\033[0m No data to send.\n\n'
         exit 1
@@ -235,15 +267,34 @@ submit() {
 #local db lookup
 get_last_action_id() {
     local last_action_id=$(cat ${BAI_ACTION_IDS} | tail -n 1 | awk '{print $1}')
-    printf "[\033[01;33m%s\033[0m] \n" "$last_action_id"
+    printf "$last_action_id"
 }
 
 #REST API call
 get_submission_status() {
-    local action_id=${1:?"get_submission_status() -> You MUST provie the action_id returned by the initial submission"}
-    ((VERBOSE)) && echo "get_submission_status ${action_id}"
-    #TODO - implement me
-    echo "(implement me)"
+    local action_id=${1:-$(get_last_action_id)}
+    ((VERBOSE)) && echo "get_submission_status for action: ${action_id}"
+
+    local current_service_endpoint=$(cat "${BAI_SERVICE_ENDPOINT_CONFIG}")
+    local cmd
+
+    ((VERBOSE)) && echo "database file = ${BAI_DATABASE}"
+
+    cmd="curl -s -X GET -H Content-Type: application/json http://"${current_service_endpoint}"/api/job/"$(get_client_id)"/"${action_id}
+    ((VERBOSE)) && echo ${cmd}
+    echo "Status: [${action_id}]"
+    cat <<EOF | tee -a ${BAI_DATABASE} | jq --compact-output '{src: .visited[-1].svc , id: .message_id[0:8], msg: .message}' | while read line; do _format_status_line $line; done;
+$(eval ${cmd} | jq '.[]')
+EOF
+
+}
+
+_format_status_line() {
+    local src=$(jq --compact-output '.src' <<<"$line")
+    local id=$(jq  --compact-output '.id'  <<<"$line")
+    local msg=$(jq --compact-output '.msg' <<<"$line")
+
+    printf "%b|\033[01;33m%s\033[0m|%s\n" "${emoji[$(sed 's/^.\(.*\).$/\1/' <<<"$src")]}" "$(sed 's/^.\(.*\).$/\1/' <<<"$id")" "$(sed 's/^.\(.*\).$/\1/' <<<"$msg")"
 }
 
 #command event
@@ -268,6 +319,7 @@ abort_submission() {
         current_service_endpoint="localhost:8080"
     fi
 
+    local cmd
     local data=$(_generate_command_event "cancel" ${action_id} $*)
     if [[ -n "${data}" ]]; then
         cmd="curl -s -X DELETE -H Content-Type: application/json -d '"${data}"' http://"${current_service_endpoint}"/api/job/$(get_client_id)/${action_id}"
@@ -279,6 +331,29 @@ abort_submission() {
     fi
 }
 
+#---------------------------------------
+# JQ shenanigans in the context of an action_id
+#---------------------------------------
+
+#shows the full JSON event for the given message_id partial value
+inspect() {
+    local message_id={$1}
+    local action_id="foo"
+    #TODO finish me... parse through saved file with select query on message-id
+    #     Ex: jq '.[] | select(.message_id=="44bd4f92-5a53-4506-a8df-798b8d22e098")'
+    #     EX: jq '.[] | select(.message_id|test("44bd4f92-"))'
+}
+
+bang_get_latest_timestamp() {
+    echo "bang_get_latest_timestamp"
+    #TODO Goes through and gets the latest timestamp from the last message in the database
+}
+
+set_latest_timestamp() {
+    echo "set_latest_timestamp"
+    #TODO - writes the latest timestamp to timestamp file in actionID dir
+}
+#---------------------------------------
 
 
 main() {
@@ -308,7 +383,8 @@ main() {
                     ;;
                 --status)
                     shift
-                    get_submission_status ${1} ; shift
+                    get_submission_status ${1}
+                    [ -z "${1}" ] && shift
                     ;;
                 --results)
                     shift
@@ -362,6 +438,15 @@ main() {
                 --help | -h)
                     shift
                     usage
+                    ;;
+                --legend)
+                    show_legend
+                    exit 0
+                    ;;
+                --inspect| -i)
+                    shift
+                    inspect ${@}
+                    exit 0
                     ;;
                 --banner) #"hidden" option
                     shift
