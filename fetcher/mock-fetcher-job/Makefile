@@ -1,4 +1,3 @@
-SHELL :=/bin/bash
 PROJECT = mock-fetcher-job
 
 BENCHMARK_DIR = ../..

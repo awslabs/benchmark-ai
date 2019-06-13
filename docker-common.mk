@@ -1,3 +1,5 @@
+SHELL :=/bin/bash
+
 DOCKER = docker
 DEPLOY_ENV_NAME = deploy-$(ENV_NAME)
 DEPLOY_CONDA_RUN = conda run --name $(DEPLOY_ENV_NAME)
