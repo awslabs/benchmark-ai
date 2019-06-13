@@ -166,7 +166,7 @@ resource "aws_codebuild_project" "ci-unit-tests-master" {
       var.projects[count.index],
       var.ci_docker_image["default"]
     )
-    type = "LINUX_CONTAINER",
+    type = "LINUX_CONTAINER"
     privileged_mode = true
   }
 
