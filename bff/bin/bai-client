@@ -1,4 +1,4 @@
-#!/usr/local/bin/bash
+#!/usr/bin/env bash
 
 DEBUG=${DEBUG:-0}
 VERBOSE=${VERBOSE:-0}
@@ -64,6 +64,8 @@ This is the command-line, client-side interface to the Bechmark AI service...
           --unregister             : clears service endpoint from configuration
           --show-registered-service-endpoint : The hostname|IP:PORT of bai service you are using
           --help                   : (this output)
+
+          (please use gnu tools for best results)
 
 ' "${0##*/}" "${0##*/}"
     exit 0
