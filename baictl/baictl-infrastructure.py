@@ -204,6 +204,7 @@ def _cloudformation_stack_exists(cloudformation_client, stack_name):
 
 def publish_docker_image(docker_cli, docker_tag, docker_registry):
     logging.info("Publishing docker image")
+    logging.info("Publish should take ~10 minutes depending on your internet speed")
     output = docker_cli.push(
         docker_tag,
         stream=True,
