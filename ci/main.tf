@@ -7,11 +7,8 @@ terraform {
 }
 
 provider "aws" {
-  version = ">= 2.4.0"
+  version = ">= 2.12.0"
   region  = var.region
-  allowed_account_ids = [
-    563267192464,
-  ] # bai-gamma@amazon.com
 }
 
 data "aws_caller_identity" "current" {}
@@ -45,8 +42,6 @@ resource "aws_iam_policy" "build-artifacts" {
   EOF
 }
 
-
-# Codebuild specific stuff
 
 resource "aws_iam_role" "code-build-role" {
   name = "code-build-role"
@@ -127,8 +122,21 @@ resource "aws_iam_role_policy_attachment" "ecr-permissions" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
 }
 
+#############################
+# CodeBuild project for PRs #
+#############################
+
+locals {
+  # Only add PR CodeBuild projects to the official CI account, otherwise it will create webhooks in the official repo.
+  # We don't want that for 2 reasons:
+  # - Github has a limit of 20 webhooks in a repo.
+  # - We don't want other people's instantiations of CI validating PRs to the main repo
+  is_official_ci_account = data.aws_caller_identity.current.account_id == "563267192464"
+  number_of_codebuild_projects_for_pull_requests = local.is_official_ci_account ? length(var.projects) : 0
+}
+
 resource "aws_codebuild_project" "ci-unit-tests" {
-  count         = length(var.projects)
+  count         = local.number_of_codebuild_projects_for_pull_requests
   name          = var.projects[count.index]
   description   = "Unit tests build of ${var.projects[count.index]}"
   build_timeout = "30"
@@ -160,16 +168,10 @@ resource "aws_codebuild_project" "ci-unit-tests" {
     buildspec           = "${var.projects[count.index]}/buildspec.yml"
     report_build_status = true
   }
-
-  tags = {
-    GithubRepo = "benchmark-ai"
-    GithubOrg  = "MXNetEdge"
-    Workspace  = terraform.workspace
-  }
 }
 
 resource "aws_codebuild_webhook" "ci-unit-tests" {
-  count        = length(var.projects)
+  count        = local.number_of_codebuild_projects_for_pull_requests
   project_name = aws_codebuild_project.ci-unit-tests.*.name[count.index]
 }
 
@@ -194,7 +196,7 @@ locals {
 
 # TODO: Still not supported by AWS provider in Terraform: https://github.com/terraform-providers/terraform-provider-aws/issues/7503
 resource "null_resource" "ci-unit-tests-filter" {
-  count = length(var.projects)
+  count = local.number_of_codebuild_projects_for_pull_requests
   provisioner "local-exec" {
     command = "aws --region ${var.region} codebuild update-webhook --project-name ${self.triggers.project_name} --filter-groups '[${self.triggers.filter_groups}]'"
   }

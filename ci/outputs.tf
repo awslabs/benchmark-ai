@@ -1,8 +1,8 @@
 output "ci-unit-tests-badge-url" {
-  value = zipmap(
+  value = local.is_official_ci_account ? zipmap(
     aws_codebuild_project.ci-unit-tests.*.name,
-    aws_codebuild_project.ci-unit-tests-master.*.badge_url,
-  )
+    aws_codebuild_project.ci-unit-tests-master.*.badge_url
+  ) : {}
 }
 
 output "chime-hook-url-arn" {
