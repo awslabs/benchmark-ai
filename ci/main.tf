@@ -105,7 +105,7 @@ resource "aws_iam_role_policy" "code-build-role-policy-eks-all-actions" {
         {
             "Effect": "Allow",
             "Action": "eks:*",
-            "Resource": "arn:aws:eks:us-east-1:${data.aws_caller_identity.current.account_id}:cluster/benchmark-cluster"
+            "Resource": "arn:aws:eks:${var.region}:${data.aws_caller_identity.current.account_id}:cluster/benchmark-cluster"
         }
     ]
   }
