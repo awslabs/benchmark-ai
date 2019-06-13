@@ -25,11 +25,12 @@ LOG_STREAM_WAIT_SECONDS = 300
 
 
 def main():
-    logging.getLogger().setLevel(logging.DEBUG)
-
     parser = argparse.ArgumentParser(description="Run baictl create/destroy infra remotely")
     parser.add_argument("mode", help="create or destroy", nargs="?", choices=("create", "destroy"))
+    parser.add_argument("--debug", help="verbose debug output", action="store_true", default=False)
     args = parser.parse_args()
+
+    logging.getLogger().setLevel(logging.DEBUG) if args.debug else logging.getLogger().setLevel(logging.INFO)
 
     if not args.mode:
         raise ValueError('Please pass either "create" or "destroy".')
@@ -202,6 +203,8 @@ def _cloudformation_stack_exists(cloudformation_client, stack_name):
 
 
 def publish_docker_image(docker_cli, docker_tag, docker_registry):
+    logging.info("Publishing docker image")
+    logging.info("Publish should take ~10 minutes depending on your internet speed")
     output = docker_cli.push(
         docker_tag,
         stream=True,
@@ -218,6 +221,7 @@ def publish_docker_image(docker_cli, docker_tag, docker_registry):
 
 
 def run_ecs_task(boto_session, cloudformation_output, ecs_cluster_name):
+    logging.info("Executing infrastructure build on AWS Elastic Container Service")
     ecs_client = boto_session.client("ecs")
 
     logging.info("Running ECS Task to create infrastructure")

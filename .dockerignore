@@ -6,4 +6,4 @@ baictl/Dockerfile-baictl
 .flake8
 .git
 .gitmodules
-baictl/remote-baictl.py
+baictl/baictl-infrastructure.py
