@@ -6,6 +6,7 @@ phases:
       - start-dind.sh | tee /dind.log
   build:
     commands:
+      - cat $(which start-dind.sh)
       - echo imok
       #- dind-cluster-v1.12.sh up | tee /cluster.log
       #- cd fetcher
