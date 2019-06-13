@@ -29,12 +29,12 @@ integration_tests:
 # properly this is good enough.
 override define fn_k8s_deploy
 	[[ "$(STAGE)" == "local" ]] && $(KUBECTL) apply -f $(BENCHMARK_DIR)/mock-infra $(KUBECTL_FLAGS) || true
-	$(DEPLOY_CONDA_RUN) ./deploy/stage_deploy.sh $(STAGE)
+	$(DEPLOY_CONDA_RUN_SHELL) ./deploy/stage_deploy.sh $(STAGE)
 endef
 
 override define fn_k8s_undeploy
 	[[ "$(STAGE)" == "local" ]] && $(KUBECTL) delete -f $(BENCHMARK_DIR)/mock-infra $(KUBECTL_FLAGS) || true
-	$(DEPLOY_CONDA_RUN) ./deploy/stage_deploy.sh $(STAGE) delete
+	$(DEPLOY_CONDA_RUN_SHELL) ./deploy/stage_deploy.sh $(STAGE) delete
 endef
 
 deploy.yml:
