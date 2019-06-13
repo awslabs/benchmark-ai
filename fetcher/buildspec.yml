@@ -3,6 +3,7 @@ version: 0.2
 phases:
   install:
     commands:
+      - cat $(which start-dind.sh)
       - start-dind.sh | tee /dind.log
   build:
     commands:
