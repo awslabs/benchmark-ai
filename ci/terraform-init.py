@@ -78,11 +78,13 @@ def main():
 
     s3 = session.resource("s3")
     bucket = s3.Bucket(config.bucket)
-    if region == "us-east-1":
-        # https://github.com/boto/boto3/issues/125#issuecomment-109408790
-        bucket.create()
-    else:
-        bucket.create(CreateBucketConfiguration={"LocationConstraint": region})
+    bucket.load()
+    if bucket.creation_date is None:
+        if region == "us-east-1":
+            # https://github.com/boto/boto3/issues/125#issuecomment-109408790
+            bucket.create()
+        else:
+            bucket.create(CreateBucketConfiguration={"LocationConstraint": region})
 
     config.write()
 
