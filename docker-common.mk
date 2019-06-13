@@ -12,6 +12,7 @@ COMMIT_SHORT_HASH ?= $(shell git rev-parse --short HEAD)
 DOCKER_IMAGE_LABEL ?= $(COMMIT_SHORT_HASH)
 DOCKER_IMAGE_TAG = $(DOCKER_REPOSITORY):$(DOCKER_IMAGE_LABEL)
 
+# Default local action - don't push.
 LOCAL_DEPLOY = echo "Skipping local publishing step - use local docker repo"
 
 # package is a high level command while docker_package can be executed separately
