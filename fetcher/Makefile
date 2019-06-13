@@ -22,9 +22,8 @@ endif
 
 integration_tests:
 	echo $(TEST_LABEL)
-	cd mock-fetcher-job && $(MAKE) docker_package
-	# docker_publish $(TEST_LABEL)
-	#cd $(INTEGRATION_TEST_FOLDERS) && $(MAKE) run $(TEST_LABEL)
+	cd mock-fetcher-job && $(MAKE) docker_publish $(TEST_LABEL)
+	cd $(INTEGRATION_TEST_FOLDERS) && $(MAKE) run $(TEST_LABEL)
 
 # Overrides how to deploy to Kubernetes because fetcher is using a poor man's version of Kustomize. Until we adopt it
 # properly this is good enough.
