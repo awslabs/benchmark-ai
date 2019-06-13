@@ -1,12 +1,13 @@
 version: 0.2
 
 phases:
+  install:
+    commands:
+      - start-dind.sh | tee /dind.log
   build:
     commands:
-      - cd fetcher
-      #- make
-      - start-dind.sh | tee /dind.log
       - dind-cluster-v1.12.sh up | tee /cluster.log
+      - cd fetcher
       - make deploy STAGE=local LOCAL_DEPLOY="./deploy/dind_push_image.sh kube-node-1 " | tee /build.log
       - kubectl get pods
       - sleep 30s
