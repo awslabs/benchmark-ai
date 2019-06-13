@@ -67,4 +67,4 @@ k8s_undeploy: _deploy_venv
 JOB_TIMEOUT ?= 300
 
 _wait_for_job:
-	$(BENCHMARK_DIR)/wait_for_job.sh $(JOB_NAME) $(JOB_TIMEOUT)
+	$(SHELL) $(BENCHMARK_DIR)/wait_for_job.sh $(JOB_NAME) $(JOB_TIMEOUT)
