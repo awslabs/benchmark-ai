@@ -27,7 +27,7 @@ variable "region" {
 variable "ci_docker_image" {
   type = map(string)
   default = {
-    "default" = "jlcont/bai-ci-python:260419"
+    "default" = "benchmarkai/ci"
     "bff"     = "gavin/bai-bff-dev"
   }
 }
