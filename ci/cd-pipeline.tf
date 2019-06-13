@@ -160,13 +160,14 @@ resource "aws_codebuild_project" "ci-unit-tests-master" {
   }
 
   environment {
-    compute_type = "BUILD_GENERAL1_SMALL"
+    compute_type = "BUILD_GENERAL1_LARGE"
     image = lookup(
       var.ci_docker_image,
       var.projects[count.index],
       var.ci_docker_image["default"]
     )
-    type = "LINUX_CONTAINER"
+    type = "LINUX_CONTAINER",
+    privileged_mode = true
   }
 
   source {
