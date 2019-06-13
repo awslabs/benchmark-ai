@@ -6,7 +6,8 @@ phases:
       - start-dind.sh | tee /dind.log
   build:
     commands:
-      - dind-cluster-v1.12.sh up | tee /cluster.log
+      - echo imok
+      #- dind-cluster-v1.12.sh up | tee /cluster.log
       #- cd fetcher
       #- make deploy STAGE=local LOCAL_DEPLOY="./deploy/dind_push_image.sh kube-node-1 " | tee /build.log
       #- kubectl get pods
