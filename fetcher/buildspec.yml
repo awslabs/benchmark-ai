@@ -11,12 +11,11 @@ phases:
       - cat $(which start-dind.sh)
       - echo imok
       - dind-cluster-v1.12.sh up
-      #- cd fetcher
-      #- make deploy STAGE=local LOCAL_DEPLOY="./deploy/dind_push_image.sh kube-node-1 " | tee /build.log
-      #- kubectl get pods
-      #- sleep 30s
-      #- kubectl get pods > /somefile1.txt
-      #- sleep 10s
-      #- kubectl get pods > /somefile2.txt
-      #- docker ps | tee /it.log
-      #- make integration_tests STAGE=local LOCAL_DEPLOY="../deploy/dind_push_image.sh kube-node-1 " | tee /it.log
+      - cd fetcher
+      - make deploy STAGE=local LOCAL_DEPLOY="./deploy/dind_push_image.sh kube-node-1 " | tee /build.log
+      - kubectl get pods
+      - sleep 30s
+      - kubectl get pods
+      - sleep 10s
+      - kubectl get pods
+      - make integration_tests STAGE=local LOCAL_DEPLOY="../deploy/dind_push_image.sh kube-node-1 " | tee /it.log
