@@ -31,6 +31,7 @@ class Config:
     github_organization: str
     bucket_prefix: Optional[str]
     bucket: Optional[str]
+    chime_hook_url: Optional[str]
 
     def __init__(self, args):
         existing_values = {}
@@ -42,6 +43,7 @@ class Config:
         self.github_organization = args.github_organization or existing_values.get("github_organization") or "MXNetEdge"
         self.bucket_prefix = args.bucket_prefix or "bai-ci-terraform-remote-state"
         self.bucket = args.bucket_name or existing_values.get("bucket")
+        self.chime_hook_url = args.chime_hook_url or existing_values.get("chime_hook_url")
 
     def write(self):
         os.makedirs(".terraform", exist_ok=True)
@@ -53,6 +55,8 @@ class Config:
             f.write(f'region="{self.region}"\n')
             f.write(f'github_organization="{self.github_organization}"\n')
             f.write(f'github_branch="{self.github_branch}"\n')
+            if self.chime_hook_url:
+                f.write(f'chime_hook_url="{self.chime_hook_url}"\n')
 
 
 def main():
@@ -63,6 +67,7 @@ def main():
     group.add_argument("--bucket-name")
     parser.add_argument("--github-branch")
     parser.add_argument("--github-organization")
+    parser.add_argument("--chime-hook-url")
     config = Config(parser.parse_args())
 
     region = config.region

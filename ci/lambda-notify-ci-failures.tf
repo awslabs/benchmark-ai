@@ -55,6 +55,7 @@ resource "aws_iam_role_policy" "lambda-cloudwatch-logs" {
 }
 
 resource "aws_iam_role_policy" "retrieve-chime-hook-url-secret" {
+  count = var.chime_hook_url == "" ? 0 : 1
   name = "retrieve-chime-hook-url-secret"
   role = aws_iam_role.notify-failures-to-chime.name
 
@@ -67,7 +68,7 @@ resource "aws_iam_role_policy" "retrieve-chime-hook-url-secret" {
           {
               "Effect": "Allow",
               "Action": "secretsmanager:GetSecretValue",
-              "Resource": "${aws_secretsmanager_secret.secret-chime-hook-url.arn}"
+              "Resource": "${aws_secretsmanager_secret.secret-chime-hook-url[0].arn}"
           }
       ]
   }
@@ -132,6 +133,15 @@ resource "aws_cloudwatch_event_target" "invoke-bot-on-codepipeline-rule" {
 
 resource "aws_secretsmanager_secret" "secret-chime-hook-url" {
   # Disable the secret if there is no input
+  count = var.chime_hook_url == "" ? 0 : 1
   name = "ChimeHookUrl"
   description = "Url to post messages to MXNet Berlin Chime channel"
+}
+
+
+resource "aws_secretsmanager_secret_version" "secret-chime-hook-url" {
+  # Disable the secret if there is no input
+  count = var.chime_hook_url == "" ? 0 : 1
+  secret_id = aws_secretsmanager_secret.secret-chime-hook-url[0].arn
+  secret_string = var.chime_hook_url
 }

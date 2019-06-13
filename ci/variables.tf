@@ -48,3 +48,8 @@ variable "github_branch" {
   type = string
   default = "master"
 }
+
+variable "chime_hook_url" {
+  type = string
+  default = ""
+}
