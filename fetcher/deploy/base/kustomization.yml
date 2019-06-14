@@ -1,0 +1,4 @@
+resources:
+- roles.yml
+- config.yml
+- fetcher-service.yml
