@@ -11,6 +11,7 @@ declare -r BAI_HISTORY=${BAI_HOME}/history
 declare -r BAI_ACTION_IDS=${BAI_HOME}/action_ids
 declare -r BAI_DATABASE=${BAI_HOME}/db
 declare -r BAI_SERVICE_ENDPOINT_CONFIG=${BAI_HOME}/service_endpoint
+declare -r TSTAMP_FILENAME=latest_tstamp
 
 ## EMOJIS ##  https://apps.timwhitlock.info/emoji/tables/unicode
 declare -A emoji
@@ -176,7 +177,7 @@ _generate_submit_event() {
     "client_sha1"    : "${MY_SHA1}",
     "client_username" : "$(whoami)",
     "date" : "$(date -u +"%a %b %d %H:%M:%S %Z %Y")",
-    "visited"  : [{"svc" : "${SERVICE_NAME}", "tstamp" : 1557150931877, "version" :"${VERSION}"}],
+    "visited"  : [{"svc" : "${SERVICE_NAME}", "tstamp" : $(( $(date +%s) * 1000 )), "version" :"${VERSION}"}],
     "payload"  : {
         "toml" : {
             "descriptor_filename" : "${descriptor_filename##*/}",
@@ -210,7 +211,7 @@ _generate_command_event() {
     "client_sha1"    : "${MY_SHA1}",
     "client_username" : "$(whoami)",
     "date" : "$(date -u +"%a %b %d %H:%M:%S %Z %Y")",
-    "visited"  : [{"svc" : "${SERVICE_NAME}", "tstamp" : 1557150931877, "version" :"${VERSION}"}],
+    "visited"  : [{"svc" : "${SERVICE_NAME}", "tstamp" : $(( $(date +%s) * 1000 )), "version" :"${VERSION}"}],
     "payload"  : {
         "command" : "${command}",
         "args" : [ ${command_args_strings}]
@@ -278,10 +279,25 @@ get_last_action_id() {
     printf "$last_action_id"
 }
 
+get_latest_event_timestamp() {
+    local action_id=${1:-$(get_last_action_id)}
+    local path=${BAI_DATABASE}/$(get_client_id)"/"${action_id}
+    local tstamp_file=${path}/${TSTAMP_FILENAME}
+    local tstamp_file_size=$(stat -x foo | grep Size | awk '{print $2}')
+
+    if [[ -f "${tstamp_file}" && ((tstamp_file_size > 0)) ]]; then
+        local latest_timestamp=$(cat ${BAI_ACTION_IDS} | tail -n 1 | awk '{print $1}')
+        printf "%d" "${latest_timestamp}"
+    else
+        printf "0"
+    fi
+}
+
 #REST API call
 get_submission_status() {
     local action_id=${1:-$(get_last_action_id)}
     ((VERBOSE)) && echo "get_submission_status for action: ${action_id}"
+    current_action_id=$action_id
 
     local current_service_endpoint=$(cat "${BAI_SERVICE_ENDPOINT_CONFIG}")
     local path=$(get_client_id)"/"${action_id}
@@ -289,10 +305,10 @@ get_submission_status() {
 
     ((VERBOSE)) && echo "database = ${BAI_DATABASE}"
 
-    cmd="curl -s -X GET -H Content-Type: application/json http://"${current_service_endpoint}"/api/job/"${path}
+    cmd="curl -s -X GET -H Content-Type: application/json http://"${current_service_endpoint}"/api/job/"${path}?since=$(get_latest_event_timestamp)
     ((VERBOSE)) && echo ${cmd}
     echo "Status: [${action_id}]"
-    cat <<EOF | tee -a ${BAI_DATABASE}/${path}/data 2> /dev/null | jq --compact-output '{src: .visited[-1].svc , id: .message_id[0:8], msg: .message}' | while read line; do _as_status_line $line; done;
+    cat <<EOF | tee -a ${BAI_DATABASE}/${path}/data 2> /dev/null | jq --compact-output '{src: .visited[-1].svc , id: .message_id[0:8], msg: .message, tstamp: .visited[-1].tstamp}' | while read line; do _as_status_line $line; done;
 $(eval ${cmd} | jq '.[]')
 EOF
 
@@ -312,6 +328,9 @@ _as_status_line() {
     local id=$(jq  --compact-output '.id'  <<<"$line")
 
     _print_status "$(sed 's/^.\(.*\).$/\1/' <<<"$msg")" "$(sed 's/^.\(.*\).$/\1/' <<<"$src")" "$(sed 's/^.\(.*\).$/\1/' <<<"$id")"
+
+    local tstamp=$(jq --compact-output '.tstamp' <<<"$line")
+    echo "$tstamp" > "${BAI_DATABASE}/$(get_client_id)/${current_action_id}/${TSTAMP_FILENAME}"
 }
 
 #command event
