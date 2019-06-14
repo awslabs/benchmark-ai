@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import textwrap
 from dataclasses import dataclass
 
 from typing import Dict, Optional
@@ -60,7 +61,17 @@ class Config:
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    description = textwrap.dedent(
+        """\
+        An utility script that is meant to replace calling `terraform init`.
+
+        It takes care of creating the S3 Bucket so that Terraform knows how to handle remote state. Also, the CI's
+        Terraform code accepts parameters (eg.: branch name), which this script writes to the `terraform.tfvars` file.
+
+        The default values are meant to reference the `master` branch of MXNetEdge/benchmark-ai.
+        """
+    )
+    parser = argparse.ArgumentParser(description=description)
     parser.add_argument("--region")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--bucket-prefix")
