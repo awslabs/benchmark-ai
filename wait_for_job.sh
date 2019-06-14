@@ -27,8 +27,9 @@ until [[ $SECONDS -gt $END ]] || \
 done
 echo "Job finished"
 
-[[ $(_get_status $JOB_NAME "Failed") == "True" ]] && _dump_log $JOB_NAME &&exit 1
-[[ $(_get_status $JOB_NAME "Complete")  == "True"  ]] && _dump_log $JOB_NAME && exit 0
+_dump_log $JOB_NAME
+[[ $(_get_status $JOB_NAME "Failed") == "True" ]] && exit 1
+[[ $(_get_status $JOB_NAME "Complete")  == "True"  ]] && exit 0
 echo "Timeout" && exit 2
 
 
