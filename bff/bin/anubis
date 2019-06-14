@@ -4,7 +4,7 @@ DEBUG=${DEBUG:-0}
 VERBOSE=${VERBOSE:-0}
 
 declare -r VERSION="0.1.0-481dad2"
-declare -r SERVICE_NAME="anubis"
+declare -r SERVICE_NAME="anubis-client"
 declare -r MY_SHA1=$(sha1sum ${0} | awk '{print $1}')
 declare -r BAI_HOME=${HOME}/.bai
 declare -r BAI_HISTORY=${BAI_HOME}/history
