@@ -15,6 +15,7 @@ declare -r BAI_SERVICE_ENDPOINT_CONFIG=${BAI_HOME}/service_endpoint
 ## EMOJIS ##  https://apps.timwhitlock.info/emoji/tables/unicode
 declare -A emoji
 emoji[fetcher-dispatcher]="\xF0\x9F\x90\x95 "
+emoji[anubis-client]="\xE2\x99\x8E "
 emoji[executor]="\xE2\x9A\xA1 "
 emoji[bai-bff]="\xE2\x9C\x8A "
 emoji[watcher]="\xF0\x9F\x91\x80 "
@@ -26,18 +27,16 @@ emoji[GOOD]="\xF0\x9F\x98\x8E "
 emoji[WARN]="\xF0\x9F\x94\xA5 "
 emoji[ERROR]="\xF0\x9F\x92\xA5 "
 emoji[SUCESS_ALL]="\xF0\x9F\x8E\x89 "
+emoji[SEARCH]="\xF0\x9F\x94\x8D "
 
 banner() {
     printf '
-
-\033[01;31m
-                       _      _
+\033[01;31m                       _      _
                       | |    (_)
    __ _  _ __   _   _ | |__   _  ___
   / _  ||  _ \ | | | ||  _ \ | |/ __|\033[0m
 \033[01;33m | (_| || | | || |_| || |_) || |\__ \\\033[0m
-\033[01;32m  \__,_||_| |_| \__,_||_.__/ |_||___/
-\033[0m
+\033[01;32m  \__,_||_| |_| \__,_||_.__/ |_||___/\033[0m \xE2\x99\x8E
 
 (v%s)
 -------------------------
@@ -257,6 +256,7 @@ submit() {
     if [[ -n "${data}" ]]; then
         cmd="curl -s -X POST -H Content-Type: application/json -d '"${data}"' http://"${current_service_endpoint}"/api/job/descriptor"
         ((VERBOSE)) && echo ${cmd}
+        _print_status "sending ${descriptor_filename} to anubis service @ ${current_service_endpoint}"
         cat <<EOF |tee -a ${BAI_ACTION_IDS}
 $(echo $(eval ${cmd}))
 EOF
@@ -285,18 +285,26 @@ get_submission_status() {
     cmd="curl -s -X GET -H Content-Type: application/json http://"${current_service_endpoint}"/api/job/"$(get_client_id)"/"${action_id}
     ((VERBOSE)) && echo ${cmd}
     echo "Status: [${action_id}]"
-    cat <<EOF | tee -a ${BAI_DATABASE} | jq --compact-output '{src: .visited[-1].svc , id: .message_id[0:8], msg: .message}' | while read line; do _format_status_line $line; done;
+    cat <<EOF | tee -a ${BAI_DATABASE} | jq --compact-output '{src: .visited[-1].svc , id: .message_id[0:8], msg: .message}' | while read line; do _as_status_line $line; done;
 $(eval ${cmd} | jq '.[]')
 EOF
 
 }
 
-_format_status_line() {
+_print_status() {
+    local msg=${1}
+    local src=${2:-"anubis-client"}
+    local id=${3:-"00000000"}
+
+    printf "%b|\033[01;33m%s\033[0m|%s\n" "${emoji[${src}]}" "${id}" "${msg}"
+}
+
+_as_status_line() {
+    local msg=$(jq --compact-output '.msg' <<<"$line")
     local src=$(jq --compact-output '.src' <<<"$line")
     local id=$(jq  --compact-output '.id'  <<<"$line")
-    local msg=$(jq --compact-output '.msg' <<<"$line")
 
-    printf "%b|\033[01;33m%s\033[0m|%s\n" "${emoji[$(sed 's/^.\(.*\).$/\1/' <<<"$src")]}" "$(sed 's/^.\(.*\).$/\1/' <<<"$id")" "$(sed 's/^.\(.*\).$/\1/' <<<"$msg")"
+    _print_status "$(sed 's/^.\(.*\).$/\1/' <<<"$msg")" "$(sed 's/^.\(.*\).$/\1/' <<<"$src")" "$(sed 's/^.\(.*\).$/\1/' <<<"$id")"
 }
 
 #command event
