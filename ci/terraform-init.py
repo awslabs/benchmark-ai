@@ -79,12 +79,11 @@ def main():
         sts = session.client("sts")
         config.bucket = config.bucket_prefix + "-" + sts.get_caller_identity()["Account"]
 
-    print(f"Will create a bucket named `{config.bucket}` in region `{region}`")
-
     s3 = session.resource("s3")
     bucket = s3.Bucket(config.bucket)
     bucket.load()
     if bucket.creation_date is None:
+        print(f"Will create a bucket named `{config.bucket}` in region `{region}`")
         if region == "us-east-1":
             # https://github.com/boto/boto3/issues/125#issuecomment-109408790
             bucket.create()
@@ -98,6 +97,14 @@ def main():
 
     print("=> Calling `terraform init`")
     ret = subprocess.call(["terraform", "init", "-backend-config=.terraform/ci-backend-config"])
+
+    if "GITHUB_TOKEN" not in os.environ:
+        print("!!! ATTENTION !!!")
+        print("Don't forget to set the environment variable `GITHUB_TOKEN` before `terraform apply`.")
+        print("This is a limitation of the AWS Terraform provider (HACK!!!)")
+        print(
+            "Follow this page for instructions: https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line"
+        )
     return ret
 
 
