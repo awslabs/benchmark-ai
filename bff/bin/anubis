@@ -253,15 +253,19 @@ submit() {
 
     local data=$(_generate_submit_event ${descriptor_filename})
     local cmd
-    local returned_action_id
+    local returned
 
     if [[ -n "${data}" ]]; then
         cmd="curl -s -X POST -H Content-Type: application/json -d '"${data}"' http://"${current_service_endpoint}"/api/job/descriptor"
         ((VERBOSE)) && echo ${cmd}
         _print_status "sending ${descriptor_filename} to anubis service @ ${current_service_endpoint}"
         [[ ! -d "${BAI_DATABASE}/$(get_client_id)" ]] && mkdir -p "${BAI_DATABASE}/$(get_client_id)"
-        returned_action_id=$(eval $cmd)
-        echo "${returned_action_id} : ${descriptor_filename} : $(date)" |tee -a ${BAI_ACTION_IDS}
+        returned=$(eval $cmd)
+        echo "${returned}"
+        if [[ -n $(sed -rne '/[a-f0-9-]{8}-([a-f0-9-]{4}-){3}[a-f0-9-]{12}/p' <<<"${returned}") ]]; then
+            [[ ! -d "${BAI_DATABASE}/$(get_client_id)/${returned}" ]] && mkdir -p "${BAI_DATABASE}/$(get_client_id)/${returned}"
+            echo "${returned} : ${descriptor_filename} : $(date)" >>  ${BAI_ACTION_IDS}
+        fi
     else
         printf '\033[01;31m[ERROR]\033[0m No data to send.\n\n'
         exit 1
