@@ -172,36 +172,11 @@ resource "aws_codebuild_project" "ci-unit-tests" {
 resource "aws_codebuild_webhook" "ci-unit-tests" {
   count        = length(aws_codebuild_project.ci-unit-tests)
   project_name = aws_codebuild_project.ci-unit-tests.*.name[count.index]
-}
 
-locals {
-  filter_groups_prs = [
-    {
-      type    = "EVENT"
+  filter_group {
+    filter {
+      type = "EVENT"
       pattern = "PULL_REQUEST_CREATED, PULL_REQUEST_UPDATED, PULL_REQUEST_REOPENED"
-    },
-  ]
-  filter_groups_master = [
-    {
-      type    = "EVENT"
-      pattern = "PUSH"
-    },
-    {
-      type    = "HEAD_REF"
-      pattern = "refs/heads/master$"
-    },
-  ]
-}
-
-# TODO: Still not supported by AWS provider in Terraform: https://github.com/terraform-providers/terraform-provider-aws/issues/7503
-resource "null_resource" "ci-unit-tests-filter" {
-  count = length(aws_codebuild_webhook.ci-unit-tests)
-  provisioner "local-exec" {
-    command = "aws --region ${var.region} codebuild update-webhook --project-name ${self.triggers.project_name} --filter-groups '[${self.triggers.filter_groups}]'"
-  }
-
-  triggers = {
-    project_name = aws_codebuild_webhook.ci-unit-tests.*.project_name[count.index]
-    filter_groups = jsonencode(local.filter_groups_prs)
+    }
   }
 }
