@@ -4,7 +4,7 @@ DEBUG=${DEBUG:-0}
 VERBOSE=${VERBOSE:-0}
 
 declare -r VERSION="0.1.0-481dad2"
-declare -r SERVICE_NAME="bai-client"
+declare -r SERVICE_NAME="anubis-client"
 declare -r MY_SHA1=$(sha1sum ${0} | awk '{print $1}')
 declare -r BAI_HOME=${HOME}/.bai
 declare -r BAI_HISTORY=${BAI_HOME}/history
@@ -30,12 +30,14 @@ emoji[SUCESS_ALL]="\xF0\x9F\x8E\x89 "
 banner() {
     printf '
 
-\033[01;31m  _           _            _ _            _
- | |         (_)          | (_)          | |
- | |__   __ _ _ ______ ___| |_  ___ _ __ | |_\033[0m
- \033[01;33m| _  \ / _  | |______/ __| | |/ _ \  _ \| __|
- | |_) | (_| | |     | (__| | |  __/ | | | |_\033[0m
-\033[01;32m |_.__/ \__,_|_|      \___|_|_|\___|_| |_|\__|\033[0m
+\033[01;31m
+                       _      _
+                      | |    (_)
+   __ _  _ __   _   _ | |__   _  ___
+  / _  ||  _ \ | | | ||  _ \ | |/ __|\033[0m
+\033[01;33m | (_| || | | || |_| || |_) || |\__ \\\033[0m
+\033[01;32m  \__,_||_| |_| \__,_||_.__/ |_||___/
+\033[0m
 
 (v%s)
 -------------------------
