@@ -106,7 +106,7 @@
                         (DELETE "/" [] (post-proc-results (log/info "delete-client-jobs... [NOT]") #_(delete-job action-id))))
                       (context "/:action-id" [action-id]
                                (defroutes action-routes
-                                 (GET    "/" [] (post-proc-results (eventbus/get-all-client-jobs-for-action client-id action-id)))
+                                 (GET    "/" [since] (post-proc-results (eventbus/get-all-client-jobs-for-action client-id action-id since)))
                                  (DELETE "/" {body :body :as request} (response (dispatch-delete-job request body action-id)))))))) ;
   (ANY "*" []
        (route/not-found (slurp (io/resource "404.html")))))
