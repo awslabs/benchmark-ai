@@ -261,6 +261,7 @@ submit() {
         ((VERBOSE)) && echo ${cmd}
         _print_status "sending ${descriptor_filename} to anubis service @ ${current_service_endpoint}"
         [[ ! -d "${BAI_DATABASE}/$(get_client_id)" ]] && mkdir -p "${BAI_DATABASE}/$(get_client_id)"
+
         returned=$(eval $cmd)
         echo "${returned}"
         if [[ -n $(sed -rne '/[a-f0-9-]{8}-([a-f0-9-]{4}-){3}[a-f0-9-]{12}/p' <<<"${returned}") ]]; then
@@ -274,41 +275,57 @@ submit() {
 }
 
 #local db lookup
-get_last_action_id() {
+use_last_action_id() {
     local last_action_id=$(cat ${BAI_ACTION_IDS} | tail -n 1 | awk '{print $1}')
+    current_action_id=${last_action_id}
     printf "$last_action_id"
 }
 
 get_latest_event_timestamp() {
-    local action_id=${1:-$(get_last_action_id)}
+    local action_id=${1:-$(use_last_action_id)}
     local path=${BAI_DATABASE}/$(get_client_id)"/"${action_id}
     local tstamp_file=${path}/${TSTAMP_FILENAME}
-    local tstamp_file_size=$(stat -x foo | grep Size | awk '{print $2}')
+    local tstamp_file_size=$([[ -f "${tstamp_filename}" ]] && stat -x "${tstamp_filename}" | grep Size | awk '{print $2}' || echo -n "0")
 
-    if [[ -f "${tstamp_file}" && ((tstamp_file_size > 0)) ]]; then
-        local latest_timestamp=$(cat ${BAI_ACTION_IDS} | tail -n 1 | awk '{print $1}')
-        printf "%d" "${latest_timestamp}"
+    if ((tstamp_file_size > 0)); then
+        cat "${tstamp_file}"
     else
         printf "0"
     fi
 }
 
+#Local filesystem read
+_read_local_submission_status() {
+    local action_id=${1:-$(use_last_action_id)}
+    ((VERBOSE)) && echo "_read_local_submission_status for action: ${action_id}"
+    current_action_id=$action_id
+    local datafile=${BAI_DATABASE}/$(get_client_id)"/"${action_id}/data
+
+    if [[ -f "${datafile}" ]]; then
+        jq --compact-output '{src: .visited[-1].svc , id: .message_id[0:8], msg: .message, tstamp: .visited[-1].tstamp}' "${datafile}" | while read line; do _as_status_line $line; done;
+    else
+        ((VERBOSE)) && printf "Events datafile [%s] is not present\n" "${datafile}"
+    fi
+}
+
 #REST API call
 get_submission_status() {
-    local action_id=${1:-$(get_last_action_id)}
+    local action_id=${1:-$(use_last_action_id)}
     ((VERBOSE)) && echo "get_submission_status for action: ${action_id}"
     current_action_id=$action_id
+    local path=$(get_client_id)"/"${action_id}
 
     local current_service_endpoint=$(cat "${BAI_SERVICE_ENDPOINT_CONFIG}")
-    local path=$(get_client_id)"/"${action_id}
     local cmd
 
     ((VERBOSE)) && echo "database = ${BAI_DATABASE}"
 
-    cmd="curl -s -X GET -H Content-Type: application/json http://"${current_service_endpoint}"/api/job/"${path}?since=$(get_latest_event_timestamp)
+    local since_tstamp=$(get_latest_event_timestamp ${action_id})
+    _read_local_submission_status "${action_id}"
+    cmd="curl -s -X GET -H Content-Type: application/json http://"${current_service_endpoint}"/api/job/"${path}?since="${since_tstamp}"
     ((VERBOSE)) && echo ${cmd}
     echo "Status: [${action_id}]"
-    cat <<EOF | tee -a ${BAI_DATABASE}/${path}/data 2> /dev/null | jq --compact-output '{src: .visited[-1].svc , id: .message_id[0:8], msg: .message, tstamp: .visited[-1].tstamp}' | while read line; do _as_status_line $line; done;
+    cat <<EOF | tee $( ((since_tstamp > 0)) && echo -n "-a") ${BAI_DATABASE}/${path}/data 2> /dev/null | jq --compact-output '{src: .visited[-1].svc , id: .message_id[0:8], msg: .message, tstamp: .visited[-1].tstamp}' | while read line; do _as_status_line $line; done;
 $(eval ${cmd} | jq '.[]')
 EOF
 
@@ -318,16 +335,20 @@ _print_status() {
     local msg=${1}
     local src=${2:-"anubis-client"}
     local id=${3:-"00000000"}
+    local new=${4:-0}
 
     printf "%b|\033[01;33m%s\033[0m|%s\n" "${emoji[${src}]}" "${id}" "${msg}"
 }
 
+# (Note: $line is scope in the while loop that this function is called in)
 _as_status_line() {
+    #TODO - see if can pass in a value that reflects if this is a "new" entry of not. confirm while scoping of line
+    #     - change these 3 jq calls to a single jq call that creates the arg list for _print_status directly
     local msg=$(jq --compact-output '.msg' <<<"$line")
     local src=$(jq --compact-output '.src' <<<"$line")
     local id=$(jq  --compact-output '.id'  <<<"$line")
 
-    _print_status "$(sed 's/^.\(.*\).$/\1/' <<<"$msg")" "$(sed 's/^.\(.*\).$/\1/' <<<"$src")" "$(sed 's/^.\(.*\).$/\1/' <<<"$id")"
+    _print_status "$(sed 's/^.\(.*\).$/\1/' <<<"$msg")" "$(sed 's/^.\(.*\).$/\1/' <<<"$src")" "$(sed 's/^.\(.*\).$/\1/' <<<"$id")" "1"
 
     local tstamp=$(jq --compact-output '.tstamp' <<<"$line")
     echo "$tstamp" > "${BAI_DATABASE}/$(get_client_id)/${current_action_id}/${TSTAMP_FILENAME}"
@@ -428,7 +449,7 @@ main() {
                     ;;
                 --last-action-id)
                     shift
-                    get_last_action_id
+                    use_last_action_id
                     exit $?
                     ;;
                 --abort|--cancel)
