@@ -100,6 +100,15 @@ def download_from_s3(fp: TextIO, src: str):
 def is_s3_file(obj: S3Object):
     s3 = boto3.resource("s3")
     bucket = s3.Bucket(obj.bucket)
+
+    # Are we able to access the key on it's own?
+    obj = bucket.Object(obj.key)
+    try:
+        if obj.content_length > 0:
+            return True
+    except ClientError as e:
+        logger.info(f"Failed to get content_length for {obj}. May be not an object at all")
+
     try:
         any_object = False
         for sub_obj in bucket.objects.filter(Prefix=obj.key):
@@ -108,6 +117,7 @@ def is_s3_file(obj: S3Object):
                 return False
         if not any_object:
             raise S3Error("Object not found")
+        # Just an empty file
         return True
     except ClientError as e:
         raise S3Error from e
