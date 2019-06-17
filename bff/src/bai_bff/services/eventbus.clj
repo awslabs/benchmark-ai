@@ -120,4 +120,5 @@
   (let [client-key (keyword client-id)
         action-key (keyword action-id)
         since-tstamp (parse-long since)]
+    (log/trace (str "since... "since-tstamp))
     (filterv #(< since-tstamp (:tstamp (peek (:visited %)))) (get-in @status-db [client-key action-key] {}))))

@@ -106,7 +106,11 @@
                         (DELETE "/" [] (post-proc-results (log/info "delete-client-jobs... [NOT]") #_(delete-job action-id))))
                       (context "/:action-id" [action-id]
                                (defroutes action-routes
-                                 (GET    "/" [since] (post-proc-results ((fnil eventbus/get-all-client-jobs-for-action 0 0 0) client-id action-id since)))
+                                 (GET    "/" [since] (post-proc-results ((fn [cid aid sc]
+                                                                           (log/trace (str "client-id = " cid))
+                                                                           (log/trace (str "action-id = " aid))
+                                                                           (log/trace (str "since = " sc))
+                                                                           (fnil eventbus/get-all-client-jobs-for-action 0 0 0)) client-id action-id since)))
                                  (DELETE "/" {body :body :as request} (response (dispatch-delete-job request body action-id)))))))) ;
   (ANY "*" []
        (route/not-found (slurp (io/resource "404.html")))))
