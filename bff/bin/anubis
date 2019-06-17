@@ -333,7 +333,7 @@ get_submission_status() {
     cmd="curl -s -X GET -H Content-Type: application/json http://"${current_service_endpoint}"/api/job/"${path}?since="${since_tstamp}"
     ((VERBOSE)) && echo ${cmd}
     echo "Status: [${action_id}]"
-    cat <<EOF | tee $( ((since_tstamp > 0)) && echo -n "-a") ${BAI_DATABASE}/${path}/data 2> /dev/null | jq --compact-output '{src: .visited[-1].svc , id: .message_id[0:8], msg: .message, tstamp: .visited[-1].tstamp}' | while read line; do _as_status_line $line; done;
+    cat <<EOF | tee $( ((since_tstamp > 0)) && echo -n "-a") ${BAI_DATABASE}/${path}/data 2> /dev/null | jq --compact-output '{src: .visited[-1].svc , id: .message_id[0:8], msg: .message, tstamp: .visited[-1].tstamp} +{"new" : "1"}' | while read line; do _as_status_line $line; done;
 $(eval ${cmd} | jq '.[]')
 EOF
 
@@ -355,8 +355,9 @@ _as_status_line() {
     local msg=$(jq --compact-output '.msg' <<<"$line")
     local src=$(jq --compact-output '.src' <<<"$line")
     local id=$(jq  --compact-output '.id'  <<<"$line")
+    local new=$(jq --compact-output '.new' <<<"$line")
 
-    _print_status "$(sed 's/^.\(.*\).$/\1/' <<<"$msg")" "$(sed 's/^.\(.*\).$/\1/' <<<"$src")" "$(sed 's/^.\(.*\).$/\1/' <<<"$id")" "1"
+    _print_status "$(sed 's/^.\(.*\).$/\1/' <<<"$msg")" "$(sed 's/^.\(.*\).$/\1/' <<<"$src")" "$(sed 's/^.\(.*\).$/\1/' <<<"$id")" "$(sed 's/^.\(.*\).$/\1/' <<<"$new")"
 
     local tstamp=$(jq --compact-output '.tstamp' <<<"$line")
     echo "$tstamp" > "${BAI_DATABASE}/$(get_client_id)/${current_action_id}/${TSTAMP_FILENAME}"
