@@ -348,3 +348,15 @@ def mock_message_before_send(status_event, mock_uuid4, topic):
     status_event.message_id = str(mock_uuid4())
     status_event.visited.append(VisitedService(SERVICE_NAME, tstamp=VISIT_TIME_MS, version=VERSION, node=POD_NAME))
     status_event.type = topic
+
+
+# Regression prevention test - assert that we always pass timeout
+def test_poll_interval(kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer):
+    kafka_service = _create_kafka_service({}, kafka_consumer, kafka_producer)
+    kafka_service.run_loop()
+
+    poll_calls = kafka_consumer.poll.call_args_list
+    assert len(poll_calls) == 1
+    args, _ = poll_calls[0]
+    poll_interval = args[0]
+    assert poll_interval > 0

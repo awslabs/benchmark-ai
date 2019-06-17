@@ -14,7 +14,7 @@ from bai_kafka_utils.events import BenchmarkEvent, VisitedService, Status, Statu
 
 logger = logging.getLogger(__name__)
 
-KAFKA_POLL_TIMEOUT_MS = 500
+KAFKA_POLL_INTERVAL_MS = 500
 
 
 @dataclass()
@@ -149,7 +149,7 @@ class KafkaService:
 
         while self._running:
             # KafkaConsumer.poll() might return more than one message
-            records = self._consumer.poll(KAFKA_POLL_TIMEOUT_MS)
+            records = self._consumer.poll(KAFKA_POLL_INTERVAL_MS)
 
             for topic_partition, record in records.items():
                 topic = topic_partition.topic
