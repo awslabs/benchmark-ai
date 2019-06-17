@@ -325,7 +325,7 @@ get_submission_status() {
     local since_tstamp=$(get_latest_event_timestamp ${action_id})
     if ((SYNC_DATA)); then
         since_tstamp=0
-        mv ${BAI_DATABASE}/$(get_client_id)"/"${action_id}/data{,.bkup}
+        [[ -f "${BAI_DATABASE}/$(get_client_id)/${action_id}/data" ]] && mv ${BAI_DATABASE}/$(get_client_id)"/"${action_id}/data{,.bkup}
     else
         _read_local_submission_status "${action_id}"
     fi
