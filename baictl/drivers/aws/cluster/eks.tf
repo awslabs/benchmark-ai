@@ -109,6 +109,8 @@ locals {
     ami_id               = "${lookup(local.ami_ids, "cpu")}"
     key_name             = "${aws_key_pair.worker_key.key_name}"
     autoscaling_enabled  = true
+    # a work around for big files until https://github.com/MXNetEdge/benchmark-ai/issues/356 is resolved
+    root_volume_size     = "2000"
   }
 
   ami_ids = {

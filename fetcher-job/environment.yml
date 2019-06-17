@@ -13,3 +13,5 @@ dependencies:
   - pip:
     - ConfigArgParse
     - dataclasses-json
+    - flake8-black
+
