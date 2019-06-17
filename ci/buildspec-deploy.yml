@@ -3,7 +3,8 @@ version: 0.2
 phases:
   install:
     commands:
-      - conda create --yes -c conda-forge -p /opt/deploy kubernetes awscli
+    # kubernetes 1.14 is a part of the base image - no need to install it here
+      - conda create --yes -c conda-forge -p /opt/deploy awscli
       - export PATH=/opt/deploy/bin:$PATH
   pre_build:
     commands:
