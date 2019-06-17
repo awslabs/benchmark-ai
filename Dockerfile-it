@@ -1,0 +1,45 @@
+FROM continuumio/miniconda3 as base
+
+RUN conda update -n base -c conda-forge conda
+
+ARG SERVICE
+
+######################
+# Infrequent changes #
+######################
+COPY ./$SERVICE/environment.yml /tmp/environment.yml
+COPY ./$SERVICE/test-environment.yml /tmp/test-environment.yml
+
+RUN conda env create -f /tmp/environment.yml -p /opt/$SERVICE
+RUN conda env update -f /tmp/test-environment.yml -p /opt/$SERVICE
+
+####################
+# Frequent changes #
+####################
+
+COPY . /data/benchmark-ai
+WORKDIR /data/benchmark-ai/$SERVICE
+
+RUN /opt/$SERVICE/bin/pip install -r requirements.txt
+RUN /opt/$SERVICE/bin/python3 setup.py install
+
+########################################
+# Build the final image
+########################################
+FROM ubuntu:18.04
+
+#Seems to fail without
+ARG SERVICE 
+
+COPY --from=base /opt/$SERVICE /opt/$SERVICE
+COPY ./$SERVICE/integration_tests /$SERVICE/it
+
+# A workdir only for convenience
+WORKDIR /opt/$SERVICE/bin
+
+ENTRYPOINT [ "/bin/bash", "-c" ]
+
+ENV SERVICE_TEST $SERVICE
+
+CMD ["/opt/${SERVICE_TEST}/bin/pytest -v /${SERVICE_TEST}/it/ $PYTEST_ARGS" ]
+

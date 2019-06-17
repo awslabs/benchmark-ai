@@ -1,4 +1,5 @@
 PROJECT = fetcher-it
+SERVICE = fetcher
 ENV_NAME = fetcherit
 
 BENCHMARK_DIR=../..
@@ -14,6 +15,11 @@ build:
 run: publish k8s_run
 
 k8s_run: _k8s_silent_cleanup _k8s_silent_undeploy k8s_deploy _wait_for_job _k8s_cleanup
+
+_docker_package: _pre_docker_package
+	echo "Killroy"
+	$(DOCKER) build $(BENCHMARK_DIR) -f $(BENCHMARK_DIR)/Dockerfile-it --build-arg SERVICE=$(SERVICE) -t $(DOCKER_IMAGE_TAG)
+
 
 #Copy paste from the fetcher
 override define fn_k8s_deploy
