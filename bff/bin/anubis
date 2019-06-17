@@ -285,7 +285,7 @@ get_latest_event_timestamp() {
     local action_id=${1:-$(use_last_action_id)}
     local path=${BAI_DATABASE}/$(get_client_id)"/"${action_id}
     local tstamp_file=${path}/${TSTAMP_FILENAME}
-    local tstamp_file_size=$([[ -f "${tstamp_filename}" ]] && stat -x "${tstamp_filename}" | grep Size | awk '{print $2}' || echo -n "0")
+    local tstamp_file_size=$([[ -f "${tstamp_file}" ]] && stat -x "${tstamp_file}" | grep Size | awk '{print $2}' || echo -n "0")
 
     if ((tstamp_file_size > 0)); then
         cat "${tstamp_file}"
@@ -337,7 +337,7 @@ _print_status() {
     local id=${3:-"00000000"}
     local new=${4:-0}
 
-    printf "%b|\033[01;33m%s\033[0m|%s\n" "${emoji[${src}]}" "${id}" "${msg}"
+    printf "%b|\033[0$( ((new)) && printf "1" || printf "0");33m%s\033[0m|%s\n" "${emoji[${src}]}" "${id}" "${msg}"
 }
 
 # (Note: $line is scope in the while loop that this function is called in)
