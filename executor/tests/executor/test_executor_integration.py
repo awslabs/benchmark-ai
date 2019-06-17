@@ -14,6 +14,7 @@ from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
 
 JOB_ID = "728ff542-b332-4520-bb2e-51d5e32cfc0a"
 POLL_TIMEOUT_MS = 500
+SERVICE_NAME = "TEST_EXECUTOR"
 
 
 def get_message_is_the_response(src_event: BenchmarkEvent) -> Callable[[BenchmarkEvent], bool]:
@@ -40,7 +41,7 @@ def get_event_equals(src_event: BenchmarkEvent) -> Callable[[BenchmarkEvent], bo
     reason="This test requires the executor service to be running on your machine, along with Kafka, ZK, etc"
 )
 def test_producer(benchmark_event: BenchmarkEvent, kafka_service_config: KafkaServiceConfig):
-    consumer, producer = create_kafka_consumer_producer(kafka_service_config)
+    consumer, producer = create_kafka_consumer_producer(kafka_service_config, SERVICE_NAME)
 
     expected_job = BenchmarkJob(id=JOB_ID, k8s_yaml="")
     expected_payload = ExecutorPayload.create_from_fetcher_payload(benchmark_event.payload, job=expected_job)

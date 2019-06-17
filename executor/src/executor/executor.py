@@ -86,7 +86,7 @@ def create_executor(common_kafka_cfg: KafkaServiceConfig, executor_config: Execu
         common_kafka_cfg.consumer_topic: [ExecutorEventHandler(executor_config, common_kafka_cfg.producer_topic)]
     }
 
-    consumer, producer = create_kafka_consumer_producer(common_kafka_cfg)
+    consumer, producer = create_kafka_consumer_producer(common_kafka_cfg, SERVICE_NAME)
 
     pod_name = get_pod_name()
 

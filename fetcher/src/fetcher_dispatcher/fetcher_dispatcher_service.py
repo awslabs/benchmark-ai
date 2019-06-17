@@ -87,7 +87,7 @@ def create_fetcher_dispatcher(common_kafka_cfg: KafkaServiceConfig, fetcher_cfg:
         ]
     }
 
-    consumer, producer = create_kafka_consumer_producer(common_kafka_cfg)
+    consumer, producer = create_kafka_consumer_producer(common_kafka_cfg, SERVICE_NAME)
 
     pod_name = get_pod_name()
 

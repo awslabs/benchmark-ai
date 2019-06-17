@@ -193,10 +193,14 @@ def test_fetcher_cleanup(data_set_manager: DataSetManager):
 @patch.object(fetcher_dispatcher_service, "create_data_set_manager", autospec=True)
 @patch.object(kafka, "KafkaProducer", autospec=True)
 @patch.object(kafka, "KafkaConsumer", autospec=True)
-def test_create_fetcher_dispatcher(mockKafkaConsumer, mockKafkaProducer, mock_create_data_set_manager):
-
+def test_create_fetcher_dispatcher(mockKafkaConsumer, mockKafkaProducer, mock_create_data_set_manager, mocker):
     mock_data_set_manager = create_autospec(DataSetManager)
     mock_create_data_set_manager.return_value = mock_data_set_manager
+    mock_create_consumer_producer = mocker.patch(
+        "fetcher_dispatcher.fetcher_dispatcher_service.create_kafka_consumer_producer",
+        return_value=(mockKafkaConsumer, mockKafkaProducer),
+        autospec=True,
+    )
 
     common_cfg = KafkaServiceConfig(
         consumer_topic=CONSUMER_TOPIC,
@@ -211,9 +215,7 @@ def test_create_fetcher_dispatcher(mockKafkaConsumer, mockKafkaProducer, mock_cr
     )
     fetcher_service = create_fetcher_dispatcher(common_cfg, fetcher_cfg)
 
-    mockKafkaConsumer.assert_called_once()
-    mockKafkaProducer.assert_called_once()
-
+    mock_create_consumer_producer.assert_called_once()
     mock_data_set_manager.start.assert_called_once()
 
     assert fetcher_service

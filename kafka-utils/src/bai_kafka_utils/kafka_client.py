@@ -28,12 +28,14 @@ class WrongBenchmarkEventTypeException(Exception):
 
 
 # args from kafka
-def create_kafka_consumer_producer(kafka_cfg: KafkaServiceConfig) -> Tuple[KafkaConsumer, KafkaProducer]:
+def create_kafka_consumer_producer(
+    kafka_cfg: KafkaServiceConfig, service_name: str
+) -> Tuple[KafkaConsumer, KafkaProducer]:
     # Each service's Kafka consumer subscribes to both the service's input topic and the cmd_submit topic
     consumer_topics = [kafka_cfg.consumer_topic, kafka_cfg.cmd_submit_topic]
 
     required_topics = [kafka_cfg.producer_topic]
-    create_kafka_topic(required_topics, kafka_cfg.bootstrap_servers)
+    create_kafka_topics(required_topics, kafka_cfg.bootstrap_servers, service_name)
 
     return (
         create_kafka_consumer(kafka_cfg.bootstrap_servers, kafka_cfg.consumer_group_id, consumer_topics),
@@ -87,15 +89,23 @@ def create_kafka_producer(bootstrap_servers: List[str]) -> kafka.KafkaProducer:
     )
 
 
-def create_kafka_topic(
-    new_topic: str, bootstrap_servers: List[str], num_partitions=NUM_PARTITIONS, replication_factor=REPLICATION_FACTOR
+def create_kafka_topics(
+    new_topics: List[str],
+    bootstrap_servers: List[str],
+    service_name: str,
+    num_partitions: int = NUM_PARTITIONS,
+    replication_factor: int = REPLICATION_FACTOR,
 ):
-    # TODO: add client_id arg for improved debugging
-    admin_client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
-    topic_list = [NewTopic(name=new_topic, num_partitions=num_partitions, replication_factor=replication_factor)]
+    admin_client = KafkaAdminClient(bootstrap_servers=bootstrap_servers, client_id=service_name)
 
-    try:
-        admin_client.create_topics(new_topics=topic_list)
-        logger.info(f"Created kafka topic {new_topic}")
-    except TopicAlreadyExistsError:
-        logger.warning(f"Kafka topic {new_topic} already exists")
+    new_topic_list = [
+        NewTopic(name=topic, num_partitions=num_partitions, replication_factor=replication_factor)
+        for topic in new_topics
+    ]
+
+    for topic in new_topic_list:
+        try:
+            admin_client.create_topics(new_topics=[topic])
+            logger.info(f"Created kafka topic {topic}")
+        except TopicAlreadyExistsError:
+            logger.warning(f"Error creating topic {topic}, it already exists")

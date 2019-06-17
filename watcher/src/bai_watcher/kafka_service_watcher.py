@@ -68,7 +68,7 @@ class WatchJobsEventHandler(KafkaServiceCallback):
 
 def create_service(common_kafka_cfg: KafkaServiceConfig, service_cfg: WatcherServiceConfig) -> KafkaService:
     callbacks = {common_kafka_cfg.consumer_topic: [WatchJobsEventHandler(service_cfg)]}
-    consumer, producer = create_kafka_consumer_producer(common_kafka_cfg)
+    consumer, producer = create_kafka_consumer_producer(common_kafka_cfg, SERVICE_NAME)
     return KafkaService(
         name=SERVICE_NAME,
         version=__version__,

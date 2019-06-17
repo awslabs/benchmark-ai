@@ -1,5 +1,4 @@
 import pytest
-from kafka.admin import NewTopic
 
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
 from pytest import fixture
@@ -11,7 +10,7 @@ from bai_kafka_utils.kafka_client import (
     create_kafka_producer,
     MAX_IDLE_TIME_MS,
     create_kafka_consumer_producer,
-    create_kafka_topic,
+    create_kafka_topics,
 )
 from bai_kafka_utils.utils import DEFAULT_ENCODING
 
@@ -22,6 +21,7 @@ CLIENT_ID = "AA"
 
 BOOTSTRAP_SERVERS = ["kafka_node"]
 TOPIC = "TOPIC"
+TOPIC2 = "TOPIC2"
 GROUP_ID = "GROUP_ID"
 
 INVALID_JSON = "INVALID".encode(DEFAULT_ENCODING)
@@ -30,6 +30,7 @@ WRONG_SCHEMA_JSON = '{"foo":"bar"}'.encode(DEFAULT_ENCODING)
 LOGGING_LEVEL = "DEBUG"
 PRODUCER_TOPIC = "OUT_TOPIC"
 CONSUMER_TOPIC = "IN_TOPIC"
+SERVICE_NAME = "TEST_KAFKA_CLIENT"
 
 
 @fixture
@@ -131,8 +132,8 @@ def get_key_deserializer(mock: MagicMock):
 
 
 def test_kafka_client_create_consumer_producer(mocker, mock_kafka_consumer, mock_kafka_producer, kafka_config):
-    mock_create_topics = mocker.patch.object(bai_kafka_utils.kafka_client, "create_kafka_topic")
-    consumer, producer = create_kafka_consumer_producer(kafka_config)
+    mock_create_topics = mocker.patch.object(bai_kafka_utils.kafka_client, "create_kafka_topics")
+    consumer, producer = create_kafka_consumer_producer(kafka_config, SERVICE_NAME)
 
     expected_consumer = create_kafka_consumer(
         kafka_config.bootstrap_servers,
@@ -149,7 +150,7 @@ def test_kafka_client_create_consumer_producer(mocker, mock_kafka_consumer, mock
 def test_kafka_client_create_topic(mocker):
     mock_kafka_admin_client = mocker.patch("bai_kafka_utils.kafka_client.KafkaAdminClient", create_autospec=True)
 
-    create_kafka_topic(PRODUCER_TOPIC, BOOTSTRAP_SERVERS)
+    create_kafka_topics([PRODUCER_TOPIC], BOOTSTRAP_SERVERS, SERVICE_NAME)
 
     _, kwargs = mock_kafka_admin_client.return_value.create_topics.call_args
     created_topic = kwargs["new_topics"][0]
