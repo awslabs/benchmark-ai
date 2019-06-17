@@ -15,10 +15,16 @@ _post_venv::
 
 ifeq ($(STAGE),local)
 #Pass special label designed for local integration tests
-  TEST_LABEL=DOCKER_IMAGE_LABEL=local-latest
+  DOCKER_IMAGE_LABEL=local-latest
+  TEST_LABEL=DOCKER_IMAGE_LABEL=$(DOCKER_IMAGE_LABEL)
+  JOB_PROJECT=mock-fetcher-job
 else
   TEST_LABEL=
+  JOB_PROJECT=fetcher-job
 endif
+
+JOB_DOCKER_REPOSITORY = $(DOCKER_REGISTRY)/$(JOB_PROJECT)
+JOB_DOCKER_IMAGE_TAG = $(JOB_DOCKER_REPOSITORY):$(DOCKER_IMAGE_LABEL)
 
 integration_tests:
 	echo $(TEST_LABEL)
@@ -37,4 +43,6 @@ endef
 
 deploy.yml:
 	echo "Kustomize deployment"
-	sed -e 's|@@DOCKER_IMAGE_TAG@@|$(DOCKER_IMAGE_TAG)|g' -e 's|@@STAGE@@|$(STAGE)|g' deploy/kustomization.tpl.yml > deploy/kustomization.yml
+	sed -e 's|@@DOCKER_IMAGE_TAG@@|$(DOCKER_IMAGE_TAG)|g' \
+		-e 's|@@JOB_DOCKER_IMAGE_TAG@@|$(JOB_DOCKER_IMAGE_TAG)|g' \
+		-e 's|@@STAGE@@|$(STAGE)|g' deploy/kustomization.tpl.yml > deploy/kustomization.yml

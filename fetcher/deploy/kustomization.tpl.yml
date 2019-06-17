@@ -3,3 +3,8 @@ bases:
 images:
   - name: benchmarkai/fetcher
     newName: @@DOCKER_IMAGE_TAG@@
+configMapGenerator:
+  - name: fetcher-dispatcher
+    literals:
+      - job_image=@@JOB_DOCKER_IMAGE_TAG@@
+    behavior: merge
