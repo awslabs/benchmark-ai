@@ -35,9 +35,6 @@ override define fn_k8s_undeploy
 	$(KUBECTL) delete $(KUBECTL_FLAGS) -k ./deploy
 endef
 
-deploy.yml: deploy/kustomization.yml
+deploy.yml:
 	echo "Kustomize deployment"
-
-deploy/kustomization.yml:
-	echo "Generating deploy/kustomization.yml"
-	sed -e 's|@@DOCKER_IMAGE_LABEL@@|$(DOCKER_IMAGE_LABEL)|g' -e 's|@@STAGE@@|$(STAGE)|g' deploy/kustomization.yml.tmpl > deploy/kustomization.yml
+	sed -e 's|@@DOCKER_IMAGE_TAG@@|$(DOCKER_IMAGE_TAG)|g' -e 's|@@STAGE@@|$(STAGE)|g' deploy/kustomization.tpl.yml > deploy/kustomization.yml

@@ -2,4 +2,4 @@ bases:
   - @@STAGE@@
 images:
   - name: benchmarkai/fetcher
-    newTag: @@DOCKER_IMAGE_LABEL@@
+    newName: @@DOCKER_IMAGE_TAG@@
