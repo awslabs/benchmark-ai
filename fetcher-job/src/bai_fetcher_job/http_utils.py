@@ -2,7 +2,7 @@ import logging
 import pycurl
 from enum import IntEnum
 from typing import TextIO
-
+from functools import partial
 from bai_fetcher_job.failures import CurlError, HttpClientError, HttpServerError
 
 logger = logging.getLogger(__name__)
@@ -20,8 +20,17 @@ class HTTPFamily(IntEnum):
         return HTTPFamily(status_code - status_code % 100)
 
 
-def _progress(download_t, download_d, upload_t, upload_d):
-    logger.info(f"{download_d} out of {download_t}")
+class ProgressTracker:
+    reported = 0
+    granularity = 10
+
+    def info_callback(self, download_total, downloaded, _upload_total, _uploaded):
+        progress = downloaded / download_total * 100
+        bucket = download_total / self.granularity
+
+        if downloaded - self.reported > bucket:
+            logger.info(f"Downloaded {downloaded} out of {download_total} ({progress}%)")
+            self.reported = downloaded
 
 
 def http_download(fp: TextIO, src: str):
@@ -33,7 +42,8 @@ def http_download(fp: TextIO, src: str):
     curl.setopt(pycurl.TIMEOUT, 60 * 60 * 24)  # 24hr
     curl.setopt(pycurl.NOSIGNAL, 1)
     curl.setopt(pycurl.NOPROGRESS, 0)
-    curl.setopt(pycurl.PROGRESSFUNCTION, _progress)
+    progress = ProgressTracker()
+    curl.setopt(pycurl.XFERINFOFUNCTION, partial(progress.info_callback, progress))
     curl.setopt(pycurl.WRITEDATA, fp)
     logger.info(f"Start download {src}")
     try:
