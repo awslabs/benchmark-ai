@@ -2,33 +2,35 @@ FROM continuumio/miniconda3 as base
 
 RUN conda update -n base -c conda-forge conda
 
+ARG SERVICE
+
 ######################
 # Infrequent changes #
 ######################
-COPY ./watcher/environment.yml /tmp/environment.yml
+COPY ./$SERVICE/environment.yml /tmp/environment.yml
 
-RUN conda env create -f /tmp/environment.yml -p /opt/watcher
+RUN conda env create -f /tmp/environment.yml -p /opt/$SERVICE
 
 ####################
 # Frequent changes #
 ####################
 
 COPY . /data/benchmark-ai
-WORKDIR /data/benchmark-ai/watcher
+WORKDIR /data/benchmark-ai/$SERVICE
 
-RUN /opt/watcher/bin/pip install -r requirements.txt
-RUN /opt/watcher/bin/python3 setup.py install
+RUN /opt/$SERVICE/bin/pip install -r requirements.txt
+RUN /opt/$SERVICE/bin/python3 setup.py install
 
 ########################################
 # Build the final image
 ########################################
 FROM ubuntu:18.04
 
-COPY --from=base /opt/watcher /opt/watcher
+COPY --from=base /opt/$SERVICE /opt/$SERVICE
 
 # A workdir only for convenience
-WORKDIR /opt/watcher/bin
+WORKDIR /opt/$SERVICE/bin
 
 ENTRYPOINT [ "/bin/bash", "-c" ]
 
-CMD [ "/opt/watcher/bin/bai-watcher" ]
+CMD [ "/opt/$SERVICE/bin/$SERVICE" ]
