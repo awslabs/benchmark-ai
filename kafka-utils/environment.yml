@@ -4,11 +4,9 @@ channels:
   - defaults
 dependencies:
   - kazoo 2.5.*
+  - kafka-python 1.4.6
   - pip
   - pip:
       - ConfigArgParse
       - dataclasses-json
       - dacite
-      # Installing kafka-python from github because there is a bug with topic creation which is only fixed on master
-      # https://github.com/dpkp/kafka-python/issues/1657#issuecomment-463290906
-      - git+git://github.com/dpkp/kafka-python.git@f126e5bfcc8f41ee5ea29b41ec6eabbc3f441647

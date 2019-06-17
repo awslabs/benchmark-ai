@@ -34,7 +34,13 @@ def create_kafka_consumer_producer(
     # Each service's Kafka consumer subscribes to both the service's input topic and the cmd_submit topic
     consumer_topics = [kafka_cfg.consumer_topic, kafka_cfg.cmd_submit_topic]
 
-    required_topics = [kafka_cfg.producer_topic]
+    required_topics = [
+        kafka_cfg.consumer_topic,
+        kafka_cfg.producer_topic,
+        kafka_cfg.cmd_submit_topic,
+        kafka_cfg.cmd_return_topic,
+        kafka_cfg.status_topic,
+    ]
     create_kafka_topics(required_topics, kafka_cfg.bootstrap_servers, service_name)
 
     return (
