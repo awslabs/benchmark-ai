@@ -33,8 +33,7 @@ COPY --from=base /opt/$SERVICE /opt/$SERVICE
 # A workdir only for convenience
 WORKDIR /opt/$SERVICE/bin
 
-ENTRYPOINT [ "/bin/bash", "-c" ]
-
 ENV SERVICE_RUN $SERVICE
 
-CMD [ "/opt/$SERVICE_RUN/bin/$SERVICE_RUN" ]
+ENTRYPOINT [ "/bin/bash", "-c", "/opt/$SERVICE_RUN/bin/$SERVICE_RUN" ]
+
