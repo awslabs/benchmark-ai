@@ -40,25 +40,25 @@ id = "ImageNet"
 # Make an entry for each with the same format as the ones below.
 [[data.sources]]
 # Data download URI.
-src = "https://s3.amazonaws.com/aws-ml-platform-datasets/imagenet/480px-q95/val-480px-q95.rec"
+src = "s3://aws-ml-platform-datasets/imagenet/480px-q95/val-480px-q95.rec"
 # Path where the dataset is stored in the container FS
 path = "/imn/val-480px-q95.rec"
 
 [[data.sources]]
 # Data download URI.
-src = "https://s3.amazonaws.com/aws-ml-platform-datasets/imagenet/480px-q95/train-480px-q95.rec"
+src = "s3://aws-ml-platform-datasets/imagenet/480px-q95/train-480px-q95.rec"
 # Path where the dataset is stored in the container FS
 path = "/imn/train-480px-q95.rec"
 
 [[data.sources]]
 # Data download URI.
-src = "https://s3.amazonaws.com/aws-ml-platform-datasets/imagenet/480px-q95/train-480px-q95.idx"
+src = "s3://aws-ml-platform-datasets/imagenet/480px-q95/train-480px-q95.idx"
 # Path where the dataset is stored in the container FS
 path = "/imn/train-480px-q95.idx"
 
 [[data.sources]]
 # Data download URI.
-src = "https://s3.amazonaws.com/aws-ml-platform-datasets/imagenet/480px-q95/val-480px-q95.idx"
+src = "s3://aws-ml-platform-datasets/imagenet/480px-q95/val-480px-q95.idx"
 # Path where the dataset is stored in the container FS
 path = "/imn/val-480px-q95.idx"
 
