@@ -88,7 +88,7 @@ def main():
     # Ensure bucket exists for remote state
     if config.bucket is None:
         sts = session.client("sts")
-        config.bucket = config.bucket_prefix + "-" + sts.get_caller_identity()["Account"]
+        config.bucket = config.bucket_prefix + "-" + sts.get_caller_identity()["Account"] + "-" + session.region_name
 
     s3 = session.resource("s3")
     bucket = s3.Bucket(config.bucket)

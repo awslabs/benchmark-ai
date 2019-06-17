@@ -15,7 +15,7 @@ data "aws_caller_identity" "current" {}
 
 # Generic role for both CodeBuild / CodePipeline to access the S3 bucket with artifacts
 resource "aws_s3_bucket" "build-artifacts" {
-  bucket = "bai-build-artifacts-${data.aws_caller_identity.current.account_id}"
+  bucket = "bai-build-artifacts-${data.aws_caller_identity.current.account_id}-${var.region}"
   acl    = "private"
 }
 
