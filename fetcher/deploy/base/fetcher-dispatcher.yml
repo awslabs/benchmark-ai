@@ -6,7 +6,7 @@ metadata:
     app: benchmark-ai
 spec:
   selector:
-   matchLabels:
+    matchLabels:
       app: benchmark-ai
   replicas: 1
   template:
@@ -29,7 +29,7 @@ spec:
       containers:
         - name: fetcher-dispatcher
           imagePullPolicy: Always
-          image: @@DOCKER_IMAGE_TAG@@
+          image: "benchmarkai/fetcher"
           env:
             - name: FETCHER_JOB_IMAGE
               valueFrom:

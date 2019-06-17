@@ -1,0 +1,5 @@
+configMapGenerator:
+resources:
+- roles.yml
+- config.yml
+- fetcher-dispatcher.yml
