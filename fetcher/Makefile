@@ -28,14 +28,13 @@ integration_tests:
 # Overrides how to deploy to Kubernetes because fetcher is using a poor man's version of Kustomize. Until we adopt it
 # properly this is good enough.
 override define fn_k8s_deploy
-	[[ "$(STAGE)" == "local" ]] && $(KUBECTL) apply -f $(BENCHMARK_DIR)/mock-infra $(KUBECTL_FLAGS) || true
-	$(DEPLOY_CONDA_RUN_SHELL) ./deploy/stage_deploy.sh $(STAGE)
+	$(KUBECTL) apply $(KUBECTL_FLAGS) -k ./deploy
 endef
 
 override define fn_k8s_undeploy
-	[[ "$(STAGE)" == "local" ]] && $(KUBECTL) delete -f $(BENCHMARK_DIR)/mock-infra $(KUBECTL_FLAGS) || true
-	$(DEPLOY_CONDA_RUN_SHELL) ./deploy/stage_deploy.sh $(STAGE) delete
+	$(KUBECTL) delete $(KUBECTL_FLAGS) -k ./deploy
 endef
 
 deploy.yml:
-	find ./deploy -name '*.yml' -exec sh -c "sed -i -e 's|@@DOCKER_IMAGE_TAG@@|$(DOCKER_IMAGE_TAG)|g' {}" \;
+	echo "Kustomize deployment"
+	sed -e 's|@@DOCKER_IMAGE_TAG@@|$(DOCKER_IMAGE_TAG)|g' -e 's|@@STAGE@@|$(STAGE)|g' deploy/kustomization.tpl.yml > deploy/kustomization.yml

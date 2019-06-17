@@ -11,7 +11,7 @@ phases:
     commands:
       - env
       - cd ${project}
-      - make deploy.yml COMMIT_SHORT_HASH=$${CODEBUILD_RESOLVED_SOURCE_VERSION} VERSION=latest DOCKER_REGISTRY=$${DOCKER_REGISTRY}
+      - make deploy.yml STAGE=prod COMMIT_SHORT_HASH=$${CODEBUILD_RESOLVED_SOURCE_VERSION} VERSION=latest DOCKER_REGISTRY=$${DOCKER_REGISTRY}
       - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
       - make publish COMMIT_SHORT_HASH=$${CODEBUILD_RESOLVED_SOURCE_VERSION} VERSION=latest DOCKER_REGISTRY=$${DOCKER_REGISTRY}
 artifacts:

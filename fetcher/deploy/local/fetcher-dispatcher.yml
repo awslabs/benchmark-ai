@@ -2,12 +2,14 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: fetcher-dispatcher
-  labels:
-    app: benchmark-ai
 spec:
-  replicas: 1
   template:
     spec:
+      containers:
+        - name: fetcher-dispatcher
+          imagePullPolicy: Never
+      affinity:
+      #--
       nodeSelector:
-      #---
+      #--
 

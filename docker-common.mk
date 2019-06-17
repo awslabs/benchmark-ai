@@ -4,7 +4,8 @@ DOCKER = docker
 DEPLOY_ENV_NAME = deploy-$(ENV_NAME)
 DEPLOY_CONDA_RUN = conda run --name $(DEPLOY_ENV_NAME)
 DEPLOY_CONDA_RUN_SHELL = $(DEPLOY_CONDA_RUN) $(SHELL)
-KUBECTL = $(DEPLOY_CONDA_RUN) kubectl
+# Employ conda run as soon as kubectl 1.14 is available
+KUBECTL = kubectl
 
 BENCHMARK_DIR ?= ..
 

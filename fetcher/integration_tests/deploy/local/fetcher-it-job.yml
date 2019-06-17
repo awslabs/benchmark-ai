@@ -1,5 +1,7 @@
 apiVersion: batch/v1
 kind: Job
+metadata:
+  name: fetcher-it
 spec:
   template:
     spec:

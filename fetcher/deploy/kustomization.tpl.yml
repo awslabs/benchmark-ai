@@ -1,0 +1,5 @@
+bases:
+  - @@STAGE@@
+images:
+  - name: benchmarkai/fetcher
+    newName: @@DOCKER_IMAGE_TAG@@
