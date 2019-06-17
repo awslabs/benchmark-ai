@@ -104,9 +104,9 @@
                       (defroutes client-routes
                         (GET    "/" [] (post-proc-results (eventbus/get-all-client-jobs client-id)))
                         (DELETE "/" [] (post-proc-results (log/info "delete-client-jobs... [NOT]") #_(delete-job action-id))))
-                      (context "/:action-id" [action-id]
+                      (context "/:action-id" [action-id since]
                                (defroutes action-routes
-                                 (GET    "/" [since] (post-proc-results ((fn [cid aid sc]
+                                 (GET    "/" [] (post-proc-results ((fn [cid aid sc]
                                                                            (log/trace (str "client-id = " cid))
                                                                            (log/trace (str "action-id = " aid))
                                                                            (log/trace (str "since = " sc))
