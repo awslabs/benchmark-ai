@@ -30,7 +30,7 @@ def http_download(fp: TextIO, src: str):
     curl.setopt(pycurl.FOLLOWLOCATION, 1)
     curl.setopt(pycurl.MAXREDIRS, 5)
     curl.setopt(pycurl.CONNECTTIMEOUT, 30)
-    curl.setopt(pycurl.TIMEOUT, 60*60*24)  # 24hr
+    curl.setopt(pycurl.TIMEOUT, 60 * 60 * 24)  # 24hr
     curl.setopt(pycurl.NOSIGNAL, 1)
     curl.setopt(pycurl.NOPROGRESS, 0)
     curl.setopt(pycurl.PROGRESSFUNCTION, _progress)
