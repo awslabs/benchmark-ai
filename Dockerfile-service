@@ -26,6 +26,8 @@ RUN /opt/$SERVICE/bin/python3 setup.py install
 ########################################
 FROM ubuntu:18.04
 
+ARG SERVICE
+
 COPY --from=base /opt/$SERVICE /opt/$SERVICE
 
 # A workdir only for convenience
@@ -33,4 +35,6 @@ WORKDIR /opt/$SERVICE/bin
 
 ENTRYPOINT [ "/bin/bash", "-c" ]
 
-CMD [ "/opt/$SERVICE/bin/$SERVICE" ]
+ENV SERVICE_RUN $SERVICE
+
+CMD [ "/opt/$SERVICE_RUN/bin/$SERVICE_RUN" ]
