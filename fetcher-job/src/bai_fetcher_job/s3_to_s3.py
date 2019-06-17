@@ -11,7 +11,6 @@ from bai_fetcher_job.transfer_to_s3 import transfer_to_s3
 
 def s3_to_s3_single(src: S3Object, dst: S3Object):
     s3 = boto3.resource("s3")
-    old_bucket = s3.Bucket(src.bucket)
     new_bucket = s3.Bucket(dst.bucket)
     old_source = {"Bucket": src.bucket, "Key": src.key}
     new_obj = new_bucket.Object(dst.key)

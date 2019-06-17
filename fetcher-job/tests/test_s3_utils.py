@@ -83,6 +83,12 @@ def mock_s3_bucket_with_file(mock_s3_bucket):
 
 
 @fixture
+def mock_s3_bucket_with_file_no_ls(mock_s3_bucket):
+    mock_s3_bucket.objects.filter.side_effect = ClientError(MOCK_ERROR_RESPONSE, "upload")
+    return mock_s3_bucket
+
+
+@fixture
 def mock_s3_bucket_with_folder(mock_s3_bucket):
     mock_s3_bucket.objects.filter.return_value = [S3OBJECT, S3SUBOBJECT]
     return mock_s3_bucket
@@ -129,6 +135,11 @@ def test_s3_no_file(mock_empty_s3_bucket, mock_s3_folder_obj):
 
 
 def test_s3_file(mock_s3_bucket_with_file, mock_s3_file_obj):
+    assert is_s3_file(S3OBJECT)
+
+
+# Special check. What if we don't have list objects permissions at all?
+def test_s3_file_no_ls(mock_s3_bucket_with_file_no_ls, mock_s3_file_obj):
     assert is_s3_file(S3OBJECT)
 
 

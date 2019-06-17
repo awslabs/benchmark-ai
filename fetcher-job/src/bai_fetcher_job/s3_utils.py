@@ -106,7 +106,7 @@ def is_s3_file(obj: S3Object):
     try:
         if obj.content_length > 0:
             return True
-    except ClientError as e:
+    except ClientError:
         logger.info(f"Failed to get content_length for {obj}. May be not an object at all")
 
     try:
