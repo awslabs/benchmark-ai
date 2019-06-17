@@ -13,13 +13,13 @@ description = """ \
 
 # 1. Hardware
 [hardware]
-instance_type = "c5.large"
+instance_type = "c5.18xlarge"
 strategy = "single_node"
 
 # 2. Environment
 [env]
 # Docker hub <hub-user>/<repo-name>:<tag> 
-docker_image = "jlcont/benchmarking-cpu:070419"
+docker_image = "benchmarkai/single-node-cpu:180619"
 
 # 3. Machine learning related settings: 
 # dataset, benchmark code and parameters it takes
@@ -37,7 +37,25 @@ id = "mnist"
 # Make an entry for each with the same format as the ones below.
 [[data.sources]]
 # Data download URI.
-src = "s3://mlperf-data-mxnet-berlin/mnist"
+src = "http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz"
+# Path where the dataset is stored in the container FS
+path = "/data/mnist"
+
+[[data.sources]]
+# Data download URI.
+src = "http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz"
+# Path where the dataset is stored in the container FS
+path = "/data/mnist"
+
+[[data.sources]]
+# Data download URI.
+src = "http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz"
+# Path where the dataset is stored in the container FS
+path = "/data/mnist"
+
+[[data.sources]]
+# Data download URI.
+src = "http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz"
 # Path where the dataset is stored in the container FS
 path = "/data/mnist"
 

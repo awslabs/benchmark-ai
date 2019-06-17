@@ -19,11 +19,13 @@
 """ data iterator for mnist """
 import os
 import random
-import sys
+import gzip
 
 # code to automatically download dataset
 # curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
 # sys.path.append(os.path.join(curr_path, "../../tests/python/common"))
+import shutil
+
 import mxnet as mx
 
 
@@ -31,6 +33,17 @@ def mnist_iterator(batch_size, input_shape):
     """return train and val iterators for mnist"""
     # download data
     flat = False if len(input_shape) == 3 else True
+
+    mnist_files = [
+        "/data/mnist/train-images-idx3-ubyte.gz",
+        "/data/mnist/train-labels-idx1-ubyte.gz",
+        "/data/mnist/t10k-images-idx3-ubyte.gz",
+        "/data/mnist/t10k-labels-idx1-ubyte.gz",
+    ]
+    for fname in mnist_files:
+        with gzip.open(fname, "rb") as f_in:
+            with open(fname[:-3], 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out)
 
     train_dataiter = mx.io.MNISTIter(
         image="/data/mnist/train-images-idx3-ubyte",
