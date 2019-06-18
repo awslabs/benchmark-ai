@@ -67,9 +67,9 @@ resource "aws_codepipeline" "codepipeline" {
       output_artifacts = ["source_output"]
 
       configuration = {
-        Owner  = "MXNetEdge"
+        Owner  = var.github_organization
         Repo   = "benchmark-ai"
-        Branch = "master"
+        Branch = var.github_branch
       }
     }
   }
@@ -142,6 +142,8 @@ resource "aws_codepipeline" "codepipeline" {
       }
     }
   }
+
+  depends_on = [aws_codebuild_project.ci-unit-tests-master, aws_codebuild_project.ci-deploy-master, aws_codebuild_project.ci-publish-master]
 }
 
 #############################################################
@@ -151,12 +153,12 @@ resource "aws_codebuild_project" "ci-unit-tests-master" {
   count         = length(var.projects)
   name          = "${var.projects[count.index]}-master"
   description   = "Master build of ${var.projects[count.index]}"
-  build_timeout = "10"
+  build_timeout = "30"
   service_role  = aws_iam_role.code-build-role.arn
-  badge_enabled = true
+  badge_enabled = false
 
   artifacts {
-    type = "NO_ARTIFACTS"
+    type = "CODEPIPELINE"
   }
 
   environment {
@@ -171,20 +173,8 @@ resource "aws_codebuild_project" "ci-unit-tests-master" {
   }
 
   source {
-    type            = "GITHUB"
-    location        = "https://github.com/MXNetEdge/benchmark-ai.git"
-    git_clone_depth = 1
-    auth {
-      type = "OAUTH"
-    }
+    type = "CODEPIPELINE"
     buildspec = "${var.projects[count.index]}/buildspec.yml"
-    report_build_status = true
-  }
-
-  tags = {
-    GithubRepo = "benchmark-ai"
-    GithubOrg  = "MXNetEdge"
-    Workspace  = terraform.workspace
   }
 }
 
@@ -200,7 +190,7 @@ resource "aws_codebuild_project" "ci-publish-master" {
   badge_enabled = false
 
   artifacts {
-    type = "NO_ARTIFACTS"
+    type = "CODEPIPELINE"
   }
 
   environment {
@@ -211,12 +201,7 @@ resource "aws_codebuild_project" "ci-publish-master" {
   }
 
   source {
-    type            = "GITHUB"
-    location        = "https://github.com/MXNetEdge/benchmark-ai.git"
-    git_clone_depth = 1
-    auth {
-      type = "OAUTH"
-    }
+    type = "CODEPIPELINE"
     buildspec = templatefile(
       "buildspec-publish.tpl.yml",
       { project = var.projects[count.index],
@@ -224,13 +209,6 @@ resource "aws_codebuild_project" "ci-publish-master" {
         account_id = data.aws_caller_identity.current.account_id
       }
     )
-    report_build_status = true
-  }
-
-  tags = {
-    GithubRepo = "benchmark-ai"
-    GithubOrg  = "MXNetEdge"
-    Workspace  = terraform.workspace
   }
 }
 
@@ -247,7 +225,7 @@ resource "aws_codebuild_project" "ci-deploy-master" {
   badge_enabled = false
 
   artifacts {
-    type = "NO_ARTIFACTS"
+    type = "CODEPIPELINE"
   }
 
   environment {
@@ -257,13 +235,7 @@ resource "aws_codebuild_project" "ci-deploy-master" {
   }
 
   source {
-    type = "NO_SOURCE"
+    type = "CODEPIPELINE"
     buildspec = file("buildspec-deploy.yml")
-  }
-
-  tags = {
-    GithubRepo = "benchmark-ai"
-    GithubOrg  = "MXNetEdge"
-    Workspace  = terraform.workspace
   }
 }

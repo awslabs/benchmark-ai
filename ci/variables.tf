@@ -38,3 +38,18 @@ variable "ecr_repo" {
     "bff" = "bai-bff"
   }
 }
+
+variable "github_organization" {
+  type = string
+  default = "MXNetEdge"
+}
+
+variable "github_branch" {
+  type = string
+  default = "master"
+}
+
+variable "chime_hook_url" {
+  type = string
+  default = ""
+}
