@@ -7,8 +7,8 @@ from pytest import fixture
 from typing import Any
 from unittest.mock import create_autospec
 
-from bai_kafka_utils.events import DataSet, BenchmarkEvent
-from bai_zk_utils.states import FetcherStatus, FetcherResult
+from bai_kafka_utils.events import DataSet, BenchmarkEvent, FetcherStatus
+from bai_zk_utils.states import FetcherResult
 from bai_zk_utils.zk_locker import RWLockManager, OnLockCallback, RWLock
 from fetcher_dispatcher.data_set_manager import DataSetManager, DataSetDispatcher, DataSetOnDone
 

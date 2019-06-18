@@ -1,11 +1,34 @@
 import dataclasses
+from dataclasses import dataclass
 from enum import Enum
 
 import dacite
-
-from dataclasses import dataclass
 from dataclasses_json import dataclass_json
 from typing import List, Optional, Type, Dict, Any, TypeVar
+
+
+class FetcherStatus(Enum):
+    def __new__(cls, val: str, final: bool):
+        obj = object.__new__(cls)
+        obj._value_ = val
+        obj.final = final
+        return obj
+
+    PENDING = "PENDING", False
+    RUNNING = "RUNNING", False
+    DONE = "DONE", True
+    FAILED = "FAILED", True
+
+    def __str__(self):
+        return self.value
+
+
+class FetchedType(Enum):
+    FILE = "FILE"
+    DIRECTORY = "DIRECTORY"
+
+    def __str__(self):
+        return self.value
 
 
 @dataclass_json
@@ -14,7 +37,8 @@ class DataSet:
     src: str
     md5: Optional[str] = None
     dst: Optional[str] = None
-    status: Optional[str] = None
+    status: Optional[FetcherStatus] = None
+    type: Optional[FetchedType] = None
     message: Optional[str] = None
 
 

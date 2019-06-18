@@ -10,6 +10,8 @@ from bai_kafka_utils.events import (
     ExecutorBenchmarkEvent,
     create_from_object,
     BenchmarkEvent,
+    FetcherStatus,
+    FetchedType,
 )
 
 
@@ -58,6 +60,20 @@ def test_data_set_dont_fail_unknown_fields():
     json = '{"src":"http://foo.com","foo":"bar"}'
     dataset = DataSet.from_json(json)
     assert not hasattr(dataset, "foo")
+
+
+def test_data_set_with_enums():
+    json = '{"src":"http://foo.com","type":"FILE", "status": "DONE"}'
+    dataset = DataSet.from_json(json)
+    assert dataset == DataSet(src="http://foo.com", type=FetchedType.FILE, status=FetcherStatus.DONE)
+
+
+def test_data_set_with_enums_serialize():
+    dataset = DataSet(src="http://foo.com", type=FetchedType.FILE, status=FetcherStatus.DONE)
+    jsons = dataset.to_json()
+    dict = json.loads(jsons)
+    assert dict["type"] == "FILE"
+    assert dict["status"] == "DONE"
 
 
 # This was seen in the wild!
@@ -149,3 +165,19 @@ def test_create_from_object_when_input_object_is_not_a_dataclass():
 def test_create_from_object_when_specifying_field_with_wrong_type(base_event):
     with pytest.raises(ValueError):
         create_from_object(FetcherBenchmarkEvent, base_event, payload="payload")
+
+
+def test_finals():
+    assert not FetcherStatus.PENDING.final
+    assert not FetcherStatus.RUNNING.final
+
+    assert FetcherStatus.DONE.final
+    assert FetcherStatus.FAILED.final
+
+
+def test_fetch_type():
+    assert str(FetchedType.FILE) == "FILE"
+
+
+def test_fetch_status():
+    assert str(FetcherStatus.DONE) == "DONE"
