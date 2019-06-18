@@ -35,8 +35,8 @@ extended_shm = true
 # dataset, benchmark code and parameters it takes
 [ml]
 benchmark_code = '''
-#!/bin/bash \\
-echo 'Horovod test descriptor' \\
+#!/bin/bash
+echo 'Horovod test descriptor'
 ./deep-learning-models/models/resnet/tensorflow/train.sh 3
 '''
 
