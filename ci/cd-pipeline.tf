@@ -172,8 +172,8 @@ resource "aws_codebuild_project" "ci-unit-tests-master" {
     privileged_mode = true
 
     environment_variable {
-      name = "SKIP_INTEGRATION_TESTS"
-      value = tostring(var.skip_integration_tests)
+      name = "RUN_INTEGRATION_TESTS"
+      value = tostring(var.run_integration_tests)
     }
   }
 

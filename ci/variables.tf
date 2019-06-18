@@ -54,7 +54,7 @@ variable "chime_hook_url" {
   default = ""
 }
 
-variable "skip_integration_tests" {
+variable "run_integration_tests" {
   type = bool
-  default = false
+  default = true
 }
