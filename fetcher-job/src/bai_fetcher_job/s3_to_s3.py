@@ -1,8 +1,6 @@
 import boto3
-from typing import Optional
-
-import boto3
 from bai_zk_utils.states import FetchedType
+from typing import Optional
 
 from bai_fetcher_job.s3_utils import S3Object, download_from_s3, is_s3_file
 from bai_fetcher_job.transfer_to_s3 import transfer_to_s3
