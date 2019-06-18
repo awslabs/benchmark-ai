@@ -9,6 +9,14 @@
             [java-time :refer [instant]]
             [taoensso.timbre :as log]))
 
+(def status-map {::submitted "SUBMITTED"
+                 ::error "ERROR"
+                 ::initializing "INITIALIZING"
+                 ::running "RUNNING"
+                 ::failed "FAILED"
+                 ::succeeded "SUCCEEDED"
+                 ::pending "PENDING"})
+
 (defn uuid [] (str (java.util.UUID/randomUUID)))
 
 (defn verify-doc-hash [event]
@@ -96,3 +104,19 @@
       :visited         (some-> message-body :visited)             ; <--
       :payload         (some-> message-body :payload)
       :type            "CMD_SUBMIT"})))
+
+(defn status-event[req message-body status-keyword status-message]
+  (let [tstamp (System/currentTimeMillis)
+        authenticated false] ;NOTE auth should have been taken care of by middleware.
+    (add-my-visited-entry
+     {:message_id      (uuid)                                     ; <--
+      :client_id       (some-> message-body :client_id)
+      :action_id       (uuid)                                     ; <--
+      :date            (some-> message-body :date)
+      :authenticated   authenticated                              ; <--
+      :tstamp          tstamp
+      :visited         (some-> message-body :visited)             ; <--
+      :payload         (some-> message-body :payload)
+      :message         status-message
+      :status          (status-keyword status-map)
+      :type            "BAI_APP_STATUS"})))
