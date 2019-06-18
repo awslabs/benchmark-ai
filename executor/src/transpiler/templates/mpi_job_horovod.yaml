@@ -16,7 +16,7 @@ data:
       /opt/behance/download-s3-files "$@"
     else
       echo "Not a worker - no data necessary"
-    fi  
+    fi
 ---
 
 apiVersion: kubeflow.org/v1alpha1
