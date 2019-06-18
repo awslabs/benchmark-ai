@@ -2,7 +2,7 @@ import pytest
 from kazoo.client import KazooClient
 from pytest import fixture
 
-from bai_kafka_utils.events import BenchmarkEvent, DataSet
+from bai_kafka_utils.events import BenchmarkEvent, DataSet, FetchedType
 from bai_zk_utils.zk_locker import DistributedRWLockManager
 from fetcher_dispatcher.args import FetcherServiceConfig
 from fetcher_dispatcher.data_set_manager import DataSetManager
@@ -45,7 +45,7 @@ def test_fetch(
 
     def on_done_test(data_set: DataSet):
         assert data_set.src
-        assert data_set.type == "FILE"
+        assert data_set.type == FetchedType.FILE
         assert data_set.dst
 
         test_fetch.completed += 1
