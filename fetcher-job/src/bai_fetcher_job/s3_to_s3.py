@@ -1,6 +1,9 @@
 import boto3
 from typing import Optional
 
+import boto3
+from bai_zk_utils.states import FetchedType
+
 from bai_fetcher_job.s3_utils import S3Object, download_from_s3, is_s3_file
 from bai_fetcher_job.transfer_to_s3 import transfer_to_s3
 
@@ -31,7 +34,7 @@ def s3_to_s3_deep(src: S3Object, dst: S3Object):
         new_obj.copy(old_source)
 
 
-def s3_to_s3(src: str, dst: str, md5: Optional[str] = None):
+def s3_to_s3(src: str, dst: str, md5: Optional[str] = None) -> FetchedType:
     s3src = S3Object.parse(src)
     s3dst = S3Object.parse(dst)
 
@@ -41,6 +44,8 @@ def s3_to_s3(src: str, dst: str, md5: Optional[str] = None):
             transfer_to_s3(download_from_s3, src, dst, md5)
         else:
             s3_to_s3_single(s3src, s3dst)
+        return FetchedType.FILE
     else:
         # For all other cases we just transfer
         s3_to_s3_deep(s3src, s3dst)
+        return FetchedType.DIRECTORY

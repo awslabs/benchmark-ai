@@ -53,7 +53,13 @@ if [[ ${WAS_TERMINATED} == "true" ]]; then
   MESSAGE="Was terminated"
 fi
 
-JSON_RESULT="{\"status\":\"${RESULT}\", \"message\":\"$MESSAGE\"}"
+TYPE="FILE"
+if [[ ${SRC} == *"directory"* ]]; then
+  TYPE="DIRECTORY"
+fi
+
+
+JSON_RESULT="{\"status\":\"${RESULT}\", \"message\":\"$MESSAGE\", \"type\":\"$TYPE\"}"
 
 echo "Reporting download of ${SRC} -> ${DST}:${JSON_RESULT}"
 

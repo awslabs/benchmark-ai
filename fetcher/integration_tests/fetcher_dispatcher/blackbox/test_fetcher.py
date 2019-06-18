@@ -30,7 +30,7 @@ def get_fetcher_benchmark_event(template_event: BenchmarkEvent, src: str):
 
 
 def successful_dataset(data_set: DataSet) -> bool:
-    return data_set.dst is not None
+    return data_set.dst is not None and data_set.type == "FILE"
 
 
 def failed_dataset(data_set: DataSet) -> bool:

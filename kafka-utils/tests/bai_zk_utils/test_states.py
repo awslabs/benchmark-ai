@@ -1,10 +1,10 @@
 import pytest
 
-from bai_zk_utils.states import FetcherStatus, FetcherResult
+from bai_zk_utils.states import FetcherStatus, FetcherResult, FetchedType
 
-FETCHER_DONE_RESULT = FetcherResult(FetcherStatus.DONE, "Success")
+FETCHER_DONE_RESULT = FetcherResult(FetcherStatus.DONE, FetchedType.FILE, "Success")
 
-STATE_DONE_BIN = b'{"status": "DONE", "message": "Success"}'
+STATE_DONE_BIN = b'{"status": "DONE", "type": "FILE", "message": "Success"}'
 
 STATE_RUNNING_BIN = b'{"status": "RUNNING"}'
 
@@ -40,3 +40,11 @@ def test_finals():
 
     assert FetcherStatus.DONE.final
     assert FetcherStatus.FAILED.final
+
+
+def test_fetch_type():
+    assert str(FetchedType.FILE) == "FILE"
+
+
+def test_fetch_status():
+    assert str(FetcherStatus.DONE) == "DONE"

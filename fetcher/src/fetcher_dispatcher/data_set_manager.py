@@ -86,6 +86,7 @@ class DataSetManager:
 
         if result.status.final:
             data_set.status = str(result.status)
+            data_set.type = str(result.type)
 
             if result.status == FetcherStatus.FAILED:
                 data_set.message = result.message

@@ -44,6 +44,10 @@ def test_fetch(
     test_fetch.completed = 0
 
     def on_done_test(data_set: DataSet):
+        assert data_set.src
+        assert data_set.type == "FILE"
+        assert data_set.dst
+
         test_fetch.completed += 1
 
     for data_set in data_sets:

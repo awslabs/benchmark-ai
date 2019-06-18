@@ -18,11 +18,24 @@ class FetcherStatus(Enum):
     DONE = "DONE", True
     FAILED = "FAILED", True
 
+    def __str__(self):
+        return self.value
+
+
+class FetchedType(Enum):
+    UNKNOWN = "UNKNOWN"
+    FILE = "FILE"
+    DIRECTORY = "DIRECTORY"
+
+    def __str__(self):
+        return self.value
+
 
 @dataclass
 @dataclass_json
 class FetcherResult:
     status: FetcherStatus
+    type: FetchedType = FetchedType.UNKNOWN
     message: str = ""
 
     def to_binary(self):
