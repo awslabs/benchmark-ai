@@ -65,6 +65,7 @@ class KubernetesJobWatcher:
         pods: V1PodList = self.pod_client.list_namespaced_pod(
             self.kubernetes_namespace, label_selector=f"job-name={self.job_id}"
         )
+        logger.debug(f"[job-id: {self.job_id}] Kubernetes Job pods: {pods}")
         inferrer = SingleNodeStrategyKubernetesStatusInferrer(k8s_job_status, pods.items)
         status = inferrer.status()
         return status
