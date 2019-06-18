@@ -5,7 +5,7 @@ from kafka import KafkaConsumer, KafkaProducer
 from time import time
 from typing import Callable
 
-from bai_kafka_utils.events import FetcherPayload, BenchmarkDoc, BenchmarkEvent, DataSet
+from bai_kafka_utils.events import FetcherPayload, BenchmarkDoc, BenchmarkEvent, DataSet, FetchedType, FetcherStatus
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
 
 TIMEOUT_FOR_DOWNLOAD_SEC = 5 * 60
@@ -30,11 +30,11 @@ def get_fetcher_benchmark_event(template_event: BenchmarkEvent, src: str):
 
 
 def successful_dataset(data_set: DataSet) -> bool:
-    return data_set.dst is not None and data_set.type == "FILE"
+    return data_set.dst is not None and data_set.type == FetchedType.FILE and data_set.status == FetcherStatus.DONE
 
 
 def failed_dataset(data_set: DataSet) -> bool:
-    return data_set.dst is None and data_set.message is not None
+    return data_set.dst is None and data_set.message is not None and data_set.status == FetcherStatus.FAILED
 
 
 def get_message_is_the_response(
