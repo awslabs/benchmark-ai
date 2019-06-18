@@ -105,18 +105,16 @@
       :payload         (some-> message-body :payload)
       :type            "CMD_SUBMIT"})))
 
-(defn status-event[req message-body status-keyword status-message]
-  (let [tstamp (System/currentTimeMillis)
-        authenticated false] ;NOTE auth should have been taken care of by middleware.
+(defn status-event[event status-keyword status-message]
+  (let [tstamp (System/currentTimeMillis)] ;NOTE auth should have been taken care of by middleware.
     (add-my-visited-entry
      {:message_id      (uuid)                                     ; <--
-      :client_id       (some-> message-body :client_id)
-      :action_id       (uuid)                                     ; <--
-      :date            (some-> message-body :date)
-      :authenticated   authenticated                              ; <--
-      :tstamp          tstamp
-      :visited         (some-> message-body :visited)             ; <--
-      :payload         (some-> message-body :payload)
-      :message         status-message
-      :status          (status-keyword status-map)
+      :client_id       (some-> event :client_id)
+      :action_id       (some-> event :action_id)
+      :date            (some-> event :date)
+      :tstamp          tstamp                                     ; <--
+      :visited         (some-> event :visited)
+      :payload         (some-> event :payload)
+      :message         status-message                             ; <--
+      :status          (status-keyword status-map)                ; <--
       :type            "BAI_APP_STATUS"})))

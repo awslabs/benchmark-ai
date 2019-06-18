@@ -47,7 +47,9 @@
                                (reset! producer (KafkaProducer. kafka-config))
                                (while @started?
                                  (let [[event] (<!! @send-event-channel-atom)]
-                                   (if (allowed-kafka-sink-topics (:type event)) (.send @producer (ProducerRecord. (:type event) (str (:client_id event)) (str(json/generate-string event))))
+                                   (if (allowed-kafka-sink-topics (:type event)) (do
+                                                                                   (log/trace (str"sending event to "(:type event)))
+                                                                                   (.send @producer (ProducerRecord. (:type event) (str (:client_id event)) (str(json/generate-string event)))))
                                        (log/warn (str "This topic ["(:type event)"] is not present in the set of permitted topics; skipping...")))))
                                (log/info "Shutdown Kafka producer (sender/sink)")
                                (.close @producer))))))
