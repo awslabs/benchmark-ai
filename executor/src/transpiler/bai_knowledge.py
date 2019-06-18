@@ -1,6 +1,7 @@
 import os
 import random
 import shlex
+from dataclasses import dataclass
 
 from typing import List, Dict
 from ruamel import yaml
@@ -11,6 +12,12 @@ from transpiler.kubernetes_spec_logic import ConfigTemplate, VolumeMount, HostPa
 from transpiler.config import BaiConfig, BaiDataSource, EnvironmentInfo
 from executor.config import ExecutorConfig
 from executor import SERVICE_NAME
+
+
+@dataclass
+class PullerDataSource:
+    name: str
+    puller_path: str
 
 
 class BaiKubernetesObjectBuilder:
@@ -135,7 +142,7 @@ class BaiKubernetesObjectBuilder:
         else:
             self.add_benchmark_cmd_to_container()
 
-    def _get_data_volumes(self, data_sources: List[BaiDataSource]) -> Dict:
+    def _get_data_volumes(self, data_sources: List[BaiDataSource]) -> Dict[str, PullerDataSource]:
         """
         Processes the input data sources to get a dict with the required data volumes
         :param data_sources:
@@ -148,27 +155,25 @@ class BaiKubernetesObjectBuilder:
         for idx, dest in enumerate(destination_paths):
             name = "p" + str(idx)
             puller_path = f"/data/{name}"
-            data_vols[dest] = {"name": name, "puller_path": puller_path}
+            data_vols[dest] = PullerDataSource(name, puller_path)
 
         return data_vols
 
-    def _get_pod_spec_volumes(self, data_volumes) -> List[Volume]:
+    def _get_pod_spec_volumes(self, data_volumes: Dict[str, PullerDataSource]) -> List[Volume]:
         volumes = []
 
         for vol in data_volumes.values():
-            volumes.append(
-                Volume(name=vol["name"], hostPath=HostPath(path=f'/{vol["name"]}', type="DirectoryOrCreate"))
-            )
+            volumes.append(Volume(name=vol.name, hostPath=HostPath(path=f"/{vol.name}", type="DirectoryOrCreate")))
         return volumes
 
-    def _get_container_volume_mounts(self, data_volumes) -> List[VolumeMount]:
+    def _get_container_volume_mounts(self, data_volumes: Dict[str, PullerDataSource]) -> List[VolumeMount]:
         vol_mounts = []
 
         for dest_path, vol in data_volumes.items():
-            vol_mounts.append(VolumeMount(name=vol["name"], mountPath=dest_path))
+            vol_mounts.append(VolumeMount(name=vol.name, mountPath=dest_path))
         return vol_mounts
 
-    def _update_data_puller(self, data_volumes, data_sources: List[BaiDataSource]):
+    def _update_data_puller(self, data_volumes: Dict[str, PullerDataSource], data_sources: List[BaiDataSource]):
         """
         Completes the data puller by adding the required arguments and volume mounts.
         If no data sources are found, the data puller is deleted.
@@ -183,7 +188,7 @@ class BaiKubernetesObjectBuilder:
         for s in data_sources:
             s3_objects.append(
                 "{object},{chmod},{path_name}".format(
-                    object=s.object, chmod=self.config.puller_mount_chmod, path_name=data_volumes[s.path]["name"]
+                    object=s.object, chmod=self.config.puller_mount_chmod, path_name=data_volumes[s.path].name
                 )
             )
 
@@ -201,7 +206,7 @@ class BaiKubernetesObjectBuilder:
         vol_mounts = []
 
         for vol in data_volumes.values():
-            vol_mounts.append(VolumeMount(name=vol["name"], mountPath=vol["puller_path"]))
+            vol_mounts.append(VolumeMount(name=vol.name, mountPath=vol.puller_path))
 
         return vol_mounts
 
