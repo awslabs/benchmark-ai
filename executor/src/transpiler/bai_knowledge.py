@@ -137,7 +137,7 @@ class BaiKubernetesObjectBuilder:
             benchmark_cmd = yaml.scalarstring.PreservedScalarString(benchmark_cmd)
 
             entrypoint_config_map = self.root.find_config_map(f"entrypoint-{self.job_id}")
-            entrypoint_config_map.data.entrypoint = benchmark_cmd
+            entrypoint_config_map.data["entrypoint.sh"] = benchmark_cmd
 
         # If no benchmark_code is specified, we don't need to use the configmap as entrypoint
         else:
