@@ -64,6 +64,7 @@ This is the command-line, client-side interface to the Bechmark AI service...
           --upgrade                : fetches latest version of this tool [%s]
           --sync-version           : synchronized this tool with that of the service endpoint
           --sync-data              : clean local cached data and refetch from service
+          --history                : lists recently returned <action id> : <descriptor path> : <date>
           --register <hostname|IP and PORT of bai service> | Ex: bai.aws.amazon.com:7100
           --unregister             : clears service endpoint from configuration
           --show-registered-service-endpoint : The hostname|IP:PORT of bai service you are using
@@ -419,6 +420,10 @@ set_latest_timestamp() {
     echo "set_latest_timestamp"
     #TODO - writes the latest timestamp to timestamp file in actionID dir
 }
+
+get_history() {
+    cat "${BAI_ACTION_IDS}"
+}
 #---------------------------------------
 
 
@@ -459,7 +464,11 @@ main() {
                     ;;
                 --last-action-id)
                     shift
-                    use_last_action_id
+                    echo $(use_last_action_id)
+                    exit $?
+                    ;;
+                --history)
+                    get_history
                     exit $?
                     ;;
                 --abort|--cancel)
