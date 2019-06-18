@@ -18,10 +18,6 @@ logger = logging.getLogger(__name__)
 # Setting to a really high number (3 years) because we don't want it to ever close.
 MAX_IDLE_TIME_MS = 100000000000
 
-# TODO: take num_partitions and replication_factor from terraform output instead of hardcoding them
-NUM_PARTITIONS = 3
-REPLICATION_FACTOR = 3
-
 
 class WrongBenchmarkEventTypeException(Exception):
     pass
@@ -41,7 +37,14 @@ def create_kafka_consumer_producer(
         kafka_cfg.cmd_return_topic,
         kafka_cfg.status_topic,
     ]
-    create_kafka_topics(required_topics, kafka_cfg.bootstrap_servers, service_name)
+
+    create_kafka_topics(
+        required_topics,
+        kafka_cfg.bootstrap_servers,
+        service_name,
+        kafka_cfg.num_partitions,
+        kafka_cfg.replication_factor,
+    )
 
     return (
         create_kafka_consumer(kafka_cfg.bootstrap_servers, kafka_cfg.consumer_group_id, consumer_topics),
@@ -96,11 +99,7 @@ def create_kafka_producer(bootstrap_servers: List[str]) -> kafka.KafkaProducer:
 
 
 def create_kafka_topics(
-    new_topics: List[str],
-    bootstrap_servers: List[str],
-    service_name: str,
-    num_partitions: int = NUM_PARTITIONS,
-    replication_factor: int = REPLICATION_FACTOR,
+    new_topics: List[str], bootstrap_servers: List[str], service_name: str, num_partitions: int, replication_factor: int
 ):
     admin_client = KafkaAdminClient(bootstrap_servers=bootstrap_servers, client_id=service_name)
 

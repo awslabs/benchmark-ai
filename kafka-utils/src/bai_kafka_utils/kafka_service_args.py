@@ -52,4 +52,8 @@ def create_kafka_service_parser(program_name: str) -> ArgParser:
 
     parser.add_argument("--logging-level", env_var="LOGGING_LEVEL", default="INFO")
 
+    parser.add_argument("--num-partitions", env_var="NUM_PARTITIONS")
+
+    parser.add_argument("--replication-factor", env_var="REPLICATION_FACTOR")
+
     return parser

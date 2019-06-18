@@ -16,6 +16,10 @@ logger = logging.getLogger(__name__)
 
 KAFKA_POLL_INTERVAL_MS = 500
 
+# Default values
+NUM_PARTITIONS = 3
+REPLICATION_FACTOR = 3
+
 
 @dataclass()
 class KafkaServiceConfig:
@@ -27,6 +31,8 @@ class KafkaServiceConfig:
     cmd_return_topic: Optional[str] = None
     status_topic: Optional[str] = None
     consumer_group_id: Optional[str] = None
+    num_partitions: Optional[int] = NUM_PARTITIONS
+    replication_factor: Optional[int] = REPLICATION_FACTOR
 
 
 class KafkaServiceCallback(metaclass=abc.ABCMeta):

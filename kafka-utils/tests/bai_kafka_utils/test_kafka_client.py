@@ -150,10 +150,13 @@ def test_kafka_client_create_consumer_producer(mocker, mock_kafka_consumer, mock
 def test_kafka_client_create_topic(mocker):
     mock_kafka_admin_client = mocker.patch("bai_kafka_utils.kafka_client.KafkaAdminClient", create_autospec=True)
 
-    create_kafka_topics([PRODUCER_TOPIC], BOOTSTRAP_SERVERS, SERVICE_NAME)
+    num_partitions = 3
+    replication_factor = 3
+
+    create_kafka_topics([PRODUCER_TOPIC], BOOTSTRAP_SERVERS, SERVICE_NAME, num_partitions, replication_factor)
 
     _, kwargs = mock_kafka_admin_client.return_value.create_topics.call_args
     created_topic = kwargs["new_topics"][0]
     assert created_topic.name == PRODUCER_TOPIC
-    assert created_topic.num_partitions == bai_kafka_utils.kafka_client.NUM_PARTITIONS
-    assert created_topic.replication_factor == bai_kafka_utils.kafka_client.REPLICATION_FACTOR
+    assert created_topic.num_partitions == num_partitions
+    assert created_topic.replication_factor == replication_factor
