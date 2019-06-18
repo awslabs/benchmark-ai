@@ -26,7 +26,7 @@ def retrying_fetch(cfg: FetcherJobConfig):
     def _retry_fetch(cfg) -> FetchedType:
         return _fetch(cfg)
 
-    fetched_type = FetchedType.UNKNOWN
+    fetched_type = None
     try:
         fetched_type = _retry_fetch(cfg)
     except (RetryableError, UnRetryableError) as ex:

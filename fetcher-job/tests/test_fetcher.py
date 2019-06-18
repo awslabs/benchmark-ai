@@ -99,7 +99,7 @@ def test_fetcher_updates_zk_fail(mock_http_to_s3_client_error, mock_update_zk_no
     retrying_fetch(cfg)
 
     mock_update_zk_node.assert_called_with(
-        ZK_NODE_PATH, ZK_ENSEMBLE, FetcherResult(FetcherStatus.FAILED, FetchedType.UNKNOWN, FILE_NOT_FOUND)
+        ZK_NODE_PATH, ZK_ENSEMBLE, FetcherResult(status=FetcherStatus.FAILED, message=FILE_NOT_FOUND)
     )
 
 
@@ -115,7 +115,7 @@ def test_fetcher_updates_zk_once(mock_http_to_s3_server_error, mock_update_zk_no
     retrying_fetch(cfg)
 
     mock_update_zk_node.assert_called_with(
-        ZK_NODE_PATH, ZK_ENSEMBLE, FetcherResult(FetcherStatus.FAILED, FetchedType.UNKNOWN, SERVER_ERROR)
+        ZK_NODE_PATH, ZK_ENSEMBLE, FetcherResult(status=FetcherStatus.FAILED, message=SERVER_ERROR)
     )
 
 

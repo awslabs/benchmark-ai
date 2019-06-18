@@ -24,7 +24,6 @@ class FetcherStatus(Enum):
 
 
 class FetchedType(Enum):
-    UNKNOWN = "UNKNOWN"
     FILE = "FILE"
     DIRECTORY = "DIRECTORY"
 

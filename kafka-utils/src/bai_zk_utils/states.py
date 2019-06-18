@@ -11,7 +11,7 @@ DEFAULT_ENCODING = "utf-8"
 @dataclass_json
 class FetcherResult:
     status: FetcherStatus
-    type: FetchedType = FetchedType.UNKNOWN
+    type: FetchedType = None
     message: str = ""
 
     def to_binary(self):
