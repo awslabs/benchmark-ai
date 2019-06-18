@@ -59,7 +59,7 @@ class BaiKubernetesObjectBuilder:
         config_template.feed({"descriptor": descriptor})
         config_template.feed({"event": event})
         config_template.feed({"service_name": SERVICE_NAME})
-        config_template.feed({"job_id": self.job_id.lower()})
+        config_template.feed({"job_id": self.job_id})
         config_template.feed({"availability_zone": availability_zone})
         self.root = config_template.build()
         self.add_volumes(data_sources)
