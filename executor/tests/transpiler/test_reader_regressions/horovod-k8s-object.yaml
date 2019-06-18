@@ -1,30 +1,31 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: entrypoint-benchmark-JOB-ID
+  name: entrypoint-benchmark-job-id
   namespace: default
-  action-id: ACTION_ID
-  client-id: CLIENT_ID
-  created-by: executor
   labels:
-    benchmark: benchmark-JOB-ID
+    benchmark: benchmark-job-id
+    action-id: ACTION_ID
+    client-id: CLIENT_ID
+    created-by: executor
 data:
-  entrypoint: |
-    #!/bin/bash \\
-    echo 'Horovod test descriptor' \\
-    ./deep-learning-models/models/resnet/tensorflow/train.sh 3
-  init_entrypoint.sh: |-
+  entrypoint.sh: echo "Entrypoint"
+  puller_entrypoint.sh: |-
     #!/bin/bash
     if [ "$ROLE" == "worker" ]; then
       /opt/behance/download-s3-files "$@"
     else
       echo "Not a worker - no data necessary"
     fi  
+  entrypoint: |
+    #!/bin/bash
+    echo 'Horovod test descriptor'
+    ./deep-learning-models/models/resnet/tensorflow/train.sh 3
 ---
 apiVersion: kubeflow.org/v1alpha1
 kind: MPIJob
 metadata:
-  name: benchmark-JOB-ID
+  name: benchmark-job-id
   labels:
     app: benchmark-ai
     action-id: ACTION_ID
@@ -48,12 +49,12 @@ spec:
       initContainers:
       - name: data-puller
         command:
-        - /bin/init_entrypoint.sh
+        - /bin/puller_entrypoint.sh
         volumeMounts:
-        - name: entrypoint
-          mountPath: /bin/init_entrypoint.sh
+        - name: entrypoints_volume
+          mountPath: /bin/puller_entrypoint.sh
           readOnly: true
-          subPath: init_entrypoint.sh
+          subPath: puller_entrypoint.sh
         - name: p0
           mountPath: /data/p0
         env:
@@ -72,7 +73,7 @@ spec:
         command:
         - /bin/entrypoint.sh
         volumeMounts:
-        - name: entrypoint
+        - name: entrypoints_volume
           mountPath: /bin/entrypoint.sh
           readOnly: true
           subPath: entrypoint.sh
@@ -100,7 +101,7 @@ spec:
         - name: BACKEND
           value: elasticsearch
         - name: BACKEND_ARG_JOB_ID
-          value: benchmark-JOB-ID
+          value: benchmark-job-id
         - name: BACKEND_ARG_HOSTNAME
           valueFrom:
             configMapKeyRef:
@@ -120,10 +121,10 @@ spec:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
       volumes:
-      - name: entrypoint
+      - name: entrypoints_volume
         configMap:
           defaultMode: 0700
-          name: entrypoint-benchmark-JOB-ID
+          name: entrypoint-benchmark-job-id
       - name: benchmark-ai
         emptyDir: {}
       - name: p0

@@ -48,7 +48,7 @@ class BaiKubernetesObjectBuilder:
         """
         self.descriptor = descriptor
         self.config = config
-        self.job_id = job_id
+        self.job_id = job_id.lower()  # Let's make it lower case - k8s complains about upper case chars
 
         if random_object is None:
             random_object = random.Random()
@@ -59,7 +59,8 @@ class BaiKubernetesObjectBuilder:
         config_template.feed({"descriptor": descriptor})
         config_template.feed({"event": event})
         config_template.feed({"service_name": SERVICE_NAME})
-        config_template.feed({"job_id": self.job_id, "availability_zone": availability_zone})
+        config_template.feed({"job_id": self.job_id.lower()})
+        config_template.feed({"availability_zone": availability_zone})
         self.root = config_template.build()
         self.add_volumes(data_sources)
 
