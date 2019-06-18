@@ -13,5 +13,5 @@ setup(
     package_dir={"": "src"},
     packages=find_packages("src"),
     include_package_data=True,
-    entry_points={"console_scripts": ["bai-metrics-pusher = bai_metrics_pusher.__main__:main"]},
+    entry_points={"console_scripts": ["start = bai_metrics_pusher.__main__:main"]},
 )

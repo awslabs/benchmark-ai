@@ -9,7 +9,7 @@ ARG SERVICE
 ######################
 COPY ./$SERVICE/environment.yml /tmp/environment.yml
 
-RUN conda env create -f /tmp/environment.yml -p /opt/$SERVICE
+RUN conda env create -f /tmp/environment.yml -p /opt/env
 
 ####################
 # Frequent changes #
@@ -18,22 +18,18 @@ RUN conda env create -f /tmp/environment.yml -p /opt/$SERVICE
 COPY . /data/benchmark-ai
 WORKDIR /data/benchmark-ai/$SERVICE
 
-RUN /opt/$SERVICE/bin/pip install -r requirements.txt
-RUN /opt/$SERVICE/bin/python3 setup.py install
+RUN /opt/env/bin/pip install -r requirements.txt
+RUN /opt/env/bin/python3 setup.py install
 
 ########################################
 # Build the final image
 ########################################
 FROM ubuntu:18.04
 
-ARG SERVICE
-
-COPY --from=base /opt/$SERVICE /opt/$SERVICE
+COPY --from=base /opt/env /opt/env
 
 # A workdir only for convenience
-WORKDIR /opt/$SERVICE/bin
+WORKDIR /opt/env/bin
 
-ENV SERVICE_RUN $SERVICE
-
-ENTRYPOINT [ "/bin/bash", "-c", "/opt/$SERVICE_RUN/bin/$SERVICE_RUN" ]
+ENTRYPOINT [ "/opt/env/bin/start" ]
 
