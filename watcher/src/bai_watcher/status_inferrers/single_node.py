@@ -106,6 +106,8 @@ class SingleNodeStrategyKubernetesStatusInferrer:
             self._infer_status_from_containers,
         ]:
             status = status_callback()
+            inference_phase_name = status_callback.__name__
+            logger.debug(f"Status inference phase '{inference_phase_name}' produced status: {status}")
             if status:
                 return status
 
