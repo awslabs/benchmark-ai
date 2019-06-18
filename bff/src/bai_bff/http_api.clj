@@ -11,6 +11,7 @@
             [compojure.middleware :refer [wrap-canonical-redirect]]
             [ring.middleware.json :refer [wrap-json-response wrap-json-body wrap-json-params]]
             [ring.middleware.keyword-params :refer [wrap-keyword-params]]
+            [ring.middleware.params :refer [wrap-params]]
             [ring.middleware.reload :refer [wrap-reload]]
             [cheshire.core :as json]
             [taoensso.timbre :as log]
@@ -104,9 +105,9 @@
                       (defroutes client-routes
                         (GET    "/" [] (post-proc-results (eventbus/get-all-client-jobs client-id)))
                         (DELETE "/" [] (post-proc-results (log/info "delete-client-jobs... [NOT]") #_(delete-job action-id))))
-                      (context "/:action-id" [action-id]
+                      (context "/:action-id" [action-id since]
                                (defroutes action-routes
-                                 (GET    "/" [] (post-proc-results (eventbus/get-all-client-jobs-for-action client-id action-id)))
+                                 (GET    "/" {{since :since} :params :as req} (post-proc-results (eventbus/get-all-client-jobs-for-action client-id action-id since)))
                                  (DELETE "/" {body :body :as request} (response (dispatch-delete-job request body action-id)))))))) ;
   (ANY "*" []
        (route/not-found (slurp (io/resource "404.html")))))
@@ -121,4 +122,5 @@
       (wrap-json-response)
       (wrap-json-body {:keywords? true :bigdecimals? true})
       (wrap-keyword-params)
+      (wrap-params)
       (wrap-json-params)))

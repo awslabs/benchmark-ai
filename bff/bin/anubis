@@ -2,6 +2,7 @@
 
 DEBUG=${DEBUG:-0}
 VERBOSE=${VERBOSE:-0}
+SYNC_DATA=${SYNC_DATA:-0}
 
 declare -r VERSION="0.1.0-481dad2"
 declare -r SERVICE_NAME="anubis-client"
@@ -11,10 +12,12 @@ declare -r BAI_HISTORY=${BAI_HOME}/history
 declare -r BAI_ACTION_IDS=${BAI_HOME}/action_ids
 declare -r BAI_DATABASE=${BAI_HOME}/db
 declare -r BAI_SERVICE_ENDPOINT_CONFIG=${BAI_HOME}/service_endpoint
+declare -r TSTAMP_FILENAME=latest_tstamp
 
 ## EMOJIS ##  https://apps.timwhitlock.info/emoji/tables/unicode
 declare -A emoji
 emoji[fetcher-dispatcher]="\xF0\x9F\x90\x95 "
+emoji[anubis-client]="\xE2\x99\x8E "
 emoji[executor]="\xE2\x9A\xA1 "
 emoji[bai-bff]="\xE2\x9C\x8A "
 emoji[watcher]="\xF0\x9F\x91\x80 "
@@ -26,18 +29,16 @@ emoji[GOOD]="\xF0\x9F\x98\x8E "
 emoji[WARN]="\xF0\x9F\x94\xA5 "
 emoji[ERROR]="\xF0\x9F\x92\xA5 "
 emoji[SUCESS_ALL]="\xF0\x9F\x8E\x89 "
+emoji[SEARCH]="\xF0\x9F\x94\x8D "
 
 banner() {
     printf '
-
-\033[01;31m
-                       _      _
+\033[01;31m                       _      _
                       | |    (_)
    __ _  _ __   _   _ | |__   _  ___
   / _  ||  _ \ | | | ||  _ \ | |/ __|\033[0m
 \033[01;33m | (_| || | | || |_| || |_) || |\__ \\\033[0m
-\033[01;32m  \__,_||_| |_| \__,_||_.__/ |_||___/
-\033[0m
+\033[01;32m  \__,_||_| |_| \__,_||_.__/ |_||___/\033[0m \xE2\x99\x8E
 
 (v%s)
 -------------------------
@@ -62,6 +63,7 @@ This is the command-line, client-side interface to the Bechmark AI service...
           --check-version          : checks to see if the version you are running is the latest posted
           --upgrade                : fetches latest version of this tool [%s]
           --sync-version           : synchronized this tool with that of the service endpoint
+          --sync-data              : clean local cached data and refetch from service
           --register <hostname|IP and PORT of bai service> | Ex: bai.aws.amazon.com:7100
           --unregister             : clears service endpoint from configuration
           --show-registered-service-endpoint : The hostname|IP:PORT of bai service you are using
@@ -110,10 +112,10 @@ check_tools() {
 
 _setup() {
     mkdir -p "${BAI_HOME}"
+    mkdir -p "${BAI_HOME}/db"
     touch "${BAI_HOME}/action_ids"
     touch "${BAI_HOME}/history"
     touch "${BAI_HOME}/service_endpoint"
-    touch "${BAI_HOME}/db"
 }
 
 #---------------------------------------------------------
@@ -177,7 +179,7 @@ _generate_submit_event() {
     "client_sha1"    : "${MY_SHA1}",
     "client_username" : "$(whoami)",
     "date" : "$(date -u +"%a %b %d %H:%M:%S %Z %Y")",
-    "visited"  : [{"svc" : "${SERVICE_NAME}", "tstamp" : 1557150931877, "version" :"${VERSION}"}],
+    "visited"  : [{"svc" : "${SERVICE_NAME}", "tstamp" : $(( $(date +%s) * 1000 )), "version" :"${VERSION}"}],
     "payload"  : {
         "toml" : {
             "descriptor_filename" : "${descriptor_filename##*/}",
@@ -211,7 +213,7 @@ _generate_command_event() {
     "client_sha1"    : "${MY_SHA1}",
     "client_username" : "$(whoami)",
     "date" : "$(date -u +"%a %b %d %H:%M:%S %Z %Y")",
-    "visited"  : [{"svc" : "${SERVICE_NAME}", "tstamp" : 1557150931877, "version" :"${VERSION}"}],
+    "visited"  : [{"svc" : "${SERVICE_NAME}", "tstamp" : $(( $(date +%s) * 1000 )), "version" :"${VERSION}"}],
     "payload"  : {
         "command" : "${command}",
         "args" : [ ${command_args_strings}]
@@ -252,14 +254,22 @@ submit() {
         current_service_endpoint="localhost:8080"
     fi
 
-    local cmd
     local data=$(_generate_submit_event ${descriptor_filename})
+    local cmd
+    local returned
+
     if [[ -n "${data}" ]]; then
         cmd="curl -s -X POST -H Content-Type: application/json -d '"${data}"' http://"${current_service_endpoint}"/api/job/descriptor"
         ((VERBOSE)) && echo ${cmd}
-        cat <<EOF |tee -a ${BAI_ACTION_IDS}
-$(echo $(eval ${cmd}))
-EOF
+        _print_status "sending ${descriptor_filename} to anubis service @ ${current_service_endpoint}"
+        [[ ! -d "${BAI_DATABASE}/$(get_client_id)" ]] && mkdir -p "${BAI_DATABASE}/$(get_client_id)"
+
+        returned=$(eval $cmd)
+        echo "${returned}"
+        if [[ -n $(sed -rne '/[a-f0-9-]{8}-([a-f0-9-]{4}-){3}[a-f0-9-]{12}/p' <<<"${returned}") ]]; then
+            [[ ! -d "${BAI_DATABASE}/$(get_client_id)/${returned}" ]] && mkdir -p "${BAI_DATABASE}/$(get_client_id)/${returned}"
+            echo "${returned} : ${descriptor_filename} : $(date)" >>  ${BAI_ACTION_IDS}
+        fi
     else
         printf '\033[01;31m[ERROR]\033[0m No data to send.\n\n'
         exit 1
@@ -267,36 +277,90 @@ EOF
 }
 
 #local db lookup
-get_last_action_id() {
+use_last_action_id() {
     local last_action_id=$(cat ${BAI_ACTION_IDS} | tail -n 1 | awk '{print $1}')
+    current_action_id=${last_action_id}
     printf "$last_action_id"
+}
+
+get_latest_event_timestamp() {
+    local action_id=${1:-$(use_last_action_id)}
+    local path=${BAI_DATABASE}/$(get_client_id)"/"${action_id}
+    local tstamp_file=${path}/${TSTAMP_FILENAME}
+    local tstamp_file_size=$([[ -f "${tstamp_file}" ]] && stat -x "${tstamp_file}" | grep Size | awk '{print $2}' || echo -n "0")
+
+    if ((tstamp_file_size > 0)); then
+        cat "${tstamp_file}"
+    else
+        printf "0"
+    fi
+}
+
+#Local filesystem read
+_read_local_submission_status() {
+    local action_id=${1:-$(use_last_action_id)}
+    ((VERBOSE)) && echo "_read_local_submission_status for action: ${action_id}"
+    current_action_id=$action_id
+    local datafile=${BAI_DATABASE}/$(get_client_id)"/"${action_id}/data
+
+    if [[ -f "${datafile}" ]]; then
+        jq --compact-output '{src: .visited[-1].svc , id: .message_id[0:8], msg: .message, tstamp: .visited[-1].tstamp}' "${datafile}" | while read line; do _as_status_line $line; done;
+    else
+        ((VERBOSE)) && printf "Events datafile [%s] is not present\n" "${datafile}"
+    fi
 }
 
 #REST API call
 get_submission_status() {
-    local action_id=${1:-$(get_last_action_id)}
+    local action_id=${1:-$(use_last_action_id)}
     ((VERBOSE)) && echo "get_submission_status for action: ${action_id}"
+    current_action_id=$action_id
+    echo "Status: [${action_id}]"
 
+    local path=$(get_client_id)"/"${action_id}
     local current_service_endpoint=$(cat "${BAI_SERVICE_ENDPOINT_CONFIG}")
     local cmd
 
-    ((VERBOSE)) && echo "database file = ${BAI_DATABASE}"
+    ((VERBOSE)) && echo "database = ${BAI_DATABASE}"
 
-    cmd="curl -s -X GET -H Content-Type: application/json http://"${current_service_endpoint}"/api/job/"$(get_client_id)"/"${action_id}
+    local since_tstamp=$(get_latest_event_timestamp ${action_id})
+    if ((SYNC_DATA)); then
+        since_tstamp=0
+        [[ -f "${BAI_DATABASE}/$(get_client_id)/${action_id}/data" ]] && mv ${BAI_DATABASE}/$(get_client_id)"/"${action_id}/data{,.bkup}
+    else
+        _read_local_submission_status "${action_id}"
+    fi
+
+    cmd="curl -s -X GET -H Content-Type: application/json http://"${current_service_endpoint}"/api/job/"${path}?since="${since_tstamp}"
     ((VERBOSE)) && echo ${cmd}
-    echo "Status: [${action_id}]"
-    cat <<EOF | tee -a ${BAI_DATABASE} | jq --compact-output '{src: .visited[-1].svc , id: .message_id[0:8], msg: .message}' | while read line; do _format_status_line $line; done;
+    cat <<EOF | tee $( ((since_tstamp > 0)) && echo -n "-a") ${BAI_DATABASE}/${path}/data 2> /dev/null | jq --compact-output '{src: .visited[-1].svc , id: .message_id[0:8], msg: .message, tstamp: .visited[-1].tstamp} +{"new" : "1"}' | while read line; do _as_status_line $line; done;
 $(eval ${cmd} | jq '.[]')
 EOF
 
 }
 
-_format_status_line() {
+_print_status() {
+    local msg=${1}
+    local src=${2:-"anubis-client"}
+    local id=${3:-"00000000"}
+    local new=${4:-0}
+
+    printf "%b|\033[0$( ((new)) && printf "1" || printf "0");33m%s\033[0m|%s\n" "${emoji[${src}]}" "${id}" "${msg}"
+}
+
+# (Note: $line is scope in the while loop that this function is called in)
+_as_status_line() {
+    #TODO - see if can pass in a value that reflects if this is a "new" entry of not. confirm while scoping of line
+    #     - change these 3 jq calls to a single jq call that creates the arg list for _print_status directly
+    local msg=$(jq --compact-output '.msg' <<<"$line")
     local src=$(jq --compact-output '.src' <<<"$line")
     local id=$(jq  --compact-output '.id'  <<<"$line")
-    local msg=$(jq --compact-output '.msg' <<<"$line")
+    local new=$(jq --compact-output '.new' <<<"$line")
 
-    printf "%b|\033[01;33m%s\033[0m|%s\n" "${emoji[$(sed 's/^.\(.*\).$/\1/' <<<"$src")]}" "$(sed 's/^.\(.*\).$/\1/' <<<"$id")" "$(sed 's/^.\(.*\).$/\1/' <<<"$msg")"
+    _print_status "$(sed 's/^.\(.*\).$/\1/' <<<"$msg")" "$(sed 's/^.\(.*\).$/\1/' <<<"$src")" "$(sed 's/^.\(.*\).$/\1/' <<<"$id")" "$(sed 's/^.\(.*\).$/\1/' <<<"$new")"
+
+    local tstamp=$(jq --compact-output '.tstamp' <<<"$line")
+    echo "$tstamp" > "${BAI_DATABASE}/$(get_client_id)/${current_action_id}/${TSTAMP_FILENAME}"
 }
 
 #command event
@@ -371,12 +435,13 @@ main() {
             local unshift=0
             case $1 in
                 --verbose | -vv)
-                    shift
                     VERBOSE=1
                     ;;
                 --debug | -dbg)
-                    shift
                     DEBUG=1
+                    ;;
+                --sync-data)
+                    SYNC_DATA=1
                     ;;
                 --submit)
                     shift
@@ -394,7 +459,7 @@ main() {
                     ;;
                 --last-action-id)
                     shift
-                    get_last_action_id
+                    use_last_action_id
                     exit $?
                     ;;
                 --abort|--cancel)
