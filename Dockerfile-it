@@ -17,7 +17,9 @@ RUN conda env update -f /tmp/test-environment.yml -p /opt/$SERVICE
 # Frequent changes #
 ####################
 
+RUN mkdir -p /data/benchmark-ai
 COPY . /data/benchmark-ai
+RUN ls -la /data/benchmark-ai
 WORKDIR /data/benchmark-ai/$SERVICE
 
 RUN /opt/$SERVICE/bin/pip install -r requirements.txt
@@ -26,12 +28,12 @@ RUN /opt/$SERVICE/bin/python3 setup.py install
 ########################################
 # Build the final image
 ########################################
-FROM ubuntu:18.04
+# FROM ubuntu:18.04
 
 #Seems to fail without
-ARG SERVICE 
+#ARG SERVICE
 
-COPY --from=base /opt/$SERVICE /opt/$SERVICE
+#COPY --from=base /opt/$SERVICE /opt/$SERVICE
 COPY ./$SERVICE/integration_tests /$SERVICE/it
 
 # A workdir only for convenience
