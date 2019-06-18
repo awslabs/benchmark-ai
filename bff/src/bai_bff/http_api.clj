@@ -11,6 +11,7 @@
             [compojure.middleware :refer [wrap-canonical-redirect]]
             [ring.middleware.json :refer [wrap-json-response wrap-json-body wrap-json-params]]
             [ring.middleware.keyword-params :refer [wrap-keyword-params]]
+            [ring.middleware.params :refer [wrap-params]]
             [ring.middleware.reload :refer [wrap-reload]]
             [cheshire.core :as json]
             [taoensso.timbre :as log]
@@ -128,4 +129,5 @@
       (wrap-json-response)
       (wrap-json-body {:keywords? true :bigdecimals? true})
       (wrap-keyword-params)
+      (wrap-params)
       (wrap-json-params)))
