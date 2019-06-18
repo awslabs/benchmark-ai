@@ -53,3 +53,8 @@ variable "chime_hook_url" {
   type = string
   default = ""
 }
+
+variable "skip_integration_tests" {
+  type = bool
+  default = false
+}

@@ -170,6 +170,11 @@ resource "aws_codebuild_project" "ci-unit-tests-master" {
     )
     type = "LINUX_CONTAINER"
     privileged_mode = true
+
+    environment_variable {
+      name = "SKIP_INTEGRATION_TESTS"
+      value = tostring(var.skip_integration_tests)
+    }
   }
 
   source {
