@@ -28,10 +28,12 @@ spec:
         args:
         - eu-west-1
         - puller-data
-        - object-name/dir,777,p0:object-name/dir,777,p0
+        - object-name/dir,777,p0:object-name/dir,777,p1
         volumeMounts:
         - name: p0
           mountPath: /data/p0
+        - name: p1
+          mountPath: /data/p1
       containers:
       - name: benchmark
         image: jlcont/benchmarking:270219
@@ -53,7 +55,9 @@ spec:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
         - name: p0
-          mountPath: ~/data/tf-imagenet/
+          mountPath: ~/data/tf-imagenet/train
+        - name: p1
+          mountPath: ~/data/tf-imagenet/validation
         - name: dshm
           mountPath: /dev/shm
       - name: sidecar
@@ -94,6 +98,10 @@ spec:
       - name: p0
         hostPath:
           path: /p0
+          type: DirectoryOrCreate
+      - name: p1
+        hostPath:
+          path: /p1
           type: DirectoryOrCreate
       - name: dshm
         emptyDir:

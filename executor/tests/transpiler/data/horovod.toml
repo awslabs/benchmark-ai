@@ -31,14 +31,14 @@ privileged = false
 # (See docker's -shm option)
 extended_shm = true
 
-# 3. Machine learning related settings: 
+# 3. Machine learning related settings:
 # dataset, benchmark code and parameters it takes
 [ml]
-benchmark_code = '''
+benchmark_code = """
 #!/bin/bash
 echo 'Horovod test descriptor'
 ./deep-learning-models/models/resnet/tensorflow/train.sh 3
-'''
+"""
 
 # [Opt] 4. Dataset 
 [data]
@@ -52,12 +52,12 @@ id = "imagenet"
 # Data download URI.
 src = "s3://mlperf-data-mxnet-berlin/imagenet/train-480px"
 # Path where the dataset is stored in the container FS
-path = "~/data/tf-imagenet/"
+path = "~/data/tf-imagenet/train"
 
 # Second data source
 [[data.sources]]
 # Data download URI.
 src = "s3://mlperf-data-mxnet-berlin/imagenet/validation-480px"
 # Path where the dataset is stored in the container FS
-path = "~/data/tf-imagenet/"
+path = "~/data/tf-imagenet/validation"
 
