@@ -54,7 +54,7 @@
             [lein-codox "0.10.6"]]
   :codox {:sources ["@@SOURCE_PATHS@@"] :output-path "@@GEN_DOCS_PATH@@" :doc-paths ["doc"]}
   :cloverage {:output "@@GEN_DOCS_PATH@@/coverage"}
-  :ring {:handler @@PROJECT@@.http-api/core-routtes}
+  :ring {:handler @@PROJECT@@.http-api/create-application-routes}
   :profiles {:prod {:env {:environment "@@PROFILE@@"}}
              :test {:dependencies [[midje/midje "1.9.6"]]
                     :plugins [[lein-midje "3.2.1"]]}
