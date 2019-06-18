@@ -404,24 +404,18 @@ abort_submission() {
 
 #shows the full JSON event for the given message_id partial value
 inspect() {
-    local message_id={$1}
-    local action_id="foo"
+    local message_id=${1:?"You must provide the message id that you want to inspect"}
+    local action_id=${2:-$(use_last_action_id)}
+    local datafile=${BAI_DATABASE}/$(get_client_id)"/"${action_id}/data
     #TODO finish me... parse through saved file with select query on message-id
-    #     Ex: jq '.[] | select(.message_id=="44bd4f92-5a53-4506-a8df-798b8d22e098")'
-    #     EX: jq '.[] | select(.message_id|test("44bd4f92-"))'
+    #     Ex: jq 'select(.message_id=="44bd4f92-5a53-4506-a8df-798b8d22e098")'
+    #     EX: jq 'select(.message_id|test("44bd4f92-"))'
+    /usr/bin/env bash <<EOF
+jq 'select(.message_id|test("${message_id}-"))' $datafile
+EOF
 }
 
-bang_get_latest_timestamp() {
-    echo "bang_get_latest_timestamp"
-    #TODO Goes through and gets the latest timestamp from the last message in the database
-}
-
-set_latest_timestamp() {
-    echo "set_latest_timestamp"
-    #TODO - writes the latest timestamp to timestamp file in actionID dir
-}
-
-get_history() {
+Get_history() {
     cat "${BAI_ACTION_IDS}"
 }
 #---------------------------------------
