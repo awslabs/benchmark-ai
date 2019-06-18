@@ -9,18 +9,17 @@ metadata:
     client-id: CLIENT_ID
     created-by: executor
 data:
-  entrypoint.sh: echo "Entrypoint"
+  entrypoint.sh: |
+    #!/bin/bash
+    echo 'Horovod test descriptor'
+    ./deep-learning-models/models/resnet/tensorflow/train.sh 3
   puller_entrypoint.sh: |-
     #!/bin/bash
     if [ "$ROLE" == "worker" ]; then
       /opt/behance/download-s3-files "$@"
     else
       echo "Not a worker - no data necessary"
-    fi  
-  entrypoint: |
-    #!/bin/bash
-    echo 'Horovod test descriptor'
-    ./deep-learning-models/models/resnet/tensorflow/train.sh 3
+    fi
 ---
 apiVersion: kubeflow.org/v1alpha1
 kind: MPIJob
