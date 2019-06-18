@@ -315,8 +315,9 @@ get_submission_status() {
     local action_id=${1:-$(use_last_action_id)}
     ((VERBOSE)) && echo "get_submission_status for action: ${action_id}"
     current_action_id=$action_id
-    local path=$(get_client_id)"/"${action_id}
+    echo "Status: [${action_id}]"
 
+    local path=$(get_client_id)"/"${action_id}
     local current_service_endpoint=$(cat "${BAI_SERVICE_ENDPOINT_CONFIG}")
     local cmd
 
@@ -332,7 +333,6 @@ get_submission_status() {
 
     cmd="curl -s -X GET -H Content-Type: application/json http://"${current_service_endpoint}"/api/job/"${path}?since="${since_tstamp}"
     ((VERBOSE)) && echo ${cmd}
-    echo "Status: [${action_id}]"
     cat <<EOF | tee $( ((since_tstamp > 0)) && echo -n "-a") ${BAI_DATABASE}/${path}/data 2> /dev/null | jq --compact-output '{src: .visited[-1].svc , id: .message_id[0:8], msg: .message, tstamp: .visited[-1].tstamp} +{"new" : "1"}' | while read line; do _as_status_line $line; done;
 $(eval ${cmd} | jq '.[]')
 EOF
