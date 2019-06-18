@@ -104,14 +104,10 @@ def create_kafka_topics(
 ):
     admin_client = KafkaAdminClient(bootstrap_servers=bootstrap_servers, client_id=service_name)
 
-    new_topic_list = [
-        NewTopic(name=topic, num_partitions=num_partitions, replication_factor=replication_factor)
-        for topic in new_topics
-    ]
-
-    for topic in new_topic_list:
+    for topic in new_topics:
         try:
-            admin_client.create_topics(new_topics=[topic])
+            new_topic = NewTopic(name=topic, num_partitions=num_partitions, replication_factor=replication_factor)
+            admin_client.create_topics(new_topics=[new_topic])
             logger.info(f"Created kafka topic {topic}")
         except TopicAlreadyExistsError:
-            logger.warning(f"Error creating topic {topic}, it already exists")
+            logger.exception(f"Error creating topic {topic}, it already exists")
