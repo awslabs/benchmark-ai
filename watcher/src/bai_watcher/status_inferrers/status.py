@@ -7,6 +7,7 @@ class BenchmarkJobStatus(Enum):
     """
 
     NO_POD_SCHEDULED = auto()
+    JOB_DOES_NOT_EXIST = auto()
 
     FAILED_AT_BENCHMARK_CONTAINER = auto()
     FAILED_AT_SIDECAR_CONTAINER = auto()  # Should never occur, but you never know!
@@ -21,7 +22,6 @@ class BenchmarkJobStatus(Enum):
     RUNNING_AT_MAIN_CONTAINERS = auto()
 
     SUCCEEDED = auto()
-    UNKNOWN = auto()
 
     def is_final(self):
         """

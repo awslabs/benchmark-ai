@@ -3,10 +3,11 @@ from unittest.mock import call
 import kafka
 import pytest
 
+from bai_kafka_utils.events import Status
 from bai_kafka_utils.kafka_service import KafkaServiceConfig, KafkaService
 from bai_watcher.args import WatcherServiceConfig
-from bai_watcher.kafka_service_watcher import create_service, WatchJobsEventHandler
-
+from bai_watcher.kafka_service_watcher import create_service, WatchJobsEventHandler, choose_status_from_benchmark_status
+from bai_watcher.status_inferrers.status import BenchmarkJobStatus
 
 CONSUMER_TOPIC = "IN_TOPIC"
 
@@ -58,3 +59,10 @@ def test_constructor_loads_kubernetes_config_with_existing_kubeconfig_file(kuber
     WatchJobsEventHandler(service_config)
     assert kubernetes_config.load_incluster_config.call_args_list == []
     assert kubernetes_config.load_kube_config.call_args_list == [call(kubeconfig_filename)]
+
+
+@pytest.mark.parametrize("benchmark_job_status", list(BenchmarkJobStatus))
+def test_choose_status_from_benchmark_status(benchmark_job_status):
+    status, message = choose_status_from_benchmark_status(benchmark_job_status)
+    assert status in list(Status)
+    assert message != ""
