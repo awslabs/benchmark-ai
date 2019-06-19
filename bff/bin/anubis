@@ -130,7 +130,7 @@ _construct_endpoint_URL() {
 }
 
 get_client_id() {
-    echo -n "$(sha1sum <<<$(whoami)+$(hostname) | awk '{print $1}')"
+    echo -n "$(printf "$(whoami)+$(hostname)" | sha1sum | awk '{print $1}')"
 }
 
 ping_service_endpoint() {
