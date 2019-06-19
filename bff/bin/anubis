@@ -58,6 +58,7 @@ This is the command-line, client-side interface to the Bechmark AI service...
  > %s --submit  <descriptor file> : Returns an "action id" if submission successful
           --status   <action id>   : displays a report of the current status
           --results  <action id>   : displays results report of completed jobs
+          --inspect  <message id>  : displays full details of specified message object
           --last-action-id     : displays the last action id from a valid submission
           --abort    <action id>   : cancels the current in progress submission
           --check-version          : checks to see if the version you are running is the latest posted
@@ -68,6 +69,7 @@ This is the command-line, client-side interface to the Bechmark AI service...
           --register <hostname|IP and PORT of bai service> | Ex: bai.aws.amazon.com:7100
           --unregister             : clears service endpoint from configuration
           --show-registered-service-endpoint : The hostname|IP:PORT of bai service you are using
+          --legend                 : displays quick legend of the emojis used
           --help                   : (this output)
 
           (please use gnu tools for best results)
@@ -415,7 +417,7 @@ jq 'select(.message_id|test("${message_id}-"))' $datafile
 EOF
 }
 
-Get_history() {
+get_history() {
     cat "${BAI_ACTION_IDS}"
 }
 #---------------------------------------
