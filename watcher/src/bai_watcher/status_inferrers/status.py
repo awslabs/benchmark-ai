@@ -27,7 +27,7 @@ class BenchmarkJobStatus(Enum):
         """
         Does this state represent a "final state"
         """
-        return self.value in (
+        return self in (
             BenchmarkJobStatus.SUCCEEDED,
             BenchmarkJobStatus.FAILED_AT_INIT_CONTAINERS,
             BenchmarkJobStatus.FAILED_AT_BENCHMARK_CONTAINER,
