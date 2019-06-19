@@ -11,6 +11,7 @@
             [compojure.middleware :refer [wrap-canonical-redirect]]
             [ring.middleware.json :refer [wrap-json-response wrap-json-body wrap-json-params]]
             [ring.middleware.keyword-params :refer [wrap-keyword-params]]
+            [ring.middleware.params :refer [wrap-params]]
             [ring.middleware.reload :refer [wrap-reload]]
             [cheshire.core :as json]
             [taoensso.timbre :as log]
@@ -26,18 +27,19 @@
 
 (defn dispatch-submit-job [request body]
   (try
-    (let [body-string (slurp body)]
+    (let [body-string (slurp body)
+          message-body (json/parse-string body-string true)]
       (log/debug "Printing request")
       (log/debug request)
       (log/debug "Body recieved is")
       (log/debug body-string)
       (log/debug "message body is now an event...")
-      (let [event (events/message->submit-descriptor-event
-                   request
-                   (json/parse-string body-string true))]
+      (let [event (events/message->submit-descriptor-event request message-body)
+            status-event (partial events/status-event event)]
         (log/debug event)
         (log/info (json/generate-string event {:pretty true}))
-        (>!! @eventbus/send-event-channel-atom [(:client_id event) event])
+        (>!! @eventbus/send-event-channel-atom [(status-event :bai-bff.events/submitted (str "Submission has been successfully received..."))])
+        (>!! @eventbus/send-event-channel-atom [event])
         (:action_id event)))
     (catch Exception e
       (log/error "Could Not Parse Descriptor Input")
@@ -48,15 +50,17 @@
     (let [body-string (slurp body)]
       (log/debug "Printing request")
       (log/debug request)
-      (log/debug "Body recieved is")
+      (log/debug "Body received is")
       (log/debug body-string)
       (log/debug "message body is now an event...")
       (let [event (events/message->cmd-event
                    request
-                   (json/parse-string body-string true))]
+                   (json/parse-string body-string true))
+            status-event (partial events/status-event event)]
         (log/debug event)
         (log/info (json/generate-string event {:pretty true}))
-        (>!! @eventbus/send-event-channel-atom [(:client_id event) event])
+        (>!! @eventbus/send-event-channel-atom [(status-event :bai-bff.events/submitted (str "Action received, dispatching delete for <"action-id">"))])
+        (>!! @eventbus/send-event-channel-atom [event])
         (:action_id event)))
     (catch Exception e
       (log/error "Could Not Parse Descriptor Input")
@@ -104,9 +108,9 @@
                       (defroutes client-routes
                         (GET    "/" [] (post-proc-results (eventbus/get-all-client-jobs client-id)))
                         (DELETE "/" [] (post-proc-results (log/info "delete-client-jobs... [NOT]") #_(delete-job action-id))))
-                      (context "/:action-id" [action-id]
+                      (context "/:action-id" [action-id since]
                                (defroutes action-routes
-                                 (GET    "/" [] (post-proc-results (eventbus/get-all-client-jobs-for-action client-id action-id)))
+                                 (GET    "/" {{since :since} :params :as req} (post-proc-results (eventbus/get-all-client-jobs-for-action client-id action-id since)))
                                  (DELETE "/" {body :body :as request} (response (dispatch-delete-job request body action-id)))))))) ;
   (ANY "*" []
        (route/not-found (slurp (io/resource "404.html")))))
@@ -121,4 +125,5 @@
       (wrap-json-response)
       (wrap-json-body {:keywords? true :bigdecimals? true})
       (wrap-keyword-params)
+      (wrap-params)
       (wrap-json-params)))

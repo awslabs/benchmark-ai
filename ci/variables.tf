@@ -27,7 +27,7 @@ variable "region" {
 variable "ci_docker_image" {
   type = map(string)
   default = {
-    "default" = "benchmarkai/ci"
+    "default" = "benchmarkai/ci:kind"
     "bff"     = "gavin/bai-bff-dev"
   }
 }
@@ -37,4 +37,24 @@ variable "ecr_repo" {
   default = {
     "bff" = "bai-bff"
   }
+}
+
+variable "github_organization" {
+  type = string
+  default = "MXNetEdge"
+}
+
+variable "github_branch" {
+  type = string
+  default = "master"
+}
+
+variable "chime_hook_url" {
+  type = string
+  default = ""
+}
+
+variable "run_integration_tests" {
+  type = bool
+  default = true
 }

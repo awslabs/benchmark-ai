@@ -8,26 +8,35 @@ phases:
       # The logs freezes and the job timeouts.
       # So we copy-paste this snippet as suggested here:
       # https://docs.aws.amazon.com/codebuild/latest/userguide/sample-docker-custom-image.html
-      - nohup /usr/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay2&
-      - timeout 15 bash -c "until docker info; do echo .; sleep 1; done"
+      - |
+        if [ "${RUN_INTEGRATION_TESTS}" != "false" ]; then
+          nohup /usr/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay2&
+          timeout 15 bash -c "until docker info; do echo .; sleep 1; done"
+        fi
   build:
     commands:
-      # Start k8s 1.12 cluster
-      - dind-cluster-v1.12.sh up
+      - env
       - cd fetcher
-      # Regular make staff - lint/test
+      # Regular make staff - lint/test. If this fails - no sense to continue.
       - make
-      # Deploy to local "minikube"
-      # Since we don't push anything, we don't care about the hash - so no dependency on git
-      - make deploy STAGE=local LOCAL_DEPLOY="bash ./deploy/dind_push_image.sh kube-node-1 " COMMIT_SHORT_HASH="local-latest"
-      # All the containers are probably just creating
-      - kubectl get pods
-      - sleep 30s
-      - kubectl get pods
-      # TODO Replace sleep with some reasonable waiting mechanism
-      - sleep 10s
-      - kubectl get pods
-      # Sleep over it again - yup, yup, sleep is the most important tool in multi-threaded programming.
-      - sleep 10s
-      - kubectl get pods
-      - make integration_tests STAGE=local LOCAL_DEPLOY="bash ../deploy/dind_push_image.sh kube-node-1 "
+      - |
+        if [ "${RUN_INTEGRATION_TESTS}" != "false" ]; then
+            # Start k8s 1.12 cluster
+            kind create cluster --image=$K8S_KINDEST_V12
+            # Prebuild the docker image in parallel to cluster initialization
+            # Since we don't push anything, we don't care about the hash - so no dependency on git
+            make docker_package COMMIT_SHORT_HASH="local-latest"
+            # Now we need the cluster
+            export KUBECONFIG=$(kind get kubeconfig-path)
+            kubectl wait --for=condition=ready --timeout=120s node/kind-control-plane
+            make deploy STAGE=local LOCAL_DEPLOY="kind load docker-image " COMMIT_SHORT_HASH="local-latest"
+            # All the containers are probably just creating
+            kubectl get pods
+            kubectl wait --for=condition=ready --timeout=120s pod/zookeeper-0
+            kubectl wait --for=condition=ready --timeout=120s pod/kafka-0
+            # Let's still sleep a bit
+            sleep 30s
+            # Describe to have some info in case of errors.
+            kubectl describe pods
+            make integration_tests STAGE=local LOCAL_DEPLOY="kind load docker-image "
+        fi

@@ -7,7 +7,7 @@ dependencies:
   - elasticsearch 6.3.*
   - python-kubernetes 8.0.*
   - configargparse 0.14.*
-  - kafka-python 1.4.*
+  - kafka-python 1.4.6
   - pip
   - pip:
       - ConfigArgParse

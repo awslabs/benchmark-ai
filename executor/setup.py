@@ -8,5 +8,5 @@ setup(
     package_dir={"": "src"},
     packages=find_packages("src"),
     package_data={"util": ["ec2_instance_info.csv"], "executor": "*.yaml", "transpiler.templates": "*.yaml"},
-    entry_points={"console_scripts": ["executor=executor.__main__:main"]},
+    entry_points={"console_scripts": ["start=executor.__main__:main"]},
 )

@@ -2,50 +2,20 @@ terraform {
   required_version = ">= 0.12"
 
   backend "s3" {
-    bucket = "bai-terraform-remote-state"
     key    = "ci/terraform.tfstate"
-    region = "us-east-1"
-  }
-}
-
-data "terraform_remote_state" "network" {
-  backend = "s3"
-  config = {
-    bucket = "bai-terraform-remote-state"
-    key    = "ci/terraform.tfstate"
-    region = var.region
-  }
-}
-
-resource "aws_s3_bucket" "terraform-state-storage-s3" {
-  bucket = "bai-terraform-remote-state"
-
-  versioning {
-    enabled = true
-  }
-
-  lifecycle {
-    prevent_destroy = true
-  }
-
-  tags = {
-    Name = "S3 Remote Terraform State Store"
   }
 }
 
 provider "aws" {
-  version = ">= 2.4.0"
+  version = ">= 2.12.0"
   region  = var.region
-  allowed_account_ids = [
-    563267192464,
-  ] # bai-gamma@amazon.com
 }
 
 data "aws_caller_identity" "current" {}
 
 # Generic role for both CodeBuild / CodePipeline to access the S3 bucket with artifacts
 resource "aws_s3_bucket" "build-artifacts" {
-  bucket = "bai-build-artifacts-${data.aws_caller_identity.current.account_id}"
+  bucket = "bai-build-artifacts-${data.aws_caller_identity.current.account_id}-${var.region}"
   acl    = "private"
 }
 
@@ -72,8 +42,6 @@ resource "aws_iam_policy" "build-artifacts" {
   EOF
 }
 
-
-# Codebuild specific stuff
 
 resource "aws_iam_role" "code-build-role" {
   name = "code-build-role"
@@ -137,7 +105,7 @@ resource "aws_iam_role_policy" "code-build-role-policy-eks-all-actions" {
         {
             "Effect": "Allow",
             "Action": "eks:*",
-            "Resource": "arn:aws:eks:us-east-1:${data.aws_caller_identity.current.account_id}:cluster/benchmark-cluster"
+            "Resource": "arn:aws:eks:${var.region}:${data.aws_caller_identity.current.account_id}:cluster/benchmark-cluster"
         }
     ]
   }
@@ -154,8 +122,20 @@ resource "aws_iam_role_policy_attachment" "ecr-permissions" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
 }
 
+#############################
+# CodeBuild project for PRs #
+#############################
+
+locals {
+  is_official_ci_account = data.aws_caller_identity.current.account_id == "563267192464"
+}
+
 resource "aws_codebuild_project" "ci-unit-tests" {
-  count         = length(var.projects)
+  # Only add PR CodeBuild projects to the official CI account, otherwise it will create webhooks in the official repo.
+  # We don't want that for 2 reasons:
+  # - Github has a limit of 20 webhooks in a repo.
+  # - We don't want other people's instantiations of CI validating PRs to the main repo
+  count         = local.is_official_ci_account ? length(var.projects) : 0
   name          = var.projects[count.index]
   description   = "Unit tests build of ${var.projects[count.index]}"
   build_timeout = "30"
@@ -187,47 +167,16 @@ resource "aws_codebuild_project" "ci-unit-tests" {
     buildspec           = "${var.projects[count.index]}/buildspec.yml"
     report_build_status = true
   }
-
-  tags = {
-    GithubRepo = "benchmark-ai"
-    GithubOrg  = "MXNetEdge"
-    Workspace  = terraform.workspace
-  }
 }
 
 resource "aws_codebuild_webhook" "ci-unit-tests" {
-  count        = length(var.projects)
+  count        = length(aws_codebuild_project.ci-unit-tests)
   project_name = aws_codebuild_project.ci-unit-tests.*.name[count.index]
-}
 
-locals {
-  filter_groups_prs = [
-    {
-      type    = "EVENT"
+  filter_group {
+    filter {
+      type = "EVENT"
       pattern = "PULL_REQUEST_CREATED, PULL_REQUEST_UPDATED, PULL_REQUEST_REOPENED"
-    },
-  ]
-  filter_groups_master = [
-    {
-      type    = "EVENT"
-      pattern = "PUSH"
-    },
-    {
-      type    = "HEAD_REF"
-      pattern = "refs/heads/master$"
-    },
-  ]
-}
-
-# TODO: Still not supported by AWS provider in Terraform: https://github.com/terraform-providers/terraform-provider-aws/issues/7503
-resource "null_resource" "ci-unit-tests-filter" {
-  count = length(var.projects)
-  provisioner "local-exec" {
-    command = "aws --region ${var.region} codebuild update-webhook --project-name ${self.triggers.project_name} --filter-groups '[${self.triggers.filter_groups}]'"
-  }
-
-  triggers = {
-    project_name = aws_codebuild_webhook.ci-unit-tests.*.project_name[count.index]
-    filter_groups = jsonencode(local.filter_groups_prs)
+    }
   }
 }

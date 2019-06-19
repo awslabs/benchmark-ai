@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 # Regression test
-from bai_kafka_utils.kafka_service import KafkaServiceConfig
+from bai_kafka_utils.kafka_service import KafkaServiceConfig, DEFAULT_NUM_PARTITIONS, DEFAULT_REPLICATION_FACTOR
 from fetcher_dispatcher import fetcher_dispatcher_service, args
 from fetcher_dispatcher.args import FetcherServiceConfig, FetcherJobConfig
 
@@ -60,6 +60,8 @@ def test_main(mock_create_fetcher_dispatcher, mock):
         status_topic=STATUS_TOPIC,
         cmd_return_topic=CMD_RETURN_TOPIC,
         cmd_submit_topic=CMD_SUBMIT_TOPIC,
+        replication_factor=min(DEFAULT_REPLICATION_FACTOR, len(BOOTSTRAP_SERVERS)),
+        num_partitions=DEFAULT_NUM_PARTITIONS,
     )
 
     fetcher_dispatcher_cfg = FetcherServiceConfig(

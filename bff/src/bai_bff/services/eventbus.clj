@@ -10,6 +10,7 @@
   there is state I manage it in this way. Oh well.)"
   (:require [bai-bff.core :refer :all]
             [bai-bff.services :refer [RunService]]
+            [bai-bff.utils.parsers :refer [parse-long]]
             [taoensso.timbre :as log]
             [clojure.pprint :refer :all]
             [clojure.core.async :as a :refer [>! <! >!! <!! go chan buffer close! thread
@@ -79,7 +80,7 @@
   comments for update-status-store regarding pureness and operations"
   [events]
   (when (seq events)
-    (log/trace (str "Processing "(count events)" events"))
+    (log/trace (str "Processing "(count events)" status events"))
     (doseq [event events] ; <- I should do this loop with recursion and then only have a single call to swap! at the end... meh.
       (if-not (nil? event) (swap! status-db update-status-store event))))
   true)
@@ -91,7 +92,7 @@
   comments for update-status-store regarding pureness and operations"
   [events]
   (when (seq events)
-    (log/trace (str "Processing "(count events)" events"))
+    (log/trace (str "Processing "(count events)" command events"))
     (doseq [event events] ; <- I should do this loop with recursion and then only have a single call to swap! at the end... meh.
       (if-not (nil? event) (swap! status-db update-status-store event))))
   true)
@@ -114,8 +115,10 @@
 (defn get-all-client-jobs-for-action
   "Gets all the events associated with a particular client and this
   particular action (job)"
-  [client-id action-id]
+  [client-id action-id since]
   (log/trace "get-all-client-jobs-for-action called...")
   (let [client-key (keyword client-id)
-        action-key (keyword action-id)]
-    (get-in @status-db [client-key action-key])))
+        action-key (keyword action-id)
+        since-tstamp (parse-long since)]
+    (log/trace (str "since... "since-tstamp))
+    (filterv #(< since-tstamp (:tstamp (peek (:visited %)))) (get-in @status-db [client-key action-key] {}))))

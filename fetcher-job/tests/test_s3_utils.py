@@ -2,7 +2,7 @@ import pytest
 from botocore.exceptions import ClientError
 from pytest import fixture
 from typing import TextIO
-from unittest.mock import MagicMock, ANY
+from unittest.mock import MagicMock, ANY, PropertyMock
 
 from bai_fetcher_job import s3_utils
 from bai_fetcher_job.failures import S3Error
@@ -47,7 +47,27 @@ def mock_s3_resource(mock_boto3):
 def mock_s3_bucket(mock_s3_resource):
     mock_bucket = MagicMock()
     mock_s3_resource.Bucket.return_value = mock_bucket
+
     return mock_bucket
+
+
+@fixture
+def mock_s3_object(mock_s3_bucket):
+    mock_object = MagicMock()
+    mock_s3_bucket.Object.return_value = mock_object
+    return mock_object
+
+
+@fixture
+def mock_s3_file_obj(mock_s3_object):
+    mock_s3_object.content_length = 42
+    return mock_s3_object
+
+
+@fixture
+def mock_s3_folder_obj(mock_s3_object):
+    type(mock_s3_object).content_length = PropertyMock(side_effect=ClientError(MOCK_ERROR_RESPONSE, "Not found"))
+    return mock_s3_object
 
 
 @fixture
@@ -59,6 +79,12 @@ def mock_empty_s3_bucket(mock_s3_bucket):
 @fixture
 def mock_s3_bucket_with_file(mock_s3_bucket):
     mock_s3_bucket.objects.filter.return_value = [S3OBJECT]
+    return mock_s3_bucket
+
+
+@fixture
+def mock_s3_bucket_with_file_no_ls(mock_s3_bucket):
+    mock_s3_bucket.objects.filter.side_effect = ClientError(MOCK_ERROR_RESPONSE, "upload")
     return mock_s3_bucket
 
 
@@ -103,14 +129,19 @@ def test_download_from_s3_wrap_exception(mock_file, mock_client_error_s3_client)
         download_from_s3(mock_file, S3URL)
 
 
-def test_s3_no_file(mock_empty_s3_bucket):
+def test_s3_no_file(mock_empty_s3_bucket, mock_s3_folder_obj):
     with pytest.raises(S3Error):
         is_s3_file(S3OBJECT)
 
 
-def test_s3_file(mock_s3_bucket_with_file):
+def test_s3_file(mock_s3_bucket_with_file, mock_s3_file_obj):
     assert is_s3_file(S3OBJECT)
 
 
-def test_s3_folder(mock_s3_bucket_with_folder):
+# Special check. What if we don't have list objects permissions at all?
+def test_s3_file_no_ls(mock_s3_bucket_with_file_no_ls, mock_s3_file_obj):
+    assert is_s3_file(S3OBJECT)
+
+
+def test_s3_folder(mock_s3_bucket_with_folder, mock_s3_folder_obj):
     assert not is_s3_file(S3OBJECT)
