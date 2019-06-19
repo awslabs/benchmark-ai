@@ -18,7 +18,7 @@ from kubernetes.client import (
 from bai_watcher.status_inferrers.status import BenchmarkJobStatus
 
 
-ContainerInfo = collections.namedtuple("ContainerIdAndMessage", ("container_id", "message"))
+ContainerInfo = collections.namedtuple("ContainerInfo", ("container_name", "message"))
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ def collect_container_states(container_statuses: List[V1ContainerStatus]) -> Dic
         if container_state.terminated:
             terminated: V1ContainerStateTerminated = container_state.terminated
             if terminated.exit_code != 0:
-                obj = ContainerInfo(status.image_id, f"{terminated.reason} - {terminated.message}")
+                obj = ContainerInfo(status.name, f"{terminated.reason} - {terminated.message}")
                 state_to_containers[ContainerState.FAILED].add(obj)
 
     # inspect "waiting"
@@ -54,7 +54,7 @@ def collect_container_states(container_statuses: List[V1ContainerStatus]) -> Dic
         container_state: V1ContainerState = status.state
         if container_state.waiting:
             waiting: V1ContainerStateWaiting = container_state.waiting
-            obj = ContainerInfo(status.image_id, f"{waiting.reason} - {waiting.message}")
+            obj = ContainerInfo(status.name, f"{waiting.reason} - {waiting.message}")
             state_to_containers[ContainerState.PENDING].add(obj)
 
     # inspect "running"
@@ -62,7 +62,7 @@ def collect_container_states(container_statuses: List[V1ContainerStatus]) -> Dic
         container_state: V1ContainerState = status.state
         if container_state.running:
             running: V1ContainerStateRunning = container_state.running
-            obj = ContainerInfo(status.container_id, f"{running.started_at}")
+            obj = ContainerInfo(status.name, f"{running.started_at}")
             state_to_containers[ContainerState.RUNNING].add(obj)
     return state_to_containers
 
@@ -169,16 +169,16 @@ class SingleNodeStrategyKubernetesStatusInferrer:
                 for container_info in container_infos:
                     # HACK: It is not great to hardcode the name of the container like this, but Kubernetes does not
                     # have a way to specify which container is a sidecar.
-                    if container_info.container_id != "benchmark":
-                        return BenchmarkJobStatus.PENDING_AT_SIDECAR_CONTAINER
-                    else:
+                    if container_info.container_name == "benchmark":
                         return BenchmarkJobStatus.PENDING_AT_BENCHMARK_CONTAINER
+                    else:
+                        return BenchmarkJobStatus.PENDING_AT_SIDECAR_CONTAINER
 
             elif state == ContainerState.FAILED:
                 for container_info in container_infos:
                     # HACK: It is not great to hardcode the name of the container like this, but Kubernetes does not
                     # have a way to specify which container is a sidecar.
-                    if container_info.container_id != "benchmark":
+                    if container_info.container_name != "benchmark":
                         return BenchmarkJobStatus.FAILED_AT_SIDECAR_CONTAINER
                     else:
                         return BenchmarkJobStatus.FAILED_AT_BENCHMARK_CONTAINER

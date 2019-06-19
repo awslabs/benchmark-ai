@@ -50,8 +50,8 @@ def test_init_containers_waiting():
         init_container_statuses=[
             V1ContainerStatus(
                 image="benchmarkai/data-puller",
-                image_id="data-puller",
-                name="pod-dns-name",
+                name="data-puller",
+                image_id="",
                 ready=False,
                 restart_count=0,
                 state=container_state,
@@ -71,8 +71,8 @@ def test_init_containers_running():
         init_container_statuses=[
             V1ContainerStatus(
                 image="benchmarkai/data-puller",
-                image_id="data-puller",
-                name="pod-dns-name",
+                name="data-puller",
+                image_id="",
                 ready=True,
                 restart_count=0,
                 state=container_state,
@@ -92,8 +92,8 @@ def test_init_containers_failed():
         init_container_statuses=[
             V1ContainerStatus(
                 image="benchmarkai/data-puller",
-                image_id="data-puller",
-                name="pod-dns-name",
+                name="data-puller",
+                image_id="",
                 ready=True,
                 restart_count=0,
                 state=container_state,
@@ -112,16 +112,16 @@ def test_waiting_for_sidecar_container():
         container_statuses=[
             V1ContainerStatus(
                 image="benchmarkai/hello-world",
-                image_id="benchmark",
-                name="pod-dns-name",
+                name="benchmark",
+                image_id="",
                 ready=True,
                 restart_count=0,
                 state=V1ContainerState(running=V1ContainerStateRunning()),
             ),
             V1ContainerStatus(
                 image="benchmarkai/metrics-pusher",
-                image_id="sidecar",
-                name="pod-dns-name",
+                name="sidecar",
+                image_id="",
                 ready=False,
                 restart_count=0,
                 state=V1ContainerState(waiting=CONTAINER_STATE_WAITING),
@@ -140,16 +140,16 @@ def test_waiting_for_benchmark_container():
         container_statuses=[
             V1ContainerStatus(
                 image="benchmarkai/hello-world",
-                image_id="benchmark",
-                name="pod-dns-name",
+                name="benchmark",
+                image_id="",
                 ready=False,
                 restart_count=0,
                 state=V1ContainerState(waiting=CONTAINER_STATE_WAITING),
             ),
             V1ContainerStatus(
                 image="benchmarkai/metrics-pusher",
-                image_id="sidecar",
-                name="pod-dns-name",
+                name="sidecar",
+                image_id="",
                 ready=True,
                 restart_count=0,
                 state=V1ContainerState(running=V1ContainerStateRunning()),
@@ -168,16 +168,16 @@ def test_failed_at_benchmark_container_but_sidecar_still_running():
         container_statuses=[
             V1ContainerStatus(
                 image="benchmarkai/hello-world",
-                image_id="benchmark",
-                name="pod-dns-name",
+                name="benchmark",
+                image_id="",
                 ready=False,
                 restart_count=0,
                 state=V1ContainerState(terminated=CONTAINER_STATE_TERMINATED_AND_FAILED),
             ),
             V1ContainerStatus(
                 image="benchmarkai/metrics-pusher",
-                image_id="sidecar",
-                name="pod-dns-name",
+                name="sidecar",
+                image_id="",
                 ready=True,
                 restart_count=0,
                 state=V1ContainerState(running=V1ContainerStateRunning()),
@@ -197,16 +197,16 @@ def test_failed_at_benchmark_container_and_pod_terminated():
         container_statuses=[
             V1ContainerStatus(
                 image="benchmarkai/hello-world",
-                image_id="benchmark",
-                name="pod-dns-name",
+                name="benchmark",
+                image_id="",
                 ready=True,
                 restart_count=0,
                 state=V1ContainerState(terminated=CONTAINER_STATE_TERMINATED_AND_FAILED),
             ),
             V1ContainerStatus(
                 image="benchmarkai/metrics-pusher",
-                image_id="sidecar",
-                name="pod-dns-name",
+                name="sidecar",
+                image_id="",
                 ready=True,
                 restart_count=0,
                 state=V1ContainerState(terminated=CONTAINER_STATE_TERMINATED_AND_SUCCEEDED),
@@ -225,16 +225,16 @@ def test_failed_at_sidecar_container_and_pod_terminated():
         container_statuses=[
             V1ContainerStatus(
                 image="benchmarkai/hello-world",
-                image_id="benchmark",
-                name="pod-dns-name",
+                name="benchmark",
+                image_id="",
                 ready=True,
                 restart_count=0,
                 state=V1ContainerState(terminated=CONTAINER_STATE_TERMINATED_AND_SUCCEEDED),
             ),
             V1ContainerStatus(
                 image="benchmarkai/metrics-pusher",
-                image_id="sidecar",
-                name="pod-dns-name",
+                name="sidecar",
+                image_id="",
                 ready=True,
                 restart_count=0,
                 state=V1ContainerState(terminated=CONTAINER_STATE_TERMINATED_AND_FAILED),
