@@ -18,6 +18,7 @@ from executor import SERVICE_NAME
 class PullerDataSource:
     name: str
     puller_path: str
+    is_directory: bool
 
 
 class BaiKubernetesObjectBuilder:
@@ -150,13 +151,14 @@ class BaiKubernetesObjectBuilder:
         :return:
         """
         # Data destination paths and the corresponding mounted vols
-        destination_paths = {s.path for s in data_sources}
+
         data_vols = {}
 
-        for idx, dest in enumerate(destination_paths):
+        for idx, data_source in enumerate(data_sources):
             name = "p" + str(idx)
             puller_path = f"/data/{name}"
-            data_vols[dest] = PullerDataSource(name, puller_path)
+            is_directory = data_source.is_directory
+            data_vols[data_source.path] = PullerDataSource(name, puller_path, is_directory)
 
         return data_vols
 
@@ -164,7 +166,14 @@ class BaiKubernetesObjectBuilder:
         volumes = []
 
         for vol in data_volumes.values():
-            volumes.append(Volume(name=vol.name, hostPath=HostPath(path=f"/{vol.name}", type="DirectoryOrCreate")))
+            volumes.append(
+                Volume(
+                    name=vol.name,
+                    hostPath=HostPath(
+                        path=f"/{vol.name}", type="DirectoryOrCreate" if vol.is_directory else "FileOrCreate"
+                    ),
+                )
+            )
         return volumes
 
     def _get_container_volume_mounts(self, data_volumes: Dict[str, PullerDataSource]) -> List[VolumeMount]:

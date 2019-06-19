@@ -56,6 +56,8 @@ spec:
           subPath: puller_entrypoint.sh
         - name: p0
           mountPath: /data/p0
+        - name: p1
+          mountPath: /data/p1
         env:
         - name: ROLE
           valueFrom:
@@ -65,7 +67,7 @@ spec:
         args:
         - eu-west-1
         - puller-data
-        - object-name/dir,777,p0:object-name/dir,777,p0
+        - object-name/dir,777,p0:object-name/dir,777,p1
       containers:
       - image: user/repo:tag
         name: benchmark
@@ -79,7 +81,9 @@ spec:
         - name: benchmark-ai
           mountPath: /tmp/benchmark-ai
         - name: p0
-          mountPath: ~/data/tf-imagenet/
+          mountPath: ~/data/tf-imagenet/train
+        - name: p1
+          mountPath: ~/data/tf-imagenet/validation
         - name: dshm
           mountPath: /dev/shm
         resources:
@@ -129,6 +133,10 @@ spec:
       - name: p0
         hostPath:
           path: /p0
+          type: DirectoryOrCreate
+      - name: p1
+        hostPath:
+          path: /p1
           type: DirectoryOrCreate
       - name: dshm
         emptyDir:
