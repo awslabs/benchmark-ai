@@ -58,15 +58,18 @@ This is the command-line, client-side interface to the Bechmark AI service...
  > %s --submit  <descriptor file> : Returns an "action id" if submission successful
           --status   <action id>   : displays a report of the current status
           --results  <action id>   : displays results report of completed jobs
+          --inspect  <message id>  : displays full details of specified message object
           --last-action-id     : displays the last action id from a valid submission
           --abort    <action id>   : cancels the current in progress submission
           --check-version          : checks to see if the version you are running is the latest posted
           --upgrade                : fetches latest version of this tool [%s]
           --sync-version           : synchronized this tool with that of the service endpoint
           --sync-data              : clean local cached data and refetch from service
+          --history                : lists recently returned <action id> : <descriptor path> : <date>
           --register <hostname|IP and PORT of bai service> | Ex: bai.aws.amazon.com:7100
           --unregister             : clears service endpoint from configuration
           --show-registered-service-endpoint : The hostname|IP:PORT of bai service you are using
+          --legend                 : displays quick legend of the emojis used
           --help                   : (this output)
 
           (please use gnu tools for best results)
@@ -167,7 +170,6 @@ check_version() {
 # Event Construction
 #---------------------------------------------------------
 
-# TODO - Make a proper time stamp here for tstamp
 # TODO - Also, look at changing the formulation of client_id to just be the user's hashed email
 _generate_submit_event() {
     local descriptor_filename=${1?"generate_submit_event() -> You MUST supply a descriptor file as first argument to this function"}
@@ -193,7 +195,6 @@ EOF
     jq '.' <<< ${event}
 }
 
-# TODO - Make a proper time stamp here for tstamp
 # TODO - Also, look at changing the formulation of client_id to just be the user's hashed email
 _generate_command_event() {
     local command=${1}
@@ -403,21 +404,16 @@ abort_submission() {
 
 #shows the full JSON event for the given message_id partial value
 inspect() {
-    local message_id={$1}
-    local action_id="foo"
-    #TODO finish me... parse through saved file with select query on message-id
-    #     Ex: jq '.[] | select(.message_id=="44bd4f92-5a53-4506-a8df-798b8d22e098")'
-    #     EX: jq '.[] | select(.message_id|test("44bd4f92-"))'
+    local message_id=${1:?"You must provide the message id that you want to inspect"}
+    local action_id=${2:-$(use_last_action_id)}
+    local datafile=${BAI_DATABASE}/$(get_client_id)"/"${action_id}/data
+    /usr/bin/env bash <<EOF
+jq 'select(.message_id|test("${message_id}-"))' $datafile
+EOF
 }
 
-bang_get_latest_timestamp() {
-    echo "bang_get_latest_timestamp"
-    #TODO Goes through and gets the latest timestamp from the last message in the database
-}
-
-set_latest_timestamp() {
-    echo "set_latest_timestamp"
-    #TODO - writes the latest timestamp to timestamp file in actionID dir
+get_history() {
+    cat "${BAI_ACTION_IDS}"
 }
 #---------------------------------------
 
@@ -459,7 +455,11 @@ main() {
                     ;;
                 --last-action-id)
                     shift
-                    use_last_action_id
+                    echo $(use_last_action_id)
+                    exit $?
+                    ;;
+                --history)
+                    get_history
                     exit $?
                     ;;
                 --abort|--cancel)
