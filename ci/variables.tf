@@ -27,7 +27,7 @@ variable "region" {
 variable "ci_docker_image" {
   type = map(string)
   default = {
-    "default" = "benchmarkai/ci"
+    "default" = "benchmarkai/ci:kind"
     "bff"     = "gavin/bai-bff-dev"
   }
 }
