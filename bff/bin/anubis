@@ -170,7 +170,6 @@ check_version() {
 # Event Construction
 #---------------------------------------------------------
 
-# TODO - Make a proper time stamp here for tstamp
 # TODO - Also, look at changing the formulation of client_id to just be the user's hashed email
 _generate_submit_event() {
     local descriptor_filename=${1?"generate_submit_event() -> You MUST supply a descriptor file as first argument to this function"}
@@ -196,7 +195,6 @@ EOF
     jq '.' <<< ${event}
 }
 
-# TODO - Make a proper time stamp here for tstamp
 # TODO - Also, look at changing the formulation of client_id to just be the user's hashed email
 _generate_command_event() {
     local command=${1}
@@ -409,9 +407,6 @@ inspect() {
     local message_id=${1:?"You must provide the message id that you want to inspect"}
     local action_id=${2:-$(use_last_action_id)}
     local datafile=${BAI_DATABASE}/$(get_client_id)"/"${action_id}/data
-    #TODO finish me... parse through saved file with select query on message-id
-    #     Ex: jq 'select(.message_id=="44bd4f92-5a53-4506-a8df-798b8d22e098")'
-    #     EX: jq 'select(.message_id|test("44bd4f92-"))'
     /usr/bin/env bash <<EOF
 jq 'select(.message_id|test("${message_id}-"))' $datafile
 EOF
