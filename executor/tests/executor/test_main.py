@@ -2,7 +2,7 @@ from unittest import mock
 
 from transpiler.config import BaiConfig, EnvironmentInfo
 from transpiler.descriptor import DescriptorConfig
-from bai_kafka_utils.kafka_service import KafkaServiceConfig
+from bai_kafka_utils.kafka_service import KafkaServiceConfig, DEFAULT_NUM_PARTITIONS, DEFAULT_REPLICATION_FACTOR
 from executor.config import ExecutorConfig
 
 
@@ -50,6 +50,8 @@ def test_main(mock_create_executor):
         bootstrap_servers=BOOTSTRAP_SERVERS,
         logging_level=LOGGING_LEVEL,
         status_topic=STATUS_TOPIC,
+        replication_factor=min(DEFAULT_REPLICATION_FACTOR, len(BOOTSTRAP_SERVERS)),
+        num_partitions=DEFAULT_NUM_PARTITIONS,
     )
 
     expected_executor_config = ExecutorConfig(
