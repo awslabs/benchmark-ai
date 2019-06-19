@@ -169,7 +169,9 @@ class BaiKubernetesObjectBuilder:
             volumes.append(
                 Volume(
                     name=vol.name,
-                    hostPath=HostPath(path=f"/{vol.name}", type="DirectoryOrCreate" if vol.is_directory else "FileOrCreate"),
+                    hostPath=HostPath(
+                        path=f"/{vol.name}", type="DirectoryOrCreate" if vol.is_directory else "FileOrCreate"
+                    ),
                 )
             )
         return volumes
