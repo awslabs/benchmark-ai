@@ -42,25 +42,25 @@ id = "ImageNet"
 # Data download URI.
 src = "s3://aws-ml-platform-datasets/imagenet/480px-q95/val-480px-q95.rec"
 # Path where the dataset is stored in the container FS
-path = "/imn/val-480px-q95.rec"
+path = "/imn/"
 
 [[data.sources]]
 # Data download URI.
 src = "s3://aws-ml-platform-datasets/imagenet/480px-q95/train-480px-q95.rec"
 # Path where the dataset is stored in the container FS
-path = "/imn/train-480px-q95.rec"
+path = "/imn/"
 
 [[data.sources]]
 # Data download URI.
 src = "s3://aws-ml-platform-datasets/imagenet/480px-q95/train-480px-q95.idx"
 # Path where the dataset is stored in the container FS
-path = "/imn/train-480px-q95.idx"
+path = "/imn/"
 
 [[data.sources]]
 # Data download URI.
 src = "s3://aws-ml-platform-datasets/imagenet/480px-q95/val-480px-q95.idx"
 # Path where the dataset is stored in the container FS
-path = "/imn/val-480px-q95.idx"
+path = "/imn/"
 
 # ...
 
