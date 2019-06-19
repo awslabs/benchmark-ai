@@ -1,7 +1,7 @@
 from unittest.mock import Mock
 
 from bai_watcher.args import WatcherServiceConfig
-from bai_kafka_utils.kafka_service import KafkaServiceConfig
+from bai_kafka_utils.kafka_service import KafkaServiceConfig, DEFAULT_REPLICATION_FACTOR, DEFAULT_NUM_PARTITIONS
 
 
 BOOTSTRAP_SERVERS = ["K1", "K2"]
@@ -40,6 +40,8 @@ def test_main(mocker):
         bootstrap_servers=BOOTSTRAP_SERVERS,
         logging_level=LOGGING_LEVEL,
         status_topic=STATUS_TOPIC,
+        replication_factor=min(DEFAULT_REPLICATION_FACTOR, len(BOOTSTRAP_SERVERS)),
+        num_partitions=DEFAULT_NUM_PARTITIONS,
     )
 
     expected_watcher_config = WatcherServiceConfig(

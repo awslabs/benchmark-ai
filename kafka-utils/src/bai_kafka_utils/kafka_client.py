@@ -2,7 +2,10 @@ import logging
 
 import kafka
 from kafka import KafkaConsumer, KafkaProducer
+from kafka.admin import KafkaAdminClient, NewTopic
 from typing import List, Tuple
+
+from kafka.errors import TopicAlreadyExistsError
 
 from bai_kafka_utils.events import BenchmarkEvent, get_topic_event_type
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
@@ -21,9 +24,28 @@ class WrongBenchmarkEventTypeException(Exception):
 
 
 # args from kafka
-def create_kafka_consumer_producer(kafka_cfg: KafkaServiceConfig) -> Tuple[KafkaConsumer, KafkaProducer]:
+def create_kafka_consumer_producer(
+    kafka_cfg: KafkaServiceConfig, service_name: str
+) -> Tuple[KafkaConsumer, KafkaProducer]:
     # Each service's Kafka consumer subscribes to both the service's input topic and the cmd_submit topic
     consumer_topics = [kafka_cfg.consumer_topic, kafka_cfg.cmd_submit_topic]
+
+    required_topics = [
+        kafka_cfg.consumer_topic,
+        kafka_cfg.producer_topic,
+        kafka_cfg.cmd_submit_topic,
+        kafka_cfg.cmd_return_topic,
+        kafka_cfg.status_topic,
+    ]
+
+    create_kafka_topics(
+        required_topics,
+        kafka_cfg.bootstrap_servers,
+        service_name,
+        kafka_cfg.num_partitions,
+        kafka_cfg.replication_factor,
+    )
+
     return (
         create_kafka_consumer(kafka_cfg.bootstrap_servers, kafka_cfg.consumer_group_id, consumer_topics),
         create_kafka_producer(kafka_cfg.bootstrap_servers),
@@ -74,3 +96,19 @@ def create_kafka_producer(bootstrap_servers: List[str]) -> kafka.KafkaProducer:
         connections_max_idle_ms=MAX_IDLE_TIME_MS,
         key_serializer=key_serializer,
     )
+
+
+def create_kafka_topics(
+    new_topics: List[str], bootstrap_servers: List[str], service_name: str, num_partitions: int, replication_factor: int
+):
+    logger.info(f"Creating kafka topics {new_topics}")
+
+    admin_client = KafkaAdminClient(bootstrap_servers=bootstrap_servers, client_id=service_name)
+
+    for topic in new_topics:
+        try:
+            new_topic = NewTopic(name=topic, num_partitions=num_partitions, replication_factor=replication_factor)
+            admin_client.create_topics(new_topics=[new_topic])
+            logger.info(f"Created kafka topic {topic}")
+        except TopicAlreadyExistsError:
+            logger.exception(f"Error creating topic {topic}, it already exists")
