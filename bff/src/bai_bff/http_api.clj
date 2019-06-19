@@ -27,18 +27,19 @@
 
 (defn dispatch-submit-job [request body]
   (try
-    (let [body-string (slurp body)]
+    (let [body-string (slurp body)
+          message-body (json/parse-string body-string true)]
       (log/debug "Printing request")
       (log/debug request)
       (log/debug "Body recieved is")
       (log/debug body-string)
       (log/debug "message body is now an event...")
-      (let [event (events/message->submit-descriptor-event
-                   request
-                   (json/parse-string body-string true))]
+      (let [event (events/message->submit-descriptor-event request message-body)
+            status-event (partial events/status-event event)]
         (log/debug event)
         (log/info (json/generate-string event {:pretty true}))
-        (>!! @eventbus/send-event-channel-atom [(:client_id event) event])
+        (>!! @eventbus/send-event-channel-atom [(status-event :bai-bff.events/submitted (str "Submission has been successfully received..."))])
+        (>!! @eventbus/send-event-channel-atom [event])
         (:action_id event)))
     (catch Exception e
       (log/error "Could Not Parse Descriptor Input")
@@ -49,15 +50,17 @@
     (let [body-string (slurp body)]
       (log/debug "Printing request")
       (log/debug request)
-      (log/debug "Body recieved is")
+      (log/debug "Body received is")
       (log/debug body-string)
       (log/debug "message body is now an event...")
       (let [event (events/message->cmd-event
                    request
-                   (json/parse-string body-string true))]
+                   (json/parse-string body-string true))
+            status-event (partial events/status-event event)]
         (log/debug event)
         (log/info (json/generate-string event {:pretty true}))
-        (>!! @eventbus/send-event-channel-atom [(:client_id event) event])
+        (>!! @eventbus/send-event-channel-atom [(status-event :bai-bff.events/submitted (str "Action received, dispatching delete for <"action-id">"))])
+        (>!! @eventbus/send-event-channel-atom [event])
         (:action_id event)))
     (catch Exception e
       (log/error "Could Not Parse Descriptor Input")

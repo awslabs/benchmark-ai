@@ -83,7 +83,7 @@ MAX_QUEUE_SIZE := 21
 KAFKA_CONSUMER_GROUP_ID := $(PROJECT)
 KAFKA_POLL_INTERVAL_MS := 500
 KAFKA_SOURCE_TOPICS := BAI_APP_STATUS,CMD_RETURN
-KAFKA_SINK_TOPICS := BAI_APP_BFF,CMD_SUBMIT
+KAFKA_SINK_TOPICS := BAI_APP_STATUS,BAI_APP_BFF,CMD_SUBMIT
 
 #This project may be built in the context of a docker environment using the image: gavin/bai-bff-dev
 #docker run -it --rm -v "$PWD":/srv/app -w /srv/app gavin/bai-bff-dev <command>
@@ -295,7 +295,9 @@ cd-pipeline-setup:
 #----------------------------
 # Deployment
 #----------------------------
-deploy.yml: $(DEPLOY_TEMPLATE)
+FORCE: ;
+
+deploy.yml: FORCE
 	@echo "Generating kubernetes deploy.yaml from template..."
 	@sed -e 's|@@PROJECT@@|$(PROJECT)|g' \
 	     -e 's|@@VERSION@@|$(VERSION)|g' \
@@ -337,7 +339,12 @@ rollback:
 	kubectl $(K8S_KUBECTL_ARGS) rollout undo deployments $(PROJECT)
 
 
+rollout-history:
+	@echo "------------------------"
+	@echo "K8S Check Rollout History..."
+	@echo "------------------------"
+	kubectl $(K8S_KUBECTL_ARGS) rollout history deployment.v1.apps/$(PROJECT)
 
 # (may want to put in the k8s cycle here as well scale up and down)
 #----------------------------------------------------------------
-.PHONY: test all docs release clean clean-all compile dist cd-pipeline cd-prepare cd-publish cd-promote container-test dist
+.PHONY: test all docs release clean clean-all compile dist publish
