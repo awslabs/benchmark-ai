@@ -12,6 +12,8 @@ MOCK_CONSUMER_TOPIC = "IN_TOPIC"
 MOCK_STATUS_TOPIC = "STATUS_TOPIC"
 CMD_SUBMIT_TOPIC = "CMD_SUBMIT"
 CMD_RETURN_TOPIC = "CMD_RETURN"
+MOCK_REPLICATION_FACTOR = 1
+MOCK_NUM_PARTITIONS=42
 
 MOCK_KAFKA_BOOTSTRAP_SERVERS = [MOCK_KAFKA1, MOCK_KAFKA2]
 
@@ -22,7 +24,10 @@ ARGS = f"""--bootstrap-servers={MOCK_KAFKA1},{MOCK_KAFKA2}
     --cmd-submit-topic {CMD_SUBMIT_TOPIC}
     --cmd-return-topic {CMD_RETURN_TOPIC}
     --status-topic={MOCK_STATUS_TOPIC}
-    --logging-level={LOGGING_LEVEL}"""
+    --logging-level={LOGGING_LEVEL}\
+    --replication-factor={MOCK_REPLICATION_FACTOR}
+    --num-partitions={MOCK_NUM_PARTITIONS}
+"""
 
 EXPECTED_CONFIG = KafkaServiceConfig(
     bootstrap_servers=MOCK_KAFKA_BOOTSTRAP_SERVERS,
@@ -33,6 +38,8 @@ EXPECTED_CONFIG = KafkaServiceConfig(
     status_topic=MOCK_STATUS_TOPIC,
     cmd_return_topic=CMD_RETURN_TOPIC,
     cmd_submit_topic=CMD_SUBMIT_TOPIC,
+    replication_factor=MOCK_REPLICATION_FACTOR,
+    num_partitions=MOCK_NUM_PARTITIONS
 )
 
 

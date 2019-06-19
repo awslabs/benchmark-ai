@@ -1,4 +1,4 @@
 resources:
-  - base/zookeper.yml
-  - base/mock-outputs-infra.yml
-  - base/kafka.yml
+  - zookeper.yml
+  - mock-outputs-infra.yml
+  - kafka.yml

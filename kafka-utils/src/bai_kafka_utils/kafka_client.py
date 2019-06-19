@@ -101,6 +101,8 @@ def create_kafka_producer(bootstrap_servers: List[str]) -> kafka.KafkaProducer:
 def create_kafka_topics(
     new_topics: List[str], bootstrap_servers: List[str], service_name: str, num_partitions: int, replication_factor: int
 ):
+    logger.info(f"Creating kafka topics {new_topics}")
+
     admin_client = KafkaAdminClient(bootstrap_servers=bootstrap_servers, client_id=service_name)
 
     for topic in new_topics:
