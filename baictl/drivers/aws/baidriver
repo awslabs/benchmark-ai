@@ -499,7 +499,7 @@ get_benchmark() {
         {
             "size" : $page_size,
             "query" : {
-                "term" : { "kubernetes.labels.job-name":"$benchmark_name" }
+                "match" : { "kubernetes.labels.action-id":"$benchmark_name" }
             },
             "sort": [
                 {"@timestamp": {"order": "asc"}}
@@ -518,7 +518,7 @@ END
         fi
 
         # Print the logs
-        cat $current_page_filename | jq '.hits.hits[]._source | "(\(."@timestamp") \(.log)"' -j
+        cat $current_page_filename | jq '.hits.hits[]._source | "[\(.kubernetes.pod_id)-\(.kubernetes.container_name)] \(."@timestamp") \(.log)"' -j
 
         # Fetch next page
         local next_page_query="{\"scroll\" : \"1m\", \"scroll_id\" : $scroll_id}"
