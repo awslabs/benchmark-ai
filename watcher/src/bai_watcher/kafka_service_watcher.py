@@ -1,4 +1,6 @@
 import logging
+from typing import Tuple
+
 import kubernetes
 
 from bai_kafka_utils.events import ExecutorBenchmarkEvent, Status
@@ -13,34 +15,33 @@ from bai_watcher.status_inferrers.status import BenchmarkJobStatus
 logger = logging.getLogger(__name__)
 
 
-def notify_job_status(kafka_service, event, job_id, job_status: BenchmarkJobStatus):
-    logger.info(f"Job '{job_id}'' has status '{job_status}'")
-
-    if job_status is None:
-        # Job does not exist, it might have been already deleted by the collector, we can safely ignore this
-        # status
-        pass
-    elif job_status in (
+def choose_status_from_benchmark_status(job_status: BenchmarkJobStatus) -> Tuple[Status, str]:
+    if job_status in (
         BenchmarkJobStatus.FAILED_AT_SIDECAR_CONTAINER,
         BenchmarkJobStatus.FAILED_AT_BENCHMARK_CONTAINER,
         BenchmarkJobStatus.FAILED_AT_INIT_CONTAINERS,
     ):
-        kafka_service.send_status_message_event(event, Status.FAILED, "Job failed")
+        return Status.FAILED, "Job failed"
     elif job_status == BenchmarkJobStatus.SUCCEEDED:
-        kafka_service.send_status_message_event(event, Status.SUCCEEDED, "Job finished with success")
+        return Status.SUCCEEDED, "Job finished with success"
+    elif job_status == BenchmarkJobStatus.NO_POD_SCHEDULED:
+        return Status.FAILED, "Job was not able to run in the cluster"
+    elif job_status == BenchmarkJobStatus.JOB_DOES_NOT_EXIST:
+        return Status.PENDING, "Job is being created"
     elif job_status in (
         BenchmarkJobStatus.PENDING_AT_INIT_CONTAINERS,
         BenchmarkJobStatus.PENDING_AT_BENCHMARK_CONTAINER,
         BenchmarkJobStatus.PENDING_AT_SIDECAR_CONTAINER,
         BenchmarkJobStatus.RUNNING_AT_INIT_CONTAINERS,
     ):
-        kafka_service.send_status_message_event(event, Status.PENDING, "Job is pending initialization")
+        return Status.PENDING, "Job is pending initialization"
     elif job_status in (BenchmarkJobStatus.PENDING_NODE_SCALING,):
-        kafka_service.send_status_message_event(event, Status.PENDING, "Job is pending nodes to scale")
+        return Status.PENDING, "Job is pending nodes to scale"
     elif job_status == BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS:
-        kafka_service.send_status_message_event(event, Status.RUNNING, "Job is running")
+        return Status.RUNNING, "Job is running"
     else:
-        raise ValueError(f"Unknown status: {job_status}")
+        # All values of BenchmarkJobStatus must be handled
+        assert False, f"Unknown status: {job_status}"
 
 
 class WatchJobsEventHandler(KafkaServiceCallback):
@@ -59,10 +60,12 @@ class WatchJobsEventHandler(KafkaServiceCallback):
 
         logger.info("Starting to watch the job '%s'", job_id)
 
-        def callback(job_id, job_status: BenchmarkJobStatus):
+        def callback(job_id, benchmark_job_status: BenchmarkJobStatus):
             # This method is called at each thread (not the Main Thread)
-            notify_job_status(kafka_service, event, job_id, job_status)
-            if job_status is not None and job_status.is_final():
+            logger.info(f"Benchmark job '{job_id}'' has status '{benchmark_job_status}'")
+            status, message = choose_status_from_benchmark_status(benchmark_job_status)
+            kafka_service.send_status_message_event(event, status, message)
+            if benchmark_job_status is not None and benchmark_job_status.is_final():
                 del self.watchers[job_id]
                 logger.info(f"Job {job_id} is not being watched anymore")
                 return True

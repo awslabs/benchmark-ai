@@ -1,4 +1,5 @@
 import logging
+from typing import Callable
 
 import itertools
 import kubernetes
@@ -8,6 +9,7 @@ from pathlib import Path
 from threading import Thread
 
 from bai_watcher.status_inferrers.single_node import SingleNodeStrategyKubernetesStatusInferrer
+from bai_watcher.status_inferrers.status import BenchmarkJobStatus
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +32,15 @@ def load_kubernetes_config(kubeconfig=None):
 
 
 class KubernetesJobWatcher:
-    def __init__(self, job_id, callback, *, kubernetes_namespace, kubernetes_client_jobs, kubernetes_client_pods):
+    def __init__(
+        self,
+        job_id: str,
+        callback: Callable[[str, BenchmarkJobStatus], bool],
+        *,
+        kubernetes_namespace,
+        kubernetes_client_jobs,
+        kubernetes_client_pods,
+    ):
         self.job_id = job_id
         self.callback = callback
         self.kubernetes_namespace = kubernetes_namespace
@@ -49,7 +59,7 @@ class KubernetesJobWatcher:
                 logging.exception(
                     "The specified job {job_id} does not exist. Stopping thread.".format(job_id=self.job_id)
                 )
-                return None
+                return BenchmarkJobStatus.JOB_DOES_NOT_EXIST
 
             logging.exception(
                 "Unknown error from Kubernetes, stopping thread that watches job {job_id} with an exception".format(
