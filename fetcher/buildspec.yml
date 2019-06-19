@@ -36,7 +36,7 @@ phases:
             kubectl wait --for=condition=ready --timeout=120s pod/kafka-0
             # Let's still sleep a bit
             sleep 30s
-            # Describe to have some info in case of errors
+            # Describe to have some info in case of errors.
             kubectl describe pods
             make integration_tests STAGE=local LOCAL_DEPLOY="kind load docker-image "
         fi
