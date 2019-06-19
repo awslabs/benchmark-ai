@@ -339,6 +339,11 @@ rollback:
 	kubectl $(K8S_KUBECTL_ARGS) rollout undo deployments $(PROJECT)
 
 
+rollout-history:
+	@echo "------------------------"
+	@echo "K8S Check Rollout History..."
+	@echo "------------------------"
+	kubectl $(K8S_KUBECTL_ARGS) rollout history deployment.v1.apps/$(PROJECT)
 
 # (may want to put in the k8s cycle here as well scale up and down)
 #----------------------------------------------------------------
