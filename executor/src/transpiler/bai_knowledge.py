@@ -18,7 +18,7 @@ from executor import SERVICE_NAME
 class PullerDataSource:
     name: str
     puller_path: str
-    dir: bool
+    is_directory: bool
 
 
 class BaiKubernetesObjectBuilder:
@@ -157,8 +157,8 @@ class BaiKubernetesObjectBuilder:
         for idx, data_source in enumerate(data_sources):
             name = "p" + str(idx)
             puller_path = f"/data/{name}"
-            dir = data_source.dir
-            data_vols[data_source.path] = PullerDataSource(name, puller_path, dir)
+            is_directory = data_source.is_directory
+            data_vols[data_source.path] = PullerDataSource(name, puller_path, is_directory)
 
         return data_vols
 
@@ -169,7 +169,7 @@ class BaiKubernetesObjectBuilder:
             volumes.append(
                 Volume(
                     name=vol.name,
-                    hostPath=HostPath(path=f"/{vol.name}", type="DirectoryOrCreate" if vol.dir else "FileOrCreate"),
+                    hostPath=HostPath(path=f"/{vol.name}", type="DirectoryOrCreate" if vol.is_directory else "FileOrCreate"),
                 )
             )
         return volumes

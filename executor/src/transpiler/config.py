@@ -29,7 +29,7 @@ class BaiDataSource:
     bucket: str
     object: str
     path: str
-    dir: bool
+    is_directory: bool
 
     def __init__(self, fetched_data_source: DataSet, path: str):
         parsed_uri = urlparse(fetched_data_source.dst)
@@ -38,7 +38,7 @@ class BaiDataSource:
         self.bucket = parsed_uri.netloc
         self.object = parsed_uri.path[1:]
         self.path = path
-        self.dir = fetched_data_source.type == FetchedType.DIRECTORY
+        self.is_directory = fetched_data_source.type == FetchedType.DIRECTORY
 
         if self.scheme.lower() != "s3":
             raise DescriptorError(
