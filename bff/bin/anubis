@@ -210,6 +210,7 @@ _generate_command_event() {
 {
     "message_id" : "$(uuidgen)",
     "client_id"  : "$(get_client_id)",
+    "target_action_id" : "${action_id}"
     "client_version" : "${VERSION}",
     "client_sha1"    : "${MY_SHA1}",
     "client_username" : "$(whoami)",

@@ -92,18 +92,19 @@
   (let [tstamp (System/currentTimeMillis)
         authenticated false] ;NOTE auth should have been taken care of by middleware.
     (add-my-visited-entry
-     {:message_id      (uuid)                                     ; <--
-      :client_id       (some-> message-body :client_id)
-      :action_id       (uuid)                                     ; <--
-      :client_version  (some-> message-body :client_version)
-      :client_sha1     (some-> message-body :client_sha1)
-      :client_username (some-> message-body :client_username)
-      :date            (some-> message-body :date)
-      :authenticated   authenticated                              ; <--
-      :tstamp          tstamp
-      :visited         (some-> message-body :visited)             ; <--
-      :payload         (some-> message-body :payload)
-      :type            "CMD_SUBMIT"})))
+     {:message_id       (uuid)                                     ; <--
+      :client_id        (some-> message-body :client_id)
+      :action_id        (uuid)                                     ; <--
+      :target_action_id (some-> message-body :target_action_id)
+      :client_version   (some-> message-body :client_version)
+      :client_sha1      (some-> message-body :client_sha1)
+      :client_username  (some-> message-body :client_username)
+      :date             (some-> message-body :date)
+      :authenticated    authenticated                              ; <--
+      :tstamp           tstamp
+      :visited          (some-> message-body :visited)             ; <--
+      :payload          (some-> message-body :payload)
+      :type             "CMD_SUBMIT"})))
 
 (defn status-event[event status-keyword status-message]
   (let [tstamp (System/currentTimeMillis)] ;NOTE auth should have been taken care of by middleware.
@@ -111,6 +112,7 @@
      {:message_id      (uuid)                                     ; <--
       :client_id       (some-> event :client_id)
       :action_id       (some-> event :action_id)
+      :client_version  (some-> event :client_version)
       :date            (some-> event :date)
       :tstamp          tstamp                                     ; <--
       :visited         (some-> event :visited)
