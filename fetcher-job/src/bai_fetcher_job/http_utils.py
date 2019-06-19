@@ -24,12 +24,15 @@ class ProgressTracker:
     reported = 0
     granularity = 10
 
-    def info_callback(self, download_total, downloaded, _upload_total, _uploaded):
+    def __call__(self, download_total, downloaded, _upload_total, _uploaded):
+        if not download_total:
+            return
+
         progress = downloaded / download_total * 100
         bucket = download_total / self.granularity
 
         if downloaded - self.reported > bucket:
-            logger.info(f"Downloaded {downloaded} out of {download_total} ({progress}%)")
+            logger.info(f"Downloaded {downloaded} out of {download_total} ({progress:.2f}%)")
             self.reported = downloaded
 
 
@@ -43,7 +46,7 @@ def http_download(fp: TextIO, src: str):
     curl.setopt(pycurl.NOSIGNAL, 1)
     curl.setopt(pycurl.NOPROGRESS, 0)
     progress = ProgressTracker()
-    curl.setopt(pycurl.XFERINFOFUNCTION, partial(progress.info_callback, progress))
+    curl.setopt(pycurl.XFERINFOFUNCTION, progress)
     curl.setopt(pycurl.WRITEDATA, fp)
     logger.info(f"Start download {src}")
     try:
