@@ -25,7 +25,7 @@ spec:
       initContainers:
       - name: data-puller
         volumeMounts:
-        - name: datasets_volume
+        - name: datasets-volume
           mountPath: /data
       containers:
       - name: benchmark
@@ -80,6 +80,6 @@ spec:
       volumes:
       - name: benchmark-ai
         emptyDir: {{}}
-      - name: datasets_volume
+      - name: datasets-volume
         emptyDir: {{}}
   backoffLimit: 4

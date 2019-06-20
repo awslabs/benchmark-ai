@@ -25,7 +25,7 @@ spec:
       initContainers:
       - name: data-puller
         volumeMounts:
-        - name: datasets_volume
+        - name: datasets-volume
           mountPath: /data
         image: stsukrov/puller
         args:
@@ -52,10 +52,10 @@ spec:
         volumeMounts:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
-        - name: datasets_volume
+        - name: datasets-volume
           mountPath: ~/data/tf-imagenet/train
           subPath: p0
-        - name: datasets_volume
+        - name: datasets-volume
           mountPath: ~/data/tf-imagenet/validation
           subPath: p1
         - name: dshm
@@ -95,7 +95,7 @@ spec:
       volumes:
       - name: benchmark-ai
         emptyDir: {}
-      - name: datasets_volume
+      - name: datasets-volume
         emptyDir: {}
       - name: dshm
         emptyDir:

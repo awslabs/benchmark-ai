@@ -15,7 +15,7 @@ from transpiler.kubernetes_spec_logic import ConfigTemplate, VolumeMount, Volume
 
 BENCHMARK_CONTAINER = "benchmark"
 DATA_PULLER_CONTAINER = "data-puller"
-DATASETS_VOLUME_NAME = "datasets_volume"
+DATASETS_VOLUME_NAME = "datasets-volume"
 
 SHARED_MEMORY_VOLUME = "dshm"
 SHARED_MEMORY_VOLUME_MOUNT = "/dev/shm"
