@@ -55,6 +55,11 @@
   maps of vectors that hold the trail of events.  In this case status
   messages.
 
+  Semantically
+  - use client id and transform that value into a keyword to index on.
+  - use target_action_id iff set, otherwise use action_id; and transform that into a keyword to index on.
+    (the second case it to support commands that have their own, different action_id but will carry the action id that their action is targeted for as target_action_id.  We want the commands to be indexed into the same bucket [technically map] as the action they were intended to affect.) Get it? Gyot it?
+
   Caveat - there is no dedupping or sorting (by time) in the event
   vector.  This is a TODO item, which means that since atomic calls
   can be re-run at anytime, we should make sure this function is pure
@@ -63,8 +68,8 @@
   (log/trace "update-status-store called...")
   (if (nil? event)
     store
-    (let [{:keys [client_id action_id]} event
-          [client-key action-key] (mapv keyword [client_id action_id])]
+    (let [{:keys [client_id action_id target_action_id] :or {target_action_id nil}} event
+          [client-key action-key] (mapv keyword [client_id (if target_action_id target_action_id action_id)])]
       (if (and client-key action-key)
         (try
           (assoc-in store [client-key action-key] (vec (remove nil? (flatten (vector (some-> store client-key action-key) event)))))
