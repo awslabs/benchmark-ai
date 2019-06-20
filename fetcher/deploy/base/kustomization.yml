@@ -1,5 +1,15 @@
 configMapGenerator:
+  - name: fetcher-dispatcher
+    literals:
+      - consumer_group_id=fetcher-dispatcher
+      - consumer_topic=BAI_APP_BFF
+      - producer_topic=BAI_APP_FETCHER
+      - status_topic=BAI_APP_STATUS
+      - job_node_selector='{"node.type":"bai-services-network"}'
+      - job_image=benchmarkai/fetcher-job
+      - foo=bar
+      - he=12
+      - pull_policy=Always
 resources:
 - roles.yml
-- config.yml
 - fetcher-dispatcher.yml
