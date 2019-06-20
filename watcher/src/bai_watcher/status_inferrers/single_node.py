@@ -88,6 +88,16 @@ class SingleNodeStrategyKubernetesStatusInferrer:
         - If container.running -> continue loop
     """
 
+    """
+    Name of the container inside the POD that is running a benchmark.
+
+    Must be in sync with what the name that the Executor gives to the benchmark container.
+
+    HACK: It is not great to hardcode the name of the container like this, but Kubernetes does not
+          have a way to specify which container is a sidecar.
+    """
+    BENCHMARK_CONTAINER_NAME = "benchmark"
+
     def __init__(self, k8s_job_status: V1JobStatus, pods: List[V1Pod]):
         self.k8s_job_status = k8s_job_status
         self.pods = pods
@@ -160,21 +170,23 @@ class SingleNodeStrategyKubernetesStatusInferrer:
         for state, container_infos in main_containers.items():
             if state == ContainerState.PENDING:
                 for container_info in container_infos:
-                    # HACK: It is not great to hardcode the name of the container like this, but Kubernetes does not
-                    # have a way to specify which container is a sidecar.
-                    if container_info.container_name == "benchmark":
+                    if (
+                        container_info.container_name
+                        == SingleNodeStrategyKubernetesStatusInferrer.BENCHMARK_CONTAINER_NAME
+                    ):
                         return BenchmarkJobStatus.PENDING_AT_BENCHMARK_CONTAINER
                     else:
                         return BenchmarkJobStatus.PENDING_AT_SIDECAR_CONTAINER
 
             elif state == ContainerState.FAILED:
                 for container_info in container_infos:
-                    # HACK: It is not great to hardcode the name of the container like this, but Kubernetes does not
-                    # have a way to specify which container is a sidecar.
-                    if container_info.container_name != "benchmark":
-                        return BenchmarkJobStatus.FAILED_AT_SIDECAR_CONTAINER
-                    else:
+                    if (
+                        container_info.container_name
+                        == SingleNodeStrategyKubernetesStatusInferrer.BENCHMARK_CONTAINER_NAME
+                    ):
                         return BenchmarkJobStatus.FAILED_AT_BENCHMARK_CONTAINER
+                    else:
+                        return BenchmarkJobStatus.FAILED_AT_SIDECAR_CONTAINER
 
             elif state == ContainerState.RUNNING:
                 # We can safely ignore the state of this container because another container should be in a "Waiting"
