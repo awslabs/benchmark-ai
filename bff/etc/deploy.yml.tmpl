@@ -82,6 +82,10 @@ spec:
                 configMapKeyRef:
                   name: outputs-infrastructure
                   key: msk_bootstrap_brokers
+            - name: KAFKA_DEFAULT_NUM_PARTITIONS
+              value: "@@KAFKA_DEFAULT_NUM_PARTITIONS@@"
+            - name: KAFKA_DEFAULT_REPLICATION_FACTOR
+              value: "@@KAFKA_DEFAULT_REPLICATION_FACTOR@@"
             - name: KAFKA_CONSUMER_GROUP_ID
               value: "@@KAFKA_CONSUMER_GROUP_ID@@"
             - name: KAFKA_POLL_INTERVAL_MS

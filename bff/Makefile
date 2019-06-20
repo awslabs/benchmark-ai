@@ -84,6 +84,8 @@ KAFKA_CONSUMER_GROUP_ID := $(PROJECT)
 KAFKA_POLL_INTERVAL_MS := 500
 KAFKA_SOURCE_TOPICS := BAI_APP_STATUS,CMD_RETURN
 KAFKA_SINK_TOPICS := BAI_APP_STATUS,BAI_APP_BFF,CMD_SUBMIT
+KAFKA_DEFAULT_NUM_PARTITIONS := 3
+KAFKA_DEFAULT_REPLICATION_FACTOR := 3
 
 #This project may be built in the context of a docker environment using the image: gavin/bai-bff-dev
 #docker run -it --rm -v "$PWD":/srv/app -w /srv/app gavin/bai-bff-dev <command>
@@ -312,6 +314,8 @@ deploy.yml: FORCE
 	     -e 's|@@COMMIT_SHORT_HASH@@|$(COMMIT_SHORT_HASH)|g' \
              -e 's|@@THREAD_POOL_SIZE@@|$(THREAD_POOL_SIZE)|g' \
 	     -e 's|@@MAX_QUEUE_SIZE@@|$(MAX_QUEUE_SIZE)|g' \
+             -e 's|@@KAFKA_DEFAULT_NUM_PARTITIONS@@|$(KAFKA_DEFAULT_NUM_PARTITIONS)|g' \
+             -e 's|@@KAFKA_DEFAULT_REPLICATION_FACTOR@@|$(KAFKA_DEFAULT_REPLICATION_FACTOR)|g' \
 	     -e 's|@@KAFKA_SOURCE_TOPICS@@|$(KAFKA_SOURCE_TOPICS)|g' \
 	     -e 's|@@KAFKA_CONSUMER_GROUP_ID@@|$(KAFKA_CONSUMER_GROUP_ID)|g' \
 	     -e 's|@@KAFKA_POLL_INTERVAL_MS@@|$(KAFKA_POLL_INTERVAL_MS)|g' \
