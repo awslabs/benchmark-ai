@@ -245,16 +245,3 @@ def test_failed_at_sidecar_container_and_pod_terminated():
     pod = V1Pod(metadata=V1ObjectMeta(name="pod-name"), status=status)
     inferrer = SingleNodeStrategyKubernetesStatusInferrer(V1JobStatus(active=1), pods=[pod])
     assert inferrer.status() == BenchmarkJobStatus.FAILED_AT_SIDECAR_CONTAINER
-
-
-#
-# def test_get_status_when_kubernetes_job_report_from_api_is_buggy(k8s_job_watcher):
-#     # This tests a situation if we handle Kubernetes returning buggy objects
-#     k8s_job_status = create_autospec(V1JobStatus)
-#     value = PropertyMock(return_value=0)
-#     type(k8s_job_status).failed = value
-#     type(k8s_job_status).succeeded = value
-#     type(k8s_job_status).active = value
-#     k8s_job_watcher.jobs_client.read_namespaced_job_status.return_value = V1Job(status=k8s_job_status)
-#     with pytest.raises(ValueError):
-#         k8s_job_watcher.get_status()
