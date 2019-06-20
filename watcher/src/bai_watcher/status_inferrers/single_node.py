@@ -73,6 +73,7 @@ class SingleNodeStrategyKubernetesStatusInferrer:
 
     # Phase 2 (inspect PODs)
     - If "NO pods found" -> Return early
+    - If POD triggered a node scaling -> Return early
     - If "RUNNING" -> Return early
 
     # Phase 3 (inspect containers)
