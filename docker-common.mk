@@ -53,12 +53,9 @@ define fn_k8s_deploy
 	$(KUBECTL) apply $(KUBECTL_FLAGS) -f deploy.yml \;
 endef
 
-deploy.yml: _deploy_venv generate_deploy
-	echo
-
-generate_deploy: ./deploy/*.yml
+deploy.yml: _deploy_venv
 	rm -f deploy.yml
-	for file in $^ ; do \
+	cd deploy && for file in *.yml ; do \
 		$(DEPLOY_CONDA_RUN) sed -e 's\|@@DOCKER_IMAGE_TAG@@\|$(DOCKER_IMAGE_TAG)\|g' $${file} >> deploy.yml && echo "---" >> deploy.yml ; \
 	done
 
