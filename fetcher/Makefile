@@ -41,8 +41,8 @@ override define fn_k8s_undeploy
 	$(KUBECTL) delete $(KUBECTL_FLAGS) -k ./deploy
 endef
 
-deploy.yml:
+deploy.yml: _deploy_venv
 	echo "Kustomize deployment"
-	sed -e 's|@@DOCKER_IMAGE_TAG@@|$(DOCKER_IMAGE_TAG)|g' \
-		-e 's|@@JOB_DOCKER_IMAGE_TAG@@|$(JOB_DOCKER_IMAGE_TAG)|g' \
-		-e 's|@@STAGE@@|$(STAGE)|g' deploy/kustomization.tpl.yml > deploy/kustomization.yml
+	$(DEPLOY_CONDA_RUN) sed -e 's\|@@DOCKER_IMAGE_TAG@@\|$(DOCKER_IMAGE_TAG)\|g' \
+		-e 's\|@@JOB_DOCKER_IMAGE_TAG@@\|$(JOB_DOCKER_IMAGE_TAG)\|g' \
+		-e 's\|@@STAGE@@\|$(STAGE)\|g' deploy/kustomization.tpl.yml > deploy/kustomization.yml

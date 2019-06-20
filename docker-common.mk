@@ -53,14 +53,17 @@ define fn_k8s_deploy
 	$(KUBECTL) apply $(KUBECTL_FLAGS) -f deploy.yml \;
 endef
 
-deploy.yml:
-	find ./deploy -name '*.yml' -exec sh -c "sed -e 's|@@DOCKER_IMAGE_TAG@@|$(DOCKER_IMAGE_TAG)|g' -e '\$$a---' {}" > deploy.yml \;
+deploy.yml: _deploy_venv
+	rm -f deploy.yml
+	cd deploy && for file in *.yml ; do \
+		$(DEPLOY_CONDA_RUN) sed -e 's\|@@DOCKER_IMAGE_TAG@@\|$(DOCKER_IMAGE_TAG)\|g' $${file} >> deploy.yml && echo "---" >> deploy.yml ; \
+	done
 
 define fn_k8s_undeploy
 	$(KUBECTL) delete -f ./deploy $(KUBECTL_FLAGS)
 endef
 
-k8s_deploy: deploy.yml _deploy_venv
+k8s_deploy: deploy.yml
 	$(call fn_k8s_deploy)
 k8s_undeploy: _deploy_venv
 	$(call fn_k8s_undeploy)
