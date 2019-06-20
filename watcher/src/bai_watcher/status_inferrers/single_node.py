@@ -40,7 +40,6 @@ def collect_container_states(container_statuses: List[V1ContainerStatus]) -> Dic
     """
     state_to_containers = collections.defaultdict(set)
 
-    # inspect "terminated"
     for status in container_statuses:
         container_state: V1ContainerState = status.state
         if container_state.terminated:
@@ -49,17 +48,11 @@ def collect_container_states(container_statuses: List[V1ContainerStatus]) -> Dic
                 obj = ContainerInfo(status.name, f"{terminated.reason} - {terminated.message}")
                 state_to_containers[ContainerState.FAILED].add(obj)
 
-    # inspect "waiting"
-    for status in container_statuses:
-        container_state: V1ContainerState = status.state
         if container_state.waiting:
             waiting: V1ContainerStateWaiting = container_state.waiting
             obj = ContainerInfo(status.name, f"{waiting.reason} - {waiting.message}")
             state_to_containers[ContainerState.PENDING].add(obj)
 
-    # inspect "running"
-    for status in container_statuses:
-        container_state: V1ContainerState = status.state
         if container_state.running:
             running: V1ContainerStateRunning = container_state.running
             obj = ContainerInfo(status.name, f"{running.started_at}")
@@ -182,5 +175,11 @@ class SingleNodeStrategyKubernetesStatusInferrer:
                         return BenchmarkJobStatus.FAILED_AT_SIDECAR_CONTAINER
                     else:
                         return BenchmarkJobStatus.FAILED_AT_BENCHMARK_CONTAINER
+
+            elif state == ContainerState.RUNNING:
+                # We can safely ignore the state of this container because another container should be in a "Waiting"
+                # state. If not, then there is a bug in this code
+                continue
+
             else:
                 assert False
