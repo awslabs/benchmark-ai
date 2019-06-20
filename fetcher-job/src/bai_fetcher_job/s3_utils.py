@@ -1,5 +1,6 @@
 import logging
 from dataclasses import dataclass
+from io import SEEK_END
 from urllib.parse import urlparse
 
 import boto3
@@ -32,10 +33,12 @@ class S3Object:
 
 
 def upload_to_s3(fp, dst: S3Object):
+    fp.seek(0, SEEK_END)
+    content_length = fp.tell()
     fp.seek(0)
     logger.info(f"Start upload to {dst}")
     try:
-        boto3.client("s3").upload_fileobj(fp, dst.bucket, dst.key, Callback=ProgressCallback())
+        boto3.client("s3").upload_fileobj(fp, dst.bucket, dst.key, Callback=ProgressCallback(content_length))
     except ClientError as e:
         raise S3Error from e
     logger.info(f"End upload to {dst}")
@@ -79,19 +82,35 @@ def check_s3_for_etag(dst: S3Object, etag: str) -> bool:
 
 
 class ProgressCallback:
-    def __init__(self):
+    def __init__(self, total_size, granularity=10):
+        self.total_size = total_size
         self.transferred_total = 0
+        self.granularity = granularity
+        self.last_reported = 0
+
+        self.bucket = self.total_size / self.granularity
 
     def __call__(self, transferred):
+        if not self.total_size:
+            return
+
         self.transferred_total += transferred
-        logger.info(f"{self.transferred_total} bytes transferred")
+        progress = self.transferred_total / self.total_size * 100
+
+        if self.transferred_total - self.last_reported > self.bucket:
+            logger.info(f"Transferred {self.transferred_total} out of {self.total_size} ({progress:.2f}%)")
+            self.last_reported = self.transferred_total
 
 
 def download_from_s3(fp: TextIO, src: str):
     s3src = S3Object.parse(src)
     logger.info(f"Start download from {src}")
     try:
-        boto3.client("s3").download_fileobj(s3src.bucket, s3src.key, fp, Callback=ProgressCallback())
+        s3 = boto3.resource("s3")
+        bucket = s3.Bucket(s3src.bucket)
+        obj = bucket.Object(s3src.key)
+
+        obj.download_fileobj(fp, Callback=ProgressCallback(obj.content_length))
     except ClientError as e:
         raise S3Error from e
     logger.info(f"End download from {src}")

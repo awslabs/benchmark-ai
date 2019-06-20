@@ -1,12 +1,14 @@
+from io import SEEK_END
+
 import pytest
 from botocore.exceptions import ClientError
 from pytest import fixture
 from typing import TextIO
-from unittest.mock import MagicMock, ANY, PropertyMock
+from unittest.mock import MagicMock, ANY, PropertyMock, call
 
 from bai_fetcher_job import s3_utils
 from bai_fetcher_job.failures import S3Error
-from bai_fetcher_job.s3_utils import S3Object, upload_to_s3, download_from_s3, is_s3_file
+from bai_fetcher_job.s3_utils import S3Object, upload_to_s3, download_from_s3, is_s3_file, ProgressCallback
 
 MOCK_ERROR_RESPONSE = {"Error": {"Message": "Something is wrong"}}
 
@@ -65,6 +67,12 @@ def mock_s3_file_obj(mock_s3_object):
 
 
 @fixture
+def mock_s3_failing_obj(mock_s3_object):
+    type(mock_s3_object).download_fileobj = MagicMock(side_effect=ClientError(MOCK_ERROR_RESPONSE, "Download failed"))
+    return mock_s3_object
+
+
+@fixture
 def mock_s3_folder_obj(mock_s3_object):
     type(mock_s3_object).content_length = PropertyMock(side_effect=ClientError(MOCK_ERROR_RESPONSE, "Not found"))
     return mock_s3_object
@@ -107,10 +115,15 @@ def mock_file(mocker):
     return mocker.create_autospec(TextIO)
 
 
+@fixture
+def mock_logger(mocker):
+    return mocker.patch.object(s3_utils, "logger", autospec=True)
+
+
 def test_upload_to_s3_pass_through(mock_file, mock_s3_client):
     upload_to_s3(mock_file, S3OBJECT)
 
-    mock_file.seek.assert_called_once_with(0)
+    assert mock_file.seek.call_args_list == [call(0, SEEK_END), call(0)]
     mock_s3_client.upload_fileobj.assert_called_once_with(mock_file, S3OBJECT.bucket, S3OBJECT.key, Callback=ANY)
 
 
@@ -119,12 +132,12 @@ def test_upload_to_s3_wrap_exception(mock_file, mock_client_error_s3_client):
         upload_to_s3(mock_file, S3OBJECT)
 
 
-def test_download_from_s3_pass_through(mock_file, mock_s3_client):
+def test_download_from_s3_pass_through(mock_file, mock_s3_file_obj):
     download_from_s3(mock_file, S3URL)
-    mock_s3_client.download_fileobj.assert_called_once_with(S3OBJECT.bucket, S3OBJECT.key, mock_file, Callback=ANY)
+    mock_s3_file_obj.download_fileobj.assert_called_once_with(mock_file, Callback=ANY)
 
 
-def test_download_from_s3_wrap_exception(mock_file, mock_client_error_s3_client):
+def test_download_from_s3_wrap_exception(mock_file, mock_s3_failing_obj):
     with pytest.raises(S3Error):
         download_from_s3(mock_file, S3URL)
 
@@ -145,3 +158,11 @@ def test_s3_file_no_ls(mock_s3_bucket_with_file_no_ls, mock_s3_file_obj):
 
 def test_s3_folder(mock_s3_bucket_with_folder, mock_s3_folder_obj):
     assert not is_s3_file(S3OBJECT)
+
+
+def test_progress(mock_logger):
+    progress = ProgressCallback(total_size=100, granularity=4)
+    progress(10)  # Nothing
+    progress(50)  # Worth output
+    progress(20)  # Nothing
+    assert mock_logger.info.call_count == 1
