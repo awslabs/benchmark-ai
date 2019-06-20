@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from urllib.parse import urlparse
-from bai_kafka_utils.events import DataSet, FetchedType
+
+from bai_kafka_utils.events import DataSet
 from typing import List
 
 from transpiler.descriptor import DescriptorError
@@ -29,7 +30,6 @@ class BaiDataSource:
     bucket: str
     object: str
     path: str
-    is_directory: bool
 
     def __init__(self, fetched_data_source: DataSet, path: str):
         parsed_uri = urlparse(fetched_data_source.dst)
@@ -38,7 +38,6 @@ class BaiDataSource:
         self.bucket = parsed_uri.netloc
         self.object = parsed_uri.path[1:]
         self.path = path
-        self.is_directory = fetched_data_source.type == FetchedType.DIRECTORY
 
         if self.scheme.lower() != "s3":
             raise DescriptorError(

@@ -52,6 +52,8 @@ spec:
           mountPath: /bin/puller_entrypoint.sh
           readOnly: true
           subPath: puller_entrypoint.sh
+        - name: datasets_volume
+          mountPath: /data
         env:
         - name: ROLE
           valueFrom:
@@ -113,6 +115,8 @@ spec:
           defaultMode: 0700
           name: entrypoint-{job_id}
       - name: benchmark-ai
+        emptyDir: {{}}
+      - name: datasets_volume
         emptyDir: {{}}
       nodeSelector:
         beta.kubernetes.io/instance-type: {descriptor.instance_type}

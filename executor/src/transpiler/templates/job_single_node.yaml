@@ -24,6 +24,9 @@ spec:
             topologyKey: kubernetes.io/hostname
       initContainers:
       - name: data-puller
+        volumeMounts:
+        - name: datasets_volume
+          mountPath: /data
       containers:
       - name: benchmark
         image: {descriptor.docker_image}
@@ -76,5 +79,7 @@ spec:
       restartPolicy: Never
       volumes:
       - name: benchmark-ai
+        emptyDir: {{}}
+      - name: datasets_volume
         emptyDir: {{}}
   backoffLimit: 4

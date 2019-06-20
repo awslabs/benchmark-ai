@@ -138,6 +138,34 @@ class KubernetesRootObjectHelper:
             )
         )
 
+    def remove_volume(self, volume_name: str):
+        """
+        Removes a given volume
+        :param volume_name: The name of the container
+        :raises: ValueError if the volume could not be found
+        """
+        volumes = self.get_pod_spec().volumes
+
+        was_removed = False
+        for volume in volumes:
+            if volume.name == volume_name:
+                volumes.remove(volume)
+                was_removed = True
+                break
+
+        if was_removed:
+            containers = self.get_pod_spec().containers
+            init_containers = self.get_pod_spec().initContainers
+            for container_list in [containers, init_containers]:
+                for container in container_list:
+                    for mount in container.volumeMounts:
+                        if mount.name == volume_name:
+                            container.volumeMounts.remove(mount)
+        else:
+            raise ValueError(
+                "Volume {} not found. Available volumes are: {}".format(volume_name, [v.name for v in volumes])
+            )
+
     def find_config_map(self, name) -> ConfigMap:
         for cm in self.config_maps:
             if cm.metadata.name == name:
