@@ -389,11 +389,13 @@ abort_submission() {
     fi
 
     local cmd
+    local returned
     local data=$(_generate_command_event "cancel" ${action_id} $*)
     if [[ -n "${data}" ]]; then
         cmd="curl -s -X DELETE -H Content-Type: application/json -d '"${data}"' http://"${current_service_endpoint}"/api/job/$(get_client_id)/${action_id}"
         ((VERBOSE)) && echo ${cmd}
-        eval ${cmd}
+        returned=$(eval ${cmd})
+        echo "${returned}"
     else
         printf '\033[01;31m[ERROR]\033[0m No data to send.\n\n'
         exit 1
