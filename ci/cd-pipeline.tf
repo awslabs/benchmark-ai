@@ -144,6 +144,24 @@ resource "aws_codepipeline" "codepipeline" {
     }
   }
 
+  stage {
+    name = "blackbox-tests"
+
+    action {
+      name = "RunBlackboxTests"
+      category = "Build"
+      owner = "AWS"
+      provider = "CodeBuild"
+      input_artifacts = ["source_output"]
+      output_artifacts = []
+      version = "1"
+
+      configuration = {
+        ProjectName = aws_codebuild_project.ci-blackbox-tests.name
+      }
+    }
+  }
+
   depends_on = [aws_codebuild_project.ci-unit-tests-master, aws_codebuild_project.ci-deploy-master, aws_codebuild_project.ci-publish-master]
 }
 
@@ -272,5 +290,81 @@ resource "aws_codebuild_project" "ci-deploy-master" {
   source {
     type = "CODEPIPELINE"
     buildspec = "ci/buildspec-deploy.yml"
+  }
+}
+
+
+#############################################################
+# Blackbox tests
+#############################################################
+resource "aws_iam_role_policy" "code-build-blackbox-tests-role-ec2-actions" {
+  name = "blackbox-tests-permissions"
+  role = aws_iam_role.code-build-role.name
+
+  policy = <<-EOF
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+      "Effect": "Allow",
+      "Action": "ec2:*",
+      "Resource": "*"
+      }
+    ]
+  }
+  EOF
+}
+
+data "aws_vpc" "bai-vpc" {
+  tags = {
+    Name = "test-vpc"
+  }
+}
+
+data "aws_security_group" "blackbox-tests-security-group" {
+  vpc_id = data.aws_vpc.bai-vpc.id
+  tags = {
+    Name = "benchmark-cluster-eks_worker_sg"
+  }
+}
+
+data "aws_subnet_ids" "blackbox-tests-security-group" {
+  vpc_id = data.aws_vpc.bai-vpc.id
+  tags = {
+    Visibility = "private"
+  }
+}
+
+resource "aws_codebuild_project" "ci-blackbox-tests" {
+  name          = "blackbox-tests"
+  description   = "Runs blackbox tests"
+  build_timeout = "120"
+  service_role  = aws_iam_role.code-build-role.arn
+  badge_enabled = false
+
+  artifacts {
+    type = "NO_ARTIFACTS"
+  }
+
+  environment {
+    compute_type = "BUILD_GENERAL1_SMALL"
+    image = var.ci_docker_image["default"]
+    type = "LINUX_CONTAINER"
+  }
+
+  source {
+    type            = "GITHUB"
+    location        = "https://github.com/${var.github_organization}/benchmark-ai.git"
+    git_clone_depth = 1
+    auth {
+      type = "OAUTH"
+    }
+    buildspec = "blackbox-tests/buildspec.yml"
+  }
+
+  vpc_config {
+    security_group_ids = [data.aws_security_group.blackbox-tests-security-group.id]
+    subnets = data.aws_subnet_ids.blackbox-tests-security-group.ids
+    vpc_id = data.aws_vpc.bai-vpc.id
   }
 }

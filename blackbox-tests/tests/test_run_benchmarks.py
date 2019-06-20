@@ -66,7 +66,7 @@ def get_sample_benchmark_descriptor_filepath(benchmark) -> Path:
 
 
 @pytest.mark.parametrize(
-    "benchmark,descriptor_filename",
+    "descriptor_filename",
     [
         "hello-world/descriptor.toml",
         # ("single-node", "descriptor_cpu.toml"),
