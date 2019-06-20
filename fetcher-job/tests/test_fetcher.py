@@ -1,12 +1,11 @@
 import pytest
-from bai_zk_utils.states import FetcherStatus, FetcherResult
+from bai_zk_utils.states import FetcherStatus, FetcherResult, FetchedType
 from pytest import fixture
 
 from bai_fetcher_job import fetcher
 from bai_fetcher_job.args import FetcherJobConfig, RetryConfig
 from bai_fetcher_job.failures import HttpClientError, HttpServerError
 from bai_fetcher_job.fetcher import SUCCESS_MESSAGE, retrying_fetch
-
 
 SERVER_ERROR = "I'm sick"
 
@@ -30,7 +29,9 @@ def mock_http_to_s3(mocker):
 
 @fixture
 def mock_s3_to_s3(mocker):
-    return mocker.patch.object(fetcher, "s3_to_s3", autospec=True)
+    mock = mocker.patch.object(fetcher, "s3_to_s3", autospec=True)
+    mock.return_value = FetchedType.FILE
+    return mock
 
 
 @fixture
@@ -75,7 +76,20 @@ def test_fetcher_updates_zk(mock_http_to_s3, mock_update_zk_node):
     retrying_fetch(cfg)
 
     mock_update_zk_node.assert_called_with(
-        ZK_NODE_PATH, ZK_ENSEMBLE, FetcherResult(FetcherStatus.DONE, SUCCESS_MESSAGE)
+        ZK_NODE_PATH, ZK_ENSEMBLE, FetcherResult(FetcherStatus.DONE, FetchedType.FILE, SUCCESS_MESSAGE)
+    )
+
+
+def test_fetcher_updates_zk_with_directory(mock_s3_to_s3, mock_update_zk_node):
+    # It's a directory
+    mock_s3_to_s3.return_value = FetchedType.DIRECTORY
+
+    cfg = FetcherJobConfig(S3_SRC, DST, zk_node_path=ZK_NODE_PATH, zookeeper_ensemble_hosts=ZK_ENSEMBLE)
+
+    retrying_fetch(cfg)
+
+    mock_update_zk_node.assert_called_with(
+        ZK_NODE_PATH, ZK_ENSEMBLE, FetcherResult(FetcherStatus.DONE, FetchedType.DIRECTORY, SUCCESS_MESSAGE)
     )
 
 
@@ -85,7 +99,7 @@ def test_fetcher_updates_zk_fail(mock_http_to_s3_client_error, mock_update_zk_no
     retrying_fetch(cfg)
 
     mock_update_zk_node.assert_called_with(
-        ZK_NODE_PATH, ZK_ENSEMBLE, FetcherResult(FetcherStatus.FAILED, FILE_NOT_FOUND)
+        ZK_NODE_PATH, ZK_ENSEMBLE, FetcherResult(status=FetcherStatus.FAILED, message=FILE_NOT_FOUND)
     )
 
 
@@ -100,7 +114,9 @@ def test_fetcher_updates_zk_once(mock_http_to_s3_server_error, mock_update_zk_no
 
     retrying_fetch(cfg)
 
-    mock_update_zk_node.assert_called_with(ZK_NODE_PATH, ZK_ENSEMBLE, FetcherResult(FetcherStatus.FAILED, SERVER_ERROR))
+    mock_update_zk_node.assert_called_with(
+        ZK_NODE_PATH, ZK_ENSEMBLE, FetcherResult(status=FetcherStatus.FAILED, message=SERVER_ERROR)
+    )
 
 
 def test_fetcher_updates_zk_retried(mock_http_to_s3_server_error, mock_update_zk_node):
@@ -115,7 +131,7 @@ def test_fetcher_updates_zk_retried(mock_http_to_s3_server_error, mock_update_zk
     retrying_fetch(cfg)
 
     mock_update_zk_node.assert_called_with(
-        ZK_NODE_PATH, ZK_ENSEMBLE, FetcherResult(FetcherStatus.DONE, SUCCESS_MESSAGE)
+        ZK_NODE_PATH, ZK_ENSEMBLE, FetcherResult(FetcherStatus.DONE, FetchedType.FILE, SUCCESS_MESSAGE)
     )
 
 

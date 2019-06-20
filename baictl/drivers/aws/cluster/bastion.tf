@@ -81,22 +81,24 @@ resource "aws_security_group" "loopback" {
   }
 }
 
-data "aws_ami" "amazon-linux-2" {
+data "aws_ami" "bastions_ubuntu" {
   most_recent = true
 
   filter {
-    name   = "owner-alias"
-    values = ["amazon"]
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-*"]
   }
 
   filter {
-    name   = "name"
-    values = ["amzn2-ami-hvm*"]
+    name   = "virtualization-type"
+    values = ["hvm"]
   }
+
+  owners = ["099720109477"] # Canonical
 }
 
 resource "aws_instance" "bastion" {
-  ami                         = "${data.aws_ami.amazon-linux-2.id}"
+  ami                         = "${data.aws_ami.bastions_ubuntu.id}"
   availability_zone           = "${data.aws_availability_zones.available.names[0]}"
   instance_type               = "t2.micro"
   subnet_id                   = "${module.vpc.public_subnets[0]}"

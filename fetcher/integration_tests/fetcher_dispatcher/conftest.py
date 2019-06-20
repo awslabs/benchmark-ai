@@ -1,7 +1,7 @@
 from kazoo.client import KazooClient
 from pytest import fixture
 
-from bai_kafka_utils.events import BenchmarkEvent, FetcherBenchmarkEvent
+from bai_kafka_utils.events import BenchmarkEvent
 from bai_kafka_utils.kafka_client import create_kafka_consumer, create_kafka_producer
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
 from bai_kafka_utils.kafka_service_args import get_kafka_service_config
@@ -35,7 +35,7 @@ def k8s_dispatcher(fetcher_service_config: FetcherServiceConfig):
 
 
 @fixture
-def benchmark_event_dummy_payload():
+def benchmark_event_dummy_payload(kafka_service_config: KafkaServiceConfig):
     return BenchmarkEvent(
         action_id="ACTION_ID",
         message_id="DONTCARE",
@@ -46,7 +46,7 @@ def benchmark_event_dummy_payload():
         tstamp=42,
         visited=[],
         payload="DONTCARE",
-        type="DONTCARE",
+        type=kafka_service_config.consumer_topic,
     )
 
 
@@ -57,8 +57,7 @@ def kafka_consumer_of_produced(kafka_service_config: KafkaServiceConfig):
         kafka_service_config.bootstrap_servers,
         kafka_service_config.consumer_group_id,
         # Yes. We consume, what the service has produced
-        kafka_service_config.producer_topic,
-        FetcherBenchmarkEvent,
+        [kafka_service_config.producer_topic],
     )
     yield kafka_consumer
     # Unfortunately no __enter__/__exit__ on kafka objects yet - let's do old-school close

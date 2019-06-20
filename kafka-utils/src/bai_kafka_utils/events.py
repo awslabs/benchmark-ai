@@ -1,11 +1,34 @@
 import dataclasses
+from dataclasses import dataclass
 from enum import Enum
 
 import dacite
-
-from dataclasses import dataclass
 from dataclasses_json import dataclass_json
 from typing import List, Optional, Type, Dict, Any, TypeVar
+
+
+class FetcherStatus(Enum):
+    def __new__(cls, val: str, final: bool):
+        obj = object.__new__(cls)
+        obj._value_ = val
+        obj.final = final
+        return obj
+
+    PENDING = "PENDING", False
+    RUNNING = "RUNNING", False
+    DONE = "DONE", True
+    FAILED = "FAILED", True
+
+    def __str__(self):
+        return self.value
+
+
+class FetchedType(Enum):
+    FILE = "FILE"
+    DIRECTORY = "DIRECTORY"
+
+    def __str__(self):
+        return self.value
 
 
 @dataclass_json
@@ -14,7 +37,8 @@ class DataSet:
     src: str
     md5: Optional[str] = None
     dst: Optional[str] = None
-    status: Optional[str] = None
+    status: Optional[FetcherStatus] = None
+    type: Optional[FetchedType] = None
     message: Optional[str] = None
 
 
@@ -92,6 +116,34 @@ class FetcherBenchmarkEvent(BenchmarkEvent):
 @dataclass
 class ExecutorBenchmarkEvent(BenchmarkEvent):
     payload: ExecutorPayload
+
+
+@dataclass_json
+@dataclass
+class CommandRequestPayload:
+    command: str
+    args: Optional[List[str]]
+
+
+@dataclass_json
+@dataclass
+class CommandRequestEvent(BenchmarkEvent):
+    payload: CommandRequestPayload
+
+
+@dataclass_json
+@dataclass
+class CommandResponsePayload:
+    return_code: int
+    return_value: Any
+    message: str
+    cmd_submit: CommandRequestEvent
+
+
+@dataclass_json
+@dataclass
+class CommandResponseEvent(BenchmarkEvent):
+    payload: CommandResponsePayload
 
 
 class Status(Enum):
@@ -184,3 +236,15 @@ def create_from_object(desired_class: Type[T], source_object, **overriden_fields
         return dacite.from_dict(data_class=desired_class, data=data)
     except dacite.WrongTypeError as e:
         raise ValueError from e
+
+
+def get_topic_event_type(topic: str):
+    topic_to_event_type = {
+        "BAI_APP_BFF": FetcherBenchmarkEvent,
+        "BAI_APP_FETCHER": FetcherBenchmarkEvent,
+        "BAI_APP_EXECUTOR": ExecutorBenchmarkEvent,
+        "BAI_APP_STATUS": StatusMessageBenchmarkEvent,
+        "CMD_SUBMIT": CommandRequestEvent,
+        "CMD_RETURN": CommandResponseEvent,
+    }
+    return topic_to_event_type[topic]

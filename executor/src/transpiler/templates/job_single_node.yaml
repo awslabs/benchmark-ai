@@ -7,6 +7,9 @@ spec:
     metadata:
       labels:
         app: benchmark-ai
+        action-id: {event.action_id}
+        client-id: {event.client_id}
+        created-by: {service_name}
     spec:
       serviceAccountName: metrics-pusher
       affinity:
@@ -39,7 +42,8 @@ spec:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
       - name: sidecar
-        image: "edisongustavo/benchmarkai-metrics-pusher:0.1"
+        # TODO: Automate tag selection
+        image: benchmarkai/metrics-pusher:ffed580
         env:
         - name: BENCHMARK_AI_FIFO_FILEPATH
           value: /tmp/benchmark-ai/fifo

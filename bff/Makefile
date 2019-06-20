@@ -24,14 +24,17 @@ GEN_DOCS_PATH := docs-generated
 #---
 # Project metadata info
 #---
+VCS_PROG := git
 #(note: may set VERSION variable in above stanza to override the default below, which gets it from the nearest git tag of the form v.#.#.#<blah>)
-VERSION ?= $(shell git tag | sed -n -e 's/^$(PROJECT).*-v\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p' | sort -s -u -t. -k1,1n -k2,2n -k3,3n | tail -n 1)
-TAG := $(PROJECT)-v$(VERSION)-$(shell git rev-list $(PROJECT)-v$(VERSION)..HEAD --count)-g$(shell git rev-parse --short HEAD)
-BRANCH := $(shell git branch | grep '*' | sed -n 's/\*[ ]*//p' | xargs)
-COMMIT := $(shell git log -p -n1 | sed -n -e 's/^commit \(.*\)/\1/p'   | xargs)
-COMMIT_SHORT_HASH := $(shell git rev-parse --short HEAD)
-COMMIT_DATE :=   $(shell git log -p -n1 | sed -n -e 's/^Date: \(.*\)/\1/p'   | xargs)
-COMMIT_AUTHOR := $(shell git log -p -n1 | sed -n -e 's/^Author: \(.*\)/\1/p' | xargs)
+VERSION ?= $(shell $(VCS_PROG) tag | sed -n -e 's/^$(PROJECT).*-v\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p' | sort -s -u -t. -k1,1n -k2,2n -k3,3n | tail -n 1)
+COMMIT_SHORT_HASH := $(shell $(VCS_PROG) rev-parse --short HEAD)
+#TAG := $(PROJECT)-v$(VERSION)-$(shell $(VCS_PROG) rev-list $(PROJECT)-v$(VERSION)..HEAD --count)-g$(COMMIT_SHORT_HASH)
+TAG := $(VERSION)-$(COMMIT_SHORT_HASH)
+CHANGE_CAUSE := $(shell $(VCS_PROG) log -n1 --pretty=short | xargs | sed -n -e 's/.*>.[ ]*\(.*\)/\1/p')
+BRANCH := $(shell $(VCS_PROG) branch | grep '*' | sed -n 's/\*[ ]*//p' | xargs)
+COMMIT := $(shell $(VCS_PROG) log -n1 | sed -n -e 's/^commit \(.*\)/\1/p'   | xargs)
+COMMIT_DATE :=   $(shell $(VCS_PROG) log -n1 | sed -n -e 's/^Date: \(.*\)/\1/p'   | xargs)
+COMMIT_AUTHOR := $(shell $(VCS_PROG) log -n1 | sed -n -e 's/^Author: \(.*\)/\1/p' | xargs)
 BUILD_DATE := $(shell date)
 
 #---
@@ -70,8 +73,9 @@ DOCKER_TEMPLATE := etc/Dockerfile.tmpl
 DOCKER_DEV_TEMPLATE := etc/Dockerfile_dev.tmpl
 
 #Run Environment (ref: deploy template and runit script)
+#                (log levels -> #{trace debug info warn error fatal report})
 ENVIRONMENT := test
-LOGGING_LEVEL := info #{:trace :debug :info :warn :error :fatal :report}
+LOGGING_LEVEL := trace
 SVC_PORT := 8080
 THREAD_POOL_SIZE := 6
 MAX_QUEUE_SIZE := 21
@@ -79,13 +83,13 @@ MAX_QUEUE_SIZE := 21
 KAFKA_CONSUMER_GROUP_ID := $(PROJECT)
 KAFKA_POLL_INTERVAL_MS := 500
 KAFKA_SOURCE_TOPICS := BAI_APP_STATUS,CMD_RETURN
-KAFKA_SINK_TOPICS := BAI_APP_BFF,CMD_SUBMIT
+KAFKA_SINK_TOPICS := BAI_APP_STATUS,BAI_APP_BFF,CMD_SUBMIT
 
 #This project may be built in the context of a docker environment using the image: gavin/bai-bff-dev
 #docker run -it --rm -v "$PWD":/srv/app -w /srv/app gavin/bai-bff-dev <command>
 
 #HACK!!!!
-K8S_KUBECTL_ARGS := ${KUBECONFIG} #--kubeconfig=/Users/bellgav/.devo/kubeconfig
+K8S_KUBECTL_ARGS := --kubeconfig=${KUBECONFIG} #--kubeconfig=/Users/bellgav/.devo/kubeconfig
 #----------------------------------------------------------------
 # The pipeline: clean-all -> build -> test -> package -> publish -> deploy
 #----------------------------------------------------------------
@@ -93,6 +97,7 @@ K8S_KUBECTL_ARGS := ${KUBECONFIG} #--kubeconfig=/Users/bellgav/.devo/kubeconfig
 compile: $(MAIN_CLASS_FILE)
 
 $(MAIN_CLASS_FILE): project.clj $(CLJ_FILES)
+	$(shell chmod 755 $(LEIN))
 	$(LEIN) compile
 	@touch $@
 
@@ -124,6 +129,7 @@ show-vars:
 	@echo "REPO_SITE  = $(REPO_SITE)"
 	@echo "BRANCH = $(BRANCH)"
 	@echo "TAG    = $(TAG)"
+	@echo "CHANGE_CAUSE = $(CHANGE_CAUSE)"
 	@echo "COMMIT = $(COMMIT)"
 	@echo "COMMIT_AUTHOR = $(COMMIT_AUTHOR)"
 	@echo "COMMIT_DATE   = $(COMMIT_DATE)"
@@ -185,6 +191,7 @@ $(JAR_FILE): $(MAIN_CLASS_FILE)
 	@echo "------------------------"
 	LEIN_SNAPSHOTS_IN_RELEASE=1 ${LEIN} with-profile $(PROFILE) uberjar
 	@unzip -q -c $(JAR_FILE) META-INF/MANIFEST.MF
+	@touch $@
 
 
 dist:	$(JAR_FILE)
@@ -255,6 +262,7 @@ build-deploy-container: dist
 	@sed -e 's|@@PROJECT@@|$(PROJECT)|g' \
 	     -e 's|@@VERSION@@|$(VERSION)|g' \
 	     -e 's|@@TAG@@|$(TAG)|g' \
+             -e 's|@@CHANGE_CAUSE@@|$(CHANGE_CAUSE)|g' \
 	     -e 's|@@REPO_SITE@@|$(REPO_SITE)|g' \
 	     -e 's|@@ORGANIZATION@@|$(ORGANIZATION)|g' \
 	     -e 's|@@AUTHOR@@|$(AUTHOR)|g' \
@@ -287,7 +295,9 @@ cd-pipeline-setup:
 #----------------------------
 # Deployment
 #----------------------------
-deploy.yml: $(DEPLOY_TEMPLATE)
+FORCE: ;
+
+deploy.yml: FORCE
 	@echo "Generating kubernetes deploy.yaml from template..."
 	@sed -e 's|@@PROJECT@@|$(PROJECT)|g' \
 	     -e 's|@@VERSION@@|$(VERSION)|g' \
@@ -296,6 +306,7 @@ deploy.yml: $(DEPLOY_TEMPLATE)
 	     -e 's|@@SVC_PORT@@|$(SVC_PORT)|g' \
 	     -e 's|@@REPO_SITE@@|$(REPO_SITE)|g' \
 	     -e 's|@@TAG@@|$(TAG)|g' \
+	     -e 's|@@CHANGE_CAUSE@@|$(CHANGE_CAUSE)|g' \
 	     -e 's|@@DOCKER_REGISTRY@@|$(DOCKER_REGISTRY)|g' \
 	     -e 's|@@DOCKER_TAG@@|$(DOCKER_TAG)|g' \
 	     -e 's|@@COMMIT_SHORT_HASH@@|$(COMMIT_SHORT_HASH)|g' \
@@ -325,10 +336,15 @@ rollback:
 	@echo "------------------------"
 	@echo "K8S Rollback to the last deployment..."
 	@echo "------------------------"
-	#kubectl $(K8S_KUBECTL_ARGS) <TODO>
+	kubectl $(K8S_KUBECTL_ARGS) rollout undo deployments $(PROJECT)
 
 
+rollout-history:
+	@echo "------------------------"
+	@echo "K8S Check Rollout History..."
+	@echo "------------------------"
+	kubectl $(K8S_KUBECTL_ARGS) rollout history deployment.v1.apps/$(PROJECT)
 
 # (may want to put in the k8s cycle here as well scale up and down)
 #----------------------------------------------------------------
-.PHONY: test all docs release clean clean-all compile dist cd-pipeline cd-prepare cd-publish cd-promote container-test
+.PHONY: test all docs release clean clean-all compile dist publish

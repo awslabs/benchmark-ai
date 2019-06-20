@@ -5,15 +5,18 @@ metadata:
   namespace: default
   labels:
     benchmark: {job_id}
+    action-id: {event.action_id}
+    client-id: {event.client_id}
+    created-by: {service_name}
 data:
-  entrypoint: echo "Entrypoint"
-  init_entrypoint.sh: |-
+  entrypoint.sh: echo "Entrypoint"
+  puller_entrypoint.sh: |-
     #!/bin/bash
     if [ "$ROLE" == "worker" ]; then
       /opt/behance/download-s3-files "$@"
     else
       echo "Not a worker - no data necessary"
-    fi  
+    fi
 ---
 
 apiVersion: kubeflow.org/v1alpha1
@@ -22,6 +25,9 @@ metadata:
   name: {job_id}
   labels:
     app: benchmark-ai
+    action-id: {event.action_id}
+    client-id: {event.client_id}
+    created-by: {service_name}
 spec:
   replicas: {descriptor.num_instances}
   template:
@@ -40,12 +46,12 @@ spec:
       initContainers:
       - name: data-puller
         command: 
-        - /bin/init_entrypoint.sh
+        - /bin/puller_entrypoint.sh
         volumeMounts:
-        - name: entrypoint
-          mountPath: /bin/init_entrypoint.sh
+        - name: entrypoints_volume
+          mountPath: /bin/puller_entrypoint.sh
           readOnly: true
-          subPath: init_entrypoint.sh
+          subPath: puller_entrypoint.sh
         env:
         - name: ROLE
           valueFrom:
@@ -57,7 +63,7 @@ spec:
         command: 
         - /bin/entrypoint.sh
         volumeMounts:
-        - name: entrypoint
+        - name: entrypoints_volume
           mountPath: /bin/entrypoint.sh
           readOnly: true
           subPath: entrypoint.sh
@@ -74,7 +80,8 @@ spec:
         - name: BENCHMARK_AI_FIFO_MAX_WAIT_TIME
           value: "60"
       - name: sidecar
-        image: "edisongustavo/benchmarkai-metrics-pusher:0.1"
+        # TODO: Automate tag selection
+        image: benchmarkai/metrics-pusher:ffed580
         env:
         - name: BENCHMARK_AI_FIFO_FILEPATH
           value: /tmp/benchmark-ai/fifo
@@ -101,7 +108,7 @@ spec:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
       volumes:
-      - name: entrypoint
+      - name: entrypoints_volume
         configMap:
           defaultMode: 0700
           name: entrypoint-{job_id}

@@ -10,6 +10,7 @@
   there is state I manage it in this way. Oh well.)"
   (:require [bai-bff.core :refer :all]
             [bai-bff.services :refer [RunService]]
+            [bai-bff.utils.parsers :refer [parse-long]]
             [taoensso.timbre :as log]
             [clojure.pprint :refer :all]
             [clojure.core.async :as a :refer [>! <! >!! <!! go chan buffer close! thread
@@ -54,6 +55,11 @@
   maps of vectors that hold the trail of events.  In this case status
   messages.
 
+  Semantically
+  - use client id and transform that value into a keyword to index on.
+  - use target_action_id iff set, otherwise use action_id; and transform that into a keyword to index on.
+    (the second case it to support commands that have their own, different action_id but will carry the action id that their action is targeted for as target_action_id.  We want the commands to be indexed into the same bucket [technically map] as the action they were intended to affect.) Get it? Gyot it?
+
   Caveat - there is no dedupping or sorting (by time) in the event
   vector.  This is a TODO item, which means that since atomic calls
   can be re-run at anytime, we should make sure this function is pure
@@ -62,11 +68,11 @@
   (log/trace "update-status-store called...")
   (if (nil? event)
     store
-    (let [{:keys [client_id action_id]} event
-          [client-key action-key] (mapv keyword [client_id action_id])]
+    (let [{:keys [client_id action_id target_action_id] :or {target_action_id nil}} event
+          [client-key action-key] (mapv keyword [client_id (if target_action_id target_action_id action_id)])]
       (if (and client-key action-key)
         (try
-          (assoc-in store [client-key action-key] (into [] (flatten (remove nil? (conj [] (some-> store client-key action-key) event)))))
+          (assoc-in store [client-key action-key] (vec (remove nil? (flatten (vector (some-> store client-key action-key) event)))))
           (catch NullPointerException e
             (.getMessage e)
             store))
@@ -78,8 +84,8 @@
   here.  Each record is put in the datastore - status-db.  See
   comments for update-status-store regarding pureness and operations"
   [events]
-  (if-not (seq events)
-    (log/trace (str "Processing "(count events)" events"))
+  (when (seq events)
+    (log/trace (str "Processing "(count events)" status events"))
     (doseq [event events] ; <- I should do this loop with recursion and then only have a single call to swap! at the end... meh.
       (if-not (nil? event) (swap! status-db update-status-store event))))
   true)
@@ -90,8 +96,8 @@
   here.  Each record is put in the datastore - status-db.  See
   comments for update-status-store regarding pureness and operations"
   [events]
-  (if-not (seq events)
-    (log/trace (str "Processing "(count events)" events"))
+  (when (seq events)
+    (log/trace (str "Processing "(count events)" command events"))
     (doseq [event events] ; <- I should do this loop with recursion and then only have a single call to swap! at the end... meh.
       (if-not (nil? event) (swap! status-db update-status-store event))))
   true)
@@ -114,8 +120,10 @@
 (defn get-all-client-jobs-for-action
   "Gets all the events associated with a particular client and this
   particular action (job)"
-  [client-id action-id]
+  [client-id action-id since]
   (log/trace "get-all-client-jobs-for-action called...")
   (let [client-key (keyword client-id)
-        action-key (keyword action-id)]
-    (get-in @status-db [client-key action-key])))
+        action-key (keyword action-id)
+        since-tstamp (parse-long since)]
+    (log/trace (str "since... "since-tstamp))
+    (filterv #(< since-tstamp (:tstamp (peek (:visited %)))) (get-in @status-db [client-key action-key] {}))))

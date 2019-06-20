@@ -11,5 +11,8 @@ dependencies:
   - retrying 1.3.*
   - pip
   - pip:
+    - dacite
     - ConfigArgParse
     - dataclasses-json
+    - flake8-black
+

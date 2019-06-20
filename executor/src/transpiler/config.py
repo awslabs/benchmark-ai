@@ -1,12 +1,9 @@
 from dataclasses import dataclass
 from urllib.parse import urlparse
-from bai_kafka_utils.events import DataSet
+from bai_kafka_utils.events import DataSet, FetchedType
 from typing import List
 
-
-@dataclass
-class DescriptorConfig:
-    valid_strategies: List[str]
+from transpiler.descriptor import DescriptorError
 
 
 @dataclass
@@ -26,12 +23,13 @@ class EnvironmentInfo:
     availability_zones: List[str]
 
 
-@dataclass
+@dataclass(init=False)
 class BaiDataSource:
     scheme: str
     bucket: str
     object: str
     path: str
+    is_directory: bool
 
     def __init__(self, fetched_data_source: DataSet, path: str):
         parsed_uri = urlparse(fetched_data_source.dst)
@@ -40,8 +38,9 @@ class BaiDataSource:
         self.bucket = parsed_uri.netloc
         self.object = parsed_uri.path[1:]
         self.path = path
+        self.is_directory = fetched_data_source.type == FetchedType.DIRECTORY
 
         if self.scheme.lower() != "s3":
-            raise ValueError(
+            raise DescriptorError(
                 f"Unexpected scheme in data source src: {self.scheme}." f" Fetched dataset is {fetched_data_source}"
             )

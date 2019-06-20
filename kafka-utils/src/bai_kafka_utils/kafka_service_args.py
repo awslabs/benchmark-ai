@@ -3,19 +3,26 @@ import os
 
 from configargparse import ArgParser
 
-from bai_kafka_utils.kafka_service import KafkaServiceConfig
+from bai_kafka_utils.kafka_service import KafkaServiceConfig, DEFAULT_REPLICATION_FACTOR, DEFAULT_NUM_PARTITIONS
 
 
 def get_kafka_service_config(program_name: str, cmd_args: str) -> KafkaServiceConfig:
     parser = create_kafka_service_parser(program_name)
     args, _ = parser.parse_known_args(cmd_args, env_vars=os.environ)
+
+    num_of_brokers = len(args.bootstrap_servers)
+
     return KafkaServiceConfig(
         consumer_topic=args.consumer_topic,
         producer_topic=args.producer_topic,
         consumer_group_id=args.consumer_group_id,
         bootstrap_servers=args.bootstrap_servers,
+        cmd_submit_topic=args.cmd_submit_topic,
+        cmd_return_topic=args.cmd_return_topic,
         logging_level=args.logging_level,
         status_topic=args.status_topic,
+        replication_factor=min(args.replication_factor, num_of_brokers),
+        num_partitions=args.num_partitions,
     )
 
 
@@ -42,8 +49,18 @@ def create_kafka_service_parser(program_name: str) -> ArgParser:
 
     parser.add_argument("--consumer-group-id", env_var="CONSUMER_GROUP_ID")
 
+    parser.add_argument("--cmd-submit-topic", env_var="CMD_SUBMIT_TOPIC", default="CMD_SUBMIT")
+
+    parser.add_argument("--cmd-return-topic", env_var="CMD_RETURN_TOPIC", default="CMD_RETURN")
+
     parser.add_argument("--status-topic", env_var="STATUS_TOPIC", default="BAI_APP_STATUS")
 
     parser.add_argument("--logging-level", env_var="LOGGING_LEVEL", default="INFO")
+
+    parser.add_argument("--num-partitions", env_var="NUM_PARTITIONS", type=int, default=DEFAULT_NUM_PARTITIONS)
+
+    parser.add_argument(
+        "--replication-factor", env_var="REPLICATION_FACTOR", type=int, default=DEFAULT_REPLICATION_FACTOR
+    )
 
     return parser

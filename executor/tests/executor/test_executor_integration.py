@@ -1,21 +1,20 @@
 import pytest
 
 from typing import Callable
-from bai_kafka_utils.events import ExecutorBenchmarkEvent, BenchmarkEvent, BenchmarkJob, ExecutorPayload
+from bai_kafka_utils.events import (
+    BenchmarkEvent,
+    BenchmarkJob,
+    ExecutorPayload,
+    create_from_object,
+    ExecutorBenchmarkEvent,
+)
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
 from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
 
 
 JOB_ID = "728ff542-b332-4520-bb2e-51d5e32cfc0a"
 POLL_TIMEOUT_MS = 500
-
-kafka_cfg = KafkaServiceConfig(
-    consumer_group_id="CONSUMER_GROUP_ID",
-    producer_topic="BAI_APP_FETCHER",
-    consumer_topic="BAI_APP_EXECUTOR",
-    bootstrap_servers=["localhost:9092"],
-    logging_level="INFO",
-)
+SERVICE_NAME = "TEST_EXECUTOR"
 
 
 def get_message_is_the_response(src_event: BenchmarkEvent) -> Callable[[BenchmarkEvent], bool]:
@@ -41,13 +40,13 @@ def get_event_equals(src_event: BenchmarkEvent) -> Callable[[BenchmarkEvent], bo
 @pytest.mark.skip(
     reason="This test requires the executor service to be running on your machine, along with Kafka, ZK, etc"
 )
-def test_producer(benchmark_event):
-    consumer, producer = create_kafka_consumer_producer(kafka_cfg, ExecutorBenchmarkEvent)
+def test_producer(benchmark_event: BenchmarkEvent, kafka_service_config: KafkaServiceConfig):
+    consumer, producer = create_kafka_consumer_producer(kafka_service_config, SERVICE_NAME)
 
-    expected_job = BenchmarkJob(id=JOB_ID, status="SUBMITTED", k8s_yaml="")
-    expected_payload = ExecutorPayload.from_fetcher_payload(benchmark_event.payload, job=expected_job)
-    expected_event = BenchmarkEvent.from_event_new_payload(benchmark_event, expected_payload)
-    producer.send(kafka_cfg.producer_topic, benchmark_event)
+    expected_job = BenchmarkJob(id=JOB_ID, k8s_yaml="")
+    expected_payload = ExecutorPayload.create_from_fetcher_payload(benchmark_event.payload, job=expected_job)
+    expected_event = create_from_object(ExecutorBenchmarkEvent, benchmark_event, payload=expected_payload)
+    producer.send(kafka_service_config.producer_topic, benchmark_event, key=benchmark_event.client_id)
 
     filter_event = get_message_is_the_response(benchmark_event)
     is_expected_event = get_event_equals(expected_event)

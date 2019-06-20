@@ -1,7 +1,7 @@
 import logging
 from urllib.parse import urlparse
 
-from bai_zk_utils.states import FetcherStatus, FetcherResult
+from bai_zk_utils.states import FetcherStatus, FetcherResult, FetchedType
 from bai_zk_utils.zk_client import update_zk_node
 from retrying import retry
 
@@ -23,29 +23,31 @@ def retrying_fetch(cfg: FetcherJobConfig):
         wait_exponential_max=cfg.retry.exp_max,
         stop_max_attempt_number=cfg.retry.max_attempts,
     )
-    def _retry_fetch(cfg):
-        _fetch(cfg)
+    def _retry_fetch(cfg) -> FetchedType:
+        return _fetch(cfg)
 
+    fetched_type = None
     try:
-        _retry_fetch(cfg)
+        fetched_type = _retry_fetch(cfg)
     except (RetryableError, UnRetryableError) as ex:
         logger.exception("Download error. Unretryable or out of attempts")
-        _update_zk_node(cfg, FetcherStatus.FAILED, str(ex))
+        _update_zk_node(cfg, FetcherResult(status=FetcherStatus.FAILED, message=str(ex)))
         return
 
-    _update_zk_node(cfg, FetcherStatus.DONE, SUCCESS_MESSAGE)
+    _update_zk_node(cfg, FetcherResult(status=FetcherStatus.DONE, message=SUCCESS_MESSAGE, type=fetched_type))
 
 
-def _update_zk_node(cfg: FetcherJobConfig, status: FetcherStatus, msg: str):
+def _update_zk_node(cfg: FetcherJobConfig, result: FetcherResult):
     if cfg.zk_node_path:
-        update_zk_node(cfg.zk_node_path, cfg.zookeeper_ensemble_hosts, FetcherResult(status, msg))
+        update_zk_node(cfg.zk_node_path, cfg.zookeeper_ensemble_hosts, result)
 
 
-def _fetch(cfg: FetcherJobConfig):
+def _fetch(cfg: FetcherJobConfig) -> FetchedType:
     logger.info(f"Fetch job = {cfg}\n")
 
     src_scheme = urlparse(cfg.src)
     if src_scheme.scheme == "http" or src_scheme.scheme == "https":
         http_to_s3(cfg.src, cfg.dst, cfg.md5)
+        return FetchedType.FILE
     elif src_scheme.scheme == "s3":
-        s3_to_s3(cfg.src, cfg.dst, cfg.md5)
+        return s3_to_s3(cfg.src, cfg.dst, cfg.md5)

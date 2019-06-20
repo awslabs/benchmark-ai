@@ -1,10 +1,11 @@
 import pytest
 
-from bai_zk_utils.states import FetcherStatus, FetcherResult
+from bai_kafka_utils.events import FetcherStatus, FetchedType
+from bai_zk_utils.states import FetcherResult
 
-FETCHER_DONE_RESULT = FetcherResult(FetcherStatus.DONE, "Success")
+FETCHER_DONE_RESULT = FetcherResult(FetcherStatus.DONE, FetchedType.FILE, "Success")
 
-STATE_DONE_BIN = b'{"status": "DONE", "message": "Success"}'
+STATE_DONE_BIN = b'{"status": "DONE", "type": "FILE", "message": "Success"}'
 
 STATE_RUNNING_BIN = b'{"status": "RUNNING"}'
 
@@ -32,11 +33,3 @@ def test_deserialize_state_not_final():
 def test_deserialize_state_strange():
     with pytest.raises(Exception):
         FetcherResult.from_binary(STATE_STRANGE_BIN)
-
-
-def test_finals():
-    assert not FetcherStatus.PENDING.final
-    assert not FetcherStatus.RUNNING.final
-
-    assert FetcherStatus.DONE.final
-    assert FetcherStatus.FAILED.final

@@ -31,6 +31,8 @@ PRODUCER_TOPIC = "OUT_TOPIC"
 
 CONSUMER_TOPIC = "IN_TOPIC"
 
+CMD_RETURN_TOPIC = "CMD_RETURN"
+
 POD_NAME = "POD_NAME"
 
 S3_BUCKET = "some_bucket"
@@ -54,8 +56,7 @@ def kafka_service(mocker) -> KafkaService:
     kafka_service = KafkaService(
         name="kafka-service",
         version="1.0",
-        producer_topic=PRODUCER_TOPIC,
-        callbacks=[],
+        callbacks={},
         kafka_consumer=mocker.create_autospec(KafkaConsumer),
         kafka_producer=mocker.create_autospec(KafkaProducer),
         pod_name=POD_NAME,
@@ -88,6 +89,11 @@ def benchmark_event_without_datasets(benchmark_doc: BenchmarkDoc) -> BenchmarkEv
     return get_benchmark_event(payload)
 
 
+@fixture
+def fetcher_callback(data_set_manager) -> FetcherEventHandler:
+    return FetcherEventHandler(PRODUCER_TOPIC, data_set_manager, S3_BUCKET)
+
+
 def get_benchmark_event(payload: FetcherPayload):
     return FetcherBenchmarkEvent(
         action_id="ACTION_ID",
@@ -113,12 +119,12 @@ def collect_send_event_calls(kafka_service: KafkaService, cls: Type[BenchmarkEve
 
 
 def test_fetcher_event_handler_fetch(
+    fetcher_callback: FetcherEventHandler,
     data_set_manager: DataSetManager,
     benchmark_event_with_datasets: FetcherBenchmarkEvent,
     kafka_service: KafkaService,
     datasets,
 ):
-    fetcher_callback = FetcherEventHandler(data_set_manager, S3_BUCKET)
     event_to_send_sync = fetcher_callback.handle_event(benchmark_event_with_datasets, kafka_service)
 
     # Nothing to send immediately
@@ -137,7 +143,9 @@ def test_fetcher_event_handler_fetch(
 
     simulate_fetched_datasets(data_set_manager)
 
-    assert collect_send_event_calls(kafka_service, FetcherBenchmarkEvent) == [call(benchmark_event_with_datasets)]
+    assert collect_send_event_calls(kafka_service, FetcherBenchmarkEvent) == [
+        call(benchmark_event_with_datasets, PRODUCER_TOPIC)
+    ]
 
     send_status_message_calls = kafka_service.send_status_message_event.call_args_list
     assert send_status_message_calls[3] == call(ANY, Status.PENDING, f"Dataset {datasets[0]} processed")
@@ -151,14 +159,14 @@ def test_fetcher_event_handler_fetch(
 
 
 def test_fetcher_event_handler_nothing_to_do(
-    data_set_manager: DataSetManager, benchmark_event_without_datasets: BenchmarkEvent, kafka_service: KafkaService
+    fetcher_callback: FetcherEventHandler, benchmark_event_without_datasets: BenchmarkEvent, kafka_service: KafkaService
 ):
-    fetcher_callback = FetcherEventHandler(data_set_manager, S3_BUCKET)
-    event_to_send_sync = fetcher_callback.handle_event(benchmark_event_without_datasets, kafka_service)
-    assert event_to_send_sync == benchmark_event_without_datasets
-
+    fetcher_callback.handle_event(benchmark_event_without_datasets, kafka_service)
     # 1 call to notify, that nothing to do
     assert kafka_service.send_status_message_event.call_args_list == [call(ANY, Status.SUCCEEDED, "Nothing to fetch")]
+    # 2nd call to emit an event with the same payload to the producer topic
+    event_in_call = kafka_service.send_event.call_args_list[1][0][0]
+    assert event_in_call.payload.datasets == []
 
 
 def validate_populated_dst(benchmark_event):
@@ -169,6 +177,7 @@ def validate_populated_dst(benchmark_event):
 def simulate_fetched_datasets(data_set_manager):
     for kall in data_set_manager.fetch.call_args_list:
         args, _ = kall
+        args, _ = kall
         data_set = args[0]
         _ = args[1]  # Event
         on_done = args[2]
@@ -176,7 +185,7 @@ def simulate_fetched_datasets(data_set_manager):
 
 
 def test_fetcher_cleanup(data_set_manager: DataSetManager):
-    fetcher_callback = FetcherEventHandler(data_set_manager, S3_BUCKET)
+    fetcher_callback = FetcherEventHandler(PRODUCER_TOPIC, data_set_manager, S3_BUCKET)
     fetcher_callback.cleanup()
     data_set_manager.stop.assert_called_once()
 
@@ -184,10 +193,14 @@ def test_fetcher_cleanup(data_set_manager: DataSetManager):
 @patch.object(fetcher_dispatcher_service, "create_data_set_manager", autospec=True)
 @patch.object(kafka, "KafkaProducer", autospec=True)
 @patch.object(kafka, "KafkaConsumer", autospec=True)
-def test_create_fetcher_dispatcher(mockKafkaConsumer, mockKafkaProducer, mock_create_data_set_manager):
-
+def test_create_fetcher_dispatcher(mockKafkaConsumer, mockKafkaProducer, mock_create_data_set_manager, mocker):
     mock_data_set_manager = create_autospec(DataSetManager)
     mock_create_data_set_manager.return_value = mock_data_set_manager
+    mock_create_consumer_producer = mocker.patch(
+        "fetcher_dispatcher.fetcher_dispatcher_service.create_kafka_consumer_producer",
+        return_value=(mockKafkaConsumer, mockKafkaProducer),
+        autospec=True,
+    )
 
     common_cfg = KafkaServiceConfig(
         consumer_topic=CONSUMER_TOPIC,
@@ -202,9 +215,7 @@ def test_create_fetcher_dispatcher(mockKafkaConsumer, mockKafkaProducer, mock_cr
     )
     fetcher_service = create_fetcher_dispatcher(common_cfg, fetcher_cfg)
 
-    mockKafkaConsumer.assert_called_once()
-    mockKafkaProducer.assert_called_once()
-
+    mock_create_consumer_producer.assert_called_once()
     mock_data_set_manager.start.assert_called_once()
 
     assert fetcher_service

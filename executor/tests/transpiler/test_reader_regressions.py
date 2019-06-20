@@ -6,13 +6,13 @@ import toml
 from pytest_regressions.file_regression import FileRegressionFixture
 from transpiler.bai_knowledge import create_job_yaml_spec
 from executor.args import create_executor_config
-from bai_kafka_utils.events import DataSet
+from bai_kafka_utils.events import DataSet, FetchedType
 
 from typing import List
 
 
 PULLER_S3_URI = "s3://puller-data/object-name/dir"
-JOB_ID = "JOB_ID"
+JOB_ID = "benchmark-JOB-ID"
 
 
 @pytest.mark.parametrize("filename", ["hello-world.toml", "training.toml", "horovod.toml", "cronjob.toml"])
@@ -40,6 +40,9 @@ def test_regressions(filename, shared_datadir, config_args, file_regression: Fil
 def generate_fetched_data_sources(descriptor_data) -> List[DataSet]:
     data_sources = descriptor_data.get("data", {}).get("sources", [])
     if data_sources:
-        return [DataSet(src=source["src"], md5="md5", dst=PULLER_S3_URI) for source in data_sources]
+        return [
+            DataSet(src=source["src"], md5="md5", dst=PULLER_S3_URI, type=FetchedType.DIRECTORY)
+            for source in data_sources
+        ]
     else:
         return []

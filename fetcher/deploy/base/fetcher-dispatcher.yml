@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fetcher-dispatcher
+  labels:
+    app: benchmark-ai
+spec:
+  selector:
+    matchLabels:
+      app: benchmark-ai
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: benchmark-ai
+        service: fetcher-dispatcher
+    spec:
+      serviceAccountName: fetcher-dispatcher
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: service
+                    operator: In
+                    values:
+                      - fetcher-dispatcher
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: fetcher-dispatcher
+          imagePullPolicy: Always
+          image: "benchmarkai/fetcher"
+          env:
+            - name: FETCHER_JOB_IMAGE
+              valueFrom:
+                configMapKeyRef:
+                  name: fetcher-dispatcher
+                  key: job_image
+            - name: FETCHER_JOB_PULL_POLICY
+              valueFrom:
+                configMapKeyRef:
+                  name: fetcher-dispatcher
+                  key: pull_policy
+            - name: S3_DATASET_BUCKET
+              valueFrom:
+                configMapKeyRef:
+                  name: outputs-infrastructure
+                  key: data_pull_s3
+            - name: ZOOKEEPER_ENSEMBLE_HOSTS
+              valueFrom:
+                configMapKeyRef:
+                  name: zookeeper
+                  key: connect
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: outputs-infrastructure
+                  key: msk_bootstrap_brokers
+            - name: CONSUMER_GROUP_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: fetcher-dispatcher
+                  key: consumer_group_id
+            - name: CONSUMER_TOPIC
+              valueFrom:
+                configMapKeyRef:
+                  name: fetcher-dispatcher
+                  key: consumer_topic
+            - name: PRODUCER_TOPIC
+              valueFrom:
+                configMapKeyRef:
+                  name: fetcher-dispatcher
+                  key: producer_topic
+            - name: STATUS_TOPIC
+              valueFrom:
+                configMapKeyRef:
+                  name: fetcher-dispatcher
+                  key: status_topic
+            - name: LOGGING_LEVEL
+              value: INFO
+            - name: FETCHER_JOB_NODE_SELECTOR
+              valueFrom:
+                configMapKeyRef:
+                  name: fetcher-dispatcher
+                  key: job_node_selector
+      nodeSelector:
+        node.type: bai-services-cheap
+      restartPolicy: Always

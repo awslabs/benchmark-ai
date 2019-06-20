@@ -2,9 +2,12 @@ import logging
 
 import kafka
 from kafka import KafkaConsumer, KafkaProducer
-from typing import List, Type, Tuple
+from kafka.admin import KafkaAdminClient, NewTopic
+from typing import List, Tuple
 
-from bai_kafka_utils.events import BenchmarkEvent
+from kafka.errors import TopicAlreadyExistsError
+
+from bai_kafka_utils.events import BenchmarkEvent, get_topic_event_type
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
 from bai_kafka_utils.utils import DEFAULT_ENCODING
 
@@ -22,24 +25,38 @@ class WrongBenchmarkEventTypeException(Exception):
 
 # args from kafka
 def create_kafka_consumer_producer(
-    kafka_cfg: KafkaServiceConfig, event_type: Type[BenchmarkEvent]
+    kafka_cfg: KafkaServiceConfig, service_name: str
 ) -> Tuple[KafkaConsumer, KafkaProducer]:
+    # Each service's Kafka consumer subscribes to both the service's input topic and the cmd_submit topic
+    consumer_topics = [kafka_cfg.consumer_topic, kafka_cfg.cmd_submit_topic]
+
+    required_topics = [
+        kafka_cfg.consumer_topic,
+        kafka_cfg.producer_topic,
+        kafka_cfg.cmd_submit_topic,
+        kafka_cfg.cmd_return_topic,
+        kafka_cfg.status_topic,
+    ]
+
+    create_kafka_topics(
+        required_topics,
+        kafka_cfg.bootstrap_servers,
+        service_name,
+        kafka_cfg.num_partitions,
+        kafka_cfg.replication_factor,
+    )
+
     return (
-        create_kafka_consumer(
-            kafka_cfg.bootstrap_servers, kafka_cfg.consumer_group_id, kafka_cfg.consumer_topic, event_type
-        ),
+        create_kafka_consumer(kafka_cfg.bootstrap_servers, kafka_cfg.consumer_group_id, consumer_topics),
         create_kafka_producer(kafka_cfg.bootstrap_servers),
     )
 
 
-def create_kafka_consumer(
-    bootstrap_servers: List[str], group_id: str, topic: str, event_type: Type[BenchmarkEvent]
-) -> kafka.KafkaConsumer:
-    if not issubclass(event_type, BenchmarkEvent):
-        raise WrongBenchmarkEventTypeException(f"{str(event_type)} is not a valid benchmark type")
-
+def create_kafka_consumer(bootstrap_servers: List[str], group_id: str, topics: List[str]) -> kafka.KafkaConsumer:
     def json_deserializer(msg_value):
         try:
+            envelope = BenchmarkEvent.from_json(msg_value.decode(DEFAULT_ENCODING))
+            event_type = get_topic_event_type(envelope.type)
             return event_type.from_json(msg_value.decode(DEFAULT_ENCODING))
         # Our json deserializer can raise anything - constructor can raise anything).
         # Handling JsonDecodeError and KeyError is not enough
@@ -57,7 +74,7 @@ def create_kafka_consumer(
             return None
 
     return kafka.KafkaConsumer(
-        topic,
+        *topics,
         bootstrap_servers=bootstrap_servers,
         group_id=group_id,
         value_deserializer=json_deserializer,
@@ -79,3 +96,19 @@ def create_kafka_producer(bootstrap_servers: List[str]) -> kafka.KafkaProducer:
         connections_max_idle_ms=MAX_IDLE_TIME_MS,
         key_serializer=key_serializer,
     )
+
+
+def create_kafka_topics(
+    new_topics: List[str], bootstrap_servers: List[str], service_name: str, num_partitions: int, replication_factor: int
+):
+    logger.info(f"Creating kafka topics {new_topics}")
+
+    admin_client = KafkaAdminClient(bootstrap_servers=bootstrap_servers, client_id=service_name)
+
+    for topic in new_topics:
+        try:
+            new_topic = NewTopic(name=topic, num_partitions=num_partitions, replication_factor=replication_factor)
+            admin_client.create_topics(new_topics=[new_topic])
+            logger.info(f"Created kafka topic {topic}")
+        except TopicAlreadyExistsError:
+            logger.exception(f"Error creating topic {topic}, it already exists")

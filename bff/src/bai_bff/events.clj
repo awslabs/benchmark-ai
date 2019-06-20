@@ -9,6 +9,14 @@
             [java-time :refer [instant]]
             [taoensso.timbre :as log]))
 
+(def status-map {::submitted "SUBMITTED"
+                 ::error "ERROR"
+                 ::initializing "INITIALIZING"
+                 ::running "RUNNING"
+                 ::failed "FAILED"
+                 ::succeeded "SUCCEEDED"
+                 ::pending "PENDING"})
+
 (defn uuid [] (str (java.util.UUID/randomUUID)))
 
 (defn verify-doc-hash [event]
@@ -39,8 +47,7 @@
   not do any in place changes, such as when these data sources are
   fetched and augmented with additional information.</i>"
   [event]
-  (-> event
-      (assoc-in [:payload :datasets] (filter seq (map #(select-keys % [:src :md5]) (some-> event :payload :toml :contents :data :sources))))))
+  (assoc-in event [:payload :datasets] (remove empty? (map #(select-keys % [:src :md5]) (some-> event :payload :toml :contents :data :sources)))))
 
 (defn add-my-visited-entry
   "Adds the entry for this service at the end of the event's vector of
@@ -49,8 +56,7 @@
   event's \"date\" field is of the client's submission."
   [event]
   (let [svc "bai-bff"]
-    (-> event
-        (assoc-in [:visited] (conj (get-in event [:visited]) {:svc svc :tstamp (:tstamp event) :version VERSION :node (env :hostname)})))))
+    (assoc-in event [:visited] (conj (get-in event [:visited]) {:svc svc :tstamp (:tstamp event) :version VERSION :node (env :hostname)}))))
 
 (defn message->submit-descriptor-event
   "Takes a \"message\" from the client (as a keyword map), from the wild
@@ -85,17 +91,32 @@
   [req message-body]
   (let [tstamp (System/currentTimeMillis)
         authenticated false] ;NOTE auth should have been taken care of by middleware.
-    (->
+    (add-my-visited-entry
+     {:message_id       (uuid)                                     ; <--
+      :client_id        (some-> message-body :client_id)
+      :action_id        (uuid)                                     ; <--
+      :target_action_id (some-> message-body :target_action_id)
+      :client_version   (some-> message-body :client_version)
+      :client_sha1      (some-> message-body :client_sha1)
+      :client_username  (some-> message-body :client_username)
+      :date             (some-> message-body :date)
+      :authenticated    authenticated                              ; <--
+      :tstamp           tstamp
+      :visited          (some-> message-body :visited)             ; <--
+      :payload          (some-> message-body :payload)
+      :type             "CMD_SUBMIT"})))
+
+(defn status-event[event status-keyword status-message]
+  (let [tstamp (System/currentTimeMillis)] ;NOTE auth should have been taken care of by middleware.
+    (add-my-visited-entry
      {:message_id      (uuid)                                     ; <--
-      :client_id       (some-> message-body :client_id)
-      :action_id       (uuid)                                     ; <--
-      :client_version  (some-> message-body :client_version)
-      :client_sha1     (some-> message-body :client_sha1)
-      :client_username (some-> message-body :client_username)
-      :date            (some-> message-body :date)
-      :authenticated   authenticated                              ; <--
-      :tstamp          tstamp
-      :visited         (some-> message-body :visited)             ; <--
-      :payload         (some-> message-body :payload)
-      :type            "CMD_SUBMIT"}
-     (add-my-visited-entry))))
+      :client_id       (some-> event :client_id)
+      :action_id       (some-> event :action_id)
+      :client_version  (some-> event :client_version)
+      :date            (some-> event :date)
+      :tstamp          tstamp                                     ; <--
+      :visited         (some-> event :visited)
+      :payload         (some-> event :payload)
+      :message         status-message                             ; <--
+      :status          (status-keyword status-map)                ; <--
+      :type            "BAI_APP_STATUS"})))

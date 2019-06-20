@@ -9,5 +9,5 @@ setup(
     requires=["bai_kafka_utils"],
     packages=find_packages("src"),
     include_package_data=True,
-    entry_points={"console_scripts": ["fetcher_dispatcher=fetcher_dispatcher.__main__:main"]},
+    entry_points={"console_scripts": ["start=fetcher_dispatcher.__main__:main"]},
 )

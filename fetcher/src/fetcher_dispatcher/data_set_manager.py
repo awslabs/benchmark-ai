@@ -5,9 +5,9 @@ from kazoo.client import KazooClient
 from kazoo.protocol.states import WatchedEvent, EventType
 from typing import Callable
 
-from bai_kafka_utils.events import DataSet, BenchmarkEvent
+from bai_kafka_utils.events import DataSet, BenchmarkEvent, FetcherStatus
 from bai_kafka_utils.utils import md5sum
-from bai_zk_utils.states import FetcherResult, FetcherStatus
+from bai_zk_utils.states import FetcherResult
 from bai_zk_utils.zk_locker import RWLockManager, RWLock
 
 DataSetDispatcher = Callable[[DataSet, BenchmarkEvent, str], None]
@@ -85,7 +85,8 @@ class DataSetManager:
         logger.info("Fetch request %s result = %s", data_set, result)
 
         if result.status.final:
-            data_set.status = str(result.status)
+            data_set.status = result.status
+            data_set.type = result.type
 
             if result.status == FetcherStatus.FAILED:
                 data_set.message = result.message

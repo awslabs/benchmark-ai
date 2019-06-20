@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus-kafka-topic-exporter
+  labels:
+    app: benchmark-ai
+spec:
+  selector:
+    matchLabels:
+      app: benchmark-ai
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: benchmark-ai
+        service: prometheus-kafka-topic-exporter
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: service
+                    operator: In
+                    values:
+                      - prometheus-kafka-topic-exporter
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: prometheus-kafka-topic-exporter
+          image: @@DOCKER_IMAGE_TAG@@
+          env:
+          - name: KAFKA_BOOTSTRAP_SERVERS
+            valueFrom:
+              configMapKeyRef:
+                name: outputs-infrastructure
+                key: msk_bootstrap_brokers
+          volumeMounts:
+            - mountPath: /config
+              name: config-volume
+      nodeSelector:
+        node.type: bai-services-cheap
+      restartPolicy: Always
+      volumes:
+        - name: config-volume
+          configMap:
+            name: prometheus-kafka-topic-exporter-config

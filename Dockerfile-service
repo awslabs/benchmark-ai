@@ -1,0 +1,35 @@
+FROM continuumio/miniconda3 as base
+
+RUN conda update -n base -c conda-forge conda
+
+ARG SERVICE
+
+######################
+# Infrequent changes #
+######################
+COPY ./$SERVICE/environment.yml /tmp/environment.yml
+
+RUN conda env create -f /tmp/environment.yml -p /opt/env
+
+####################
+# Frequent changes #
+####################
+
+COPY . /data/benchmark-ai
+WORKDIR /data/benchmark-ai/$SERVICE
+
+RUN /opt/env/bin/pip install -r requirements.txt
+RUN /opt/env/bin/python3 setup.py install
+
+########################################
+# Build the final image
+########################################
+FROM ubuntu:18.04
+
+COPY --from=base /opt/env /opt/env
+
+# A workdir only for convenience
+WORKDIR /opt/env/bin
+
+ENTRYPOINT [ "/opt/env/bin/start" ]
+

@@ -2,7 +2,8 @@ from kazoo.client import KazooClient
 from unittest.mock import patch, create_autospec
 
 from bai_zk_utils import zk_client
-from bai_zk_utils.states import FetcherResult, FetcherStatus
+from bai_zk_utils.states import FetcherResult
+from bai_kafka_utils.events import FetcherStatus
 from bai_zk_utils.zk_client import update_zk_node
 
 FETCHER_RESULT = FetcherResult(FetcherStatus.DONE, "Success")

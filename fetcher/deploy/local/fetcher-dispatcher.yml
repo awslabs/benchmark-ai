@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fetcher-dispatcher
+spec:
+  template:
+    spec:
+      containers:
+        - name: fetcher-dispatcher
+          imagePullPolicy: Never
+          env:
+            - name: NUM_PARTITIONS
+              value: "1"
+            - name: REPLICATION_FACTOR
+              value: "1"
+      affinity:
+      #--
+      nodeSelector:
+      #--
+

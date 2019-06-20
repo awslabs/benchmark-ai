@@ -8,14 +8,19 @@ from bai_watcher.args import WatcherServiceConfig
 from bai_watcher.kafka_service_watcher import create_service, WatchJobsEventHandler
 
 
+CONSUMER_TOPIC = "IN_TOPIC"
+
+
 @pytest.fixture
 def kafka_service_config():
     return KafkaServiceConfig(
         bootstrap_servers=["kafka1:9092", "kafka2:9092"],
         consumer_group_id="GROUP_ID",
-        consumer_topic="IN_TOPIC",
+        consumer_topic=CONSUMER_TOPIC,
         logging_level="DEBUG",
         producer_topic="OUT_TOPIC",
+        status_topic="STATUS_TOPIC",
+        cmd_return_topic="CMD_RETURN",
     )
 
 
@@ -27,14 +32,17 @@ def kubernetes_config(mocker):
 def test_create_service(mocker, kafka_service_config):
     kafka_producer_class = mocker.patch.object(kafka, "KafkaProducer")
     kafka_consumer_class = mocker.patch.object(kafka, "KafkaConsumer")
+    mock_create_consumer_producer = mocker.patch(
+        "bai_watcher.kafka_service_watcher.create_kafka_consumer_producer",
+        return_value=(kafka_consumer_class, kafka_producer_class),
+        autospec=True,
+    )
 
     service_config = WatcherServiceConfig()
     service = create_service(kafka_service_config, service_config)
 
     assert isinstance(service, KafkaService)
-
-    kafka_producer_class.assert_called_once()
-    kafka_consumer_class.assert_called_once()
+    mock_create_consumer_producer.assert_called_once()
 
 
 def test_constructor_loads_kubernetes_config_with_inexistent_kubeconfig_file(kubernetes_config):

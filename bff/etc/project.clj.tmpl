@@ -13,6 +13,7 @@
                  [ring/ring-devel "1.7.1"]
                  [compojure "1.6.1"]
                  [org.apache.kafka/kafka_2.12 "2.2.0"]
+                 [org.apache.kafka/kafka-clients "2.2.0"]
                  [clojure.java-time "0.3.2"]
                  [digest "1.4.8"]
                  [environ "1.1.0"]
@@ -53,7 +54,7 @@
             [lein-codox "0.10.6"]]
   :codox {:sources ["@@SOURCE_PATHS@@"] :output-path "@@GEN_DOCS_PATH@@" :doc-paths ["doc"]}
   :cloverage {:output "@@GEN_DOCS_PATH@@/coverage"}
-  :ring {:handler @@PROJECT@@.http-api/core-routtes}
+  :ring {:handler @@PROJECT@@.http-api/create-application-routes}
   :profiles {:prod {:env {:environment "@@PROFILE@@"}}
              :test {:dependencies [[midje/midje "1.9.6"]]
                     :plugins [[lein-midje "3.2.1"]]}

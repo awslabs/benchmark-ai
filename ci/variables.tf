@@ -1,5 +1,5 @@
 variable "projects" {
-  type = "list"
+  type = list(string)
   default = [
     "client-lib",
     "metrics-pusher",
@@ -8,7 +8,6 @@ variable "projects" {
     "baictl",
     "kafka-utils",
     "puller",
-    "reports",
     "executor",
     "watcher",
     "bff",
@@ -16,19 +15,46 @@ variable "projects" {
 }
 
 variable "github_token" {
-  type = "string"
+  type    = string
   default = ""
 }
 
 variable "region" {
-  type = "string"
+  type    = string
   default = "us-east-1"
 }
 
 variable "ci_docker_image" {
-  type = "map"
+  type = map(string)
   default = {
-    "default" = "jlcont/bai-ci-python:260419"
-    "bff" = "gavin/bai-bff-dev"
+    "default" = "benchmarkai/ci:kind"
+    "bff"     = "gavin/bai-bff-dev"
   }
+}
+
+variable "ecr_repo" {
+  type = map(string)
+  default = {
+    "bff" = "bai-bff"
+  }
+}
+
+variable "github_organization" {
+  type = string
+  default = "MXNetEdge"
+}
+
+variable "github_branch" {
+  type = string
+  default = "master"
+}
+
+variable "chime_hook_url" {
+  type = string
+  default = ""
+}
+
+variable "run_integration_tests" {
+  type = bool
+  default = true
 }

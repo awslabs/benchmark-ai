@@ -1,0 +1,537 @@
+#!/usr/bin/env bash
+
+DEBUG=${DEBUG:-0}
+VERBOSE=${VERBOSE:-0}
+SYNC_DATA=${SYNC_DATA:-0}
+
+declare -r VERSION="0.1.0-481dad2"
+declare -r SERVICE_NAME="anubis-client"
+declare -r MY_SHA1=$(sha1sum ${0} | awk '{print $1}')
+declare -r BAI_HOME=${HOME}/.bai
+declare -r BAI_HISTORY=${BAI_HOME}/history
+declare -r BAI_ACTION_IDS=${BAI_HOME}/action_ids
+declare -r BAI_DATABASE=${BAI_HOME}/db
+declare -r BAI_SERVICE_ENDPOINT_CONFIG=${BAI_HOME}/service_endpoint
+declare -r TSTAMP_FILENAME=latest_tstamp
+
+## EMOJIS ##  https://apps.timwhitlock.info/emoji/tables/unicode
+declare -A emoji
+emoji[fetcher-dispatcher]="\xF0\x9F\x90\x95 "
+emoji[anubis-client]="\xE2\x99\x8E "
+emoji[executor]="\xE2\x9A\xA1 "
+emoji[bai-bff]="\xE2\x9C\x8A "
+emoji[watcher]="\xF0\x9F\x91\x80 "
+emoji[bai-bff-error]="\xF0\x9F\x92\x94 "
+emoji[FAIL]="\xE2\x9D\x8C "
+emoji[SUCCESS]="\xE2\x9C\x85 "
+emoji[WAIT]="\xF0\x9F\x95\x9D "
+emoji[GOOD]="\xF0\x9F\x98\x8E "
+emoji[WARN]="\xF0\x9F\x94\xA5 "
+emoji[ERROR]="\xF0\x9F\x92\xA5 "
+emoji[SUCESS_ALL]="\xF0\x9F\x8E\x89 "
+emoji[SEARCH]="\xF0\x9F\x94\x8D "
+
+banner() {
+    printf '
+\033[01;31m                       _      _
+                      | |    (_)
+   __ _  _ __   _   _ | |__   _  ___
+  / _  ||  _ \ | | | ||  _ \ | |/ __|\033[0m
+\033[01;33m | (_| || | | || |_| || |_) || |\__ \\\033[0m
+\033[01;32m  \__,_||_| |_| \__,_||_.__/ |_||___/\033[0m \xE2\x99\x8E
+
+(v%s)
+-------------------------
+AWS: \033[01;33mB\033[0menchmark \033[01;33mAI\033[0m \033[01;33mClient\033[0m
+-------------------------
+
+Brought to you by the cool peeps of the  MXNet-Berlin Team
+' "${VERSION}"
+}
+
+usage() {
+    printf '
+usage:
+
+This is the command-line, client-side interface to the Bechmark AI service...
+
+ > %s --submit  <descriptor file> : Returns an "action id" if submission successful
+          --status   <action id>   : displays a report of the current status
+          --results  <action id>   : displays results report of completed jobs
+          --inspect  <message id>  : displays full details of specified message object
+          --last-action-id     : displays the last action id from a valid submission
+          --abort    <action id>   : cancels the current in progress submission
+          --check-version          : checks to see if the version you are running is the latest posted
+          --upgrade                : fetches latest version of this tool [%s]
+          --sync-version           : synchronized this tool with that of the service endpoint
+          --sync-data              : clean local cached data and refetch from service
+          --history                : lists recently returned <action id> : <descriptor path> : <date>
+          --register <hostname|IP and PORT of bai service> | Ex: bai.aws.amazon.com:7100
+          --unregister             : clears service endpoint from configuration
+          --show-registered-service-endpoint : The hostname|IP:PORT of bai service you are using
+          --legend                 : displays quick legend of the emojis used
+          --help                   : (this output)
+
+          (please use gnu tools for best results)
+
+' "${0##*/}" "${0##*/}"
+    exit 0
+}
+
+show_legend() {
+    echo "----------------"
+    echo "Emoji legend:"
+    echo "----------------"
+    for key in ${!emoji[@]}; do
+        printf "%b = %s\n " "${emoji[${key}]}" "${key}"
+    done
+    echo "----------------"
+    echo
+}
+
+check_tools() {
+    local num_missing_tools=0
+    if type uuidgen  >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "uuidgen"; (( num_missing_tools++ ));fi
+    if type sha1sum  >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "sha1sum"; (( num_missing_tools++ ));fi
+    if type whoami   >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "whoami"; (( num_missing_tools++ ));fi
+    if type hostname >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "hostname"; (( num_missing_tools++ ));fi
+    if type date     >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "date"; (( num_missing_tools++ ));fi
+    if type curl     >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "curl"; (( num_missing_tools++ ));fi
+    if type jq       >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "jq"; (( num_missing_tools++ ));fi
+
+    #----------------
+    #HACK! For getting the correct damn base64 program when on a fuggin mac.  If on a mac install with brew to get real tools, damnit!!!
+    [[ $(uname) == "Darwin" ]] && base64_command="gbase64" || base64_command="base64"
+    if type ${base64_command}   >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "${base64_command}"; (( num_missing_tools++ ));fi
+    #----------------
+
+    echo
+    if (( num_missing_tools > 0 )); then
+        printf "\033[01;31m [ERROR:] \033[0m you just install the required prerequisite tool(s)/command(s) to use %s. bye...\n" "${0##*/}"
+        echo
+        ((DEBUG)) && exit ${num_missing_tools}
+    fi
+}
+
+_setup() {
+    mkdir -p "${BAI_HOME}"
+    mkdir -p "${BAI_HOME}/db"
+    touch "${BAI_HOME}/action_ids"
+    touch "${BAI_HOME}/history"
+    touch "${BAI_HOME}/service_endpoint"
+}
+
+#---------------------------------------------------------
+# Util functions
+#---------------------------------------------------------
+
+_construct_endpoint_URL() {
+    printf "http://%s" "$(cat "${BAI_SERVICE_ENDPOINT_CONFIG}")"
+}
+
+get_client_id() {
+    echo -n "$(printf "$(whoami)+$(hostname)" | sha1sum | awk '{print $1}')"
+}
+
+ping_service_endpoint() {
+    show_registered_service_endpoint && curl -I $(_construct_endpoint_URL)
+}
+
+register_service_endpoint() {
+    local service_endpoint=${1:?"register() -> You MUST supply the service endpoint hostname|IP and PORT"}
+    #TODO - Do basic sanity checking on format and then write it to file;
+
+    echo "${service_endpoint}" > "${BAI_SERVICE_ENDPOINT_CONFIG}"
+}
+
+unregister_service_endpoint() {
+    cat /dev/null > "${BAI_SERVICE_ENDPOINT_CONFIG}"
+}
+
+show_registered_service_endpoint() {
+    local current_service_endpoint=$(cat "${BAI_SERVICE_ENDPOINT_CONFIG}")
+    if [[ -n "${current_service_endpoint}" ]]; then
+        printf "Currently service endpoint is: [\033[01;33m%s\033[0m] \n" "$current_service_endpoint"
+        return 0
+    else
+        printf "
+\033[01;31m[WARNING]\033[0m You do not have a service endpoint registered!!
+          Please do so.  (use --register to set one)\n\n";
+        return 1
+    fi
+}
+
+check_version() {
+    echo "+"; #TODO - make this check against the service's supported version
+}
+
+
+#---------------------------------------------------------
+# Event Construction
+#---------------------------------------------------------
+
+# TODO - Also, look at changing the formulation of client_id to just be the user's hashed email
+_generate_submit_event() {
+    local descriptor_filename=${1?"generate_submit_event() -> You MUST supply a descriptor file as first argument to this function"}
+    local event=$(cat <<-EOF
+{
+    "message_id" : "$(uuidgen)",
+    "client_id"  : "$(get_client_id)",
+    "client_version" : "${VERSION}",
+    "client_sha1"    : "${MY_SHA1}",
+    "client_username" : "$(whoami)",
+    "date" : "$(date -u +"%a %b %d %H:%M:%S %Z %Y")",
+    "visited"  : [{"svc" : "${SERVICE_NAME}", "tstamp" : $(( $(date +%s) * 1000 )), "version" :"${VERSION}"}],
+    "payload"  : {
+        "toml" : {
+            "descriptor_filename" : "${descriptor_filename##*/}",
+            "sha1" : "$(sha1sum ${descriptor_filename} | awk '{print $1}')",
+            "doc"  : "$(${base64_command} --wrap=0 ${descriptor_filename})"
+        }
+    }
+}
+EOF
+          )
+    jq '.' <<< ${event}
+}
+
+# TODO - Also, look at changing the formulation of client_id to just be the user's hashed email
+_generate_command_event() {
+    local command=${1}
+    shift
+    local action_id=${1?"generate_command_event() -> You MUST supply the action id as the second argument to this function"}
+    local command_args=(${@})
+
+    #echo "Number of args is ${#command_args[@]}"
+    local command_args_strings=$(sed 's/.$//g' <<< $(for item in ${command_args[@]}; do echo -n "\""${item}"\","; done))
+    #echo "The args as strings are:${command_args_strings}"
+
+    local event=$(cat <<-EOF
+{
+    "message_id" : "$(uuidgen)",
+    "client_id"  : "$(get_client_id)",
+    "target_action_id" : "${action_id}",
+    "client_version" : "${VERSION}",
+    "client_sha1"    : "${MY_SHA1}",
+    "client_username" : "$(whoami)",
+    "date" : "$(date -u +"%a %b %d %H:%M:%S %Z %Y")",
+    "visited"  : [{"svc" : "${SERVICE_NAME}", "tstamp" : $(( $(date +%s) * 1000 )), "version" :"${VERSION}"}],
+    "payload"  : {
+        "command" : "${command}",
+        "args" : [ ${command_args_strings}]
+    }
+}
+EOF
+          )
+    jq '.' <<< ${event}
+}
+
+#---------------------------------------------------------
+
+upgrade() {
+    #TODO - upgrading this tool itself...
+    #TODO - implement how to upgrade to the version supported by the service directly?
+    printf "Sync'ing versions with that of the current service endpoint [\033[01;33m%s\033[0m] \n" "$current_service_endpoint"
+    echo "Implement me!!!!!"
+}
+
+#REST API call
+sync_version() {
+    #TODO - implement how to upgrade to the version supported by the service directly?
+    printf "Sync'ing versions with that of the current service endpoint [\033[01;33m%s\033[0m] \n" "$current_service_endpoint"
+    echo "Implement me!!!!!"
+}
+
+#submit event
+submit() {
+    local descriptor_filename=${1?"submit() -> You MUST supply a descriptor file as first argument"}
+    local current_service_endpoint=$(cat ${BAI_SERVICE_ENDPOINT_CONFIG} | tail -n 1)
+
+    if [ ! -f "$descriptor_filename" ]; then echo "file does not exist"; exit 1; fi
+    if [[ -z "${current_service_endpoint}" ]]; then
+        printf "
+\033[01;31m[WARNING]\033[0m You do not have a service endpoint registered.
+          Please do so.  (see --register flag)
+          using localhost, port 8080\n\n";
+        current_service_endpoint="localhost:8080"
+    fi
+
+    local data=$(_generate_submit_event ${descriptor_filename})
+    local cmd
+    local returned
+
+    if [[ -n "${data}" ]]; then
+        cmd="curl -s -X POST -H Content-Type: application/json -d '"${data}"' http://"${current_service_endpoint}"/api/job/descriptor"
+        ((VERBOSE)) && echo ${cmd}
+        _print_status "sending ${descriptor_filename} to anubis service @ ${current_service_endpoint}"
+        [[ ! -d "${BAI_DATABASE}/$(get_client_id)" ]] && mkdir -p "${BAI_DATABASE}/$(get_client_id)"
+
+        returned=$(eval $cmd)
+        echo "${returned}"
+        if [[ -n $(sed -rne '/[a-f0-9-]{8}-([a-f0-9-]{4}-){3}[a-f0-9-]{12}/p' <<<"${returned}") ]]; then
+            [[ ! -d "${BAI_DATABASE}/$(get_client_id)/${returned}" ]] && mkdir -p "${BAI_DATABASE}/$(get_client_id)/${returned}"
+            echo "${returned} : ${descriptor_filename} : $(date)" >>  ${BAI_ACTION_IDS}
+        fi
+    else
+        printf '\033[01;31m[ERROR]\033[0m No data to send.\n\n'
+        exit 1
+    fi
+}
+
+#local db lookup
+use_last_action_id() {
+    local last_action_id=$(cat ${BAI_ACTION_IDS} | tail -n 1 | awk '{print $1}')
+    current_action_id=${last_action_id}
+    printf "$last_action_id"
+}
+
+get_latest_event_timestamp() {
+    local action_id=${1:-$(use_last_action_id)}
+    local path=${BAI_DATABASE}/$(get_client_id)"/"${action_id}
+    local tstamp_file=${path}/${TSTAMP_FILENAME}
+    local tstamp_file_size=$([[ -f "${tstamp_file}" ]] && stat -x "${tstamp_file}" | grep Size | awk '{print $2}' || echo -n "0")
+
+    if ((tstamp_file_size > 0)); then
+        cat "${tstamp_file}"
+    else
+        printf "0"
+    fi
+}
+
+#Local filesystem read
+_read_local_submission_status() {
+    local action_id=${1:-$(use_last_action_id)}
+    ((VERBOSE)) && echo "_read_local_submission_status for action: ${action_id}"
+    current_action_id=$action_id
+    local datafile=${BAI_DATABASE}/$(get_client_id)"/"${action_id}/data
+
+    if [[ -f "${datafile}" ]]; then
+        jq --compact-output '{src: .visited[-1].svc , id: .message_id[0:8], msg: .message, tstamp: .visited[-1].tstamp}' "${datafile}" | while read line; do _as_status_line $line; done;
+    else
+        ((VERBOSE)) && printf "Events datafile [%s] is not present\n" "${datafile}"
+    fi
+}
+
+#REST API call
+get_submission_status() {
+    local action_id=${1:-$(use_last_action_id)}
+    ((VERBOSE)) && echo "get_submission_status for action: ${action_id}"
+    current_action_id=$action_id
+    echo "Status: [${action_id}]"
+
+    local path=$(get_client_id)"/"${action_id}
+    local current_service_endpoint=$(cat "${BAI_SERVICE_ENDPOINT_CONFIG}")
+    local cmd
+
+    ((VERBOSE)) && echo "database = ${BAI_DATABASE}"
+
+    local since_tstamp=$(get_latest_event_timestamp ${action_id})
+    if ((SYNC_DATA)); then
+        since_tstamp=0
+        [[ -f "${BAI_DATABASE}/$(get_client_id)/${action_id}/data" ]] && mv ${BAI_DATABASE}/$(get_client_id)"/"${action_id}/data{,.bkup}
+    else
+        _read_local_submission_status "${action_id}"
+    fi
+
+    cmd="curl -s -X GET -H Content-Type: application/json http://"${current_service_endpoint}"/api/job/"${path}?since="${since_tstamp}"
+    ((VERBOSE)) && echo ${cmd}
+    cat <<EOF | tee $( ((since_tstamp > 0)) && echo -n "-a") ${BAI_DATABASE}/${path}/data 2> /dev/null | jq --compact-output '{src: .visited[-1].svc , id: .message_id[0:8], msg: .message, tstamp: .visited[-1].tstamp} +{"new" : "1"}' | while read line; do _as_status_line $line; done;
+$(eval ${cmd} | jq '.[]')
+EOF
+
+}
+
+_print_status() {
+    local msg=${1}
+    local src=${2:-"anubis-client"}
+    local id=${3:-"00000000"}
+    local new=${4:-0}
+
+    printf "%b|\033[0$( ((new)) && printf "1" || printf "0");33m%s\033[0m|%s\n" "${emoji[${src}]}" "${id}" "${msg}"
+}
+
+# (Note: $line is scope in the while loop that this function is called in)
+_as_status_line() {
+    #TODO - see if can pass in a value that reflects if this is a "new" entry of not. confirm while scoping of line
+    #     - change these 3 jq calls to a single jq call that creates the arg list for _print_status directly
+    local msg=$(jq --compact-output '.msg' <<<"$line")
+    local src=$(jq --compact-output '.src' <<<"$line")
+    local id=$(jq  --compact-output '.id'  <<<"$line")
+    local new=$(jq --compact-output '.new' <<<"$line")
+
+    _print_status "$(sed 's/^.\(.*\).$/\1/' <<<"$msg")" "$(sed 's/^.\(.*\).$/\1/' <<<"$src")" "$(sed 's/^.\(.*\).$/\1/' <<<"$id")" "$(sed 's/^.\(.*\).$/\1/' <<<"$new")"
+
+    local tstamp=$(jq --compact-output '.tstamp' <<<"$line")
+    echo "$tstamp" > "${BAI_DATABASE}/$(get_client_id)/${current_action_id}/${TSTAMP_FILENAME}"
+}
+
+#command event
+get_results() {
+    local action_id=${1:?"get_results() -> You MUST provide the action_id returned by the initial submission"}
+    ((VERBOSE)) && echo "get_results ${action_id}"
+    #TODO - implement me
+    echo "(implement me)"
+}
+
+#command event
+abort_submission() {
+    local action_id=${1:?"abort_submission() -> You MUST provide the action_id returned by the initial submission"}
+    local current_service_endpoint=$(cat ${BAI_SERVICE_ENDPOINT_CONFIG} | tail -n 1)
+    shift
+    ((VERBOSE)) && echo "abort submisson ${action_id}"
+
+    if [[ -z "${current_service_endpoint}" ]]; then
+        printf "
+\033[01;31m[WARNING]\033[0m You do not have a service endpoint registered.
+          Please do so.  (see --register flag)
+          using localhost, port 8080\n\n";
+        current_service_endpoint="localhost:8080"
+    fi
+
+    local cmd
+    local returned
+    local data=$(_generate_command_event "cancel" ${action_id} $*)
+    if [[ -n "${data}" ]]; then
+        cmd="curl -s -X DELETE -H Content-Type: application/json -d '"${data}"' http://"${current_service_endpoint}"/api/job/$(get_client_id)/${action_id}"
+        ((VERBOSE)) && echo ${cmd}
+        returned=$(eval ${cmd})
+        echo "${returned}"
+    else
+        printf '\033[01;31m[ERROR]\033[0m No data to send.\n\n'
+        exit 1
+    fi
+}
+
+#---------------------------------------
+# JQ shenanigans in the context of an action_id
+#---------------------------------------
+
+#shows the full JSON event for the given message_id partial value
+inspect() {
+    local message_id=${1:?"You must provide the message id that you want to inspect"}
+    local action_id=${2:-$(use_last_action_id)}
+    local datafile=${BAI_DATABASE}/$(get_client_id)"/"${action_id}/data
+    /usr/bin/env bash <<EOF
+jq 'select(.message_id|test("${message_id}-"))' $datafile
+EOF
+}
+
+get_history() {
+    cat "${BAI_ACTION_IDS}"
+}
+#---------------------------------------
+
+
+main() {
+    banner
+    check_tools
+    _setup
+
+    local SUBMIT=0;
+    local descriptor_filename=""
+
+        while [ -n "$1" ]; do
+    #echo "arg ${i} = $1"
+            local unshift=0
+            case $1 in
+                --verbose | -vv)
+                    VERBOSE=1
+                    ;;
+                --debug | -dbg)
+                    DEBUG=1
+                    ;;
+                --sync-data)
+                    SYNC_DATA=1
+                    ;;
+                --submit)
+                    shift
+                    ((SUBMIT++))
+                    descriptor_filename="${1}"
+                    ;;
+                --status)
+                    shift
+                    get_submission_status ${1}
+                    [ -z "${1}" ] && shift
+                    ;;
+                --results)
+                    shift
+                    get_results ${1} ; shift
+                    ;;
+                --last-action-id)
+                    shift
+                    echo $(use_last_action_id)
+                    exit $?
+                    ;;
+                --history)
+                    get_history
+                    exit $?
+                    ;;
+                --abort|--cancel)
+                    shift
+                    abort_submission ${@} ; shift
+                    exit $?
+                    ;;
+                --check-prerequisites) # hidden option
+                    shift
+                    check_tools
+                    exit $?
+                    ;;
+                --check-version)
+                    shift
+                    check_version
+                    exit $?
+                    ;;
+                --upgrade)
+                    shift
+                    upgrade
+                    ;;
+                --sync-version)
+                    shift
+                    ;;
+                --register)
+                    shift
+                    register_service_endpoint ${1}
+                    ;;
+                --ping-service-endpoint)
+                    shift
+                    ping_service_endpoint
+                    exit $?
+                    ;;
+                --unregister)
+                    shift
+                    unregister_service_endpoint
+                    exit 0
+                    ;;
+                --show-registered-service-endpoint)
+                    shift
+                    show_registered_service_endpoint
+                    ;;
+                --help | -h)
+                    shift
+                    usage
+                    ;;
+                --legend)
+                    show_legend
+                    exit 0
+                    ;;
+                --inspect| -i)
+                    shift
+                    inspect ${@}
+                    exit 0
+                    ;;
+                --banner) #"hidden" option
+                    shift
+                    banner
+                    exit $?
+                    ;;
+                *)
+                    shift
+                    echo "Unknown flag $1"
+                    ;;
+            esac
+            ((!unshift)) && shift
+        done
+        ((SUBMIT)) && submit "${descriptor_filename}"
+}
+
+main "$@"

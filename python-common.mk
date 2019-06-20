@@ -29,6 +29,7 @@ clean:
 	rm -rf .pytest_cache
 	find . -name '__pycache__' -exec rm -fr {} +
 	rm -f .coverage
+	rm -f deploy.yml
 
 #Things to run before - extendable
 _pre_venv::
@@ -54,7 +55,8 @@ develop: venv
 test: develop
 	$(PYTEST) $(TEST_FLAGS) $(TEST_FOLDERS)
 
-coverage: develop
+coverage: develop _coverage
+_coverage:
 	$(PYTEST) $(TEST_FLAGS) $(TEST_FOLDERS) $(COVERAGE_FLAGS)
 
 lint: venv _lint
@@ -74,5 +76,9 @@ _format:
 	$(FORMAT) $(FORMAT_FLAGS) $(SRC_FOLDERS)
 	$(FORMAT) $(FORMAT_FLAGS) $(TEST_FOLDERS)
 	-$(FORMAT) $(FORMAT_FLAGS) $(INTEGRATION_TEST_FOLDERS)
+
+deploy.yml:
+	echo "Creating a dummy `deploy.yml` so that there are artifacts to be published"
+	touch deploy.yml
 
 default: install
