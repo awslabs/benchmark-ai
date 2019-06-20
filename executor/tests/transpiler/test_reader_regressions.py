@@ -42,7 +42,7 @@ def generate_fetched_data_sources(descriptor_data) -> List[DataSet]:
         return [
             DataSet(src=source["src"], md5="md5", dst=PULLER_S3_URI + str(inx), type=FetchedType.DIRECTORY)
             # Fake different destinations
-            for inx, source in enumerate(data_sources, 0)
+            for inx, source in enumerate(data_sources)
         ]
     else:
         return []
