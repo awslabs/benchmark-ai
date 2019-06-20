@@ -29,7 +29,7 @@ spec:
       annotations:
         benchmark-ai.@@PROJECT@@.git-tag: "@@REPO_SITE@@ @@TAG@@"
         benchmark-ai.@@PROJECT@@.docker-tag: "@@DOCKER_REGISTRY@@ @@DOCKER_TAG@@"
-        kubernetes.io/change-cause: "@@CHANGE_CAUSE@@"
+        kubernetes.io/change-cause: "[@@TAG@@] @@CHANGE_CAUSE@@"
     spec:
       affinity:
         podAntiAffinity:
