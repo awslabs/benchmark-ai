@@ -48,10 +48,12 @@ spec:
         command: 
         - /bin/puller_entrypoint.sh
         volumeMounts:
-        - name: entrypoints_volume
+        - name: entrypoints-volume
           mountPath: /bin/puller_entrypoint.sh
           readOnly: true
           subPath: puller_entrypoint.sh
+        - name: datasets-volume
+          mountPath: /data
         env:
         - name: ROLE
           valueFrom:
@@ -63,7 +65,7 @@ spec:
         command: 
         - /bin/entrypoint.sh
         volumeMounts:
-        - name: entrypoints_volume
+        - name: entrypoints-volume
           mountPath: /bin/entrypoint.sh
           readOnly: true
           subPath: entrypoint.sh
@@ -108,11 +110,13 @@ spec:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
       volumes:
-      - name: entrypoints_volume
+      - name: entrypoints-volume
         configMap:
           defaultMode: 0700
           name: entrypoint-{job_id}
       - name: benchmark-ai
+        emptyDir: {{}}
+      - name: datasets-volume
         emptyDir: {{}}
       nodeSelector:
         beta.kubernetes.io/instance-type: {descriptor.instance_type}

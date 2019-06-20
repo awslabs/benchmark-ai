@@ -3,22 +3,28 @@ import random
 import shlex
 from dataclasses import dataclass
 
-from typing import List, Dict
-from ruamel import yaml
-
 from bai_kafka_utils.events import DataSet, BenchmarkEvent
-from transpiler.descriptor import Descriptor
-from transpiler.kubernetes_spec_logic import ConfigTemplate, VolumeMount, HostPath, Volume, EmptyDirVolumeSource
-from transpiler.config import BaiConfig, BaiDataSource, EnvironmentInfo
-from executor.config import ExecutorConfig
+from ruamel import yaml
+from typing import List, Dict
+
 from executor import SERVICE_NAME
+from executor.config import ExecutorConfig
+from transpiler.config import BaiConfig, BaiDataSource, EnvironmentInfo
+from transpiler.descriptor import Descriptor
+from transpiler.kubernetes_spec_logic import ConfigTemplate, VolumeMount, Volume, EmptyDirVolumeSource
+
+BENCHMARK_CONTAINER = "benchmark"
+DATA_PULLER_CONTAINER = "data-puller"
+DATASETS_VOLUME_NAME = "datasets-volume"
+
+SHARED_MEMORY_VOLUME = "dshm"
+SHARED_MEMORY_VOLUME_MOUNT = "/dev/shm"
 
 
 @dataclass
 class PullerDataSource:
     name: str
     puller_path: str
-    is_directory: bool
 
 
 class BaiKubernetesObjectBuilder:
@@ -69,28 +75,26 @@ class BaiKubernetesObjectBuilder:
             self.root.to_cronjob(descriptor.scheduling)
 
     def add_volumes(self, data_sources: List[BaiDataSource]):
-        benchmark_container = self.root.find_container("benchmark")
-        pod_spec = self.root.get_pod_spec()
+        benchmark_container = self.root.find_container(BENCHMARK_CONTAINER)
 
         data_volumes = self._get_data_volumes(data_sources)
         self._update_data_puller(data_volumes, data_sources)
 
         benchmark_container.volumeMounts.extend(self._get_container_volume_mounts(data_volumes))
-        pod_spec.volumes.extend(self._get_pod_spec_volumes(data_volumes))
 
         if self.descriptor.extended_shm:
             self._add_extended_shm()
 
     def _add_extended_shm(self):
         pod_spec_volumes = self.root.get_pod_spec().volumes
-        container_volume_mounts = self.root.find_container("benchmark").volumeMounts
+        container_volume_mounts = self.root.find_container(BENCHMARK_CONTAINER).volumeMounts
 
-        shared_memory_vol = "dshm"
+        shared_memory_vol = SHARED_MEMORY_VOLUME
 
         shm_vol = Volume(name=shared_memory_vol, emptyDir=EmptyDirVolumeSource(medium="Memory"))
         pod_spec_volumes.append(shm_vol)
 
-        shm_vol_mount = VolumeMount(name=shared_memory_vol, mountPath="/dev/shm")
+        shm_vol_mount = VolumeMount(name=shared_memory_vol, mountPath=SHARED_MEMORY_VOLUME_MOUNT)
         container_volume_mounts.append(shm_vol_mount)
 
     def dump_yaml_string(self):
@@ -104,7 +108,7 @@ class BaiKubernetesObjectBuilder:
         If a benchmark command was specified, command and args are inserted in the container's command field.
         If only args are provided, they are inserted in the container's args field.
         """
-        benchmark_container = self.root.find_container("benchmark")
+        benchmark_container = self.root.find_container(BENCHMARK_CONTAINER)
 
         def split_args(command: str) -> List[str]:
             if not command:
@@ -157,30 +161,15 @@ class BaiKubernetesObjectBuilder:
         for idx, data_source in enumerate(data_sources):
             name = "p" + str(idx)
             puller_path = f"/data/{name}"
-            is_directory = data_source.is_directory
-            data_vols[data_source.path] = PullerDataSource(name, puller_path, is_directory)
+            data_vols[data_source.path] = PullerDataSource(name, puller_path)
 
         return data_vols
-
-    def _get_pod_spec_volumes(self, data_volumes: Dict[str, PullerDataSource]) -> List[Volume]:
-        volumes = []
-
-        for vol in data_volumes.values():
-            volumes.append(
-                Volume(
-                    name=vol.name,
-                    hostPath=HostPath(
-                        path=f"/{vol.name}", type="DirectoryOrCreate" if vol.is_directory else "FileOrCreate"
-                    ),
-                )
-            )
-        return volumes
 
     def _get_container_volume_mounts(self, data_volumes: Dict[str, PullerDataSource]) -> List[VolumeMount]:
         vol_mounts = []
 
         for dest_path, vol in data_volumes.items():
-            vol_mounts.append(VolumeMount(name=vol.name, mountPath=dest_path))
+            vol_mounts.append(VolumeMount(name=DATASETS_VOLUME_NAME, mountPath=dest_path, subPath=vol.name))
         return vol_mounts
 
     def _update_data_puller(self, data_volumes: Dict[str, PullerDataSource], data_sources: List[BaiDataSource]):
@@ -189,10 +178,11 @@ class BaiKubernetesObjectBuilder:
         If no data sources are found, the data puller is deleted.
         """
         if not data_sources:
-            self.root.remove_container("data-puller")
+            self.root.remove_container(DATA_PULLER_CONTAINER)
+            self.root.remove_volume(DATASETS_VOLUME_NAME)
             return
 
-        data_puller = self.root.find_container("data-puller")
+        data_puller = self.root.find_container(DATA_PULLER_CONTAINER)
 
         s3_objects = []
         for s in data_sources:
@@ -204,21 +194,8 @@ class BaiKubernetesObjectBuilder:
 
         puller_args = [self.config.puller_s3_region, data_sources[0].bucket, ":".join(s3_objects)]
 
-        vol_mounts = self._get_puller_volume_mounts(data_volumes)
         data_puller.image = self.config.puller_docker_image
         data_puller.args = puller_args
-        if not data_puller.volumeMounts:
-            data_puller.volumeMounts = vol_mounts
-        else:
-            data_puller.volumeMounts.extend(vol_mounts)
-
-    def _get_puller_volume_mounts(self, data_volumes) -> List[VolumeMount]:
-        vol_mounts = []
-
-        for vol in data_volumes.values():
-            vol_mounts.append(VolumeMount(name=vol.name, mountPath=vol.puller_path))
-
-        return vol_mounts
 
 
 def create_bai_data_sources(fetched_data_sources: List[DataSet], descriptor: Descriptor) -> List[BaiDataSource]:

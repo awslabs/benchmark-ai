@@ -24,16 +24,14 @@ spec:
             topologyKey: kubernetes.io/hostname
       initContainers:
       - name: data-puller
+        volumeMounts:
+        - name: datasets-volume
+          mountPath: /data
         image: stsukrov/puller
         args:
         - eu-west-1
         - puller-data
-        - object-name/dir,777,p0:object-name/dir,777,p1
-        volumeMounts:
-        - name: p0
-          mountPath: /data/p0
-        - name: p1
-          mountPath: /data/p1
+        - object-name/dir0,777,p0:object-name/dir1,777,p1
       containers:
       - name: benchmark
         image: jlcont/benchmarking:270219
@@ -54,10 +52,12 @@ spec:
         volumeMounts:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
-        - name: p0
+        - name: datasets-volume
           mountPath: ~/data/tf-imagenet/train
-        - name: p1
+          subPath: p0
+        - name: datasets-volume
           mountPath: ~/data/tf-imagenet/validation
+          subPath: p1
         - name: dshm
           mountPath: /dev/shm
       - name: sidecar
@@ -95,14 +95,8 @@ spec:
       volumes:
       - name: benchmark-ai
         emptyDir: {}
-      - name: p0
-        hostPath:
-          path: /p0
-          type: DirectoryOrCreate
-      - name: p1
-        hostPath:
-          path: /p1
-          type: DirectoryOrCreate
+      - name: datasets-volume
+        emptyDir: {}
       - name: dshm
         emptyDir:
           medium: Memory
