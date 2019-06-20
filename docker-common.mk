@@ -57,10 +57,10 @@ deploy.yml: _deploy_venv generate_deploy
 	echo
 
 generate_deploy: ./deploy/*.yml
+	rm -f deploy.yml
 	for file in $^ ; do \
-    	$(DEPLOY_CONDA_RUN) sed -e 's\|@@DOCKER_IMAGE_TAG@@\|$(DOCKER_IMAGE_TAG)\|g' $${file} >> deploy.yml && echo "---" >> deploy.yml ; \
-    done
-
+		$(DEPLOY_CONDA_RUN) sed -e 's\|@@DOCKER_IMAGE_TAG@@\|$(DOCKER_IMAGE_TAG)\|g' $${file} >> deploy.yml && echo "---" >> deploy.yml ; \
+	done
 
 define fn_k8s_undeploy
 	$(KUBECTL) delete -f ./deploy $(KUBECTL_FLAGS)
