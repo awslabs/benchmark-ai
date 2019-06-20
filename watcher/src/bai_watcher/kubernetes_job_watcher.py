@@ -4,7 +4,7 @@ from typing import Callable
 import itertools
 import kubernetes
 import time
-from kubernetes.client import V1Job, V1JobStatus, V1PodList
+from kubernetes.client import V1Job, V1JobStatus, V1PodList, BatchV1Api, CoreV1Api
 from pathlib import Path
 from threading import Thread
 
@@ -37,9 +37,9 @@ class KubernetesJobWatcher:
         job_id: str,
         callback: Callable[[str, BenchmarkJobStatus], bool],
         *,
-        kubernetes_namespace,
-        kubernetes_client_jobs,
-        kubernetes_client_pods,
+        kubernetes_namespace: str,
+        kubernetes_client_jobs: BatchV1Api,
+        kubernetes_client_pods: CoreV1Api,
     ):
         self.job_id = job_id
         self.callback = callback
