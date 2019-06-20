@@ -210,7 +210,7 @@ _generate_command_event() {
 {
     "message_id" : "$(uuidgen)",
     "client_id"  : "$(get_client_id)",
-    "target_action_id" : "${action_id}"
+    "target_action_id" : "${action_id}",
     "client_version" : "${VERSION}",
     "client_sha1"    : "${MY_SHA1}",
     "client_username" : "$(whoami)",
@@ -376,6 +376,7 @@ get_results() {
 #command event
 abort_submission() {
     local action_id=${1:?"abort_submission() -> You MUST provide the action_id returned by the initial submission"}
+    local current_service_endpoint=$(cat ${BAI_SERVICE_ENDPOINT_CONFIG} | tail -n 1)
     shift
     ((VERBOSE)) && echo "abort submisson ${action_id}"
 
