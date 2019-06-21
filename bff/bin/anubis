@@ -274,7 +274,7 @@ submit() {
 
         if [[ -z "${returned}" ]]; then
             printf "
-\033[01;31m[WARNING]\033[0m Your submission was not sent please check:
+\033[01;31m[WARNING]\033[0m Your submission was not sent, please check:
           $(show_registered_service_endpoint)
  "
             curl $(_construct_endpoint_URL)/ready
