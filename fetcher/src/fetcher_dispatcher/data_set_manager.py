@@ -20,7 +20,7 @@ class DataSetDispatcher(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def cancel_all(self, client_id: str, action_id: str):
+    def cancel_all(self, client_id: str, action_id: str = None):
         pass
 
 

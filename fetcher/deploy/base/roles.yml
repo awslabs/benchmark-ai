@@ -23,7 +23,7 @@ metadata:
   namespace: default
 rules:
 - apiGroups: [""]
-  resources: ["pods"]
+  resources: ["pods", "jobs"]
   verbs: ["list","get"]
 ---
 kind: RoleBinding
