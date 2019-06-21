@@ -55,11 +55,12 @@ usage:
 
 This is the command-line, client-side interface to the Bechmark AI service...
 
- > %s --submit  <descriptor file> : Returns an "action id" if submission successful
+ > %s --submit <descriptor file | action id> : Returns an "action id" if submission successful
           --status   <action id>   : displays a report of the current status
           --results  <action id>   : displays results report of completed jobs
           --inspect  <message id>  : displays full details of specified message object
-          --last-action-id     : displays the last action id from a valid submission
+          --show-descriptor        : shows the descriptor acknowledged by Anubis
+          --last-action-id         : displays the last action id from a valid submission
           --abort    <action id>   : cancels the current in progress submission
           --check-version          : checks to see if the version you are running is the latest posted
           --upgrade                : fetches latest version of this tool [%s]
@@ -244,7 +245,10 @@ sync_version() {
 
 #submit event
 submit() {
-    local descriptor_filename=${1?"submit() -> You MUST supply a descriptor file as first argument"}
+    local descriptor_filename=${1?"submit() -> You MUST supply a descriptor file (or <action id>) as first argument"}
+    if [[ -n $(sed -rne '/[a-f0-9-]{8}-([a-f0-9-]{4}-){3}[a-f0-9-]{12}/p' <<<"${descriptor_filename}") ]]; then
+        descriptor_filename=$(_write_descriptor ${descriptor_filename})
+    fi
     local current_service_endpoint=$(cat ${BAI_SERVICE_ENDPOINT_CONFIG} | tail -n 1)
 
     if [ ! -f "$descriptor_filename" ]; then echo "file does not exist"; exit 1; fi
@@ -416,6 +420,29 @@ jq 'select(.message_id|test("${message_id}-"))' $datafile
 EOF
 }
 
+show_descriptor() {
+    local action_id=${1:-$(use_last_action_id)}
+    ((VERBOSE)) && echo "show_descriptor [toml] for action: ${action_id}"
+    local datafile=${BAI_DATABASE}/$(get_client_id)"/"${action_id}/data
+
+    local content=$(jq --compact-output '.payload.toml.doc' <(sed -n '/^{/,/^}/p; /^}/q' "${datafile}") | sed 's/^.\(.*\).$/\1/' | base64 -d 2> /dev/null)
+
+    echo "${content}"
+    echo "-------------------------"
+    echo "ActionID: [${action_id}]"
+    printf "sha1sum : " && sha1sum <<< "${content}"
+    echo "-------------------------"
+}
+
+_write_descriptor() {
+    local action_id=${1:-$(use_last_action_id)}
+    ((VERBOSE)) && echo "write_descriptor [toml] for action: ${action_id}"
+    local datafile=${BAI_DATABASE}/$(get_client_id)"/"${action_id}/data
+
+    jq --compact-output '.payload.toml.doc' <(sed -n '/^{/,/^}/p; /^}/q' "${datafile}") | sed 's/^.\(.*\).$/\1/' | base64 -d 2> /dev/null >> "${datafile%/*}"/descriptor.toml
+    printf "${datafile%/*}"/descriptor.toml
+}
+
 get_history() {
     cat "${BAI_ACTION_IDS}"
 }
@@ -518,6 +545,16 @@ main() {
                     shift
                     inspect ${@}
                     exit 0
+                    ;;
+                --show-descriptor | --show-desc)
+                    shift
+                    show_descriptor $@
+                    exit $?
+                    ;;
+                --write-descriptor | --write-desc) #"hidden" option
+                    shift
+                    _write_descriptor $@
+                    exit $?
                     ;;
                 --banner) #"hidden" option
                     shift
