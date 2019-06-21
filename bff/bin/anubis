@@ -135,7 +135,7 @@ get_client_id() {
 }
 
 ping_service_endpoint() {
-    show_registered_service_endpoint && curl -I $(_construct_endpoint_URL)
+    show_registered_service_endpoint && curl $(_construct_endpoint_URL)/ready
 }
 
 register_service_endpoint() {
@@ -271,6 +271,17 @@ submit() {
         [[ ! -d "${BAI_DATABASE}/$(get_client_id)" ]] && mkdir -p "${BAI_DATABASE}/$(get_client_id)"
 
         returned=$(eval $cmd)
+
+        if [[ -z "${returned}" ]]; then
+            printf "
+\033[01;31m[WARNING]\033[0m Your submission was not sent please check:
+          $(show_registered_service_endpoint)
+ "
+            curl $(_construct_endpoint_URL)/ready
+
+
+        fi
+
         echo "${returned}"
         if [[ -n $(sed -rne '/[a-f0-9-]{8}-([a-f0-9-]{4}-){3}[a-f0-9-]{12}/p' <<<"${returned}") ]]; then
             [[ ! -d "${BAI_DATABASE}/$(get_client_id)/${returned}" ]] && mkdir -p "${BAI_DATABASE}/$(get_client_id)/${returned}"
@@ -336,7 +347,8 @@ get_submission_status() {
     else
         _read_local_submission_status "${action_id}"
     fi
-
+    curl $(_construct_endpoint_URL)/ready
+    (( $? != 0 )) && exit 9
     cmd="curl -s -X GET -H Content-Type: application/json http://"${current_service_endpoint}"/api/job/"${path}?since="${since_tstamp}"
     ((VERBOSE)) && echo ${cmd}
     cat <<EOF | tee $( ((since_tstamp > 0)) && echo -n "-a") ${BAI_DATABASE}/${path}/data 2> /dev/null | jq --compact-output '{src: .visited[-1].svc , id: .message_id[0:8], msg: .message, tstamp: .visited[-1].tstamp} +{"new" : "1"}' | while read line; do _as_status_line $line; done;
@@ -424,6 +436,12 @@ show_descriptor() {
     local action_id=${1:-$(use_last_action_id)}
     ((VERBOSE)) && echo "show_descriptor [toml] for action: ${action_id}"
     local datafile=${BAI_DATABASE}/$(get_client_id)"/"${action_id}/data
+
+    if [[ ! -f "${datafile}" ]]; then
+        printf "
+\033[01;31m[ERROR]\033[0m The file ${datafile} does not exist!\n\n";
+        return 9
+    fi
 
     local content=$(jq --compact-output '.payload.toml.doc' <(sed -n '/^{/,/^}/p; /^}/q' "${datafile}") | sed 's/^.\(.*\).$/\1/' | base64 -d 2> /dev/null)
 
