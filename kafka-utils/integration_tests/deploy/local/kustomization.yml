@@ -1,4 +1,5 @@
 bases:
   - ../base
+  - ../../../../mock-infra
 patchesStrategicMerge:
   - kafka-utils-it.yml

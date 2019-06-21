@@ -17,9 +17,9 @@ RUN conda env update -f /tmp/test-environment.yml -p /opt/$SERVICE
 # Frequent changes #
 ####################
 
-RUN mkdir -p /data/benchmark-ai
+#RUN mkdir -p /data/benchmark-ai
 COPY . /data/benchmark-ai
-RUN ls -la /data/benchmark-ai
+#RUN ls -la /data/benchmark-ai
 WORKDIR /data/benchmark-ai/$SERVICE
 
 RUN /opt/$SERVICE/bin/pip install -r requirements.txt
