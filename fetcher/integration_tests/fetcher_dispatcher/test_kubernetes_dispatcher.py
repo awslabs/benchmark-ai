@@ -37,12 +37,29 @@ def test_kuberenetes_cancel(
     data_set = DataSet(src=SOMEDATA_BIG_WITH_DELAY, dst=S3_DST, md5=None)
     k8s_dispatcher.dispatch_fetch(data_set, benchmark_event_dummy_payload, "/data/sets/fake")
 
+    k8s_test_client.wait_for_job_exists(
+        fetcher_job_config.namespace, benchmark_event_dummy_payload.client_id, benchmark_event_dummy_payload.action_id
+    )
     k8s_test_client.wait_for_pod_exists(
         fetcher_job_config.namespace, benchmark_event_dummy_payload.client_id, benchmark_event_dummy_payload.action_id
     )
 
-    k8s_dispatcher.cancel_all(benchmark_event_dummy_payload)
+    k8s_dispatcher.cancel_all(benchmark_event_dummy_payload.client_id, benchmark_event_dummy_payload.action_id)
 
     k8s_test_client.wait_for_pod_not_exists(
         fetcher_job_config.namespace, benchmark_event_dummy_payload.client_id, benchmark_event_dummy_payload.action_id
     )
+    k8s_test_client.wait_for_job_not_exists(
+        fetcher_job_config.namespace, benchmark_event_dummy_payload.client_id, benchmark_event_dummy_payload.action_id
+    )
+
+
+# API boundary test - should just not fail
+def test_kuberenetes_cancel_after_ttl(
+    k8s_dispatcher: KubernetesDispatcher,
+    benchmark_event_dummy_payload: BenchmarkEvent,
+    k8s_test_client: KubernetesTestUtilsClient,
+    fetcher_job_config: FetcherJobConfig,
+):
+    # No dispatch - should not throw
+    k8s_dispatcher.cancel_all(benchmark_event_dummy_payload.client_id, benchmark_event_dummy_payload.action_id)
