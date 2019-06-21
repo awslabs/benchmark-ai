@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 import os
 import textwrap
-from dataclasses import dataclass
-
-from typing import Dict, Optional
+from collections import namedtuple
+from typing import Dict
 
 import subprocess
 import argparse
@@ -25,39 +24,99 @@ def open_terraform_vars_file(filename) -> Dict[str, str]:
     return d
 
 
-@dataclass
 class Config:
-    region: str
-    github_branch: str
-    github_organization: str
-    bucket_prefix: Optional[str]
-    bucket: Optional[str]
-    chime_hook_url: Optional[str]
+    VARIABLE_NAMES = {
+        "github_branch",
+        "github_organization",
+        "chime_hook_url",
+        "run_integration_tests",
+        "region",
+        "bucket",
+    }
 
-    def __init__(self, args):
+    def __init__(self):
         existing_values = {}
         existing_values.update(open_terraform_vars_file(".terraform/ci-backend-config"))
         existing_values.update(open_terraform_vars_file("terraform.tfvars"))
 
-        self.region = args.region or existing_values.get("region") or "us-east-1"
-        self.github_branch = args.github_branch or existing_values.get("github_branch") or "master"
-        self.github_organization = args.github_organization or existing_values.get("github_organization") or "MXNetEdge"
-        self.bucket_prefix = args.bucket_prefix or "bai-ci-terraform-remote-state"
-        self.bucket = args.bucket_name or existing_values.get("bucket")
-        self.chime_hook_url = args.chime_hook_url or existing_values.get("chime_hook_url")
+        self.variables = {"region": "us-east-1"}
+        for var_name in Config.VARIABLE_NAMES:
+            self.variables[var_name] = existing_values.get(var_name, self.variables.get(var_name, None))
+
+    def __getitem__(self, item):
+        return self.variables.get(item)
+
+    def __setitem__(self, key, value):
+        self.variables[key] = value
+
+    def __str__(self):
+        return str(self.variables)
 
     def write(self):
+        def is_backend_variable(name):
+            return name in {"region", "bucket"}
+
         os.makedirs(".terraform", exist_ok=True)
         with open(".terraform/ci-backend-config", "w") as f:
-            f.write(f'bucket="{self.bucket}"\n')
-            f.write(f'region="{self.region}"\n')
+            for var_name, value in self.variables.items():
+                if value and is_backend_variable(var_name):
+                    f.write(f'{var_name}="{value}"\n')
 
         with open("terraform.tfvars", "w") as f:
-            f.write(f'region="{self.region}"\n')
-            f.write(f'github_organization="{self.github_organization}"\n')
-            f.write(f'github_branch="{self.github_branch}"\n')
-            if self.chime_hook_url:
-                f.write(f'chime_hook_url="{self.chime_hook_url}"\n')
+            for var_name, value in self.variables.items():
+                if value and (var_name == "region" or not is_backend_variable(var_name)):
+                    f.write(f'{var_name}="{value}"\n')
+
+    @classmethod
+    def create_from_args(cls, args):
+        config = Config()
+        for var_name in Config.VARIABLE_NAMES:
+            value = getattr(args, var_name)
+            if value:
+                config[var_name] = value
+        return config
+
+    @classmethod
+    def add_args(cls, parser):
+        for var_name in Config.VARIABLE_NAMES:
+            parser.add_argument("--{var_name}".format(var_name=var_name.replace("_", "-")))
+
+
+def s3_remote_state_bucket(config, region, session):
+    # Ensure bucket exists for remote state
+    if config["bucket"] is None:
+        sts = session.client("sts")
+        config["bucket"] = (
+            "bai-ci-terraform-remote-state-" + sts.get_caller_identity()["Account"] + "-" + session.region_name
+        )
+
+    s3 = session.resource("s3")
+    bucket_name = config["bucket"]
+    bucket = s3.Bucket(bucket_name)
+    bucket.load()
+    if bucket.creation_date is None:
+        print(f"Will create a bucket named `{bucket_name}` in region `{region}`")
+
+        try:
+            if region == "us-east-1":
+                # https://github.com/boto/boto3/issues/125#issuecomment-109408790
+                bucket.create()
+            else:
+                bucket.create(CreateBucketConfiguration={"LocationConstraint": region})
+        except Exception as e:
+            raise
+
+
+def chime_hook_url(config, session):
+    if config["chime_hook_url"]:
+        return
+
+    secrets_manager_client = session.client(service_name="secretsmanager", region_name="us-east-1")
+    try:
+        hook_url_secret = secrets_manager_client.get_secret_value(SecretId="ChimeHookUrl")
+        config["chime_hook_url"] = hook_url_secret["SecretString"]
+    except secrets_manager_client.exceptions.ResourceNotFoundException:
+        pass
 
 
 def main():
@@ -72,34 +131,27 @@ def main():
         """
     )
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument("--region")
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument("--bucket-prefix")
-    group.add_argument("--bucket-name")
-    parser.add_argument("--github-branch")
-    parser.add_argument("--github-organization")
-    parser.add_argument("--chime-hook-url")
-    config = Config(parser.parse_args())
+    parser.add_argument("--clean", action="store_true", help="Removes current state and configured values")
+    Config.add_args(parser)
+    args = parser.parse_args()
+    if args.clean:
 
-    region = config.region
+        def rm(path):
+            if os.path.exists(path):
+                os.remove(path)
+                print(f"Removed `{path}`")
 
+        rm(".terraform/terraform.tfstate")
+        rm(".terraform/ci-backend-config")
+        rm("terraform.tfvars")
+        return
+
+    config = Config.create_from_args(args)
+    region = config["region"]
     session = boto3.Session(region_name=region)
 
-    # Ensure bucket exists for remote state
-    if config.bucket is None:
-        sts = session.client("sts")
-        config.bucket = config.bucket_prefix + "-" + sts.get_caller_identity()["Account"] + "-" + session.region_name
-
-    s3 = session.resource("s3")
-    bucket = s3.Bucket(config.bucket)
-    bucket.load()
-    if bucket.creation_date is None:
-        print(f"Will create a bucket named `{config.bucket}` in region `{region}`")
-        if region == "us-east-1":
-            # https://github.com/boto/boto3/issues/125#issuecomment-109408790
-            bucket.create()
-        else:
-            bucket.create(CreateBucketConfiguration={"LocationConstraint": region})
+    chime_hook_url(config, session)
+    s3_remote_state_bucket(config, region, session)
 
     config.write()
 
