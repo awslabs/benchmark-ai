@@ -21,10 +21,8 @@ k8s_run: _k8s_silent_undeploy k8s_deploy _wait_for_job clean_kustomization
 _docker_package: _pre_docker_package
 	$(DOCKER) build --no-cache $(BENCHMARK_DIR) -f $(BENCHMARK_DIR)/Dockerfile-it --build-arg SERVICE=$(SERVICE) -t $(DOCKER_IMAGE_TAG)
 
-#_docker_package: _pre_docker_package
-#	$(DOCKER) build $(BENCHMARK_DIR)/kafka-utils -f $(BENCHMARK_DIR)/Dockerfile-kafka-it -t $(DOCKER_IMAGE_TAG)
 
-#Copy paste from the fetcher
+# Copy pasted from fetcher
 override define fn_k8s_deploy
 	$(KUBECTL) apply -k ./deploy/$(STAGE) $(KUBECTL_FLAGS)
 endef
