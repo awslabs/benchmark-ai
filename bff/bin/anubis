@@ -430,7 +430,7 @@ show_descriptor() {
     echo "${content}"
     echo "-------------------------"
     echo "ActionID: [${action_id}]"
-    printf "md5sum  : " && md5sum <<< "${content}"
+    printf "sha1sum : " && sha1sum <<< "${content}"
     echo "-------------------------"
 }
 
