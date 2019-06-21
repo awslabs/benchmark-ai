@@ -203,17 +203,21 @@ resource "aws_codebuild_project" "ci-publish-master" {
     image = "aws/codebuild/standard:2.0"
     type = "LINUX_CONTAINER"
     privileged_mode = true
+
+    environment_variable {
+      name = "PROJECT_NAME"
+      value = var.projects[count.index]
+    }
+
+    environment_variable {
+      name = "ACCOUNT_ID"
+      value = data.aws_caller_identity.current.account_id
+    }
   }
 
   source {
     type = "CODEPIPELINE"
-    buildspec = templatefile(
-      "buildspec-publish.tpl.yml",
-      { project = var.projects[count.index],
-        region = var.region,
-        account_id = data.aws_caller_identity.current.account_id
-      }
-    )
+    buildspec = "ci/buildspec-publish.yml"
   }
 }
 
@@ -241,6 +245,6 @@ resource "aws_codebuild_project" "ci-deploy-master" {
 
   source {
     type = "CODEPIPELINE"
-    buildspec = file("buildspec-deploy.yml")
+    buildspec = "ci/buildspec-deploy.yml"
   }
 }
