@@ -12,6 +12,7 @@
             [ring.middleware.json :refer [wrap-json-response wrap-json-body wrap-json-params]]
             [ring.middleware.keyword-params :refer [wrap-keyword-params]]
             [ring.middleware.params :refer [wrap-params]]
+            [ring.middleware.multipart-params :refer [wrap-multipart-params]]
             [ring.middleware.reload :refer [wrap-reload]]
             [cheshire.core :as json]
             [taoensso.timbre :as log]
@@ -27,12 +28,9 @@
 
 (defn dispatch-submit-job [request body]
   (try
-    (let [body-string (slurp body)
-          message-body (json/parse-string body-string true)]
+    (let [message-body (json/parse-string body true)]
       (log/debug "Printing request")
       (log/debug request)
-      (log/debug "Body recieved is")
-      (log/debug body-string)
       (log/debug "message body is now an event...")
       (let [event (events/message->submit-descriptor-event request message-body)
             status-event (partial events/status-event event)]
@@ -42,7 +40,7 @@
         (>!! @eventbus/send-event-channel-atom [event])
         (:action_id event)))
     (catch Exception e
-      (log/error "Could Not Parse Descriptor Input")
+      (log/error "Could Not Parse Descriptor Input:" (.getMessage e))
       (bad-request "Could Not Parse Submitted Descriptor"))))
 
 (defn dispatch-delete-job [request body action-id]
@@ -103,7 +101,7 @@
            (defroutes job-routes
              (GET  "/" [] (response (eventbus/get-all-jobs))) ;;TODO - remove this in production...? implement me
              (POST "/" {body :body :as request} (post-proc-results (log/info (pprint request)) #_(create-job body)));TODO - implement me
-             (POST "/descriptor" {body :body :as request} (response (dispatch-submit-job request body)))
+             (POST "/descriptor" {{body :submit-event} :params :as request} (response (dispatch-submit-job request body)))
              (context "/:client-id" [client-id]
                       (defroutes client-routes
                         (GET    "/" [] (post-proc-results (eventbus/get-all-client-jobs client-id)))
@@ -126,4 +124,5 @@
       (wrap-json-body {:keywords? true :bigdecimals? true})
       (wrap-keyword-params)
       (wrap-params)
+      (wrap-multipart-params)
       (wrap-json-params)))
