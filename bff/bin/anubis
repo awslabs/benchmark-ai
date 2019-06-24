@@ -9,6 +9,7 @@ declare -r SERVICE_NAME="anubis-client"
 declare -r MY_SHA1=$(sha1sum ${0} | awk '{print $1}')
 declare -r BAI_HOME=${HOME}/.bai
 declare -r BAI_HISTORY=${BAI_HOME}/history
+declare -r BAI_SCRIPT_STAGING=${BAI_HOME}/script_staging
 declare -r BAI_ACTION_IDS=${BAI_HOME}/action_ids
 declare -r BAI_DATABASE=${BAI_HOME}/db
 declare -r BAI_SERVICE_ENDPOINT_CONFIG=${BAI_HOME}/service_endpoint
@@ -97,6 +98,7 @@ check_tools() {
     if type whoami   >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "whoami"; (( num_missing_tools++ ));fi
     if type hostname >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "hostname"; (( num_missing_tools++ ));fi
     if type date     >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "date"; (( num_missing_tools++ ));fi
+    if type tar      >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "tar"; (( num_missing_tools++ ));fi
     if type curl     >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "curl"; (( num_missing_tools++ ));fi
     if type jq       >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "jq"; (( num_missing_tools++ ));fi
 
@@ -117,6 +119,7 @@ check_tools() {
 _setup() {
     mkdir -p "${BAI_HOME}"
     mkdir -p "${BAI_HOME}/db"
+    mkdir -p "${BAI_HOME}/script_staging"
     touch "${BAI_HOME}/action_ids"
     touch "${BAI_HOME}/history"
     touch "${BAI_HOME}/service_endpoint"
@@ -193,6 +196,17 @@ EOF
 # TODO - Also, look at changing the formulation of client_id to just be the user's hashed email
 _generate_submit_event() {
     local descriptor_filename=${1?"generate_submit_event() -> You MUST supply a descriptor file as first argument to this function"}
+    local script=${2:-""}
+
+    #TODO - edit this file properly with SED...
+    #To insert the [[ml.script]] TOML section...
+    [[ -n "${script}" ]] && cat <<EOF >> "${descriptor_filename}"
+
+[[ml.script]]
+${script_artifact##*/}
+
+EOF
+
     local event=$(cat <<-EOF
 {
     "message_id" : "$(uuidgen)",
@@ -258,13 +272,34 @@ sync_version() {
     echo "Implement me!!!!!"
 }
 
+script_artifact=""
+
 _prepare_script() {
     local script=${1:?"The sript name is a manidory argument"}
     echo "Preparing script ${script}"
+
     #1 find the script (dir?)
     #2 if it is a directory then tar.gz it up
     #3 write artifact to the staging dir;
     #4 sha1sum artifact and rename to the hash
+    #NOTE: restrict script locations... (don't want script to be "/" etc...)
+    local artifact
+    local target
+    if [[ -e "${script}" ]]; then
+        echo "Located ${script} "$([[ -d "${script}" ]] && echo -n "directory" ; [[ -f "${script}" ]] && echo -n "file")", building artifact..."
+        pushd "${script%/*}" >& /dev/null
+        artifact=${BAI_SCRIPT_STAGING}/_${script##*/}.tar
+        tar cf "${artifact}" "${script##*/}"
+        (( $? != 0 )) && popd && return 1
+        artifact_hashname=$(sha1sum "${artifact}" | awk '{print $1}')
+        mv "${artifact}" "${artifact%/*}/${artifact_hashname}.tar"
+        popd >& /dev/null
+    else
+        echo "Dunno what kinda file this is money grip :-/"
+    fi
+
+    script_artifact="${artifact%/*}/${artifact_hashname}.tgz"
+
     #5 Add hash name to event or toml (hmmm?)
     #6 ask server if file is already present,
     #  (if not send file along as well when submitting.)
@@ -288,12 +323,14 @@ submit() {
         current_service_endpoint="localhost:8080"
     fi
 
-    local data=$(_generate_submit_event ${descriptor_filename})
+    [[ -n "${script_filename}" ]] && _prepare_script "${script_filename}"
+
+    local data=$(_generate_submit_event "${descriptor_filename}" "${script_artifact}")
     local cmd
     local returned
 
     if [[ -n "${data}" ]]; then
-        cmd="curl -F submit-event='"${data}"' http://"${current_service_endpoint}"/api/job/descriptor"
+        cmd="curl -F submit-event='"${data}"' "$( [[ -n ${script_artifact} ]] && echo -n "-F script='"${script_artifact}"'")" http://"${current_service_endpoint}"/api/job/descriptor"
         ((VERBOSE)) && echo ${cmd}
         _print_status "sending ${descriptor_filename} to anubis service @ ${current_service_endpoint}"
         [[ ! -d "${BAI_DATABASE}/$(get_client_id)" ]] && mkdir -p "${BAI_DATABASE}/$(get_client_id)"
