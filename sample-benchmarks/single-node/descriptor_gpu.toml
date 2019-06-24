@@ -39,25 +39,25 @@ id = "mnist"
 # Data download URI.
 src = "http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz"
 # Path where the dataset is stored in the container FS
-path = "/data/mnist"
+path = "/data/mnist/train-images-idx3-ubyte.gz"
 
 [[data.sources]]
 # Data download URI.
 src = "http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz"
 # Path where the dataset is stored in the container FS
-path = "/data/mnist"
+path = "/data/mnist/train-labels-idx1-ubyte.gz"
 
 [[data.sources]]
 # Data download URI.
 src = "http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz"
 # Path where the dataset is stored in the container FS
-path = "/data/mnist"
+path = "/data/mnist/t10k-images-idx3-ubyte.gz"
 
 [[data.sources]]
 # Data download URI.
 src = "http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz"
 # Path where the dataset is stored in the container FS
-path = "/data/mnist"
+path = "/data/mnist/t10k-labels-idx1-ubyte.gz"
 
 # ...
 
