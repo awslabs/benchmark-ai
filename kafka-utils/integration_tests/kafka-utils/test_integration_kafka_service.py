@@ -18,9 +18,13 @@ def list_topics(bootstrap_servers: List[str]):
     return topics
 
 
+# Utility function to have unique topic names per test
+def add_prefix(topic_name: str, test_number: int):
+    return f"TEST{test_number}_{topic_name}"
+
+
 def test_create_new_topic(kafka_service_config):
-    prefix = "TEST1_"
-    topic_name = prefix + TOPIC_NAME
+    topic_name = add_prefix(TOPIC_NAME, 1)
 
     create_kafka_topics(
         new_topics=[topic_name],
@@ -35,8 +39,7 @@ def test_create_new_topic(kafka_service_config):
 
 
 def test_create_multiple_topics(kafka_service_config):
-    prefix = "TEST2_"
-    topics_to_create = [prefix + TOPIC_NAME, prefix + OTHER_TOPIC_NAME]
+    topics_to_create = [add_prefix(topic, 2) for topic in [TOPIC_NAME, OTHER_TOPIC_NAME]]
 
     create_kafka_topics(
         new_topics=topics_to_create,
@@ -52,8 +55,7 @@ def test_create_multiple_topics(kafka_service_config):
 
 
 def test_create_existing_topic(kafka_service_config):
-    prefix = "TEST3_"
-    topic_name = prefix + TOPIC_NAME
+    topic_name = add_prefix(TOPIC_NAME, 3)
 
     # Create the topic twice
     for _ in range(2):
@@ -70,8 +72,7 @@ def test_create_existing_topic(kafka_service_config):
 
 
 def test_create_multiple_topics_one_existing(kafka_service_config):
-    prefix = "TEST4_"
-    topics_to_create = [prefix + TOPIC_NAME, prefix + OTHER_TOPIC_NAME]
+    topics_to_create = [add_prefix(topic, 4) for topic in [TOPIC_NAME, OTHER_TOPIC_NAME]]
 
     create_kafka_topics(
         new_topics=[topics_to_create[0]],
