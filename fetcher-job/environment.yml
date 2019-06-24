@@ -13,6 +13,6 @@ dependencies:
   - pip:
     - dacite
     - ConfigArgParse
-    - dataclasses-json
+    - dataclasses-json >= 0.2.7
     - flake8-black
 

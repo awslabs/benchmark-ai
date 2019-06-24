@@ -4,7 +4,7 @@ from enum import Enum
 
 import dacite
 from dataclasses_json import dataclass_json
-from typing import List, Optional, Type, Dict, Any, TypeVar
+from typing import List, Optional, Type, Dict, Any, TypeVar, Union
 
 
 class FetcherStatus(Enum):
@@ -122,7 +122,7 @@ class ExecutorBenchmarkEvent(BenchmarkEvent):
 @dataclass
 class CommandRequestPayload:
     command: str
-    args: Optional[List[str]]
+    args: Union[Dict[str, str], List[str]] = None
 
 
 @dataclass_json
