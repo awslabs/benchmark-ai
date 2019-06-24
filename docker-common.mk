@@ -56,7 +56,7 @@ endef
 deploy.yml: _deploy_venv
 	rm -f deploy.yml
 	cd deploy && for file in *.yml ; do \
-		$(DEPLOY_CONDA_RUN) sed -e 's\|@@DOCKER_IMAGE_TAG@@\|$(DOCKER_IMAGE_TAG)\|g' $${file} >> ../deploy.yml && echo "---" >> ../deploy.yml ; \
+		[ -f $${file} ] && $(DEPLOY_CONDA_RUN) sed -e 's\|@@DOCKER_IMAGE_TAG@@\|$(DOCKER_IMAGE_TAG)\|g' $${file} >> ../deploy.yml && echo "---" >> ../deploy.yml ; \
 	done
 
 define fn_k8s_undeploy
