@@ -135,15 +135,7 @@ def main():
     Config.add_args(parser)
     args = parser.parse_args()
     if args.clean:
-
-        def rm(path):
-            if os.path.exists(path):
-                os.remove(path)
-                print(f"Removed `{path}`")
-
-        rm(".terraform/terraform.tfstate")
-        rm(".terraform/ci-backend-config")
-        rm("terraform.tfvars")
+        remove_terraform_config_files()
         return
 
     config = Config.create_from_args(args)
@@ -169,6 +161,17 @@ def main():
             "Follow this page for instructions: https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line"
         )
     return ret
+
+
+def remove_terraform_config_files():
+    def rm(path):
+        if os.path.exists(path):
+            os.remove(path)
+            print(f"Removed `{path}`")
+
+    rm(".terraform/terraform.tfstate")
+    rm(".terraform/ci-backend-config")
+    rm("terraform.tfvars")
 
 
 if __name__ == "__main__":
