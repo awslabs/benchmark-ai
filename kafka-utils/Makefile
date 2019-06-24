@@ -28,3 +28,9 @@ endif
 integration_tests:
 	echo $(TEST_LABEL)
 	cd $(INTEGRATION_TEST_FOLDERS) && $(MAKE) run $(TEST_LABEL)
+
+deploy.yml:
+	echo "Skipping deploy.yml step since kafka-utils does not have to be deployed"
+
+publish:
+	echo "Skipping publish step since kafka-utils does not have to be published"
