@@ -111,7 +111,7 @@ def chime_hook_url(config, session):
     if config["chime_hook_url"]:
         return
 
-    secrets_manager_client = session.client(service_name="secretsmanager", region_name="us-east-1")
+    secrets_manager_client = session.client(service_name="secretsmanager")
     try:
         hook_url_secret = secrets_manager_client.get_secret_value(SecretId="ChimeHookUrl")
         config["chime_hook_url"] = hook_url_secret["SecretString"]
