@@ -8,16 +8,18 @@ from typing import List, Optional, Type, Dict, Any, TypeVar, Union
 
 
 class FetcherStatus(Enum):
-    def __new__(cls, val: str, final: bool):
+    def __new__(cls, val: str, final: bool, success: bool):
         obj = object.__new__(cls)
         obj._value_ = val
         obj.final = final
+        obj.success = success
         return obj
 
-    PENDING = "PENDING", False
-    RUNNING = "RUNNING", False
-    DONE = "DONE", True
-    FAILED = "FAILED", True
+    PENDING = "PENDING", False, False
+    RUNNING = "RUNNING", False, False
+    DONE = "DONE", True, True
+    FAILED = "FAILED", True, False
+    CANCELED = "CANCELED", True, False
 
     def __str__(self):
         return self.value

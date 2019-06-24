@@ -2,7 +2,7 @@ import pytest
 from kazoo.client import KazooClient
 from pytest import fixture
 
-from bai_kafka_utils.events import BenchmarkEvent, DataSet, FetchedType
+from bai_kafka_utils.events import BenchmarkEvent, DataSet, FetchedType, FetcherStatus
 from bai_zk_utils.zk_locker import DistributedRWLockManager
 from fetcher_dispatcher.args import FetcherServiceConfig
 from fetcher_dispatcher.data_set_manager import DataSetManager
@@ -11,6 +11,9 @@ from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
 TIMEOUT_FOR_DOWNLOAD_SEC = 5 * 60
 
 EXISTING_DATASET = "http://files.grouplens.org/datasets/movielens/ml-1m.zip"
+
+# This will last forever - until we cancel it.
+VERY_LARGE_DATASET = "http://files.grouplens.org/datasets/movielens/ml-1m.zip?delay=3600"
 
 
 @fixture
@@ -47,6 +50,7 @@ def test_fetch(
         assert data_set.src
         assert data_set.type == FetchedType.FILE
         assert data_set.dst
+        assert data_set.status == FetcherStatus.DONE
 
         test_fetch.completed += 1
 
@@ -54,4 +58,30 @@ def test_fetch(
         data_set_manager.fetch(data_set, benchmark_event_dummy_payload, on_done_test)
 
     while test_fetch.completed < repeat:
+        pass
+
+
+# This test may be not suitable for real environments
+def test_cancel(
+    data_set_manager: DataSetManager,
+    fetcher_service_config: FetcherServiceConfig,
+    benchmark_event_dummy_payload: BenchmarkEvent,
+):
+    data_set = DataSet(
+        src=VERY_LARGE_DATASET, dst=f"s3://{fetcher_service_config.s3_data_set_bucket}/it/test.file", md5=None
+    )
+
+    test_fetch.completed = False
+
+    def on_done_test(data_set: DataSet):
+        assert data_set.src
+        assert data_set.status == FetcherStatus.CANCELED
+        assert not data_set.dst
+
+        test_fetch.completed = True
+
+    data_set_manager.fetch(data_set, benchmark_event_dummy_payload, on_done_test)
+    data_set_manager.cancel(benchmark_event_dummy_payload.client_id, benchmark_event_dummy_payload.action_id)
+
+    while not test_fetch.completed:
         pass

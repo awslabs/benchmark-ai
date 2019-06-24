@@ -3,6 +3,7 @@ import abc
 import logging
 
 from kazoo.client import KazooClient
+from kazoo.exceptions import NoNodeError, BadVersionError
 from kazoo.protocol.states import WatchedEvent, EventType
 from typing import Callable
 
@@ -99,9 +100,9 @@ class DataSetManager:
         def _on_zk_changed(evt):
             self.__on_zk_changed(evt, on_done, data_set)
 
-        node_data = self._zk.get(zk_node_path, _on_zk_changed)
+        data, _ = self._zk.get(zk_node_path, _on_zk_changed)
 
-        result: FetcherResult = FetcherResult.from_binary(node_data[0])
+        result: FetcherResult = FetcherResult.from_binary(data)
 
         logger.info("Fetch request %s result = %s", data_set, result)
 
@@ -109,7 +110,7 @@ class DataSetManager:
             data_set.status = result.status
             data_set.type = result.type
 
-            if result.status == FetcherStatus.FAILED:
+            if not result.status.success:
                 data_set.message = result.message
                 data_set.dst = None
 
@@ -123,11 +124,42 @@ class DataSetManager:
         self._zk.stop()
 
     def cancel(self, client_id: str, action_id: str):
+        logger.info(f"Canceling action {client_id}/{action_id}")
         self._data_set_dispatcher.cancel_all(client_id, action_id)
-
-        zk_node_path = self._get_node_path(client_id, action_id)
-
-        # Cleanup - they all get notified
-        self._zk.delete(zk_node_path, recursive=True)
-
+        self.update_nodes_to_cancel(client_id, action_id)
         pass
+
+    def update_nodes_to_cancel(self, client_id: str, action_id: str):
+        # As always with stop-flags, we can face a bunch of race conditions
+        zk_node_path = self._get_node_path(client_id, action_id)
+        for child in self._zk.get_children(zk_node_path, watch=None):
+            abs_path = zk_node_path + "/" + child
+
+            logger.info(f"Updating node {abs_path}")
+
+            try:
+                while True:
+                    data, zk_stat = self._zk.get(abs_path)
+
+                    result: FetcherResult = FetcherResult.from_binary(data)
+
+                    # The guy is final - it will not take long for us to cancel it.
+                    if result.status.final:
+                        logger.info(f"{abs_path}: not to be canceled - already finished")
+                        break
+                    result.status = FetcherStatus.CANCELED
+
+                    new_data = result.to_binary()
+                    try:
+                        self._zk.set(abs_path, new_data, version=zk_stat.version)
+                    except BadVersionError:
+                        logger.info(f"{abs_path}: the node was updated meanwhile")
+                        continue
+                    logger.info(f"{abs_path}: canceled")
+                    break
+
+            except NoNodeError:
+                logger.info(f"{abs_path}: the node was deleted meanwhile")
+                # The task was just finished - status was repopted to customer and the node got deleted.
+                # OK. It's not our deal anymore
+                continue
