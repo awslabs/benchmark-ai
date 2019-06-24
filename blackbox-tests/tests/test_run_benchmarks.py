@@ -1,3 +1,8 @@
+import os
+
+import subprocess
+import tempfile
+
 from bai_kafka_utils.events import Status
 from typing import Iterable
 from collections import namedtuple
@@ -10,7 +15,33 @@ import pytest
 
 @pytest.fixture(scope="module")
 def client():
-    return BaiClient()
+    # HACK: Port forwarding because BFF is not currently exposed to the world as a service
+    #       https://github.com/MXNetEdge/benchmark-ai/issues/454
+    import sys
+
+    dirname = os.path.dirname(sys.executable)
+    with tempfile.NamedTemporaryFile("w+", prefix="bai-blackbox-", suffix=".kubeconfig") as kubeconfig_file:
+        eks_update_kubeconfig_command = (
+            f"{dirname}/aws eks update-kubeconfig --name benchmark-cluster --kubeconfig {kubeconfig_file.name}"
+        )
+        print(f"Executing: {eks_update_kubeconfig_command}")
+        subprocess.check_output(eks_update_kubeconfig_command.split(" "))
+        port_forward_command = (
+            f"{dirname}/kubectl --kubeconfig={kubeconfig_file.name} port-forward deployment/bai-bff 8080"
+        )
+        print(f"Executing: {port_forward_command}")
+        with subprocess.Popen(port_forward_command.split(" "), stdout=subprocess.PIPE) as port_forward_process:
+            while True:
+                retcode = port_forward_process.poll()
+                if retcode:
+                    print(port_forward_process.stdout.read())
+                    raise ValueError(f"Port-forward command returned with exitcode: {retcode}")
+                line = port_forward_process.stdout.readline()
+                line = line.decode("utf-8")
+                print(line)
+                if "Forwarding from 127.0.0.1:8080 -> 8080" in line:
+                    break
+            yield BaiClient(endpoint="http://localhost:8080")
 
 
 StatusInfo = namedtuple("StatusInfo", ("message_id", "status", "message", "service"))

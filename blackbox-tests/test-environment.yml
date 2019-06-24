@@ -1,4 +1,4 @@
-name: bai-client
+name: blackbox-tests
 channels:
   - conda-forge
   - defaults
@@ -7,3 +7,6 @@ dependencies:
   - pytest-mock
   - pytest-cov
   - pytest-datadir
+  - kubernetes
+  - awscli
+  - kubernetes

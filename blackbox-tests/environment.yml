@@ -1,4 +1,4 @@
-name: bai-client
+name: blackbox-tests
 channels:
   - conda-forge
   - defaults
