@@ -13,7 +13,7 @@ class KubernetesTestUtilsClient:
         self.core_api_instance = kubernetes.client.CoreV1Api(api_client)
         self.service = service
 
-    def count_pods(self, namespace: str, client_id: str, action_id: str):
+    def is_pod_present(self, namespace: str, client_id: str, action_id: str):
         label_selector = KubernetesDispatcher.get_label_selector(client_id, action_id)
         pods: V1PodList = self.core_api_instance.list_namespaced_pod(namespace, label_selector=label_selector)
         return bool(pods.items)
@@ -22,6 +22,7 @@ class KubernetesTestUtilsClient:
         label_selector = KubernetesDispatcher.get_label_selector(client_id, action_id)
         pods: V1PodList = self.batch_api_instance.list_namespaced_job(namespace, label_selector=label_selector)
         return bool(pods.items)
+
 
     def wait_for_pod_exists(self, namespace: str, client_id: str, action_id: str):
         while not self.is_pod_present(namespace, client_id, action_id):
