@@ -1,4 +1,3 @@
-configMapGenerator:
 resources:
 - roles.yml
 - config.yml
