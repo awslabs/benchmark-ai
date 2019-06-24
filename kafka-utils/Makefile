@@ -1,14 +1,17 @@
 ENV_NAME = kafka-utils-test
 
+include ../docker-common.mk
 include ../python-common.mk
 
 publish:
 	echo "Nothing to publish"
 
+deploy.yml:
+	echo "Skipping deploy.yml step since kafka-utils does not have to be deployed"
+	touch deploy.yml
+
 # Copy paste from fetcher
 PROJECT=kafka-utils
-
-include ../docker-common.mk
 
 STAGE ?= devo
 
@@ -28,9 +31,3 @@ endif
 integration_tests:
 	echo $(TEST_LABEL)
 	cd $(INTEGRATION_TEST_FOLDERS) && $(MAKE) run $(TEST_LABEL)
-
-deploy.yml:
-	echo "Skipping deploy.yml step since kafka-utils does not have to be deployed"
-
-publish:
-	echo "Skipping publish step since kafka-utils does not have to be published"
