@@ -147,6 +147,17 @@ resource "aws_codepipeline" "codepipeline" {
   depends_on = [aws_codebuild_project.ci-unit-tests-master, aws_codebuild_project.ci-deploy-master, aws_codebuild_project.ci-publish-master]
 }
 
+locals {
+  common_environment_variables = {
+    for project in var.projects:
+    project => {
+      ACCOUNT_ID = data.aws_caller_identity.current.account_id
+      PROJECT_NAME = project
+      ECR_DOCKER_REGISTRY = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.region}.amazonaws.com"
+    }
+  }
+}
+
 #############################################################
 # Build
 #############################################################
@@ -175,6 +186,14 @@ resource "aws_codebuild_project" "ci-unit-tests-master" {
     environment_variable {
       name = "RUN_INTEGRATION_TESTS"
       value = tostring(var.run_integration_tests)
+    }
+
+    dynamic "environment_variable" {
+      for_each = local.common_environment_variables[var.projects[count.index]]
+      content {
+        name = environment_variable.key
+        value = environment_variable.value
+      }
     }
   }
 
@@ -205,14 +224,12 @@ resource "aws_codebuild_project" "ci-publish-master" {
     type = "LINUX_CONTAINER"
     privileged_mode = true
 
-    environment_variable {
-      name = "PROJECT_NAME"
-      value = var.projects[count.index]
-    }
-
-    environment_variable {
-      name = "ACCOUNT_ID"
-      value = data.aws_caller_identity.current.account_id
+    dynamic "environment_variable" {
+      for_each = local.common_environment_variables[var.projects[count.index]]
+      content {
+        name = environment_variable.key
+        value = environment_variable.value
+      }
     }
   }
 
@@ -242,6 +259,14 @@ resource "aws_codebuild_project" "ci-deploy-master" {
     compute_type = "BUILD_GENERAL1_SMALL"
     image = var.ci_docker_image["default"]
     type = "LINUX_CONTAINER"
+
+    dynamic "environment_variable" {
+      for_each = local.common_environment_variables[var.projects[count.index]]
+      content {
+        name = environment_variable.key
+        value = environment_variable.value
+      }
+    }
   }
 
   source {
