@@ -194,12 +194,15 @@ def test_cancel_all_actions(mock_batch_api_instance, mock_core_api_instance, moc
 def test_get_label_selector():
     assert (
         KubernetesDispatcher.get_label_selector(CLIENT_ID, ACTION_ID)
-        == f"{KubernetesDispatcher.CREATED_BY_LABEL}={SERVICE_NAME},{KubernetesDispatcher.CLIENT_ID_LABEL}={CLIENT_ID},{KubernetesDispatcher.ACTION_ID_LABEL}=={ACTION_ID}"
+        == f"{KubernetesDispatcher.CREATED_BY_LABEL}={SERVICE_NAME},"
+        + f"{KubernetesDispatcher.CLIENT_ID_LABEL}={CLIENT_ID},"
+        + f"{KubernetesDispatcher.ACTION_ID_LABEL}={ACTION_ID}"
     )
 
 
 def test_get_label_selector_all_actions():
     assert (
         KubernetesDispatcher.get_label_selector(CLIENT_ID)
-        == f"{KubernetesDispatcher.CREATED_BY_LABEL}={SERVICE_NAME},{KubernetesDispatcher.CLIENT_ID_LABEL}={CLIENT_ID}"
+        == f"{KubernetesDispatcher.CREATED_BY_LABEL}={SERVICE_NAME},"
+        + f"{KubernetesDispatcher.CLIENT_ID_LABEL}={CLIENT_ID}"
     )
