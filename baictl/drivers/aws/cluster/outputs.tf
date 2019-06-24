@@ -58,6 +58,11 @@ output "data_pull_s3" {
   value       = "${aws_s3_bucket.data-pull.id}"
 }
 
+output "scripts_exchange_s3" {
+  description = "S3 bucket for BFF model code/scripts"
+  value = "${aws_s3_bucket.scripts-exchange.id}"
+}
+
 output "private_subnets" {
   description = "List of IDs of private subnets"
   value       = ["${module.vpc.private_subnets}"]
