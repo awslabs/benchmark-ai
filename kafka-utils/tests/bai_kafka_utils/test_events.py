@@ -188,9 +188,11 @@ def test_cmd_payload_dict():
     json = '{"command":"doit", "args": {"foo":"bar"}}'
     payload = CommandRequestPayload.from_json(json)
     assert isinstance(payload.args, dict)
+    assert payload.args == {"foo": "bar"}
 
 
 def test_cmd_payload_list():
     json = '{"command":"doit", "args": ["foo", "bar"]}'
     payload = CommandRequestPayload.from_json(json)
     assert isinstance(payload.args, list)
+    assert payload.args == ["foo", "bar"]
