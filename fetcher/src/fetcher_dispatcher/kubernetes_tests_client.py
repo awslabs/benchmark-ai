@@ -23,7 +23,6 @@ class KubernetesTestUtilsClient:
         pods: V1PodList = self.batch_api_instance.list_namespaced_job(namespace, label_selector=label_selector)
         return bool(pods.items)
 
-
     def wait_for_pod_exists(self, namespace: str, client_id: str, action_id: str):
         while not self.is_pod_present(namespace, client_id, action_id):
             sleep(1)

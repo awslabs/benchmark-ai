@@ -22,7 +22,7 @@ metadata:
   name: fetcher-dispatcher-it
   namespace: default
 rules:
-- apiGroups: [""]
+- apiGroups: ["","batch"]
   resources: ["pods", "jobs"]
   verbs: ["list","get"]
 ---
