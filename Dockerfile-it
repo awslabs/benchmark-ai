@@ -29,7 +29,7 @@ RUN /opt/$SERVICE/bin/python3 setup.py install
 FROM ubuntu:18.04
 
 #Seems to fail without
-ARG SERVICE 
+ARG SERVICE
 
 COPY --from=base /opt/$SERVICE /opt/$SERVICE
 COPY ./$SERVICE/integration_tests /$SERVICE/it

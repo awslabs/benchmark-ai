@@ -1,4 +1,4 @@
-name: kafka-utils-test
+name: kafka-utils
 channels:
   - conda-forge
   - defaults

@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kafka-utils-it
+spec:
+  template:
+    spec:
+      containers:
+        - name: it
+          imagePullPolicy: Never
+          image: benchmarkai/kafka-utils-it:local-latest
+          env:
+            - name: NUM_PARTITIONS
+              valueFrom:
+                configMapKeyRef:
+                  name: kafka
+                  key: numPartitions
+            - name: REPLICATION_FACTOR
+              valueFrom:
+                configMapKeyRef:
+                  name: kafka
+                  key: replicationFactor
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: outputs-infrastructure
+                  key: msk_bootstrap_brokers
+            - name: ZOOKEEPER_ENSEMBLE_HOSTS
+              valueFrom:
+                configMapKeyRef:
+                  name: zookeeper
+                  key: connect
+      affinity:
+      #--
+      nodeSelector:
+      #--

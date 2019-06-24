@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kafka-utils-it
+spec:
+  template:
+    spec:
+      #serviceAccountName: fetcher-dispatcher
+      containers:
+        - name: it
+          image: benchmarkai/kafka-utils-it
+          imagePullPolicy: Always
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: outputs-infrastructure
+                  key: msk_bootstrap_brokers
+            - name: ZOOKEEPER_ENSEMBLE_HOSTS
+              valueFrom:
+                configMapKeyRef:
+                  name: zookeeper
+                  key: connect
+            - name: CONSUMER_GROUP_ID
+              value: kafka-utils-test
+            - name: PYTEST_ARGS
+              value: "-o log_cli=true --log-cli-level=INFO"
+      restartPolicy: Never
+  backoffLimit: 0
