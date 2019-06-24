@@ -275,18 +275,14 @@ sync_version() {
 script_artifact=""
 
 _prepare_script() {
-    local script=${1:?"The sript name is a manidory argument"}
-    echo "Preparing script ${script}"
+    local script=${1:?"The script name is a manditory argument"}
+    ((DEBUG)) && echo "Preparing script ${script}"
 
-    #1 find the script (dir?)
-    #2 if it is a directory then tar.gz it up
-    #3 write artifact to the staging dir;
-    #4 sha1sum artifact and rename to the hash
-    #NOTE: restrict script locations... (don't want script to be "/" etc...)
+    #NOTE: restrict (lint) script locations... (don't want script to point to "dangerous" places etc...)
     local artifact
     local target
     if [[ -e "${script}" ]]; then
-        echo "Located ${script} "$([[ -d "${script}" ]] && echo -n "directory" ; [[ -f "${script}" ]] && echo -n "file")", building artifact..."
+        ((DEBUG)) && echo "Located ${script} "$([[ -d "${script}" ]] && echo -n "directory" ; [[ -f "${script}" ]] && echo -n "file")", building artifact..."
         pushd "${script%/*}" >& /dev/null
         artifact=${BAI_SCRIPT_STAGING}/_${script##*/}.tar
         tar cf "${artifact}" "${script##*/}"
@@ -295,10 +291,11 @@ _prepare_script() {
         mv "${artifact}" "${artifact%/*}/${artifact_hashname}.tar"
         popd >& /dev/null
     else
-        echo "Dunno what kinda file this is money grip :-/"
+        echo "Sorry, money grip, your script file doesn't exist :-/"
+        exit 99
     fi
 
-    script_artifact="${artifact%/*}/${artifact_hashname}.tgz"
+    script_artifact=$( [[ -n "${artifact_hashname}" ]] && printf "${artifact%/*}/${artifact_hashname}.tgz")
 
     #5 Add hash name to event or toml (hmmm?)
     #6 ask server if file is already present,
@@ -307,14 +304,14 @@ _prepare_script() {
 
 #submit event
 submit() {
-    local descriptor_filename=${1?"submit() -> You MUST supply a descriptor file (or <action id>) as first argument"}
+    local descriptor_filename=${1?"submit() -> You MUST supply a descriptor file (or <action id>)"}
     if [[ -n $(sed -rne '/[a-f0-9-]{8}-([a-f0-9-]{4}-){3}[a-f0-9-]{12}/p' <<<"${descriptor_filename}") ]]; then
         descriptor_filename=$(_write_descriptor ${descriptor_filename})
     fi
-    local script=${2:-""}
+    local script_filename=${2:-""}
     local current_service_endpoint=$(cat ${BAI_SERVICE_ENDPOINT_CONFIG} | tail -n 1)
 
-    if [ ! -f "$descriptor_filename" ]; then echo "file does not exist"; exit 1; fi
+    if [ ! -f "${descriptor_filename}" ]; then echo "file does not exist"; exit 1; fi
     if [[ -z "${current_service_endpoint}" ]]; then
         printf "
 \033[01;31m[WARNING]\033[0m You do not have a service endpoint registered.
@@ -330,9 +327,11 @@ submit() {
     local returned
 
     if [[ -n "${data}" ]]; then
-        cmd="curl -F submit-event='"${data}"' "$( [[ -n ${script_artifact} ]] && echo -n "-F script='"${script_artifact}"'")" http://"${current_service_endpoint}"/api/job/descriptor"
+        [[ -n "${script_artifact}" ]] && echo "Using Script: ${script_artifact##*/}"
+        local not_on_server=1;
+        cmd="curl -F submit-event='"${data}"' "$( [[ -n "${script_artifact}" ]] && echo -n "-F script='"${script_artifact}"'")" http://"${current_service_endpoint}"/api/job/descriptor"
         ((VERBOSE)) && echo ${cmd}
-        _print_status "sending ${descriptor_filename} to anubis service @ ${current_service_endpoint}"
+        _print_status "sending ${descriptor_filename} "$( [[ -n "${script_artifact}" ]] && echo -n "and '"${script_artifact##*/}"'")"to anubis service @ ${current_service_endpoint}"
         [[ ! -d "${BAI_DATABASE}/$(get_client_id)" ]] && mkdir -p "${BAI_DATABASE}/$(get_client_id)"
 
         returned=$(eval $cmd)
