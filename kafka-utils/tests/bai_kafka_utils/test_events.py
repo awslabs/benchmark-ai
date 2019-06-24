@@ -12,6 +12,7 @@ from bai_kafka_utils.events import (
     BenchmarkEvent,
     FetcherStatus,
     FetchedType,
+    CommandRequestPayload,
 )
 
 
@@ -181,3 +182,15 @@ def test_fetch_type():
 
 def test_fetch_status():
     assert str(FetcherStatus.DONE) == "DONE"
+
+
+def test_cmd_payload_dict():
+    json = '{"command":"doit", "args": {"foo":"bar"}}'
+    payload = CommandRequestPayload.from_json(json)
+    assert isinstance(payload.args, dict)
+
+
+def test_cmd_payload_list():
+    json = '{"command":"doit", "args": ["foo", "bar"]}'
+    payload = CommandRequestPayload.from_json(json)
+    assert isinstance(payload.args, list)
