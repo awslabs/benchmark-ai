@@ -38,6 +38,8 @@ _k8s_cleanup:
 _k8s_silent_cleanup:
 	-$(KUBECTL) delete jobs --selector action-id $(KUBECTL_FLAGS)
 
+deploy.yml:
+	echo "Pure kustomize deployment"
 
 
 
