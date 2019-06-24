@@ -87,7 +87,7 @@ resource "aws_codepipeline" "codepipeline" {
         owner = "AWS"
         provider = "CodeBuild"
         input_artifacts = ["source_output"]
-        output_artifacts = ["build_output-${project.value}"]
+        output_artifacts = [replace("build_output_${project.value}", "-", "_")]
         version = "1"
 
         configuration = {
@@ -110,7 +110,7 @@ resource "aws_codepipeline" "codepipeline" {
         owner = "AWS"
         provider = "CodeBuild"
         input_artifacts = ["source_output"]
-        output_artifacts = ["publish_output-${project.value}"]
+        output_artifacts = [replace("publish_output_${project.value}", "-", "_")]
         version = "1"
 
         configuration = {
@@ -132,7 +132,7 @@ resource "aws_codepipeline" "codepipeline" {
         category = "Build"
         owner = "AWS"
         provider = "CodeBuild"
-        input_artifacts = ["source_output", "publish_output-${project.value}"]
+        input_artifacts = ["source_output", replace("publish_output_${project.value}", "-", "_")]
         output_artifacts = []
         version = "1"
 
