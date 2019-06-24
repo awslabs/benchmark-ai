@@ -258,12 +258,25 @@ sync_version() {
     echo "Implement me!!!!!"
 }
 
+_prepare_script() {
+    local script=${1:?"The sript name is a manidory argument"}
+    echo "Preparing script ${script}"
+    #1 find the script (dir?)
+    #2 if it is a directory then tar.gz it up
+    #3 write artifact to the staging dir;
+    #4 sha1sum artifact and rename to the hash
+    #5 Add hash name to event or toml (hmmm?)
+    #6 ask server if file is already present,
+    #  (if not send file along as well when submitting.)
+}
+
 #submit event
 submit() {
     local descriptor_filename=${1?"submit() -> You MUST supply a descriptor file (or <action id>) as first argument"}
     if [[ -n $(sed -rne '/[a-f0-9-]{8}-([a-f0-9-]{4}-){3}[a-f0-9-]{12}/p' <<<"${descriptor_filename}") ]]; then
         descriptor_filename=$(_write_descriptor ${descriptor_filename})
     fi
+    local script=${2:-""}
     local current_service_endpoint=$(cat ${BAI_SERVICE_ENDPOINT_CONFIG} | tail -n 1)
 
     if [ ! -f "$descriptor_filename" ]; then echo "file does not exist"; exit 1; fi
@@ -489,6 +502,7 @@ main() {
 
     local SUBMIT=0;
     local descriptor_filename=""
+    local script=""
 
         while [ -n "$1" ]; do
     #echo "arg ${i} = $1"
@@ -507,6 +521,10 @@ main() {
                     shift
                     ((SUBMIT++))
                     descriptor_filename="${1}"
+                    ;;
+                --script)
+                    shift
+                    script="${1}"
                     ;;
                 --status)
                     shift
@@ -601,7 +619,7 @@ main() {
             esac
             ((!unshift)) && shift
         done
-        ((SUBMIT)) && submit "${descriptor_filename}"
+        ((SUBMIT)) && submit "${descriptor_filename}" "${script}"
 }
 
 main "$@"
