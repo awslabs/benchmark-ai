@@ -50,7 +50,7 @@ undeploy: k8s_undeploy
 # K8S deploy/undeploy
 #---------------------
 define fn_k8s_deploy
-	$(KUBECTL) apply $(KUBECTL_FLAGS) -f deploy.yml \;
+	$(KUBECTL) apply $(KUBECTL_FLAGS) -f deploy.yml
 endef
 
 deploy.yml: _deploy_venv
