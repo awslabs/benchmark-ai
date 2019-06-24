@@ -18,7 +18,7 @@ resource "aws_elasticsearch_domain" "logs" {
 
   ebs_options {
     ebs_enabled = true
-    volume_size = 16
+    volume_size = 512
   }
 
   access_policies = <<CONFIG
