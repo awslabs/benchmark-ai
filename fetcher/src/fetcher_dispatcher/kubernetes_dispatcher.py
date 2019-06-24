@@ -129,7 +129,7 @@ class KubernetesDispatcher(DataSetDispatcher):
             f"{KubernetesDispatcher.CREATED_BY_LABEL}={SERVICE_NAME},{KubernetesDispatcher.CLIENT_ID_LABEL}={client_id}"
         )
         if action_id:
-            selector += f"{KubernetesDispatcher.ACTION_ID_LABEL}={action_id}"
+            selector += f",{KubernetesDispatcher.ACTION_ID_LABEL}={action_id}"
         return selector
 
     def dispatch_fetch(self, task: DataSet, event: BenchmarkEvent, zk_node_path: str):
