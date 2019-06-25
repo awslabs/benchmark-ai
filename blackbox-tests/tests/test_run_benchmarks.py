@@ -32,18 +32,20 @@ def create_client():
         )
         print(f"Executing: {port_forward_command}")
         with subprocess.Popen(port_forward_command.split(" "), stdout=subprocess.PIPE) as port_forward_process:
-            while True:
-                retcode = port_forward_process.poll()
-                if retcode:
-                    print("Output of `kubectl port-forward`: '%s'" % port_forward_process.stdout.read())
-                    raise ValueError(f"Port-forward command returned with exitcode: {retcode}")
-                line = port_forward_process.stdout.readline()
-                line = line.decode("utf-8")
-                print(line)
-                if "Forwarding from 127.0.0.1:8080 -> 8080" in line:
-                    break
-            yield BaiClient(endpoint="http://localhost:8080")
-            port_forward_process.kill()
+            try:
+                while True:
+                    retcode = port_forward_process.poll()
+                    if retcode:
+                        print("Output of `kubectl port-forward`: '%s'" % port_forward_process.stdout.read())
+                        raise ValueError(f"Port-forward command returned with exitcode: {retcode}")
+                    line = port_forward_process.stdout.readline()
+                    line = line.decode("utf-8")
+                    print(line)
+                    if "Forwarding from 127.0.0.1:8080 -> 8080" in line:
+                        break
+                yield BaiClient(endpoint="http://localhost:8080")
+            finally:
+                port_forward_process.kill()
 
 
 StatusInfo = namedtuple("StatusInfo", ("message_id", "status", "message", "service"))
