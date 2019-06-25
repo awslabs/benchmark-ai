@@ -11,6 +11,9 @@
   (:require [bai-bff.core :refer :all]
             [bai-bff.services :refer [RunService]]
             [bai-bff.utils.parsers :refer [parse-long]]
+            [environ.core :refer [env]]
+            [amazonica.aws.s3 :as s3]
+            [amazonica.aws.s3transfer :as s3tfr]
             [taoensso.timbre :as log]
             [clojure.pprint :refer :all]
             [clojure.core.async :as a :refer [>! <! >!! <!! go chan buffer close! thread
@@ -127,3 +130,22 @@
         since-tstamp (or (parse-long since) 0)]
     (log/trace (str "since... "since-tstamp))
     (filterv #(< since-tstamp (:tstamp (peek (:visited %)))) (get-in @status-db [client-key action-key] {}))))
+
+;;----------------------------------------------------------
+;; Scripts Persistence
+;;----------------------------------------------------------
+
+(defn scripts->s3
+  "Takes a script, represented by a map and writes it down to S3
+  Ex:
+  \"script\" {:filename \"00af189027c5050b408de8fee8449a75973b52d6.tar\",
+              :content-type \"application/octet-stream\",
+              :tempfile #object[java.io.File 0x68f3a6f8 \"/tmp/ring-multipart-3564663405138357266.tmp\"],
+              :size 10240}
+
+  (Bucket name is in environment variable: SCRIPTS_EXCHANGE_S3_BUCKET_NAME)
+
+  "
+  [script-map]
+  (log/trace "scripts->s3 "script-map)
+  )
