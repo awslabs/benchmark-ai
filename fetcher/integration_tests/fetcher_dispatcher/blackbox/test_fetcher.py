@@ -4,10 +4,21 @@ import pytest
 from kafka import KafkaProducer, KafkaConsumer
 from time import time
 
-from typing import Callable
+from typing import Callable, List
 
-from bai_kafka_utils.events import BenchmarkEvent, CommandRequestPayload, DataSet, BenchmarkDoc, FetcherPayload, \
-    FetchedType, FetcherStatus, Status, CommandResponsePayload, CommandRequestEvent
+from bai_kafka_utils.cmd_callback import KafkaCommandCallback
+from bai_kafka_utils.events import (
+    BenchmarkEvent,
+    CommandRequestPayload,
+    DataSet,
+    BenchmarkDoc,
+    FetcherPayload,
+    FetchedType,
+    FetcherStatus,
+    Status,
+    CommandResponsePayload,
+    CommandRequestEvent,
+)
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
 
 TIMEOUT_FOR_DOWNLOAD_SEC = 5 * 60
@@ -102,6 +113,7 @@ def get_all_complete(filters: List[EventFilter]) -> EventFilter:
     def filter_event(event: BenchmarkEvent) -> bool:
         for fltr in set_filters:
             if fltr(event):
+                print(f"Hit condition {fltr.__name__}. {len(set_filters)} to hit.")
                 set_filters.remove(fltr)
                 break
         return not set_filters
@@ -115,7 +127,10 @@ POLL_TIMEOUT_MS = 500
 @pytest.mark.timeout(TIMEOUT_FOR_DOWNLOAD_SEC)
 @pytest.mark.parametrize(
     "src,data_set_check",
-    [(EXISTING_DATASET_WITH_DELAY, successful_dataset), (FAILING_DATASET_WITH_DELAY, failed_dataset)],
+    [
+        (EXISTING_DATASET_WITH_DELAY, successful_dataset, Status.SUCCEEDED),
+        (FAILING_DATASET_WITH_DELAY, failed_dataset, Status.FAILED),
+    ],
     ids=["successful", "failing"],
 )
 def test_fetcher(
@@ -125,14 +140,17 @@ def test_fetcher(
     kafka_service_config: KafkaServiceConfig,
     src: str,
     data_set_check: DataSetFilter,
+    expected_status: Status,
 ):
     benchmark_event = send_salted_fetch_request(
         benchmark_event_dummy_payload, kafka_producer_to_consume, kafka_service_config.consumer_topic, src
     )
 
-    filter_event = get_is_fetch_response(benchmark_event, data_set_check)
+    fetcher_event_filter = get_is_fetch_response(benchmark_event, data_set_check, kafka_service_config)
+    status_event_filter = get_is_status(benchmark_event, expected_status, kafka_service_config)
+    combined_filter = get_all_complete([fetcher_event_filter, status_event_filter])
 
-    return wait_for_response(filter_event, kafka_consumer_of_produced)
+    return wait_for_response(combined_filter, kafka_consumer_of_produced)
 
 
 @pytest.mark.timeout(TIMEOUT_FOR_DOWNLOAD_SEC)
@@ -153,9 +171,12 @@ def test_cancel(
         kafka_service_config.cmd_submit_topic, value=cancel_event, key=cancel_event.client_id
     )
 
-    filter_event = get_is_fetch_response(benchmark_event, canceled_dataset)
+    fetcher_event_filter = get_is_fetch_response(benchmark_event, canceled_dataset, kafka_service_config)
+    status_event_filter = get_is_status(benchmark_event, Status.CANCELED, kafka_service_config)
+    command_return_filter = get_is_command_return(cancel_event, KafkaCommandCallback.CODE_SUCCESS, kafka_service_config)
+    combined_filter = get_all_complete([fetcher_event_filter, status_event_filter, command_return_filter])
 
-    return wait_for_response(filter_event, kafka_consumer_of_produced)
+    return wait_for_response(combined_filter, kafka_consumer_of_produced)
 
 
 def send_salted_fetch_request(benchmark_event_dummy_payload, kafka_producer_to_consume, topic, dataset_src):
