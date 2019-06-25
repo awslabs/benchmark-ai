@@ -95,6 +95,11 @@ spec:
               value: "@@KAFKA_SOURCE_TOPICS@@"
             - name: KAFKA_SINK_TOPICS
               value: "@@KAFKA_SINK_TOPICS@@"
+            - name: SCRIPTS_EXCHANGE_S3_BUCKET_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: outputs-infrastructure
+                  key: scripts_exchange_s3
       nodeSelector:
         node.type: bai-services-cheap
       restartPolicy: Always
