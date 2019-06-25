@@ -1,5 +1,7 @@
 ENV_NAME = blackbox-tests
 
+default: build
+
 include ../python-common.mk
 
 PYTEST = pytest -s
@@ -10,5 +12,3 @@ _post_venv::
 
 publish:
 	echo "Nothing to publish"
-
-default: build
