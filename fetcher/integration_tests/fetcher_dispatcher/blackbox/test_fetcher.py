@@ -3,12 +3,25 @@ import dataclasses
 import pytest
 from kafka import KafkaConsumer, KafkaProducer
 from time import time
-from typing import Callable
+from typing import Callable, List, Set
 
-from bai_kafka_utils.events import FetcherPayload, BenchmarkDoc, BenchmarkEvent, DataSet, FetchedType, FetcherStatus
+from bai_kafka_utils.events import (
+    FetcherPayload,
+    BenchmarkDoc,
+    BenchmarkEvent,
+    DataSet,
+    FetchedType,
+    FetcherStatus,
+    Status,
+    CommandResponsePayload,
+    CommandRequestEvent,
+)
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
 
 TIMEOUT_FOR_DOWNLOAD_SEC = 5 * 60
+
+EventFilter = Callable[[BenchmarkEvent], bool]
+DataSetFilter = Callable[[DataSet], bool]
 
 
 # Should be successful in any environment - has delay of 10s for consumer group to setup
@@ -37,17 +50,58 @@ def failed_dataset(data_set: DataSet) -> bool:
     return data_set.dst is None and data_set.message is not None and data_set.status == FetcherStatus.FAILED
 
 
-def get_message_is_the_response(
-    src_event: BenchmarkEvent, data_set_check: Callable[[DataSet], bool]
-) -> Callable[[BenchmarkEvent], bool]:
+def get_is_fetch_response(
+    src_event: BenchmarkEvent, data_set_check: DataSetFilter, kafka_service_config: KafkaServiceConfig
+) -> EventFilter:
     src_to_check = src_event.payload.datasets[0].src
 
     def filter_event(event: BenchmarkEvent) -> bool:
-        print(f"Got evt {event}")
 
-        return isinstance(event.payload, FetcherPayload) and any(
-            data_set.src == src_to_check and data_set_check(data_set) for data_set in event.payload.datasets
+        return (
+            event.type == kafka_service_config.producer_topic
+            and isinstance(event.payload, FetcherPayload)
+            and any(data_set.src == src_to_check and data_set_check(data_set) for data_set in event.payload.datasets)
         )
+
+    return filter_event
+
+
+def get_is_status(src_event: BenchmarkEvent, status: Status, kafka_service_config: KafkaServiceConfig) -> EventFilter:
+    def filter_event(event: BenchmarkEvent) -> bool:
+        return (
+            event.type == kafka_service_config.status_topic
+            and event.action_id == src_event.action_id
+            and event.status == status
+        )
+
+    return filter_event
+
+
+def get_is_command_return(
+    src_event: CommandRequestEvent, return_code: int, kafka_service_config: KafkaServiceConfig
+) -> EventFilter:
+    def filter_event(event: BenchmarkEvent) -> bool:
+        if event.type != kafka_service_config.cmd_return_topic or not isinstance(event.payload, CommandResponsePayload):
+            return False
+        payload: CommandResponsePayload = event.payload
+        return (
+            payload.return_code == return_code
+            and payload.cmd_submit.action_id == src_event.action_id
+            and payload.cmd_submit.payload == src_event.payload
+        )
+
+    return filter_event
+
+
+def get_all_complete(filters: List[EventFilter]) -> EventFilter:
+    set_filters = set(filters)
+
+    def filter_event(event: BenchmarkEvent) -> bool:
+        for fltr in set_filters:
+            if fltr(event):
+                set_filters.remove(fltr)
+                break
+        return not set_filters
 
     return filter_event
 
@@ -67,7 +121,7 @@ def test_fetcher(
     kafka_consumer_of_produced: KafkaConsumer,
     kafka_service_config: KafkaServiceConfig,
     src: str,
-    data_set_check: Callable[[DataSet], bool],
+    data_set_check: DataSetFilter,
 ):
     benchmark_event = get_fetcher_benchmark_event(benchmark_event_dummy_payload, src)
 
@@ -77,7 +131,7 @@ def test_fetcher(
         kafka_service_config.consumer_topic, value=benchmark_event, key=benchmark_event.client_id
     )
 
-    filter_event = get_message_is_the_response(benchmark_event, data_set_check)
+    filter_event = get_is_fetch_response(benchmark_event, data_set_check)
 
     while True:
         records = kafka_consumer_of_produced.poll(POLL_TIMEOUT_MS)
@@ -86,5 +140,6 @@ def test_fetcher(
         kafka_consumer_of_produced.commit()
         for topic, recs in records.items():
             for msg in recs:
+                print(f"Got evt {msg.value}")
                 if filter_event(msg.value):
                     return

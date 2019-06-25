@@ -203,6 +203,7 @@ class Status(Enum):
     ERROR = "ERROR"
     INITIALIZING = "INITIALIZING"
     SUCCEEDED = "SUCCEEDED"
+    CANCELED = "CANCELED"
 
 
 @dataclass_json

@@ -1,7 +1,7 @@
 from kazoo.client import KazooClient
 from typing import List, Callable
 
-from bai_kafka_utils.events import FetcherBenchmarkEvent, Status
+from bai_kafka_utils.events import FetcherBenchmarkEvent, Status, FetcherStatus
 from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
 from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService, KafkaServiceConfig
 from bai_kafka_utils.utils import get_pod_name
@@ -29,6 +29,19 @@ class FetcherEventHandler(KafkaServiceCallback):
         self.data_set_mgr = data_set_mgr
         self.s3_data_set_bucket = s3_data_set_bucket
         self.producer_topic = producer_topic
+
+    @staticmethod
+    def _collect_status(data_sets: List[DataSet]) -> Status:
+        for fetch_status in [d.status for d in data_sets]:
+            if fetch_status == FetcherStatus.CANCELED:
+                return Status.CANCELED
+            elif fetch_status == FetcherStatus.FAILED:
+                return Status.FAILED
+            elif fetch_status == FetcherStatus.PENDING:
+                return Status.PENDING
+            elif fetch_status == FetcherStatus.RUNNING:
+                return Status.RUNNING
+        return Status.SUCCEEDED
 
     def handle_event(self, event: FetcherBenchmarkEvent, kafka_service: KafkaService):
         def extract_datasets(event) -> List[DataSet]:
@@ -67,7 +80,8 @@ class FetcherEventHandler(KafkaServiceCallback):
 
         def on_all_done():
             kafka_service.send_event(event, self.producer_topic)
-            kafka_service.send_status_message_event(event, Status.SUCCEEDED, "All data sets processed")
+            total_status = FetcherEventHandler._collect_status(event.payload.datasets)
+            kafka_service.send_status_message_event(event, total_status, "All data sets processed")
 
         execute_all(tasks, on_all_done)
 
