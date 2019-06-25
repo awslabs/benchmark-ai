@@ -7,7 +7,7 @@ import subprocess
 import tempfile
 
 from bai_kafka_utils.events import Status
-from typing import Iterable, Generator, Iterator
+from typing import Iterable, Iterator
 from collections import namedtuple
 from pathlib import Path
 from bai_client.client import BaiClient
@@ -135,13 +135,13 @@ def _wait_for_benchmark_completion(bai_client, action_id, sleep_seconds_between_
 ServiceAndStatus = namedtuple("T", ("visited_service", "status"))
 
 
-def remove_repeated_events(events: Iterable[ServiceAndStatus]) -> Iterable[ServiceAndStatus]:
+def unique(objects: Iterable) -> Iterable:
     last = None
-    for event in events:
-        if last is not None and event == last:
+    for obj in objects:
+        if last is not None and obj == last:
             continue
-        yield event
-        last = event
+        yield obj
+        last = obj
 
 
 def get_sample_benchmark_descriptor_filepath(benchmark) -> Path:
@@ -182,7 +182,7 @@ def test_sample_benchmarks(descriptor_filename):
     status_values = [event.status for event in status_events]
 
     events = (ServiceAndStatus(*tuple) for tuple in zip(visited_services, status_values))
-    events = remove_repeated_events(events)
+    events = unique(events)
     events = list(events)
 
     assert events == [
