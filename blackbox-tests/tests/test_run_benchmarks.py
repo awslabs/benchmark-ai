@@ -105,34 +105,6 @@ def wait_for_benchmark_completion(bai_client, action_id):
         sys.stdout.flush()
 
 
-def _wait_for_benchmark_completion(bai_client, action_id, sleep_seconds_between_status_checks=0.5):
-    deadline = datetime.datetime.utcnow() + datetime.timedelta(minutes=10)
-    index_of_last_printed_status = 0
-    while deadline > datetime.datetime.utcnow():
-        status_events = bai_client.status(action_id)
-        status_infos = [
-            StatusInfo(event.message_id, event.status, event.message, event.visited[-1].svc) for event in status_events
-        ]
-        if len(status_infos) == 0:
-            print("No status yet available")
-        else:
-            last_status_info = status_infos[-1]
-            if last_status_info.service == "watcher" and last_status_info.status in [Status.FAILED, Status.SUCCEEDED]:
-                print(f"Benchmark finished: {last_status_info.status}")
-                return
-            status_infos_to_print = status_infos[index_of_last_printed_status:]
-            if len(status_infos_to_print) == 0:
-                sys.stdout.write(".")
-            else:
-                print()
-                for status_info in status_infos_to_print:
-                    print(f"Benchmark Status: [{status_info.service}] - {status_info.status}: {status_info.message}")
-                index_of_last_printed_status = len(status_infos)
-        time.sleep(sleep_seconds_between_status_checks)
-    else:
-        raise ValueError("Benchmark didn't finish")
-
-
 ServiceAndStatus = namedtuple("T", ("visited_service", "status"))
 
 
