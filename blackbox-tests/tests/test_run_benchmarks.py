@@ -102,6 +102,7 @@ def wait_for_benchmark_completion(bai_client, action_id):
         if status_info.service == "watcher" and status_info.status in [Status.FAILED, Status.SUCCEEDED]:
             print(f"Benchmark finished: {status_info.status}")
             return
+        sys.stdout.flush()
 
 
 def _wait_for_benchmark_completion(bai_client, action_id, sleep_seconds_between_status_checks=0.5):
