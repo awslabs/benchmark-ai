@@ -2,7 +2,13 @@ from pytest import fixture
 from unittest.mock import create_autospec, Mock
 
 from bai_kafka_utils.cmd_callback import KafkaCommandCallback
-from bai_kafka_utils.events import CommandRequestEvent, CommandRequestPayload, BenchmarkEvent
+from bai_kafka_utils.events import (
+    CommandRequestEvent,
+    CommandRequestPayload,
+    BenchmarkEvent,
+    FetcherBenchmarkEvent,
+    FetcherPayload,
+)
 from bai_kafka_utils.kafka_service import KafkaService
 
 USER_ERROR_MESSAGE = "Something bad"
@@ -203,3 +209,9 @@ def test_pass_through_cleanup(callback_to_test: KafkaCommandCallback, mock_cmd_o
 def test_no_cleanup():
     callback_to_test: KafkaCommandCallback = KafkaCommandCallback(object(), CMD_RETURN_TOPIC)
     callback_to_test.cleanup()
+
+
+def test_wrong_payload(callback_to_test: KafkaCommandCallback):
+    wrong_event = create_autospec(FetcherBenchmarkEvent)
+    wrong_event.payload = create_autospec(FetcherPayload)
+    callback_to_test.handle_event(wrong_event, mock_kafka_service)

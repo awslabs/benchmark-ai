@@ -5,7 +5,7 @@ from inspect import signature
 
 from typing import Any
 
-from bai_kafka_utils.events import CommandRequestEvent, CommandResponsePayload
+from bai_kafka_utils.events import CommandRequestEvent, CommandResponsePayload, CommandRequestPayload
 from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService
 
 logger = logging.getLogger(__name__)
@@ -19,24 +19,29 @@ class KafkaCommandCallback(KafkaServiceCallback):
     OK = "Command was executed successfully"
     INVALID_ARGS = "Invalid args %s"
 
-    def __init__(self, object: Any, cmd_return_topic: str):
-        self.object = object
+    def __init__(self, cmd_object: Any, cmd_return_topic: str):
+        self.cmd_object = cmd_object
         self.cmd_return_topic = cmd_return_topic
 
     def handle_event(self, event: CommandRequestEvent, kafka_service: KafkaService):
+        # Safety check
+        payload = event.payload
+        if not payload or not isinstance(payload, CommandRequestPayload):
+            logger.info("Wrong payload passed")
+            return
+
         command = event.payload.command
         args = event.payload.args
 
         logger.info(f"Command {command} called with {args}")
 
-        if not hasattr(self.object, command):
+        if not hasattr(self.cmd_object, command):
             # May be another callback in the chain will be able to handle it
             logger.info("No command method found")
             return
-        method = getattr(self.object, command)
+        method = getattr(self.cmd_object, command)
 
         if callable(method):
-
             sig = signature(method)
 
             result = None
@@ -46,8 +51,6 @@ class KafkaCommandCallback(KafkaServiceCallback):
             pos_args = []
             kw_args = {}
 
-            if args is None:
-                pos_args = []
             if isinstance(args, list):
                 pos_args = tuple(args)
             elif isinstance(args, dict):
@@ -86,8 +89,8 @@ class KafkaCommandCallback(KafkaServiceCallback):
             response_event = dataclasses.replace(event, payload=response_payload)
             kafka_service.send_event(response_event, self.cmd_return_topic)
         else:
-            logger.info("Uncallable member found")
+            logger.info(f"Uncallable {command} member requested")
 
     def cleanup(self):
-        if hasattr(self.object, "cleanup"):
-            self.object.cleanup()
+        if hasattr(self.cmd_object, "cleanup"):
+            self.cmd_object.cleanup()
