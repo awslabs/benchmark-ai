@@ -2,7 +2,7 @@ from unittest import mock
 
 import kazoo
 from kazoo.client import KazooClient
-from kazoo.protocol.states import WatchedEvent, EventType, KeeperState
+from kazoo.protocol.states import WatchedEvent, EventType, KeeperState, ZnodeStat
 from pytest import fixture
 from typing import Any
 from unittest.mock import create_autospec
@@ -34,16 +34,20 @@ ERROR_MESSAGE = "Error"
 BIN_RESULT_FAILED = _mock_result_binary(FetcherStatus.FAILED, ERROR_MESSAGE)
 
 
+def _mock_node_stat():
+    return create_autospec(ZnodeStat)
+
+
 def _mock_running_node():
-    return mock.Mock(side_effect=[[BIN_RESULT_RUNNING], [BIN_RESULT_DONE]])
+    return mock.Mock(side_effect=[(BIN_RESULT_RUNNING, _mock_node_stat()), (BIN_RESULT_DONE, _mock_node_stat())])
 
 
 def _mock_done_node():
-    return mock.Mock(side_effect=[[BIN_RESULT_DONE]])
+    return mock.Mock(side_effect=[(BIN_RESULT_DONE, _mock_node_stat())])
 
 
 def _mock_failed_node():
-    return mock.Mock(side_effect=[[BIN_RESULT_FAILED]])
+    return mock.Mock(side_effect=[(BIN_RESULT_FAILED, _mock_node_stat())])
 
 
 def _mock_existing_node():
