@@ -16,6 +16,7 @@ from fetcher_dispatcher.fetcher_dispatcher_service import (
     create_data_set_manager,
     FetcherEventHandler,
     create_fetcher_dispatcher,
+    DataSetCmdObject,
 )
 from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
 
@@ -243,3 +244,10 @@ def test_create_data_set_manager(
     mockDistributedRWLockManager.assert_called_once_with(mock_zk_client, ANY, ANY)
 
     mockDataSetManager.assert_called_once_with(mock_zk_client, mock_job_dispatcher, mock_lock_manager)
+
+
+@patch.object(fetcher_dispatcher_service, "DataSetManager", autospec=True)
+def test_cmd_object(mockDataSetManager):
+    cmd_object = DataSetCmdObject(mockDataSetManager)
+    cmd_object.delete("CLIENT_ID", "ACTION_ID")
+    mockDataSetManager.cancel.assert_called_once_with("CLIENT_ID", "ACTION_ID")

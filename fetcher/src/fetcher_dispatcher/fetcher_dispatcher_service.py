@@ -94,7 +94,7 @@ class DataSetCmdObject:
     def __init__(self, data_set_mgr: DataSetManager):
         self.data_set_mgr = data_set_mgr
 
-    def delete(self, target_action_id: str, client_id: str):
+    def delete(self, client_id: str, target_action_id: str):
         self.data_set_mgr.cancel(client_id, target_action_id)
 
 
