@@ -54,7 +54,7 @@ class KafkaCommandCallback(KafkaServiceCallback):
             if isinstance(args, list):
                 pos_args = tuple(args)
             elif isinstance(args, dict):
-                kw_args = args
+                kw_args = dict(args)
 
             if "event" in sig.parameters:
                 kw_args["event"] = event
