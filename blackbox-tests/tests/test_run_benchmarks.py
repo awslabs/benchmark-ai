@@ -1,11 +1,13 @@
 import os
+import sys
+from builtins import TimeoutError
 from contextlib import contextmanager
 
 import subprocess
 import tempfile
 
 from bai_kafka_utils.events import Status
-from typing import Iterable
+from typing import Iterable, Generator, Iterator
 from collections import namedtuple
 from pathlib import Path
 from bai_client.client import BaiClient
@@ -18,8 +20,6 @@ import pytest
 def create_client():
     # HACK: Port forwarding because BFF is not currently exposed to the world as a service
     #       https://github.com/MXNetEdge/benchmark-ai/issues/454
-    import sys
-
     dirname = os.path.dirname(sys.executable)
     with tempfile.NamedTemporaryFile("w+", prefix="bai-blackbox-", suffix=".kubeconfig") as kubeconfig_file:
         eks_update_kubeconfig_command = (
@@ -49,7 +49,62 @@ def create_client():
 StatusInfo = namedtuple("StatusInfo", ("message_id", "status", "message", "service"))
 
 
-def wait_for_benchmark_completion(bai_client, action_id, sleep_seconds_between_status_checks=0.5):
+def generate_status_events(
+    bai_client,
+    action_id,
+    *,
+    sleep_between_status_checks=datetime.timedelta(milliseconds=500),
+    timeout=datetime.timedelta(minutes=10),
+    callback_on_every_status_check=lambda: None,
+) -> Iterator[StatusInfo]:
+    """
+    Generates `StatusInfo` objects by querying the Status API of BFF.
+
+    This is an infinite stream which will generate events until a timeout happens, which raises a TimeoutError if it
+    reaches that point.
+
+    :param bai_client:
+    :param action_id:
+    :param sleep_between_status_checks:
+    :param timeout:
+    :param callback_on_every_status_check:
+    :return:
+    """
+    deadline = datetime.datetime.utcnow() + timeout
+    index_of_last_status = 0
+    while deadline > datetime.datetime.utcnow():
+        status_events = bai_client.status(action_id)
+        callback_on_every_status_check()
+
+        status_infos = [
+            StatusInfo(event.message_id, event.status, event.message, event.visited[-1].svc) for event in status_events
+        ]
+        if len(status_infos) == 0:
+            continue
+
+        status_infos_to_print = status_infos[index_of_last_status:]
+        for status_info in status_infos_to_print:
+            yield status_info
+        index_of_last_status = len(status_infos)
+        time.sleep(sleep_between_status_checks.total_seconds())
+    else:
+        raise TimeoutError("Benchmark didn't finish")
+
+
+def wait_for_benchmark_completion(bai_client, action_id):
+    def print_progress():
+        sys.stdout.write(".")
+
+    status_events = generate_status_events(bai_client, action_id, callback_on_every_status_check=print_progress)
+    for status_info in status_events:
+        print()
+        print(f"Benchmark Status: [{status_info.service}] - {status_info.status}: {status_info.message}")
+        if status_info.service == "watcher" and status_info.status in [Status.FAILED, Status.SUCCEEDED]:
+            print(f"Benchmark finished: {status_info.status}")
+            return
+
+
+def _wait_for_benchmark_completion(bai_client, action_id, sleep_seconds_between_status_checks=0.5):
     deadline = datetime.datetime.utcnow() + datetime.timedelta(minutes=10)
     index_of_last_printed_status = 0
     while deadline > datetime.datetime.utcnow():
@@ -64,10 +119,14 @@ def wait_for_benchmark_completion(bai_client, action_id, sleep_seconds_between_s
             if last_status_info.service == "watcher" and last_status_info.status in [Status.FAILED, Status.SUCCEEDED]:
                 print(f"Benchmark finished: {last_status_info.status}")
                 return
-            for i in range(index_of_last_printed_status, len(status_infos)):
-                status_info = status_infos[i]
-                print(f"Benchmark Status: [{status_info.service}] - {status_info.status}: {status_info.message}")
-            index_of_last_printed_status = len(status_infos)
+            status_infos_to_print = status_infos[index_of_last_printed_status:]
+            if len(status_infos_to_print) == 0:
+                sys.stdout.write(".")
+            else:
+                print()
+                for status_info in status_infos_to_print:
+                    print(f"Benchmark Status: [{status_info.service}] - {status_info.status}: {status_info.message}")
+                index_of_last_printed_status = len(status_infos)
         time.sleep(sleep_seconds_between_status_checks)
     else:
         raise ValueError("Benchmark didn't finish")
@@ -108,8 +167,9 @@ def get_sample_benchmark_descriptor_filepath(benchmark) -> Path:
 )
 def test_sample_benchmarks(descriptor_filename):
     print(f"Starting test for {descriptor_filename}")
+    full_path = str(get_sample_benchmark_descriptor_filepath(descriptor_filename))
     with create_client() as client:
-        action_id = client.submit(str(get_sample_benchmark_descriptor_filepath(descriptor_filename)))
+        action_id = client.submit(full_path)
         print(f"action_id={action_id}")
         wait_for_benchmark_completion(client, action_id)
         status_events = client.status(action_id)
