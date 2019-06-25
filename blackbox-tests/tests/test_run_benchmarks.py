@@ -96,8 +96,11 @@ def wait_for_benchmark_completion(bai_client, action_id):
         print()
         service = status_message.visited[-1].svc
         print(f"Benchmark Status: [{service}] - {status_message.status}: {status_message.message}")
-        if service == "watcher" and status_message.status in [Status.FAILED, Status.SUCCEEDED]:
-            print(f"Benchmark finished: {status_message.status}")
+        if status_message.status in [Status.FAILED, Status.ERROR]:
+            print(f"Benchmark finished with error in {service}: {status_message.status}")
+            return
+        if service == "watcher" and status_message.status == Status.SUCCEEDED:
+            print("Benchmark finished with success")
             return
         sys.stdout.flush()
 
