@@ -43,6 +43,7 @@ def create_client():
                 if "Forwarding from 127.0.0.1:8080 -> 8080" in line:
                     break
             yield BaiClient(endpoint="http://localhost:8080")
+            port_forward_process.kill()
 
 
 StatusInfo = namedtuple("StatusInfo", ("message_id", "status", "message", "service"))
