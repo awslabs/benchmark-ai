@@ -1,3 +1,4 @@
 resources:
-  - fetcher-it-job.yml
   - roles.yml
+  - fetcher-it-job.yml
+
