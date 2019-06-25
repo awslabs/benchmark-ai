@@ -4,9 +4,6 @@ channels:
   - defaults
 dependencies:
   - pytest
-  - pytest-mock
-  - pytest-cov
-  - pytest-datadir
   - kubernetes
   - awscli
   - kubernetes
