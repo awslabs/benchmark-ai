@@ -6,7 +6,7 @@ from kubernetes.client import V1PodList
 from fetcher_dispatcher import SERVICE_NAME
 from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
 
-
+# Utilities to use in integration tests.
 class KubernetesTestUtilsClient:
     def __init__(self, api_client: kubernetes.client.ApiClient, service: str = SERVICE_NAME):
         self.batch_api_instance = kubernetes.client.BatchV1Api(api_client)
