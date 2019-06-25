@@ -1,4 +1,5 @@
 import os
+from contextlib import contextmanager
 
 import subprocess
 import tempfile
@@ -13,8 +14,8 @@ import time
 import pytest
 
 
-@pytest.fixture(scope="module")
-def client():
+@contextmanager
+def create_client():
     # HACK: Port forwarding because BFF is not currently exposed to the world as a service
     #       https://github.com/MXNetEdge/benchmark-ai/issues/454
     import sys
@@ -104,14 +105,18 @@ def get_sample_benchmark_descriptor_filepath(benchmark) -> Path:
         # ("single-node", "descriptor_gpu.toml"),
     ],
 )
-def test_sample_benchmarks(client, descriptor_filename):
-    action_id = client.submit(str(get_sample_benchmark_descriptor_filepath(descriptor_filename)))
-    print(f"action_id={action_id}")
+def test_sample_benchmarks(descriptor_filename):
+    print(f"Starting test for {descriptor_filename}")
+    with create_client() as client:
+        action_id = client.submit(str(get_sample_benchmark_descriptor_filepath(descriptor_filename)))
+        print(f"action_id={action_id}")
+        wait_for_benchmark_completion(client, action_id)
+        status_events = client.status(action_id)
+    print("#" * 120)
+    print("# Status events (for debugging)")
+    print("#" * 120)
+    print(status_events)
 
-    wait_for_benchmark_completion(client, action_id)
-
-    status_events = client.status(action_id)
-    print(status_events)  # To aid debugging
     visited_services = [event.visited[-1].svc for event in status_events]
     status_values = [event.status for event in status_events]
 
