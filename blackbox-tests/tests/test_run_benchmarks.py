@@ -49,7 +49,7 @@ def create_client():
 StatusInfo = namedtuple("StatusInfo", ("message_id", "status", "message", "service"))
 
 
-def generate_status_events(
+def generate_status_infos(
     bai_client,
     action_id,
     *,
@@ -95,7 +95,7 @@ def wait_for_benchmark_completion(bai_client, action_id):
     def print_progress():
         sys.stdout.write(".")
 
-    status_events = generate_status_events(bai_client, action_id, callback_on_every_status_check=print_progress)
+    status_events = generate_status_infos(bai_client, action_id, callback_on_every_status_check=print_progress)
     for status_info in status_events:
         print()
         print(f"Benchmark Status: [{status_info.service}] - {status_info.status}: {status_info.message}")
