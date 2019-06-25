@@ -88,7 +88,7 @@ def generate_status_infos(
         index_of_last_status = len(status_infos)
         time.sleep(sleep_between_status_checks.total_seconds())
     else:
-        raise TimeoutError("Benchmark didn't finish")
+        raise TimeoutError()
 
 
 def wait_for_benchmark_completion(bai_client, action_id):
