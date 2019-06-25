@@ -5,7 +5,7 @@ CONDA_ENV_BIN = $(CONDA_ROOT)/envs/$(ENV_NAME)/bin
 export PATH := $(CONDA_ENV_BIN):$(PATH)
 PYTHON = python
 PIP = pip
-PYTEST = pytest $(PYTEST_OPTIONS)
+PYTEST = pytest
 TEST_FLAGS = -v
 
 TEST_FOLDERS=tests
