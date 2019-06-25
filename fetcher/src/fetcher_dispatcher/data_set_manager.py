@@ -78,9 +78,9 @@ class DataSetManager:
         def _on_zk_changed(evt):
             self.__on_zk_changed(evt, on_done, data_set)
 
-        node_data = self._zk.get(zk_node_path, _on_zk_changed)
+        data, _ = self._zk.get(zk_node_path, _on_zk_changed)
 
-        result: FetcherResult = FetcherResult.from_binary(node_data[0])
+        result: FetcherResult = FetcherResult.from_binary(data)
 
         logger.info("Fetch request %s result = %s", data_set, result)
 
