@@ -215,3 +215,15 @@ def test_wrong_payload(callback_to_test: KafkaCommandCallback):
     wrong_event = create_autospec(FetcherBenchmarkEvent)
     wrong_event.payload = create_autospec(FetcherPayload)
     callback_to_test.handle_event(wrong_event, mock_kafka_service)
+
+
+def test_immutable_args_dict(
+        callback_to_test: KafkaCommandCallback, mock_cmd_object: CmdObject, mock_kafka_service: KafkaService
+):
+    initial_args = {"arg": "foo"}
+    args = dict(initial_args)
+
+    event = get_cmd_request("do_with_client_id", args)
+    callback_to_test.handle_event(event, mock_kafka_service)
+
+    assert event.payload.args == initial_args
