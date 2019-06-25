@@ -2,7 +2,7 @@ ENV_NAME = blackbox-tests
 
 include ../python-common.mk
 
-PYTEST = pytest -s -v
+PYTEST = pytest -s
 COVERAGE_FLAGS =
 
 _post_venv::
@@ -10,3 +10,5 @@ _post_venv::
 
 publish:
 	echo "Nothing to publish"
+
+default: build
