@@ -1,6 +1,7 @@
 from kazoo.client import KazooClient
 from typing import List, Callable
 
+from bai_kafka_utils.cmd_callback import KafkaCommandCallback
 from bai_kafka_utils.events import FetcherBenchmarkEvent, Status, FetcherStatus
 from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
 from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService, KafkaServiceConfig
@@ -89,6 +90,14 @@ class FetcherEventHandler(KafkaServiceCallback):
         self.data_set_mgr.stop()
 
 
+class DataSetCmdObject:
+    def __init__(self, data_set_mgr: DataSetManager):
+        self.data_set_mgr = data_set_mgr
+
+    def delete(self, target_action_id: str, client_id: str):
+        self.data_set_mgr.cancel(client_id, target_action_id)
+
+
 def create_fetcher_dispatcher(common_kafka_cfg: KafkaServiceConfig, fetcher_cfg: FetcherServiceConfig) -> KafkaService:
     data_set_mgr = create_data_set_manager(
         fetcher_cfg.zookeeper_ensemble_hosts, fetcher_cfg.kubeconfig, fetcher_cfg.fetcher_job
@@ -98,7 +107,10 @@ def create_fetcher_dispatcher(common_kafka_cfg: KafkaServiceConfig, fetcher_cfg:
     callbacks = {
         common_kafka_cfg.consumer_topic: [
             FetcherEventHandler(common_kafka_cfg.producer_topic, data_set_mgr, fetcher_cfg.s3_data_set_bucket)
-        ]
+        ],
+        common_kafka_cfg.cmd_submit_topic: [
+            KafkaCommandCallback(DataSetCmdObject(data_set_mgr), common_kafka_cfg.cmd_return_topic)
+        ],
     }
 
     consumer, producer = create_kafka_consumer_producer(common_kafka_cfg, SERVICE_NAME)

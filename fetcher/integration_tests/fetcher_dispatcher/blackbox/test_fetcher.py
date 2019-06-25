@@ -1,21 +1,13 @@
 import dataclasses
 
 import pytest
-from kafka import KafkaConsumer, KafkaProducer
+from kafka import KafkaProducer, KafkaConsumer
 from time import time
-from typing import Callable, List
 
-from bai_kafka_utils.events import (
-    FetcherPayload,
-    BenchmarkDoc,
-    BenchmarkEvent,
-    DataSet,
-    FetchedType,
-    FetcherStatus,
-    Status,
-    CommandResponsePayload,
-    CommandRequestEvent,
-)
+from typing import Callable
+
+from bai_kafka_utils.events import BenchmarkEvent, CommandRequestPayload, DataSet, BenchmarkDoc, FetcherPayload, \
+    FetchedType, FetcherStatus, Status, CommandResponsePayload, CommandRequestEvent
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
 
 TIMEOUT_FOR_DOWNLOAD_SEC = 5 * 60
@@ -40,6 +32,13 @@ def get_fetcher_benchmark_event(template_event: BenchmarkEvent, src: str):
     doc = BenchmarkDoc({"var": "val"}, "var = val", "")
     fetch_payload = FetcherPayload(toml=doc, datasets=[DataSet(src=get_salted_src(src))])
     return dataclasses.replace(template_event, payload=fetch_payload)
+
+
+def get_cancel_event(template_event: BenchmarkEvent, cmd_submit_topic: str):
+    cancel_payload = CommandRequestPayload(command="delete", args=[template_event.action_id])
+    return dataclasses.replace(
+        template_event, payload=cancel_payload, action_id=template_event.action_id + "_cancel", type=cmd_submit_topic
+    )
 
 
 def successful_dataset(data_set: DataSet) -> bool:
@@ -127,8 +126,8 @@ def test_fetcher(
     src: str,
     data_set_check: DataSetFilter,
 ):
-    benchmark_event = send_salted_event(
-        benchmark_event_dummy_payload, kafka_producer_to_consume, kafka_service_config, src
+    benchmark_event = send_salted_fetch_request(
+        benchmark_event_dummy_payload, kafka_producer_to_consume, kafka_service_config.consumer_topic, src
     )
 
     filter_event = get_is_fetch_response(benchmark_event, data_set_check)
@@ -143,8 +142,15 @@ def test_cancel(
     kafka_consumer_of_produced: KafkaConsumer,
     kafka_service_config: KafkaServiceConfig,
 ):
-    benchmark_event = send_salted_event(
-        benchmark_event_dummy_payload, kafka_producer_to_consume, kafka_service_config, EXISTING_DATASET_WITH_DELAY
+    benchmark_event = send_salted_fetch_request(
+        benchmark_event_dummy_payload,
+        kafka_producer_to_consume,
+        kafka_service_config.consumer_topic,
+        EXISTING_DATASET_WITH_DELAY,
+    )
+    cancel_event = get_cancel_event(benchmark_event, kafka_service_config.cmd_submit_topic)
+    kafka_producer_to_consume.send(
+        kafka_service_config.cmd_submit_topic, value=cancel_event, key=cancel_event.client_id
     )
 
     filter_event = get_is_fetch_response(benchmark_event, canceled_dataset)
@@ -152,12 +158,10 @@ def test_cancel(
     return wait_for_response(filter_event, kafka_consumer_of_produced)
 
 
-def send_salted_event(benchmark_event_dummy_payload, kafka_producer_to_consume, kafka_service_config, src):
-    benchmark_event = get_fetcher_benchmark_event(benchmark_event_dummy_payload, src)
+def send_salted_fetch_request(benchmark_event_dummy_payload, kafka_producer_to_consume, topic, dataset_src):
+    benchmark_event = get_fetcher_benchmark_event(benchmark_event_dummy_payload, dataset_src)
     print(f"Sending event {benchmark_event}")
-    kafka_producer_to_consume.send(
-        kafka_service_config.consumer_topic, value=benchmark_event, key=benchmark_event.client_id
-    )
+    kafka_producer_to_consume.send(topic, value=benchmark_event, key=benchmark_event.client_id)
     return benchmark_event
 
 
