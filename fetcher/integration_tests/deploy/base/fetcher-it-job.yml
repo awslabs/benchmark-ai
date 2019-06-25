@@ -5,7 +5,7 @@ metadata:
 spec:
   template:
     spec:
-      serviceAccountName: fetcher-dispatcher-it
+      serviceAccountName: fetcher-dispatcher
       containers:
         - name: it
           image: benchmarkai/fetcher-it
