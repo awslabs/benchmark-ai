@@ -35,7 +35,7 @@ def create_client():
             while True:
                 retcode = port_forward_process.poll()
                 if retcode:
-                    print(port_forward_process.stdout.read())
+                    print("Output of `kubectl port-forward`: '%s'" % port_forward_process.stdout.read())
                     raise ValueError(f"Port-forward command returned with exitcode: {retcode}")
                 line = port_forward_process.stdout.readline()
                 line = line.decode("utf-8")
