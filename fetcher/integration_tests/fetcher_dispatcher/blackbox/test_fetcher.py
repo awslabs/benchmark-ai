@@ -21,7 +21,7 @@ from bai_kafka_utils.events import (
 )
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
 
-TIMEOUT_FOR_DOWNLOAD_SEC = 5 * 60
+TIMEOUT_FOR_DOWNLOAD_SEC = 30
 
 EventFilter = Callable[[BenchmarkEvent], bool]
 DataSetFilter = Callable[[DataSet], bool]
@@ -69,7 +69,7 @@ def get_is_fetch_response(
 ) -> EventFilter:
     src_to_check = src_event.payload.datasets[0].src
 
-    def filter_event(event: BenchmarkEvent) -> bool:
+    def filter_fetcher_event(event: BenchmarkEvent) -> bool:
 
         return (
             event.type == kafka_service_config.producer_topic
@@ -77,24 +77,24 @@ def get_is_fetch_response(
             and any(data_set.src == src_to_check and data_set_check(data_set) for data_set in event.payload.datasets)
         )
 
-    return filter_event
+    return filter_fetcher_event
 
 
 def get_is_status(src_event: BenchmarkEvent, status: Status, kafka_service_config: KafkaServiceConfig) -> EventFilter:
-    def filter_event(event: BenchmarkEvent) -> bool:
+    def filter_status_event(event: BenchmarkEvent) -> bool:
         return (
             event.type == kafka_service_config.status_topic
             and event.action_id == src_event.action_id
             and event.status == status
         )
 
-    return filter_event
+    return filter_status_event
 
 
 def get_is_command_return(
     src_event: CommandRequestEvent, return_code: int, kafka_service_config: KafkaServiceConfig
 ) -> EventFilter:
-    def filter_event(event: BenchmarkEvent) -> bool:
+    def filter_command_event(event: BenchmarkEvent) -> bool:
         if event.type != kafka_service_config.cmd_return_topic or not isinstance(event.payload, CommandResponsePayload):
             return False
         payload: CommandResponsePayload = event.payload
@@ -104,7 +104,7 @@ def get_is_command_return(
             and payload.cmd_submit.payload == src_event.payload
         )
 
-    return filter_event
+    return filter_command_event
 
 
 def get_all_complete(filters: List[EventFilter]) -> EventFilter:
@@ -113,8 +113,8 @@ def get_all_complete(filters: List[EventFilter]) -> EventFilter:
     def filter_event(event: BenchmarkEvent) -> bool:
         for fltr in set_filters:
             if fltr(event):
-                print(f"Hit condition {fltr.__name__}. {len(set_filters)} to hit.")
                 set_filters.remove(fltr)
+                print(f"Hit condition {fltr.__name__}. {len(set_filters)} to hit.")
                 break
         return not set_filters
 
@@ -126,7 +126,7 @@ POLL_TIMEOUT_MS = 500
 
 @pytest.mark.timeout(TIMEOUT_FOR_DOWNLOAD_SEC)
 @pytest.mark.parametrize(
-    "src,data_set_check",
+    "src,data_set_check,expected_status",
     [
         (EXISTING_DATASET_WITH_DELAY, successful_dataset, Status.SUCCEEDED),
         (FAILING_DATASET_WITH_DELAY, failed_dataset, Status.FAILED),

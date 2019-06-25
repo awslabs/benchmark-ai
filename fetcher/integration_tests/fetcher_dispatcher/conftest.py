@@ -75,7 +75,8 @@ def kafka_consumer_of_produced(kafka_service_config: KafkaServiceConfig):
         kafka_service_config.bootstrap_servers,
         kafka_service_config.consumer_group_id,
         # Yes. We consume, what the service has produced
-        [kafka_service_config.producer_topic, kafka_service_config.cmd_return_topic],
+        # All of them!
+        [kafka_service_config.producer_topic, kafka_service_config.cmd_return_topic, kafka_service_config.status_topic],
     )
     yield kafka_consumer
     # Unfortunately no __enter__/__exit__ on kafka objects yet - let's do old-school close
