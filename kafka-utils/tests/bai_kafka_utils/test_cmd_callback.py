@@ -217,9 +217,7 @@ def test_wrong_payload(callback_to_test: KafkaCommandCallback):
     callback_to_test.handle_event(wrong_event, mock_kafka_service)
 
 
-def test_immutable_args_dict(
-        callback_to_test: KafkaCommandCallback, mock_cmd_object: CmdObject, mock_kafka_service: KafkaService
-):
+def test_immutable_args_dict(callback_to_test: KafkaCommandCallback, mock_kafka_service: KafkaService):
     initial_args = {"arg": "foo"}
     args = dict(initial_args)
 
