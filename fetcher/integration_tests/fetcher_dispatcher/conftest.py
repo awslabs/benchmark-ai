@@ -7,6 +7,7 @@ from bai_kafka_utils.events import BenchmarkEvent
 from bai_kafka_utils.kafka_client import create_kafka_consumer, create_kafka_producer
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
 from bai_kafka_utils.kafka_service_args import get_kafka_service_config
+from fetcher_dispatcher import SERVICE_NAME
 from fetcher_dispatcher.args import get_fetcher_service_config, FetcherServiceConfig, FetcherJobConfig
 from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher, create_kubernetes_api_client
 from fetcher_dispatcher.kubernetes_tests_client import KubernetesTestUtilsClient
@@ -36,6 +37,7 @@ def zk_client(fetcher_service_config: FetcherServiceConfig):
 @fixture
 def k8s_dispatcher(fetcher_service_config: FetcherServiceConfig):
     return KubernetesDispatcher(
+        SERVICE_NAME,
         fetcher_service_config.kubeconfig,
         fetcher_service_config.zookeeper_ensemble_hosts,
         fetcher_service_config.fetcher_job,
@@ -49,7 +51,7 @@ def k8s_api_client(fetcher_service_config: FetcherServiceConfig) -> kubernetes.c
 
 @fixture
 def k8s_test_client(k8s_api_client: kubernetes.client.ApiClient) -> KubernetesTestUtilsClient:
-    return KubernetesTestUtilsClient(k8s_api_client)
+    return KubernetesTestUtilsClient(k8s_api_client, SERVICE_NAME)
 
 
 @fixture

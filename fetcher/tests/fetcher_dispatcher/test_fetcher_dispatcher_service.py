@@ -9,7 +9,7 @@ from unittest.mock import patch, call, ANY, create_autospec
 from bai_kafka_utils.events import BenchmarkDoc, BenchmarkEvent, FetcherPayload, DataSet, FetcherBenchmarkEvent, Status
 from bai_kafka_utils.kafka_service import KafkaService, KafkaServiceConfig
 from bai_zk_utils.zk_locker import DistributedRWLockManager
-from fetcher_dispatcher import fetcher_dispatcher_service
+from fetcher_dispatcher import fetcher_dispatcher_service, SERVICE_NAME
 from fetcher_dispatcher.args import FetcherServiceConfig, FetcherJobConfig
 from fetcher_dispatcher.data_set_manager import DataSetManager
 from fetcher_dispatcher.fetcher_dispatcher_service import (
@@ -240,7 +240,9 @@ def test_create_data_set_manager(
     create_data_set_manager(ZOOKEEPER_ENSEMBLE_HOSTS, KUBECONFIG, FETCHER_JOB_CONFIG)
 
     mockKazooClient.assert_called_once_with(ZOOKEEPER_ENSEMBLE_HOSTS)
-    mockKubernetesDispatcher.assert_called_once_with(KUBECONFIG, ZOOKEEPER_ENSEMBLE_HOSTS, FETCHER_JOB_CONFIG)
+    mockKubernetesDispatcher.assert_called_once_with(
+        SERVICE_NAME, KUBECONFIG, ZOOKEEPER_ENSEMBLE_HOSTS, FETCHER_JOB_CONFIG
+    )
     mockDistributedRWLockManager.assert_called_once_with(mock_zk_client, ANY, ANY)
 
     mockDataSetManager.assert_called_once_with(mock_zk_client, mock_job_dispatcher, mock_lock_manager)

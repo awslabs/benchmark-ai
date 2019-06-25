@@ -43,7 +43,8 @@ class KubernetesDispatcher(DataSetDispatcher):
 
     ZOOKEEPER_ENSEMBLE_HOSTS = "ZOOKEEPER_ENSEMBLE_HOSTS"
 
-    def __init__(self, kubeconfig: str, zk_ensemble: str, fetcher_job: FetcherJobConfig):
+    def __init__(self, service_name: str, kubeconfig: str, zk_ensemble: str, fetcher_job: FetcherJobConfig):
+        self.service_name = service_name
         self.zk_ensemble = zk_ensemble
         self.fetcher_job = fetcher_job
 
@@ -55,9 +56,7 @@ class KubernetesDispatcher(DataSetDispatcher):
     def _get_fetcher_job(self, task: DataSet, event: BenchmarkEvent, zk_node_path: str) -> kubernetes.client.V1Job:
 
         job_metadata = kubernetes.client.V1ObjectMeta(
-            namespace=self.fetcher_job.namespace,
-            name=self._get_job_name(task),
-            labels=KubernetesDispatcher._get_labels(task, event),
+            namespace=self.fetcher_job.namespace, name=self._get_job_name(task), labels=self._get_labels(task, event)
         )
 
         job_status = kubernetes.client.V1JobStatus()
@@ -78,7 +77,7 @@ class KubernetesDispatcher(DataSetDispatcher):
     ) -> kubernetes.client.V1PodTemplateSpec:
         pod_spec = self._get_fetcher_pod_spec(task, zk_node_path)
         return kubernetes.client.V1PodTemplateSpec(
-            spec=pod_spec, metadata=kubernetes.client.V1ObjectMeta(labels=KubernetesDispatcher._get_labels(task, event))
+            spec=pod_spec, metadata=kubernetes.client.V1ObjectMeta(labels=self._get_labels(task, event))
         )
 
     def _get_fetcher_pod_spec(self, task: DataSet, zk_node_path: str):
@@ -115,18 +114,17 @@ class KubernetesDispatcher(DataSetDispatcher):
     def _get_env(self) -> List[kubernetes.client.V1EnvVar]:
         return [kubernetes.client.V1EnvVar(name=KubernetesDispatcher.ZOOKEEPER_ENSEMBLE_HOSTS, value=self.zk_ensemble)]
 
-    @staticmethod
-    def _get_labels(task: DataSet, event: BenchmarkEvent) -> Dict[str, str]:
+    def _get_labels(self, task: DataSet, event: BenchmarkEvent) -> Dict[str, str]:
         return {
             KubernetesDispatcher.ACTION_ID_LABEL: event.action_id,
             KubernetesDispatcher.CLIENT_ID_LABEL: event.client_id,
-            KubernetesDispatcher.CREATED_BY_LABEL: SERVICE_NAME,
+            KubernetesDispatcher.CREATED_BY_LABEL: self.service_name,
         }
 
-    @staticmethod
-    def get_label_selector(client_id: str, action_id: str = None):
+    def get_label_selector(self, client_id: str, action_id: str = None):
         selector = (
-            f"{KubernetesDispatcher.CREATED_BY_LABEL}={SERVICE_NAME},{KubernetesDispatcher.CLIENT_ID_LABEL}={client_id}"
+            f"{KubernetesDispatcher.CREATED_BY_LABEL}={self.service_name},"
+            + f"{KubernetesDispatcher.CLIENT_ID_LABEL}={client_id}"
         )
         if action_id:
             selector += f",{KubernetesDispatcher.ACTION_ID_LABEL}={action_id}"
@@ -144,7 +142,7 @@ class KubernetesDispatcher(DataSetDispatcher):
 
     def cancel_all(self, client_id: str, action_id: str = None):
         logger.info(f"Removing jobs {client_id}/{action_id}")
-        action_id_label_selector = KubernetesDispatcher.get_label_selector(client_id, action_id)
+        action_id_label_selector = self.get_label_selector(client_id, action_id)
 
         jobs_response = self.batch_api_instance.delete_collection_namespaced_job(
             self.fetcher_job.namespace, label_selector=action_id_label_selector

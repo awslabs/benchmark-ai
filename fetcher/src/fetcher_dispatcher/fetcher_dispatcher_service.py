@@ -18,7 +18,7 @@ LOCK_MANAGER_PREFIX = "fetcher_lock_manager"
 
 def create_data_set_manager(zookeeper_ensemble_hosts: str, kubeconfig: str, fetcher_job: FetcherJobConfig):
     zk_client = KazooClient(zookeeper_ensemble_hosts)
-    job_dispatcher = KubernetesDispatcher(kubeconfig, zookeeper_ensemble_hosts, fetcher_job)
+    job_dispatcher = KubernetesDispatcher(SERVICE_NAME, kubeconfig, zookeeper_ensemble_hosts, fetcher_job)
 
     lock_manager = DistributedRWLockManager(zk_client, LOCK_MANAGER_PREFIX, get_lock_name)
 
