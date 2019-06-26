@@ -65,7 +65,7 @@ This is the command-line, client-side interface to the Bechmark AI service...
           --inspect  <message id> [<action-id>] : displays full details of specified message object
           --show-descriptor [<action-id>]       : shows the descriptor acknowledged by Anubis
           --last-action-id         : displays the last action id from a valid submission
-          --abort    <action id>   : cancels the current in progress submission
+          --cancel   <action id>   : cancels the current in progress submission
           --check-version          : checks to see if the version you are running is the latest posted
           --upgrade                : fetches latest version of this tool [%s]
           --sync-version           : synchronized this tool with that of the service endpoint
