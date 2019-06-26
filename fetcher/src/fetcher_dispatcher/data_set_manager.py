@@ -5,7 +5,7 @@ import logging
 from kazoo.client import KazooClient
 from kazoo.exceptions import NoNodeError, BadVersionError
 from kazoo.protocol.states import WatchedEvent, EventType
-from typing import Callable
+from typing import Callable, Optional
 
 from bai_kafka_utils.events import DataSet, BenchmarkEvent, FetcherStatus
 from bai_kafka_utils.utils import md5sum
@@ -26,7 +26,7 @@ class DataSetDispatcher(metaclass=abc.ABCMeta):
 
 
 # client_id/action_id/dataset
-NodePathSource = Callable[[str, str, DataSet], str]
+NodePathSource = Callable[[str, Optional[str], Optional[DataSet]], str]
 
 
 DataSetOnDone = Callable[[DataSet], None]
@@ -126,10 +126,10 @@ class DataSetManager:
     def cancel(self, client_id: str, action_id: str):
         logger.info(f"Canceling action {client_id}/{action_id}")
         self._data_set_dispatcher.cancel_all(client_id, action_id)
-        self.update_nodes_to_cancel(client_id, action_id)
+        self._update_nodes_to_cancel(client_id, action_id)
         pass
 
-    def update_nodes_to_cancel(self, client_id: str, action_id: str):
+    def _update_nodes_to_cancel(self, client_id: str, action_id: str):
         # As always with stop-flags, we can face a bunch of race conditions
         zk_node_path = self._get_node_path(client_id, action_id)
         for child in self._zk.get_children(zk_node_path, watch=None):
