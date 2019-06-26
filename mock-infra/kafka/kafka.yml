@@ -59,5 +59,3 @@ metadata:
 data:
   numPartitions: "1"
   replicationFactor: "1"
-
-      

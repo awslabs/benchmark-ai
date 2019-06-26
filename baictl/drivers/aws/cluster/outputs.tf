@@ -67,3 +67,8 @@ output "msk_zookeeper_connect" {
   description = "Connection string for Zookeeper."
   value = "${aws_msk_cluster.benchmark-msk-cluster.zookeeper_connect}"
 }
+
+output "s3_endpoint" {
+  description="S3 Endpoint in the case of custome one. Empty if default"
+  value= ""
+}

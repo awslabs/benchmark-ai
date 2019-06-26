@@ -1,6 +1,7 @@
 bases:
   - ../base
-  - ../../../mock-infra
+  # Install kafka part of the mock infra
+  - ../../../mock-infra/kafka
 configMapGenerator:
   - name: fetcher-dispatcher
     literals:

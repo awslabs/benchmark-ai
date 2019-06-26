@@ -1,0 +1,118 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: s3
+  namespace: default
+data:
+  access-key-id: mock-key
+  secret-access-key: mock-access-key
+  cli-startup: |-
+    #!/bin/sh  
+    export S3_ENDPOINT="--endpoint-url=$S3_ENDPOINT_URL"
+
+    echo "Waiting for S3"
+    timeout -t 15 sh -c "until aws s3 ls $S3_ENDPOINT ; do echo .; sleep 1; done"
+    echo "S3 is there"
+    for bucket in $BUCKETS
+    do
+      echo "Creating $bucket"
+      aws s3 mb s3://$bucket $S3_ENDPOINT
+    done
+    echo "Done"
+    aws s3 ls $S3_ENDPOINT
+    sleep 365d
+  s3-startup: |-
+    #!/bin/sh
+    #Avoid copy pasting
+    export ENDPOINT=$(hostname -f)
+    /usr/src/app/docker-entrypoint.sh npm start
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: s3-service
+  labels:
+    app: s3
+spec:
+  ports:
+    - port: 8000
+      name: server
+  clusterIP: None
+  selector:
+    app: s3
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: s3
+spec:
+  selector:
+    matchLabels:
+      app: s3
+  serviceName: s3-service
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        app: s3
+    spec:
+      containers:
+        - name: kubernetes-s3
+          imagePullPolicy: Always
+          image: "scality/s3server"
+          command: 
+          - /bin/entrypoint.sh
+          env:
+          - name: S3BACKEND
+            value: mem
+          - name: SCALITY_ACCESS_KEY_ID
+            valueFrom:
+              configMapKeyRef:
+                name: s3
+                key: access-key-id
+          - name: SCALITY_SECRET_ACCESS_KEY
+            valueFrom:
+              configMapKeyRef:
+                name: s3
+                key: secret-access-key
+          volumeMounts:
+          - name: entrypoints-volume
+            mountPath: /bin/entrypoint.sh
+            readOnly: true
+            subPath: s3-startup
+        - name: aws-cli
+          imagePullPolicy: Always
+          image: "mesosphere/aws-cli"
+          command: 
+          - /bin/entrypoint.sh
+          env:
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              configMapKeyRef:
+                name: s3
+                key: access-key-id
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              configMapKeyRef:
+                name: s3
+                key: secret-access-key
+          - name: S3_ENDPOINT_URL
+            valueFrom:
+              configMapKeyRef:
+                name: outputs-infrastructure
+                key: s3_endpoint
+          - name: BUCKETS
+            value: data-pull user-bucket scripts-exchange
+          volumeMounts:
+          - name: entrypoints-volume
+            mountPath: /bin/entrypoint.sh
+            readOnly: true
+            subPath: cli-startup
+      volumes:
+      - name: entrypoints-volume
+        configMap:
+          defaultMode: 0700
+          name: s3
