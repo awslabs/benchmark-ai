@@ -20,7 +20,6 @@ from bai_kafka_utils.events import (
 )
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
 
-TIMEOUT_FOR_DOWNLOAD_SEC = 5 * 60
 
 EventFilter = Callable[[BenchmarkEvent], bool]
 DataSetFilter = Callable[[DataSet], bool]
@@ -123,7 +122,6 @@ def get_all_complete(filters: List[EventFilter]) -> EventFilter:
 POLL_TIMEOUT_MS = 500
 
 
-@pytest.mark.timeout(TIMEOUT_FOR_DOWNLOAD_SEC)
 @pytest.mark.parametrize(
     "src,data_set_check,expected_status",
     [
