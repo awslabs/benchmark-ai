@@ -62,7 +62,7 @@ def canceled_dataset(data_set: DataSet) -> bool:
     return data_set.dst is None and data_set.status == FetcherStatus.CANCELED
 
 
-def get_is_fetch_response(
+def get_is_fetch_response_filter(
     src_event: BenchmarkEvent, data_set_check: DataSetFilter, kafka_service_config: KafkaServiceConfig
 ) -> EventFilter:
     src_to_check = src_event.payload.datasets[0].src
@@ -78,7 +78,9 @@ def get_is_fetch_response(
     return filter_fetcher_event
 
 
-def get_is_status(src_event: BenchmarkEvent, status: Status, kafka_service_config: KafkaServiceConfig) -> EventFilter:
+def get_is_status_filter(
+    src_event: BenchmarkEvent, status: Status, kafka_service_config: KafkaServiceConfig
+) -> EventFilter:
     def filter_status_event(event: BenchmarkEvent) -> bool:
         return (
             event.type == kafka_service_config.status_topic
@@ -89,7 +91,7 @@ def get_is_status(src_event: BenchmarkEvent, status: Status, kafka_service_confi
     return filter_status_event
 
 
-def get_is_command_return(
+def get_is_command_return_filter(
     src_event: CommandRequestEvent, return_code: int, kafka_service_config: KafkaServiceConfig
 ) -> EventFilter:
     def filter_command_event(event: BenchmarkEvent) -> bool:
@@ -105,14 +107,15 @@ def get_is_command_return(
     return filter_command_event
 
 
-def get_all_complete(filters: List[EventFilter]) -> EventFilter:
+def get_all_complete_filter(filters: List[EventFilter]) -> EventFilter:
     set_filters = set(filters)
 
+    # Return true, if all of the filters returned True
     def filter_event(event: BenchmarkEvent) -> bool:
-        for fltr in set_filters:
-            if fltr(event):
-                set_filters.remove(fltr)
-                print(f"Hit condition {fltr.__name__}. {len(set_filters)} to hit.")
+        for event_filter in set_filters:
+            if event_filter(event):
+                set_filters.remove(event_filter)
+                print(f"Hit condition {event_filter.__name__}. {len(set_filters)} to hit.")
                 break
         return not set_filters
 
@@ -143,9 +146,9 @@ def test_fetcher(
         benchmark_event_dummy_payload, kafka_producer_to_consume, kafka_service_config.consumer_topic, src
     )
 
-    fetcher_event_filter = get_is_fetch_response(benchmark_event, data_set_check, kafka_service_config)
-    status_event_filter = get_is_status(benchmark_event, expected_status, kafka_service_config)
-    combined_filter = get_all_complete([fetcher_event_filter, status_event_filter])
+    fetcher_event_filter = get_is_fetch_response_filter(benchmark_event, data_set_check, kafka_service_config)
+    status_event_filter = get_is_status_filter(benchmark_event, expected_status, kafka_service_config)
+    combined_filter = get_all_complete_filter([fetcher_event_filter, status_event_filter])
 
     return wait_for_response(combined_filter, kafka_consumer_of_produced)
 
@@ -167,10 +170,12 @@ def test_cancel(
         kafka_service_config.cmd_submit_topic, value=cancel_event, key=cancel_event.client_id
     )
 
-    fetcher_event_filter = get_is_fetch_response(benchmark_event, canceled_dataset, kafka_service_config)
-    status_event_filter = get_is_status(benchmark_event, Status.CANCELED, kafka_service_config)
-    command_return_filter = get_is_command_return(cancel_event, KafkaCommandCallback.CODE_SUCCESS, kafka_service_config)
-    combined_filter = get_all_complete([fetcher_event_filter, status_event_filter, command_return_filter])
+    fetcher_event_filter = get_is_fetch_response_filter(benchmark_event, canceled_dataset, kafka_service_config)
+    status_event_filter = get_is_status_filter(benchmark_event, Status.CANCELED, kafka_service_config)
+    command_return_filter = get_is_command_return_filter(
+        cancel_event, KafkaCommandCallback.CODE_SUCCESS, kafka_service_config
+    )
+    combined_filter = get_all_complete_filter([fetcher_event_filter, status_event_filter, command_return_filter])
 
     return wait_for_response(combined_filter, kafka_consumer_of_produced)
 
