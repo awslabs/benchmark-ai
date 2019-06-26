@@ -195,6 +195,6 @@ def wait_for_response(filter_event, kafka_consumer_of_produced):
         kafka_consumer_of_produced.commit()
         for topic, recs in records.items():
             for msg in recs:
-                print(f"Got evt {msg.value}")
+                print(f"Got event {msg.value}")
                 if filter_event(msg.value):
                     return

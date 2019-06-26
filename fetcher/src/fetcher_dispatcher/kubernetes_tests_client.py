@@ -32,20 +32,20 @@ class KubernetesTestUtilsClient:
 
     def wait_for_pod_exists(self, namespace: str, client_id: str, action_id: str):
         while not self.is_pod_present(namespace, client_id, action_id):
-            logger.info("pod doesn't exists yet")
+            logger.info("pod doesn't exist yet")
             sleep(1)
 
     def wait_for_pod_not_exists(self, namespace: str, client_id: str, action_id: str):
         while self.is_pod_present(namespace, client_id, action_id):
-            logger.info("pod still exist")
+            logger.info("pod still exists")
             sleep(1)
 
     def wait_for_job_exists(self, namespace: str, client_id: str, action_id: str):
         while not self.is_job_present(namespace, client_id, action_id):
-            logger.info("job doesn't exists yet")
+            logger.info("job doesn't exist yet")
             sleep(1)
 
     def wait_for_job_not_exists(self, namespace: str, client_id: str, action_id: str):
         while self.is_job_present(namespace, client_id, action_id):
-            logger.info("job still exist")
+            logger.info("job still exists")
             sleep(1)

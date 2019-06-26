@@ -1,12 +1,22 @@
 from unittest import mock
 
 import kafka
+import pytest
+
 from kazoo.client import KazooClient
 from pytest import fixture
 from typing import List, Type
 from unittest.mock import patch, call, ANY, create_autospec
 
-from bai_kafka_utils.events import BenchmarkDoc, BenchmarkEvent, FetcherPayload, DataSet, FetcherBenchmarkEvent, Status
+from bai_kafka_utils.events import (
+    BenchmarkDoc,
+    BenchmarkEvent,
+    FetcherPayload,
+    DataSet,
+    FetcherBenchmarkEvent,
+    Status,
+    FetcherStatus,
+)
 from bai_kafka_utils.kafka_service import KafkaService, KafkaServiceConfig
 from bai_zk_utils.zk_locker import DistributedRWLockManager
 from fetcher_dispatcher import fetcher_dispatcher_service, SERVICE_NAME
@@ -253,3 +263,19 @@ def test_cmd_object(mockDataSetManager):
     cmd_object = DataSetCmdObject(mockDataSetManager)
     cmd_object.cancel("CLIENT_ID", "ACTION_ID")
     mockDataSetManager.cancel.assert_called_once_with("CLIENT_ID", "ACTION_ID")
+
+
+@pytest.mark.parametrize(
+    ["fetch_statuses", "expected_status"],
+    [
+        ([FetcherStatus.FAILED, FetcherStatus.CANCELED], Status.CANCELED),
+        ([FetcherStatus.FAILED, FetcherStatus.RUNNING], Status.FAILED),
+        ([FetcherStatus.RUNNING, FetcherStatus.PENDING], Status.PENDING),
+        ([FetcherStatus.DONE, FetcherStatus.RUNNING], Status.RUNNING),
+        ([FetcherStatus.DONE, FetcherStatus.DONE], Status.SUCCEEDED),
+    ],
+)
+def test_collect_status(fetch_statuses, expected_status):
+    assert expected_status == FetcherEventHandler._collect_status(
+        [DataSet(src="some/path", status=fetch_status) for fetch_status in fetch_statuses]
+    )

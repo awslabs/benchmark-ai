@@ -33,15 +33,17 @@ class FetcherEventHandler(KafkaServiceCallback):
 
     @staticmethod
     def _collect_status(data_sets: List[DataSet]) -> Status:
-        for fetch_status in [d.status for d in data_sets]:
-            if fetch_status == FetcherStatus.CANCELED:
-                return Status.CANCELED
-            elif fetch_status == FetcherStatus.FAILED:
-                return Status.FAILED
-            elif fetch_status == FetcherStatus.PENDING:
-                return Status.PENDING
-            elif fetch_status == FetcherStatus.RUNNING:
-                return Status.RUNNING
+        fetch_statuses = {d.status for d in data_sets}
+        # for
+        if FetcherStatus.CANCELED in fetch_statuses:
+            return Status.CANCELED
+        if FetcherStatus.FAILED in fetch_statuses:
+            return Status.FAILED
+        # This 2 cases should never happen
+        if FetcherStatus.PENDING in fetch_statuses:
+            return Status.PENDING
+        if FetcherStatus.RUNNING in fetch_statuses:
+            return Status.RUNNING
         return Status.SUCCEEDED
 
     def handle_event(self, event: FetcherBenchmarkEvent, kafka_service: KafkaService):
