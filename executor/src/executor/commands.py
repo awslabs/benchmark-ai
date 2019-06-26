@@ -2,6 +2,7 @@ import subprocess
 import logging
 
 from executor import SERVICE_NAME
+from bai_kafka_utils.utils import DEFAULT_ENCODING
 
 
 logger = logging.getLogger(SERVICE_NAME)
@@ -26,7 +27,7 @@ class ExecutorCommandObject:
         cmd = [self.kubectl, "delete", resource_types, "--selector", label_selector]
         logger.info(f"Deleting resources of types {resource_types} matching selector {label_selector}")
 
-        result = subprocess.check_output(cmd)
+        result = subprocess.check_output(cmd).decode(DEFAULT_ENCODING)
 
         # kubectl delete exits with 0 even if there are no resources to delete, so we need to handle that case ourselves
         if "No resources found" in result:
