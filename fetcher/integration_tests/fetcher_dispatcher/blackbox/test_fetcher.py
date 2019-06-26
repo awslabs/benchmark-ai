@@ -3,7 +3,6 @@ import dataclasses
 import pytest
 from kafka import KafkaProducer, KafkaConsumer
 from time import time
-
 from typing import Callable, List
 
 from bai_kafka_utils.cmd_callback import KafkaCommandCallback
@@ -21,7 +20,7 @@ from bai_kafka_utils.events import (
 )
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
 
-TIMEOUT_FOR_DOWNLOAD_SEC = 30
+TIMEOUT_FOR_DOWNLOAD_SEC = 5 * 60
 
 EventFilter = Callable[[BenchmarkEvent], bool]
 DataSetFilter = Callable[[DataSet], bool]

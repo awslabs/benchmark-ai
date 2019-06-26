@@ -8,7 +8,7 @@ from fetcher_dispatcher.args import FetcherServiceConfig
 from fetcher_dispatcher.data_set_manager import DataSetManager
 from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
 
-TIMEOUT_FOR_DOWNLOAD_SEC = 30
+TIMEOUT_FOR_DOWNLOAD_SEC = 5 * 60
 
 EXISTING_DATASET = "http://files.grouplens.org/datasets/movielens/ml-1m.zip"
 
