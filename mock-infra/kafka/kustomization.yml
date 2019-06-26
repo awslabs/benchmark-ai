@@ -1,0 +1,10 @@
+bases:
+  - ../base
+configMapGenerator:
+  - name: outputs-infrastructure
+    literals:
+    - msk_bootstrap_brokers=kafka-0.kafka-service.default.svc.cluster.local:9092
+    behavior: merge
+resources:
+  - zookeeper.yml
+  - kafka.yml
