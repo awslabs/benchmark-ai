@@ -8,6 +8,7 @@ from bai_kafka_utils.events import (
     BenchmarkEvent,
     FetcherBenchmarkEvent,
     FetcherPayload,
+    CommandResponseEvent,
 )
 from bai_kafka_utils.kafka_service import KafkaService
 
@@ -196,6 +197,7 @@ def validate_success_result(event: CommandRequestEvent, mock_kafka_service, mock
 def _validate_sent_event(event: CommandRequestEvent, mock_kafka_service: KafkaService):
     args, kwargs = mock_kafka_service.send_event.call_args
     event_sent, topic = args
+    assert isinstance(event_sent, CommandResponseEvent)
     assert topic == CMD_RETURN_TOPIC
     assert event_sent.payload.cmd_submit == event
     return event_sent
