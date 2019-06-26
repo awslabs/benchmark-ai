@@ -155,4 +155,3 @@ class KubernetesDispatcher(DataSetDispatcher):
             self.fetcher_job.namespace, label_selector=action_id_label_selector
         )
         logger.debug("k8s response: %s", pods_response)
-        pass

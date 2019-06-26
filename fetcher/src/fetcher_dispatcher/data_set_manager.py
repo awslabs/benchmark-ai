@@ -83,7 +83,6 @@ class DataSetManager:
             self.__handle_node_state(zk_node_path, _on_done_and_unlock, data_set)
 
             self._data_set_dispatcher.dispatch_fetch(data_set, event, zk_node_path)
-            pass
 
         self._lock_manager.acquire_write_lock(data_set, on_data_set_locked)
 
@@ -127,7 +126,6 @@ class DataSetManager:
         logger.info(f"Canceling action {client_id}/{action_id}")
         self._data_set_dispatcher.cancel_all(client_id, action_id)
         self._update_nodes_to_cancel(client_id, action_id)
-        pass
 
     def _update_nodes_to_cancel(self, client_id: str, action_id: str):
         # As always with stop-flags, we can face a bunch of race conditions
