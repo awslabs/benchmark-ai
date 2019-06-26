@@ -11,6 +11,7 @@ from typing import Iterable, Iterator
 from collections import namedtuple
 from pathlib import Path
 from bai_client.client import BaiClient
+from pprint import pprint
 import datetime
 import time
 import pytest
@@ -146,7 +147,7 @@ def test_sample_benchmarks(descriptor_filename):
     print("#" * 120)
     print("# Status messages (for debugging)")
     print("#" * 120)
-    print(status_messages)
+    pprint(status_messages)
 
     ServiceAndStatus = namedtuple("T", ("visited_service", "status"))
     events = (
