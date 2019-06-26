@@ -1,11 +1,16 @@
-import dataclasses
 import logging
 from collections import OrderedDict
 from inspect import signature
 
 from typing import Any
 
-from bai_kafka_utils.events import CommandRequestEvent, CommandResponsePayload, CommandRequestPayload
+from bai_kafka_utils.events import (
+    CommandRequestEvent,
+    CommandResponsePayload,
+    CommandRequestPayload,
+    create_from_object,
+    CommandResponseEvent,
+)
 from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService
 
 logger = logging.getLogger(__name__)
@@ -77,7 +82,7 @@ class KafkaCommandCallback(KafkaServiceCallback):
             try:
                 result = method(*pos_args, **kw_args)
             except TypeError as e:
-                logger.exception("Method invokation failed")
+                logger.exception("Method invocation failed")
                 code = KafkaCommandCallback.CODE_CLIENT_ERROR
                 msg = KafkaCommandCallback.INVALID_ARGS.format(str(e))
             except Exception as e:
@@ -86,7 +91,7 @@ class KafkaCommandCallback(KafkaServiceCallback):
                 msg = str(e)
 
             response_payload = CommandResponsePayload(code, result, msg, event)
-            response_event = dataclasses.replace(event, payload=response_payload)
+            response_event = create_from_object(CommandResponseEvent, event, payload=response_payload)
             kafka_service.send_event(response_event, self.cmd_return_topic)
         else:
             logger.info(f"Uncallable {command} member requested")
