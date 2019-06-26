@@ -20,7 +20,7 @@ class ExecutorCommandObject:
     def __init__(self, kubectl: str):
         self.kubectl = kubectl
 
-    def delete(self, target_action_id: str, client_id: str):
+    def cancel(self, target_action_id: str, client_id: str):
         label_selector = self._create_label_selector(target_action_id, client_id)
         resource_types = ",".join(self.ALL_K8S_RESOURCE_TYPES)
 
@@ -33,7 +33,7 @@ class ExecutorCommandObject:
         if "No resources found" in result:
             raise ValueError(f"No resources found matching selector {label_selector}")
 
-        logging.info(f"Succesfully deleted benchmark with id {target_action_id}")
+        logging.info(f"Succesfully cancelled benchmark with id {target_action_id}")
         logger.info(f"Kubectl output: {result}")
         return result
 
@@ -43,5 +43,3 @@ class ExecutorCommandObject:
             f"{self.LABEL_CREATED_BY}={SERVICE_NAME},"
             f"{self.LABEL_CLIENT_ID}={client_id}"
         )
-
-
