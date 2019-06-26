@@ -77,7 +77,7 @@ class KafkaCommandCallback(KafkaServiceCallback):
             try:
                 result = method(*pos_args, **kw_args)
             except TypeError as e:
-                logger.exception("Method invokation failed")
+                logger.exception("Method invocation failed")
                 code = KafkaCommandCallback.CODE_CLIENT_ERROR
                 msg = KafkaCommandCallback.INVALID_ARGS.format(str(e))
             except Exception as e:

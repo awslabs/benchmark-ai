@@ -116,4 +116,6 @@ def test_create_executor(mocker, config_args, kafka_service_config):
     executor = create_executor(kafka_service_config, executor_config)
 
     mock_create_consumer_producer.assert_called_once()
-    assert executor
+    assert isinstance(executor, KafkaService)
+    assert kafka_service_config.consumer_topic in executor._callbacks
+    assert kafka_service_config.cmd_submit_topic in executor._callbacks
