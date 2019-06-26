@@ -1,4 +1,9 @@
 bases:
   - ../base
+configMapGenerator:
+  - name: pytest
+    literals:
+      - timeout=30
+    behavior: merge
 patchesStrategicMerge:
   - fetcher-it-job.yml

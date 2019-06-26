@@ -8,8 +8,6 @@ from fetcher_dispatcher.args import FetcherServiceConfig
 from fetcher_dispatcher.data_set_manager import DataSetManager
 from fetcher_dispatcher.kubernetes_client import KubernetesDispatcher
 
-TIMEOUT_FOR_DOWNLOAD_SEC = 5 * 60
-
 EXISTING_DATASET = "http://files.grouplens.org/datasets/movielens/ml-1m.zip"
 
 
@@ -26,7 +24,6 @@ def data_set_manager(zk_client: KazooClient, k8s_dispatcher: KubernetesDispatche
 # Repeat 2 - regression test.
 # Checks that unlocking works as expected
 @pytest.mark.parametrize("repeat", [1, 2])
-@pytest.mark.timeout(TIMEOUT_FOR_DOWNLOAD_SEC)
 def test_fetch(
     repeat: int,
     data_set_manager: DataSetManager,

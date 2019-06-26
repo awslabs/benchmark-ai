@@ -8,9 +8,6 @@ from typing import Callable
 from bai_kafka_utils.events import FetcherPayload, BenchmarkDoc, BenchmarkEvent, DataSet, FetchedType, FetcherStatus
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
 
-TIMEOUT_FOR_DOWNLOAD_SEC = 5 * 60
-
-
 # Should be successful in any environment - has delay of 10s for consumer group to setup
 EXISTING_DATASET_WITH_DELAY = "http://files.grouplens.org/datasets/movielens/ml-1m.zip?delay"
 
@@ -55,7 +52,6 @@ def get_message_is_the_response(
 POLL_TIMEOUT_MS = 500
 
 
-@pytest.mark.timeout(TIMEOUT_FOR_DOWNLOAD_SEC)
 @pytest.mark.parametrize(
     "src,data_set_check",
     [(EXISTING_DATASET_WITH_DELAY, successful_dataset), (FAILING_DATASET_WITH_DELAY, failed_dataset)],
