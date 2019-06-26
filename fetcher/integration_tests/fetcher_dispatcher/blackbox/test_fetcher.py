@@ -44,7 +44,7 @@ def get_fetcher_benchmark_event(template_event: BenchmarkEvent, src: str):
 
 
 def get_cancel_event(template_event: BenchmarkEvent, cmd_submit_topic: str):
-    cancel_payload = CommandRequestPayload(command="delete", args={"target_action_id": template_event.action_id})
+    cancel_payload = CommandRequestPayload(command="cancel", args={"target_action_id": template_event.action_id})
     return dataclasses.replace(
         template_event, payload=cancel_payload, action_id=template_event.action_id + "_cancel", type=cmd_submit_topic
     )
