@@ -54,6 +54,14 @@ spec:
                   name: fetcher-dispatcher
                   key: producer_topic
             - name: PYTEST_ARGS
-              value: "-o log_cli=true --log-cli-level=INFO"
+              valueFrom:
+                configMapKeyRef:
+                  name: pytest
+                  key: args
+            - name: PYTEST_TIMEOUT
+              valueFrom:
+                configMapKeyRef:
+                  name: pytest
+                  key: timeout
       restartPolicy: Never
   backoffLimit: 0

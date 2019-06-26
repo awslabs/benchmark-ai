@@ -1,0 +1,10 @@
+bases:
+  - local
+images:
+  - name: benchmarkai/fetcher
+    newName: benchmarkai/fetcher:64f21a0
+configMapGenerator:
+  - name: fetcher-dispatcher
+    literals:
+      - job_image=benchmarkai/mock-fetcher-job:local-latest
+    behavior: merge
