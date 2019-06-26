@@ -11,6 +11,7 @@
   (:require [bai-bff.core :refer :all]
             [bai-bff.services :refer [RunService]]
             [bai-bff.utils.parsers :refer [parse-long]]
+            [bai-bff.utils.utils :as utils]
             [environ.core :refer [env]]
             [amazonica.aws.s3 :as s3]
             [amazonica.aws.s3transfer :as s3tfr]
@@ -137,6 +138,8 @@
 
 (defn scripts->s3
   "Takes a script, represented by a map and writes it down to S3
+  Then returns the fully qualified s3 path to the resource
+
   Ex:
   \"script\" {:filename \"00af189027c5050b408de8fee8449a75973b52d6.tar\",
               :content-type \"application/octet-stream\",
@@ -144,6 +147,8 @@
               :size 10240}
 
   (Bucket name is in environment variable: SCRIPTS_EXCHANGE_S3_BUCKET_NAME)
+
+   See bai-bff.utils.utils/generate-s3-path for how to turn a filename into an s3 path in this system
 
   "
   [script-map]

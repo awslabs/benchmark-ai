@@ -1,5 +1,6 @@
 (ns bai-bff.events
   (:require [bai-bff.core :refer :all]
+            [bai-bff.utils.utils :as utils]
             [clojure.pprint :refer :all]
             [clojure.java.io :as io]
             [clojure.data.codec.base64 :as b64]
@@ -39,7 +40,7 @@
         (assoc-in [:payload :toml :contents] toml->map))))
 
 (defn glean-dataset-info
-  "Pulls out the dataset information out of the toml and raises it in the \"payload\" map.
+  "Pulls out the dataset information out of the TOML and raises it in the \"payload\" map.
   <p> <i>This begs the question, why not just have this information
   retrieved directly from the TOML contents section?  This is a good
   question and would be viable, however, the argument against that
@@ -47,7 +48,12 @@
   not do any in place changes, such as when these data sources are
   fetched and augmented with additional information.</i>"
   [event]
-  (assoc-in event [:payload :datasets] (remove empty? (map #(select-keys % [:src :md5]) (some-> event :payload :toml :contents :data :sources)))))
+  (assoc-in event [:payload :datasets] (remove empty? (mapv #(select-keys % [:src :md5]) (some-> event :payload :toml :contents :data :sources)))))
+
+(defn glean-script-info
+  "Pulls out the script file information from the TOML and writes it to the \"payload\" map."
+  [event]
+  (assoc-in event [:payload :scripts] (remove empty? (mapv (fn [[k filename]] {:dst (utils/generate-s3-path filename)}) (some-> event :payload :toml :contents :ml :script)))))
 
 (defn add-my-visited-entry
   "Adds the entry for this service at the end of the event's vector of
@@ -85,6 +91,7 @@
       :type            "BAI_APP_BFF"}
      (decode-document)
      (glean-dataset-info)
+     (glean-script-info)
      (add-my-visited-entry))))
 
 (defn message->cmd-event

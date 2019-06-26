@@ -6,3 +6,8 @@
   (let [missing (difference required-keys (set(keys env)))]
     (when (seq missing)
       (throw (AssertionError. (str "Configuration missing:" missing))))))
+
+(defn generate-s3-path
+  "Create the full S3 path for the passed in filename"
+  [filename]
+  (str "s3://"(env :scripts-exchange-s3-bucket-name)"/anubis0/"filename))
