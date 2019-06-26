@@ -34,7 +34,6 @@ class FetcherEventHandler(KafkaServiceCallback):
     @staticmethod
     def _collect_status(data_sets: List[DataSet]) -> Status:
         fetch_statuses = {d.status for d in data_sets}
-        # for
         if FetcherStatus.CANCELED in fetch_statuses:
             return Status.CANCELED
         if FetcherStatus.FAILED in fetch_statuses:
