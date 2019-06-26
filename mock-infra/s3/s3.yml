@@ -105,7 +105,7 @@ spec:
                 name: outputs-infrastructure
                 key: s3_endpoint
           - name: BUCKETS
-            value: data-pull user-bucket script-exchange
+            value: data-pull user-bucket scripts-exchange
           volumeMounts:
           - name: entrypoints-volume
             mountPath: /bin/entrypoint.sh
