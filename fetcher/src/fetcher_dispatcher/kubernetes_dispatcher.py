@@ -5,7 +5,6 @@ from typing import Dict, List
 
 from bai_kafka_utils.events import DataSet, BenchmarkEvent
 from bai_kafka_utils.utils import id_generator
-from fetcher_dispatcher import SERVICE_NAME
 from fetcher_dispatcher.args import FetcherJobConfig
 from fetcher_dispatcher.data_set_manager import DataSetDispatcher
 
