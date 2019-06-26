@@ -6,4 +6,3 @@ configMapGenerator:
 resources:
   - roles.yml
   - fetcher-it-job.yml
-
