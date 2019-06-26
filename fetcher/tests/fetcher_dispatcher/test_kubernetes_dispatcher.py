@@ -196,12 +196,8 @@ def test_cancel_all_actions(mock_batch_api_instance, mock_core_api_instance, moc
 
 
 def test_get_label_selector(mock_batch_api_instance, mock_core_api_instance, mock_k8s_config):
-    dispatcher = KubernetesDispatcher(
-        SERVICE_NAME, zk_ensemble=ZOOKEEPER_ENSEMBLE_HOSTS, kubeconfig=None, fetcher_job=FETCHER_JOB_CONFIG
-    )
-
     assert (
-        dispatcher.get_label_selector(CLIENT_ID, ACTION_ID)
+        KubernetesDispatcher.get_label_selector(SERVICE_NAME, CLIENT_ID, ACTION_ID)
         == f"{KubernetesDispatcher.CREATED_BY_LABEL}={SERVICE_NAME},"
         + f"{KubernetesDispatcher.CLIENT_ID_LABEL}={CLIENT_ID},"
         + f"{KubernetesDispatcher.ACTION_ID_LABEL}={ACTION_ID}"
@@ -209,12 +205,8 @@ def test_get_label_selector(mock_batch_api_instance, mock_core_api_instance, moc
 
 
 def test_get_label_selector_all_actions(mock_batch_api_instance, mock_core_api_instance, mock_k8s_config):
-    dispatcher = KubernetesDispatcher(
-        SERVICE_NAME, zk_ensemble=ZOOKEEPER_ENSEMBLE_HOSTS, kubeconfig=None, fetcher_job=FETCHER_JOB_CONFIG
-    )
-
     assert (
-        dispatcher.get_label_selector(CLIENT_ID)
+        KubernetesDispatcher.get_label_selector(SERVICE_NAME, CLIENT_ID)
         == f"{KubernetesDispatcher.CREATED_BY_LABEL}={SERVICE_NAME},"
         + f"{KubernetesDispatcher.CLIENT_ID_LABEL}={CLIENT_ID}"
     )

@@ -120,14 +120,18 @@ class KubernetesDispatcher(DataSetDispatcher):
             KubernetesDispatcher.CREATED_BY_LABEL: self.service_name,
         }
 
-    def get_label_selector(self, client_id: str, action_id: str = None):
+    @staticmethod
+    def get_label_selector(service_name: str, client_id: str, action_id: str = None):
         selector = (
-            f"{KubernetesDispatcher.CREATED_BY_LABEL}={self.service_name},"
+            f"{KubernetesDispatcher.CREATED_BY_LABEL}={service_name},"
             + f"{KubernetesDispatcher.CLIENT_ID_LABEL}={client_id}"
         )
         if action_id:
             selector += f",{KubernetesDispatcher.ACTION_ID_LABEL}={action_id}"
         return selector
+
+    def _get_label_selector(self, client_id: str, action_id: str = None):
+        return KubernetesDispatcher.get_label_selector(self.service_name, client_id, action_id)
 
     def dispatch_fetch(self, task: DataSet, event: BenchmarkEvent, zk_node_path: str):
         try:
@@ -141,7 +145,7 @@ class KubernetesDispatcher(DataSetDispatcher):
 
     def cancel_all(self, client_id: str, action_id: str = None):
         logger.info(f"Removing jobs {client_id}/{action_id}")
-        action_id_label_selector = self.get_label_selector(client_id, action_id)
+        action_id_label_selector = self._get_label_selector(client_id, action_id)
 
         jobs_response = self.batch_api_instance.delete_collection_namespaced_job(
             self.fetcher_job.namespace, label_selector=action_id_label_selector
