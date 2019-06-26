@@ -150,7 +150,6 @@ def test_fetcher(
     return wait_for_response(combined_filter, kafka_consumer_of_produced)
 
 
-@pytest.mark.timeout(TIMEOUT_FOR_DOWNLOAD_SEC)
 def test_cancel(
     benchmark_event_dummy_payload: BenchmarkEvent,
     kafka_producer_to_consume: KafkaProducer,
