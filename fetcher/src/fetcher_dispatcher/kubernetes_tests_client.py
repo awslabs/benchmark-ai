@@ -16,12 +16,13 @@ class KubernetesTestUtilsClient:
     # Utilities to use in integration tests.
     # All of them expect pod to be at least in Pending state.
     # So no super long timeouts are necessary for any environment
+    # Although we seen 10 seconds to be not enough
     def __init__(self, api_client: kubernetes.client.ApiClient, service: str):
         self.batch_api_instance = kubernetes.client.BatchV1Api(api_client)
         self.core_api_instance = kubernetes.client.CoreV1Api(api_client)
         self.service = service
 
-    DEFAULT_TIMEOUT_SECONDS = 10
+    DEFAULT_TIMEOUT_SECONDS = 30
 
     def is_pod_present(self, namespace: str, client_id: str, action_id: str):
         label_selector = KubernetesDispatcher.get_label_selector(self.service, client_id, action_id)
