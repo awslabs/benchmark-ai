@@ -39,7 +39,7 @@ endif
 	$(DOCKER) build $(BENCHMARK_DIR) -f $(BENCHMARK_DIR)/Dockerfile-service --build-arg SERVICE=$(PROJECT) -t $(DOCKER_IMAGE_TAG)
 
 ifeq ($(CACHE_LAYERS),true)
-	$(DOCKER) push $(DOCKER_REPOSITORY):base-ci-latest
+	$(DOCKER) push $(DOCKER_REPOSITORY):base-ci-latest 
 	$(DOCKER) push $(DOCKER_REPOSITORY):ci-latest
 endif
 
