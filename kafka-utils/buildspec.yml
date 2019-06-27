@@ -22,6 +22,7 @@ phases:
         if [ "${RUN_INTEGRATION_TESTS}" != "false" ]; then
             # Start k8s 1.12 cluster
             kind create cluster --image=$K8S_KINDEST_V12
+            $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
             # Now we need the cluster
             export KUBECONFIG=$(kind get kubeconfig-path)
             kubectl wait --for=condition=ready --timeout=120s node/kind-control-plane

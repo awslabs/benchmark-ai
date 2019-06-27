@@ -25,6 +25,7 @@ phases:
             kind create cluster --image=$K8S_KINDEST_V12
             # Prebuild the docker image in parallel to cluster initialization
             # Since we don't push anything, we don't care about the hash - so no dependency on git
+            $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
             make docker_package COMMIT_SHORT_HASH="local-latest"
             # Now we need the cluster
             export KUBECONFIG=$(kind get kubeconfig-path)
