@@ -33,7 +33,7 @@ ifeq ($(CACHE_LAYERS),true)
 	$(DOCKER) pull $(DOCKER_REPOSITORY):ci-latest || echo "Not yet"
 
 	$(DOCKER) build $(BENCHMARK_DIR) -f $(BENCHMARK_DIR)/Dockerfile-service --build-arg SERVICE=$(PROJECT) --target=base -t $(DOCKER_REPOSITORY):base-ci-latest --cache-from=$(DOCKER_REPOSITORY):base-ci-latest
-	$(DOCKER) build $(BENCHMARK_DIR) -f $(BENCHMARK_DIR)/Dockerfile-service --build-arg SERVICE=$(PROJECT) -t $(DOCKER_REPOSITORY):ci-latest --cache-from=$(DOCKER_REPOSITORY):ci-latest
+	$(DOCKER) build $(BENCHMARK_DIR) -f $(BENCHMARK_DIR)/Dockerfile-service --build-arg SERVICE=$(PROJECT) -t $(DOCKER_REPOSITORY):ci-latest --cache-from=$(DOCKER_REPOSITORY):ci-latest --cache-from=$(DOCKER_REPOSITORY):base-ci-latest
 endif
 
 	$(DOCKER) build $(BENCHMARK_DIR) -f $(BENCHMARK_DIR)/Dockerfile-service --build-arg SERVICE=$(PROJECT) -t $(DOCKER_IMAGE_TAG)
