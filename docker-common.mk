@@ -9,7 +9,7 @@ KUBECTL = kubectl
 
 BENCHMARK_DIR ?= ..
 
-DOCKER_REGISTRY = benchmarkai
+DOCKER_REGISTRY ?= benchmarkai
 DOCKER_REPOSITORY = $(DOCKER_REGISTRY)/$(PROJECT)
 
 COMMIT_SHORT_HASH ?= $(shell git rev-parse --short HEAD)
