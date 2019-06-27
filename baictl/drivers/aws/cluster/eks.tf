@@ -1,7 +1,8 @@
 locals {
   # Check the section "The node.type label" at https://github.com/MXNetEdge/benchmark-ai/blob/master/docs/autoscaler-aws.md
   # for an explanation on each type of node.
-  bai_worker_kubelet_args   = "--node-labels=node.type=bai-worker"
+  # --feature-gates=KubeletPodResources=true required for pod-gpu-metrics
+  bai_worker_kubelet_args   = "--feature-gates='KubeletPodResources=true' --node-labels=node.type=bai-worker"
   k8s_services_kubelet_args  = "--node-labels=node.type=k8s-services"
   bai_services_cheap_kubelet_args = "--node-labels=node.type=bai-services-cheap"
   bai_services_compute_kubelet_args = "--node-labels=node.type=bai-services-compute"
@@ -142,7 +143,14 @@ data "null_data_source" "bai_worker_groups" {
                                        )
                               ? lookup(local.ami_ids, "gpu")
                               : lookup(local.ami_ids, "cpu")}"
-    kubelet_extra_args   = "${local.bai_worker_kubelet_args}"
+    kubelet_extra_args   = "${local.bai_worker_kubelet_args},node.gpu-type=${contains(var.gpu_instance_type_prefixes,
+                                       element(split(".",
+                                                     element(local.bai_worker_group_instance_types,
+                                                             count.index / local.bai_worker_group_subnets_count))
+                                               , 0)
+                                       )
+                              ? "NVIDIAGPU" : "NONE"}"
+
     asg_min_size         = 0
     asg_desired_capacity = 0
     asg_max_size         = 10000

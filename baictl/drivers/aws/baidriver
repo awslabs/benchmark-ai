@@ -156,6 +156,18 @@ _install_tiller(){
 
 _install_prometheus(){
     ${helm} upgrade --install prometheus-operator-1 -f ${k8s_deploy_dir}/prometheus-operator.yaml stable/prometheus-operator || return 1
+
+    # The prometheus node-exporter does not support GPU metrics by default. Thus, adding it separately
+    # https://github.com/NVIDIA/gpu-monitoring-tools/tree/master/exporters/prometheus-dcgm#node_exporter
+    ${kubectl} apply -f ${k8s_deploy_dir}/gpu-only-node-exporter-daemonset.yaml || return 1
+
+    # Add per-pod gpu metrics
+    # https://github.com/NVIDIA/gpu-monitoring-tools/tree/master/exporters/prometheus-dcgm/k8s/pod-gpu-metrics-exporter#pod-gpu-metrics-exporter
+    ${kubectl} apply -f ${k8s_deploy_dir}/pod-gpu-metrics-exporter-daemonset.yaml || return 1
+
+    # TODO: add scrape-endpoint for :9101 and :9400
+    # TODO: Check if per-pod includes node-metrics
+    # TODO: Set KubeletPodResources in /etc/default/kubelet: KUBELET_EXTRA_ARGS=--feature-gates=KubeletPodResources=true
 }
 
 port_forward() {
