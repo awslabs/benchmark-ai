@@ -10,6 +10,7 @@ def test_get_fetcher_job_args():
             "RETRY_MAX_ATTEMPTS": "11",
             "RETRY_EXP_MAX": "12000",
             "RETRY_EXP_MULTIPLIER": "200",
+            "TMP_DIR": "/tmp/something",
         },
     )
     assert cfg == FetcherJobConfig(
@@ -20,4 +21,5 @@ def test_get_fetcher_job_args():
         logging_level="WARN",
         zookeeper_ensemble_hosts="Z1",
         retry=RetryConfig(max_attempts=11, exp_max=12000, exp_multiplier=200),
+        tmp_dir="/tmp/something",
     )

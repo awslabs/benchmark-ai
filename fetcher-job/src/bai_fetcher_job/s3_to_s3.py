@@ -63,14 +63,14 @@ def s3_to_s3_deep(src: S3Object, dst: S3Object):
         _s3_to_s3_check_etag(src_dict, src_obj, dst_obj)
 
 
-def s3_to_s3(src: str, dst: str, md5: Optional[str] = None) -> FetchedType:
+def s3_to_s3(src: str, dst: str, md5: Optional[str] = None, temp_dir: Optional[str] = None) -> FetchedType:
     s3src = S3Object.parse(src)
     s3dst = S3Object.parse(dst)
 
     if is_s3_file(s3src):
         if md5:
             # This version does the validation just for a single s3-file
-            transfer_to_s3(download_from_s3, src, dst, md5)
+            transfer_to_s3(download_from_s3, src, dst, md5, temp_dir)
         else:
             s3_to_s3_single(s3src, s3dst)
         return FetchedType.FILE
