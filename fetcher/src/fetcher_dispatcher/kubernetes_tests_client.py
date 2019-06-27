@@ -16,7 +16,7 @@ class KubernetesTestUtilsClient:
     # Utilities to use in integration tests.
     # All of them expect pod to be at least in Pending state.
     # So no super long timeouts are necessary for any environment
-    # Although we seen 10 seconds to be not enough
+    # Although we seen 10 seconds to be not enough to _terminate_ the pod
     def __init__(self, api_client: kubernetes.client.ApiClient, service: str):
         self.batch_api_instance = kubernetes.client.BatchV1Api(api_client)
         self.core_api_instance = kubernetes.client.CoreV1Api(api_client)
