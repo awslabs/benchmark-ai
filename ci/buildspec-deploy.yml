@@ -14,11 +14,21 @@ phases:
     commands:
       - ls
       - |
-        if [ -f "deploy.yml" ] && [ $(stat --printf="%s" deploy.yml) -gt 0 ]; then
-          cat deploy.yml
-          kubectl apply -f deploy.yml
+        if [ -f "deploy.yml" ]; then
+          if  [ $(stat --printf="%s" deploy.yml) -gt 0 ]; then
+            echo "Deploying with `deploy.yml` file"
+            cat deploy.yml
+            kubectl apply -f deploy.yml
+          else
+            echo "The file `deploy.yml` exists but is empty. Assuming there is nothing to deploy."
+          fi
         elif [ -f "deploy/kustomization.yml" ]; then
+          echo "Deploying with `deploy/kustomization.yml`. The contents are:"
+          cat deploy/kustomization.yml
           kubectl apply -k deploy
         else
-          echo "Nothing to deploy"
+          echo "Artifacts to deploy were not created. Erroring!"
+          echo "PWD=$(pwd)"
+          env
+          exit 1
         fi
