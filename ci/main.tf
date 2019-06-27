@@ -155,6 +155,14 @@ resource "aws_codebuild_project" "ci-unit-tests" {
     )
     type = "LINUX_CONTAINER"
     privileged_mode = true
+
+    dynamic "environment_variable" {
+      for_each = local.common_environment_variables[var.projects[count.index]]
+      content {
+        name = environment_variable.key
+        value = environment_variable.value
+      }
+    }
   }
 
   source {
