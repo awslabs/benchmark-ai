@@ -1,0 +1,5 @@
+resources:
+  - zookeeper.yml
+  - kafka.yml
+  - s3.yml
+  - mock-outputs-infra.yml

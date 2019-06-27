@@ -26,8 +26,7 @@ phases:
             export KUBECONFIG=$(kind get kubeconfig-path)
             kubectl wait --for=condition=ready --timeout=120s node/kind-control-plane
             # We need to setup the mock infra before running the integration tests
-            # Just the kafka module is necessary
-            kubectl apply -k ../mock-infra/kafka
+            kubectl apply -k ../mock-infra
             # All the containers are probably just creating
             kubectl get pods
             kubectl wait --for=condition=ready --timeout=120s pod/zookeeper-0
