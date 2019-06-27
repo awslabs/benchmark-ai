@@ -7,3 +7,7 @@ baictl/Dockerfile-baictl
 .git
 .gitmodules
 baictl/baictl-infrastructure.py
+**/deploy
+**/build
+**/dist
+**/.*
