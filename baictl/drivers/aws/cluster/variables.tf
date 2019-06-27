@@ -60,7 +60,7 @@ variable "map_users_count" {
 
 variable "k8s_version" {
   description = "Version of Kubernetes"
-  default = "1.12"
+  default = "1.13"
 }
 
 variable "benchmark_workers_instance_types" {
@@ -97,13 +97,13 @@ variable "gpu_instance_type_prefixes" {
 # AMIs
 ##########################################################################################
 variable "eks_cpu_ami_version" {
-  description = "Version of the AMI used by the worker nodes. See https://github.com/awslabs/amazon-eks-ami"
-  default = "v20190329"
+  description = "Version of the AMI used by the worker nodes. See https://github.com/awslabs/amazon-eks-ami/releases"
+  default = "v20190614"
 }
 
 variable "eks_gpu_ami_version" {
-  description = "Version of the AMI used by the worker nodes. See https://github.com/awslabs/amazon-eks-ami"
-  default = "v20190327"
+  description = "Version of the AMI used by the worker nodes. See https://github.com/awslabs/amazon-eks-ami/releases"
+  default = "v20190614"
 }
 
 variable "eks_cpu_ami_id" {
