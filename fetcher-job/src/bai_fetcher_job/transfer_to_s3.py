@@ -12,7 +12,9 @@ logger = logging.getLogger(__name__)
 DownloadCallback = Callable[[TextIO, str], None]
 
 
-def transfer_to_s3(download: DownloadCallback, src: str, dst: str, md5: Optional[str] = None):
+def transfer_to_s3(
+    download: DownloadCallback, src: str, dst: str, md5: Optional[str] = None, temp_dir: Optional[str] = None
+):
     logger.info(f"transfer to s3: {src} -> {dst}")
 
     s3dst = S3Object.parse(dst)
@@ -23,7 +25,7 @@ def transfer_to_s3(download: DownloadCallback, src: str, dst: str, md5: Optional
         logger.info(f"S3 Object with md5 {md5} found - good enough")
         return
 
-    with tempfile.TemporaryFile("r+b") as fp:
+    with tempfile.TemporaryFile("r+b", dir=temp_dir) as fp:
         download(fp, src)
 
         hash_pair: DigestPair = calculate_md5_and_etag(fp)
