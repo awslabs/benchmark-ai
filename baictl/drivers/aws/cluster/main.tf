@@ -78,9 +78,9 @@ resource "aws_security_group" "all_worker_mgmt" {
   }
 }
 
-resource "aws_security_group" "bff_corp_access" {
-  name        = "anubis_bff_corp_access"
-  description = "bff_corp_access"
+resource "aws_security_group" "bff_external_access" {
+  name        = "anubis_bff_external_access"
+  description = "bff_external_access"
   vpc_id      = "${module.vpc.vpc_id}"
 
   ingress {
@@ -88,6 +88,13 @@ resource "aws_security_group" "bff_corp_access" {
     to_port         = 65535
     protocol        = "tcp"
     prefix_list_ids = "${var.prefix_list_ids}"
+  }
+
+  ingress {
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "tcp"
+    cidr_blocks = "${var.ssh_access_cidr_blocks}"
   }
 
   egress {
@@ -98,7 +105,7 @@ resource "aws_security_group" "bff_corp_access" {
   }
 
   tags {
-    "Name" = "anubis_bff_corp_access"
+    "Name" = "anubis_bff_external_access"
   }
 }
 
