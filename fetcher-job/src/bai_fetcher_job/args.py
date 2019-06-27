@@ -25,8 +25,8 @@ class FetcherJobConfig:
     md5: Optional[str] = None
     zk_node_path: Optional[str] = None
     zookeeper_ensemble_hosts: Optional[str] = None
-
     retry: Optional[RetryConfig] = field(default_factory=RetryConfig)
+    tmp_dir: Optional[str] = None
 
 
 def get_fetcher_job_args(args, env_vars):
@@ -40,6 +40,7 @@ def get_fetcher_job_args(args, env_vars):
     parser.add_argument("--retry-max-attempts", env_var="RETRY_MAX_ATTEMPTS", type=int, default=MAX_ATTEMPTS)
     parser.add_argument("--retry-exp-max", env_var="RETRY_EXP_MAX", type=int, default=MAX_WAIT)
     parser.add_argument("--retry-exp-multiplier", env_var="RETRY_EXP_MULTIPLIER", type=int, default=EXP_MULTIPLIER)
+    parser.add_argument("--tmp-dir", env_var="TMP_DIR", type=str)
     parsed_args = parser.parse_args(args, env_vars=env_vars)
 
     return FetcherJobConfig(
@@ -54,4 +55,5 @@ def get_fetcher_job_args(args, env_vars):
             exp_multiplier=parsed_args.retry_exp_multiplier,
             max_attempts=parsed_args.retry_max_attempts,
         ),
+        tmp_dir=parsed_args.tmp_dir,
     )

@@ -47,7 +47,7 @@ def _fetch(cfg: FetcherJobConfig) -> FetchedType:
 
     src_scheme = urlparse(cfg.src)
     if src_scheme.scheme == "http" or src_scheme.scheme == "https":
-        http_to_s3(cfg.src, cfg.dst, cfg.md5)
+        http_to_s3(cfg.src, cfg.dst, cfg.md5, cfg.tmp_dir)
         return FetchedType.FILE
     elif src_scheme.scheme == "s3":
-        return s3_to_s3(cfg.src, cfg.dst, cfg.md5)
+        return s3_to_s3(cfg.src, cfg.dst, cfg.md5, cfg.tmp_dir)
