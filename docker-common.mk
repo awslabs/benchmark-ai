@@ -19,6 +19,8 @@ DOCKER_IMAGE_TAG = $(DOCKER_REPOSITORY):$(DOCKER_IMAGE_LABEL)
 # Default local action - don't push
 LOCAL_DEPLOY = echo "Skipping local publishing step - use local docker repo"
 
+CACHE_LAYERS=false
+
 # package is a high level command while docker_package can be executed separately
 package: build docker_package
 
@@ -26,7 +28,18 @@ _pre_docker_package::
 	echo "Pre docker actions"
 
 _docker_package: _pre_docker_package
+ifeq ($(CACHE_LAYERS),true)
+	$(DOCKER) build $(BENCHMARK_DIR) -f $(BENCHMARK_DIR)/Dockerfile-service --build-arg SERVICE=$(PROJECT) --target=base -t $(DOCKER_REPOSITORY):base-ci-latest --cache-from=$(DOCKER_REPOSITORY):base-ci-latest
+	$(DOCKER) build $(BENCHMARK_DIR) -f $(BENCHMARK_DIR)/Dockerfile-service --build-arg SERVICE=$(PROJECT) -t $(DOCKER_REPOSITORY):base-ci-latest --cache-from=$(DOCKER_REPOSITORY):ci-latest
+endif
+
 	$(DOCKER) build $(BENCHMARK_DIR) -f $(BENCHMARK_DIR)/Dockerfile-service --build-arg SERVICE=$(PROJECT) -t $(DOCKER_IMAGE_TAG)
+
+ifeq ($(CACHE_LAYERS),true)
+	$(DOCKER) push $(BENCHMARK_DIR) $(DOCKER_REPOSITORY):base-ci-latest
+	$(DOCKER) push $(BENCHMARK_DIR) $(DOCKER_REPOSITORY):ci-latest
+endif
+
 
 _post_docker_package:: _docker_package
 	echo "Post docker actions"
