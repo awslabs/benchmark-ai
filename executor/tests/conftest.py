@@ -2,9 +2,10 @@ import textwrap
 
 import toml
 import pytest
+from unittest.mock import create_autospec
 
 from bai_kafka_utils.events import DataSet, BenchmarkDoc, FetcherPayload, BenchmarkEvent
-from bai_kafka_utils.kafka_service import KafkaServiceConfig
+from bai_kafka_utils.kafka_service import KafkaServiceConfig, KafkaService
 from transpiler.descriptor import Descriptor, DescriptorConfig
 from transpiler.bai_knowledge import EnvironmentInfo
 from transpiler.config import BaiConfig
@@ -56,7 +57,6 @@ def config_args(shared_datadir):
 @pytest.fixture
 def descriptor_config():
     config_values = {"valid_strategies": ["single_node", "horovod"]}
-
     return DescriptorConfig(**config_values)
 
 
@@ -134,3 +134,8 @@ def kafka_service_config():
         cmd_return_topic="CMD_RETURN",
         status_topic="BAI_APP_STATUS",
     )
+
+
+@pytest.fixture
+def kafka_service() -> KafkaService:
+    return create_autospec(KafkaService)

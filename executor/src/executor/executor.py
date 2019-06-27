@@ -1,7 +1,9 @@
 import subprocess
 import logging
 
+from bai_kafka_utils.cmd_callback import KafkaCommandCallback
 from executor import SERVICE_NAME, __version__
+from executor.commands import ExecutorCommandObject
 from executor.config import ExecutorConfig
 from transpiler.bai_knowledge import create_job_yaml_spec
 from bai_kafka_utils.events import (
@@ -81,9 +83,13 @@ class ExecutorEventHandler(KafkaServiceCallback):
 
 
 def create_executor(common_kafka_cfg: KafkaServiceConfig, executor_config: ExecutorConfig) -> KafkaService:
+    cmd_object = ExecutorCommandObject(executor_config.kubectl)
 
     callbacks = {
-        common_kafka_cfg.consumer_topic: [ExecutorEventHandler(executor_config, common_kafka_cfg.producer_topic)]
+        common_kafka_cfg.consumer_topic: [ExecutorEventHandler(executor_config, common_kafka_cfg.producer_topic)],
+        common_kafka_cfg.cmd_submit_topic: [
+            KafkaCommandCallback(cmd_object=cmd_object, cmd_return_topic=common_kafka_cfg.cmd_return_topic)
+        ],
     }
 
     consumer, producer = create_kafka_consumer_producer(common_kafka_cfg, SERVICE_NAME)
