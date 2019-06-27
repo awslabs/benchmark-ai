@@ -59,6 +59,9 @@ def test_fetch(
 
 
 # This test may be not suitable for real environments
+# http://files.grouplens.org/datasets/movielens/ml-1m.zip?delay=3600 simulates a one hour download.
+# We just want the dataset not to be completed on it's own between fetch and cancel.
+# Otherwise it can get a brittle test.
 def test_cancel(
     data_set_manager: DataSetManager,
     fetcher_service_config: FetcherServiceConfig,

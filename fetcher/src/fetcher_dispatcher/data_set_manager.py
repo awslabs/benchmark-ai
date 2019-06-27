@@ -142,6 +142,8 @@ class DataSetManager:
                     result: FetcherResult = FetcherResult.from_binary(data)
 
                     # The guy is final - it will not take long for us to cancel it.
+                    # The job is finished.
+                    # So now we are in a race with a zookeeper listener, that will pass the results downstream.
                     if result.status.final:
                         logger.info(f"{abs_path}: not to be canceled - already finished")
                         break

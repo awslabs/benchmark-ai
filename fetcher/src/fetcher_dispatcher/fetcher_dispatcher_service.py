@@ -38,7 +38,7 @@ class FetcherEventHandler(KafkaServiceCallback):
             return Status.CANCELED
         if FetcherStatus.FAILED in fetch_statuses:
             return Status.FAILED
-        # This 2 cases should never happen
+        # These 2 cases should never happen
         if FetcherStatus.PENDING in fetch_statuses:
             return Status.PENDING
         if FetcherStatus.RUNNING in fetch_statuses:

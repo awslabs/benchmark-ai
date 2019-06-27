@@ -13,7 +13,7 @@ SOMEDATA_BIG = "http://somedata.big"
 SOMEDATA_BIG_WITH_DELAY = "http://somedata.big?delay=120"
 
 
-def test_kuberenetes_client(
+def test_kubernetes_client(
     k8s_dispatcher: KubernetesDispatcher,
     benchmark_event_dummy_payload: BenchmarkEvent,
     k8s_test_client: KubernetesTestUtilsClient,
@@ -28,7 +28,7 @@ def test_kuberenetes_client(
 
 
 # API boundary test - should just not fail
-def test_kuberenetes_cancel(
+def test_kubernetes_cancel(
     k8s_dispatcher: KubernetesDispatcher,
     benchmark_event_dummy_payload: BenchmarkEvent,
     k8s_test_client: KubernetesTestUtilsClient,
@@ -55,7 +55,7 @@ def test_kuberenetes_cancel(
 
 
 # API boundary test - should just not fail
-def test_kuberenetes_cancel_after_ttl(
+def test_kubernetes_cancel_after_ttl(
     k8s_dispatcher: KubernetesDispatcher,
     benchmark_event_dummy_payload: BenchmarkEvent,
     k8s_test_client: KubernetesTestUtilsClient,
