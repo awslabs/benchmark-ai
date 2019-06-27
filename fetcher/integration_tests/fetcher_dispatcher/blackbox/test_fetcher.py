@@ -50,15 +50,15 @@ def get_cancel_event(template_event: BenchmarkEvent, cmd_submit_topic: str):
     )
 
 
-def successful_dataset(data_set: DataSet) -> bool:
+def is_dataset_successful(data_set: DataSet) -> bool:
     return data_set.dst is not None and data_set.type == FetchedType.FILE and data_set.status == FetcherStatus.DONE
 
 
-def failed_dataset(data_set: DataSet) -> bool:
+def is_dataset_failed(data_set: DataSet) -> bool:
     return data_set.dst is None and data_set.message is not None and data_set.status == FetcherStatus.FAILED
 
 
-def canceled_dataset(data_set: DataSet) -> bool:
+def is_dataset_canceled(data_set: DataSet) -> bool:
     return data_set.dst is None and data_set.status == FetcherStatus.CANCELED
 
 
@@ -107,19 +107,18 @@ def get_is_command_return_filter(
     return filter_command_event
 
 
-def get_all_complete_filter(filters: List[EventFilter]) -> EventFilter:
-    set_filters = set(filters)
+class CombinedFilter(EventFilter):
+    def __init__(self, filters: List[EventFilter]):
+        self.set_filters = set(filters)
 
-    # Return true, if all of the filters returned True
-    def filter_event(event: BenchmarkEvent) -> bool:
-        for event_filter in set_filters:
+    # Returns true after all filters are satisfied
+    def __call__(self, event: BenchmarkEvent) -> bool:
+        for event_filter in self.set_filters:
             if event_filter(event):
-                set_filters.remove(event_filter)
-                print(f"Hit condition {event_filter.__name__}. {len(set_filters)} to hit.")
+                self.set_filters.remove(event_filter)
+                print(f"Hit condition {event_filter.__name__}. {len(self.set_filters)} to hit.")
                 break
-        return not set_filters
-
-    return filter_event
+        return not self.set_filters
 
 
 POLL_TIMEOUT_MS = 500
@@ -128,8 +127,8 @@ POLL_TIMEOUT_MS = 500
 @pytest.mark.parametrize(
     "src,data_set_check,expected_status",
     [
-        (EXISTING_DATASET_WITH_DELAY, successful_dataset, Status.SUCCEEDED),
-        (FAILING_DATASET_WITH_DELAY, failed_dataset, Status.FAILED),
+        (EXISTING_DATASET_WITH_DELAY, is_dataset_successful, Status.SUCCEEDED),
+        (FAILING_DATASET_WITH_DELAY, is_dataset_failed, Status.FAILED),
     ],
     ids=["successful", "failing"],
 )
@@ -148,7 +147,7 @@ def test_fetcher(
 
     fetcher_event_filter = get_is_fetch_response_filter(benchmark_event, data_set_check, kafka_service_config)
     status_event_filter = get_is_status_filter(benchmark_event, expected_status, kafka_service_config)
-    combined_filter = get_all_complete_filter([fetcher_event_filter, status_event_filter])
+    combined_filter = CombinedFilter([fetcher_event_filter, status_event_filter])
 
     return wait_for_response(combined_filter, kafka_consumer_of_produced)
 
@@ -170,12 +169,12 @@ def test_cancel(
         kafka_service_config.cmd_submit_topic, value=cancel_event, key=cancel_event.client_id
     )
 
-    fetcher_event_filter = get_is_fetch_response_filter(benchmark_event, canceled_dataset, kafka_service_config)
+    fetcher_event_filter = get_is_fetch_response_filter(benchmark_event, is_dataset_canceled, kafka_service_config)
     status_event_filter = get_is_status_filter(benchmark_event, Status.CANCELED, kafka_service_config)
     command_return_filter = get_is_command_return_filter(
         cancel_event, KafkaCommandCallback.CODE_SUCCESS, kafka_service_config
     )
-    combined_filter = get_all_complete_filter([fetcher_event_filter, status_event_filter, command_return_filter])
+    combined_filter = CombinedFilter([fetcher_event_filter, status_event_filter, command_return_filter])
 
     return wait_for_response(combined_filter, kafka_consumer_of_produced)
 
