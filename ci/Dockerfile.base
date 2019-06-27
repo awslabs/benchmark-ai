@@ -43,3 +43,6 @@ RUN echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | tee -a /etc/a
 RUN apt-get update && apt-get install -y kubectl=1.14.*
 
 ENV K8S_KINDEST_V12 kindest/node:v1.12.8@sha256:cc6e1a928a85c14b52e32ea97a198393fb68097f14c4d4c454a8a3bc1d8d486c
+
+#aws cli
+RUN pip install awscli

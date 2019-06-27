@@ -18,7 +18,7 @@ phases:
       - env
       - cd fetcher
       # Regular make staff - lint/test. If this fails - no sense to continue.
-      - make
+      - make  
       - |
         if [ "${RUN_INTEGRATION_TESTS}" != "false" ]; then
             # Start k8s 1.12 cluster
