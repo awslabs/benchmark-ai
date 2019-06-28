@@ -75,5 +75,5 @@ output "s3_endpoint" {
 
 output "bff_security_group_id" {
   description = "Security group id to allow corp access to bff loadbalancer"
-  value       = "${aws_security_group.bff_corp_access.id}"
+  value       = "${aws_security_group.bff_external_access.id}"
 }
