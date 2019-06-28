@@ -52,6 +52,7 @@
 
 ;; The "database"
 (def status-db (atom {}))
+(def stored-scripts (atom #{}))
 
 (defn update-status-store
   "client-id -> action-id -> [events] : Using a map as an indexed event
@@ -153,4 +154,8 @@
   "
   [script-map]
   (log/trace "scripts->s3 "script-map)
-  (s3/put-object (env :scripts-exchange-s3-bucket-name) (:filename script-map) (:tempfile script-map)))
+  (s3/put-object (env :scripts-exchange-s3-bucket-name) (:filename script-map) (:tempfile script-map))
+  (swap! stored-scripts conj (:filename script-map)))
+
+(defn has-file? [filename]
+  (contains? @stored-scripts filename))
