@@ -169,6 +169,13 @@ module "vpc" {
   # for EKS and Kubernetes to discover and manage networking resources
   # https://www.terraform.io/docs/providers/aws/guides/eks-getting-started.html#base-vpc-networking
   tags = "${merge(local.tags, map("kubernetes.io/cluster/${var.cluster_name_prefix}", "shared"))}"
+
+  private_subnet_tags = {
+    Visibility = "private"
+  }
+  public_subnet_tags = {
+    Visibility = "public"
+  }
 }
 
 resource "aws_msk_cluster" "benchmark-msk-cluster" {

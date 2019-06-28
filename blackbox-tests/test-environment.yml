@@ -1,0 +1,9 @@
+name: blackbox-tests
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pytest
+  - kubernetes
+  - awscli
+  - kubernetes

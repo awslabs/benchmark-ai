@@ -1,0 +1,10 @@
+name: blackbox-tests
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - requests
+  - pip
+  - pip:
+    - dataclasses-json
+    - dacite

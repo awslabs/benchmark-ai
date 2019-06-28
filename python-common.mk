@@ -1,8 +1,11 @@
 SHELL :=/bin/bash
 CONDA_RUN = conda run --name $(ENV_NAME)
-PYTHON = $(CONDA_RUN) python
-PIP = $(CONDA_RUN) pip
-PYTEST = $(CONDA_RUN) pytest
+CONDA_ROOT = $(shell conda info --root)
+CONDA_ENV_BIN = $(CONDA_ROOT)/envs/$(ENV_NAME)/bin
+export PATH := $(CONDA_ENV_BIN):$(PATH)
+PYTHON = python
+PIP = pip
+PYTEST = pytest
 TEST_FLAGS = -v
 
 TEST_FOLDERS=tests
@@ -12,9 +15,9 @@ INTEGRATION_TEST_FOLDERS=integration_tests
 # We mentally do --cov-fail-under 90
 COVERAGE_FLAGS = --cov=$(SRC_FOLDERS) --cov-report html --cov-report term
 
-LINT = $(CONDA_RUN) flake8
+LINT = flake8
 
-FORMAT = $(CONDA_RUN) black
+FORMAT = black
 FORMAT_FLAGS = --line-length=120
 
 .DEFAULT_GOAL := default
