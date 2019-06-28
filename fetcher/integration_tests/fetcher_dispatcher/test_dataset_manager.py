@@ -1,7 +1,8 @@
 import pytest
+import threading
 from kazoo.client import KazooClient
 from pytest import fixture
-from time import sleep
+from typing import NamedTuple
 
 from bai_kafka_utils.events import BenchmarkEvent, DataSet, FetchedType, FetcherStatus
 from bai_zk_utils.zk_locker import DistributedRWLockManager
@@ -28,6 +29,8 @@ def data_set_manager(zk_client: KazooClient, k8s_dispatcher: KubernetesDispatche
     data_set_manager.stop()
 
 
+DataSetWithEvent = NamedTuple("DataSetWithEvent", [("data_set", DataSet), ("event", threading.Event)])
+
 # Repeat 2 - regression test.
 # Checks that unlocking works as expected
 @pytest.mark.parametrize("repeat", [1, 2])
@@ -37,29 +40,31 @@ def test_fetch(
     fetcher_service_config: FetcherServiceConfig,
     benchmark_event_dummy_payload: BenchmarkEvent,
 ):
-    data_sets = []
-    for _ in range(repeat):
-        data_sets.append(
+    data_sets_with_events = [
+        DataSetWithEvent(
             DataSet(
                 src=EXISTING_DATASET, dst=f"s3://{fetcher_service_config.s3_data_set_bucket}/it/test.file", md5=None
-            )
+            ),
+            threading.Event(),
         )
+    ]
 
-    test_fetch.completed = 0
-
-    def on_done_test(data_set: DataSet):
+    def on_done_test(data_set: DataSet, completed: threading.Event):
         assert data_set.src
         assert data_set.type == FetchedType.FILE
         assert data_set.dst
         assert data_set.status == FetcherStatus.DONE
+        completed.set()
 
-        test_fetch.completed += 1
+    for data_sets_with_event in data_sets_with_events:
+        data_set_manager.fetch(
+            data_sets_with_event.data_set,
+            benchmark_event_dummy_payload,
+            lambda d: on_done_test(d, data_sets_with_event.event),
+        )
 
-    for data_set in data_sets:
-        data_set_manager.fetch(data_set, benchmark_event_dummy_payload, on_done_test)
-
-    while test_fetch.completed < repeat:
-        sleep(1)
+    for _, event in data_sets_with_events:
+        event.wait(WAIT_TIMEOUT)
 
 
 # This test may be not suitable for real environments
@@ -75,17 +80,16 @@ def test_cancel(
         src=VERY_LARGE_DATASET, dst=f"s3://{fetcher_service_config.s3_data_set_bucket}/it/test.file", md5=None
     )
 
-    test_fetch.completed = False
+    completed = threading.Event()
 
     def on_done_test(data_set: DataSet):
         assert data_set.src
         assert data_set.status == FetcherStatus.CANCELED
         assert not data_set.dst
 
-        test_fetch.completed = True
+        completed.set()
 
     data_set_manager.fetch(data_set, benchmark_event_dummy_payload, on_done_test)
     data_set_manager.cancel(benchmark_event_dummy_payload.client_id, benchmark_event_dummy_payload.action_id)
 
-    while not test_fetch.completed:
-        sleep(1)
+    assert completed.wait(WAIT_TIMEOUT)
