@@ -110,7 +110,7 @@ def wait_for_benchmark_completion(bai_client, action_id):
         sys.stdout.flush()
 
 
-def unique(objects: Iterable) -> Iterable:
+def unique_justseen(objects: Iterable) -> Iterable:
     last = None
     for obj in objects:
         if last is not None and obj == last:
@@ -157,7 +157,7 @@ def test_sample_benchmarks(descriptor_filename):
     events = (
         ServiceAndStatus(visited_service=message.visited[-1].svc, status=message.status) for message in status_messages
     )
-    events = unique(events)
+    events = unique_justseen(events)
     events = list(events)
 
     assert events == [
