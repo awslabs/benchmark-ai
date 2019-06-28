@@ -313,6 +313,14 @@ _prepare_script() {
     #  (if not send file along as well when submitting.)
 }
 
+# Ping the server endpoint with name of script artifact to see if the file exists already on the server.
+# Remember for a script a return value of 0 means TRUE (everything else is false... !0)
+_has_script() {
+    local cmd
+    cmd="curl http://${current_service_endpoint}/api/job/script/${script_artifact##*/}"
+    if [[ "true" == $(eval cmd) ]]; then  0; else 1; fi;
+}
+
 #submit event
 submit() {
     local descriptor_filename=${1?"submit() -> You MUST supply a descriptor file (or <action id>)"}
@@ -339,8 +347,7 @@ submit() {
 
     if [[ -n "${data}" ]]; then
         [[ -n "${script_artifact}" ]] && echo "Using Script: ${script_artifact##*/}"
-        local not_on_server=1;
-        cmd="curl -F submit-event='"${data}"' "$( [[ -n "${script_artifact}" ]] && echo -n "-F script="@${script_artifact})" http://"${current_service_endpoint}"/api/job/descriptor"
+        cmd="curl -F submit-event='"${data}"' "$( [[ -n "${script_artifact}" && ! $(_has_script "${script_artifact##*/}") ]] && echo -n "-F script="@${script_artifact})" http://"${current_service_endpoint}"/api/job/descriptor"
         ((VERBOSE)) && echo ${cmd}
         _print_status "sending ${descriptor_filename} "$( [[ -n "${script_artifact}" ]] && echo -n "and '"@${script_artifact##*/}"'")"to anubis service @ ${current_service_endpoint}"
         [[ ! -d "${BAI_DATABASE}/$(get_client_id)" ]] && mkdir -p "${BAI_DATABASE}/$(get_client_id)"
