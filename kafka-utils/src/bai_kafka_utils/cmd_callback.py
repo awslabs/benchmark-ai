@@ -90,7 +90,7 @@ class KafkaCommandCallback(KafkaServiceCallback):
                 code = KafkaCommandCallback.CODE_COMMAND_ERROR
                 msg = str(e)
 
-            response_payload = CommandResponsePayload(code, result, msg, event)
+            response_payload = CommandResponsePayload(code, event, result, msg)
             response_event = create_from_object(CommandResponseEvent, event, payload=response_payload)
             kafka_service.send_event(response_event, self.cmd_return_topic)
         else:

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 
 from dataclasses_json import dataclass_json
 
@@ -11,8 +12,8 @@ DEFAULT_ENCODING = "utf-8"
 @dataclass_json
 class FetcherResult:
     status: FetcherStatus
-    type: FetchedType = None
-    message: str = ""
+    type: Optional[FetchedType] = None
+    message: Optional[str] = ""
 
     def to_binary(self):
         return self.to_json().encode(DEFAULT_ENCODING)
