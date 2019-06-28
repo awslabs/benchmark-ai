@@ -1,7 +1,8 @@
 from kazoo.client import KazooClient
 from typing import List, Callable
 
-from bai_kafka_utils.events import FetcherBenchmarkEvent, Status
+from bai_kafka_utils.cmd_callback import KafkaCommandCallback
+from bai_kafka_utils.events import FetcherBenchmarkEvent, Status, FetcherStatus
 from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
 from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService, KafkaServiceConfig
 from bai_kafka_utils.utils import get_pod_name
@@ -10,14 +11,14 @@ from fetcher_dispatcher import SERVICE_NAME, __version__
 from fetcher_dispatcher.args import FetcherServiceConfig, FetcherJobConfig
 from fetcher_dispatcher.data_set_manager import DataSet, DataSetManager, get_lock_name
 from fetcher_dispatcher.data_set_pull import get_dataset_dst
-from fetcher_dispatcher.kubernetes_client import KubernetesDispatcher
+from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
 
 LOCK_MANAGER_PREFIX = "fetcher_lock_manager"
 
 
 def create_data_set_manager(zookeeper_ensemble_hosts: str, kubeconfig: str, fetcher_job: FetcherJobConfig):
     zk_client = KazooClient(zookeeper_ensemble_hosts)
-    job_dispatcher = KubernetesDispatcher(kubeconfig, zookeeper_ensemble_hosts, fetcher_job)
+    job_dispatcher = KubernetesDispatcher(SERVICE_NAME, kubeconfig, zookeeper_ensemble_hosts, fetcher_job)
 
     lock_manager = DistributedRWLockManager(zk_client, LOCK_MANAGER_PREFIX, get_lock_name)
 
@@ -29,6 +30,20 @@ class FetcherEventHandler(KafkaServiceCallback):
         self.data_set_mgr = data_set_mgr
         self.s3_data_set_bucket = s3_data_set_bucket
         self.producer_topic = producer_topic
+
+    @staticmethod
+    def _collect_status(data_sets: List[DataSet]) -> Status:
+        fetch_statuses = {d.status for d in data_sets}
+        if FetcherStatus.CANCELED in fetch_statuses:
+            return Status.CANCELED
+        if FetcherStatus.FAILED in fetch_statuses:
+            return Status.FAILED
+        # These 2 cases should never happen
+        if FetcherStatus.PENDING in fetch_statuses:
+            return Status.PENDING
+        if FetcherStatus.RUNNING in fetch_statuses:
+            return Status.RUNNING
+        return Status.SUCCEEDED
 
     def handle_event(self, event: FetcherBenchmarkEvent, kafka_service: KafkaService):
         def extract_datasets(event) -> List[DataSet]:
@@ -67,12 +82,21 @@ class FetcherEventHandler(KafkaServiceCallback):
 
         def on_all_done():
             kafka_service.send_event(event, self.producer_topic)
-            kafka_service.send_status_message_event(event, Status.SUCCEEDED, "All data sets processed")
+            total_status = FetcherEventHandler._collect_status(event.payload.datasets)
+            kafka_service.send_status_message_event(event, total_status, "All data sets processed")
 
         execute_all(tasks, on_all_done)
 
     def cleanup(self):
         self.data_set_mgr.stop()
+
+
+class DataSetCmdObject:
+    def __init__(self, data_set_mgr: DataSetManager):
+        self.data_set_mgr = data_set_mgr
+
+    def cancel(self, client_id: str, target_action_id: str):
+        self.data_set_mgr.cancel(client_id, target_action_id)
 
 
 def create_fetcher_dispatcher(common_kafka_cfg: KafkaServiceConfig, fetcher_cfg: FetcherServiceConfig) -> KafkaService:
@@ -84,7 +108,10 @@ def create_fetcher_dispatcher(common_kafka_cfg: KafkaServiceConfig, fetcher_cfg:
     callbacks = {
         common_kafka_cfg.consumer_topic: [
             FetcherEventHandler(common_kafka_cfg.producer_topic, data_set_mgr, fetcher_cfg.s3_data_set_bucket)
-        ]
+        ],
+        common_kafka_cfg.cmd_submit_topic: [
+            KafkaCommandCallback(DataSetCmdObject(data_set_mgr), common_kafka_cfg.cmd_return_topic)
+        ],
     }
 
     consumer, producer = create_kafka_consumer_producer(common_kafka_cfg, SERVICE_NAME)

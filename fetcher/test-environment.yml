@@ -7,3 +7,4 @@ dependencies:
   - mock
   - pytest-mock
   - pytest-timeout
+  - timeout-decorator

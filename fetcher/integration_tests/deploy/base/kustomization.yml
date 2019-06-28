@@ -4,4 +4,5 @@ configMapGenerator:
       - args=-o log_cli=true --log-cli-level=INFO
       - timeout=300
 resources:
+  - roles.yml
   - fetcher-it-job.yml

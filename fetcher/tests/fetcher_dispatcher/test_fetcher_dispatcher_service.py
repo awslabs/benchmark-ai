@@ -1,23 +1,34 @@
 from unittest import mock
 
 import kafka
+import pytest
+
 from kazoo.client import KazooClient
 from pytest import fixture
 from typing import List, Type
 from unittest.mock import patch, call, ANY, create_autospec
 
-from bai_kafka_utils.events import BenchmarkDoc, BenchmarkEvent, FetcherPayload, DataSet, FetcherBenchmarkEvent, Status
+from bai_kafka_utils.events import (
+    BenchmarkDoc,
+    BenchmarkEvent,
+    FetcherPayload,
+    DataSet,
+    FetcherBenchmarkEvent,
+    Status,
+    FetcherStatus,
+)
 from bai_kafka_utils.kafka_service import KafkaService, KafkaServiceConfig
 from bai_zk_utils.zk_locker import DistributedRWLockManager
-from fetcher_dispatcher import fetcher_dispatcher_service
+from fetcher_dispatcher import fetcher_dispatcher_service, SERVICE_NAME
 from fetcher_dispatcher.args import FetcherServiceConfig, FetcherJobConfig
 from fetcher_dispatcher.data_set_manager import DataSetManager
 from fetcher_dispatcher.fetcher_dispatcher_service import (
     create_data_set_manager,
     FetcherEventHandler,
     create_fetcher_dispatcher,
+    DataSetCmdObject,
 )
-from fetcher_dispatcher.kubernetes_client import KubernetesDispatcher
+from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
 
 FETCHER_JOB_IMAGE = "job/image"
 
@@ -239,7 +250,32 @@ def test_create_data_set_manager(
     create_data_set_manager(ZOOKEEPER_ENSEMBLE_HOSTS, KUBECONFIG, FETCHER_JOB_CONFIG)
 
     mockKazooClient.assert_called_once_with(ZOOKEEPER_ENSEMBLE_HOSTS)
-    mockKubernetesDispatcher.assert_called_once_with(KUBECONFIG, ZOOKEEPER_ENSEMBLE_HOSTS, FETCHER_JOB_CONFIG)
+    mockKubernetesDispatcher.assert_called_once_with(
+        SERVICE_NAME, KUBECONFIG, ZOOKEEPER_ENSEMBLE_HOSTS, FETCHER_JOB_CONFIG
+    )
     mockDistributedRWLockManager.assert_called_once_with(mock_zk_client, ANY, ANY)
 
     mockDataSetManager.assert_called_once_with(mock_zk_client, mock_job_dispatcher, mock_lock_manager)
+
+
+@patch.object(fetcher_dispatcher_service, "DataSetManager", autospec=True)
+def test_cmd_object(mockDataSetManager):
+    cmd_object = DataSetCmdObject(mockDataSetManager)
+    cmd_object.cancel("CLIENT_ID", "ACTION_ID")
+    mockDataSetManager.cancel.assert_called_once_with("CLIENT_ID", "ACTION_ID")
+
+
+@pytest.mark.parametrize(
+    ["fetch_statuses", "expected_status"],
+    [
+        ([FetcherStatus.FAILED, FetcherStatus.CANCELED], Status.CANCELED),
+        ([FetcherStatus.FAILED, FetcherStatus.RUNNING], Status.FAILED),
+        ([FetcherStatus.RUNNING, FetcherStatus.PENDING], Status.PENDING),
+        ([FetcherStatus.DONE, FetcherStatus.RUNNING], Status.RUNNING),
+        ([FetcherStatus.DONE, FetcherStatus.DONE], Status.SUCCEEDED),
+    ],
+)
+def test_collect_status(fetch_statuses, expected_status):
+    assert expected_status == FetcherEventHandler._collect_status(
+        [DataSet(src="some/path", status=fetch_status) for fetch_status in fetch_statuses]
+    )

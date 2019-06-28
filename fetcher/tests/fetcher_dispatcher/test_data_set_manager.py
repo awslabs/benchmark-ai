@@ -2,6 +2,7 @@ from unittest import mock
 
 import kazoo
 from kazoo.client import KazooClient
+from kazoo.exceptions import NoNodeError, BadVersionError
 from kazoo.protocol.states import WatchedEvent, EventType, KeeperState, ZnodeStat
 from pytest import fixture
 from typing import Any
@@ -12,10 +13,16 @@ from bai_zk_utils.states import FetcherResult
 from bai_zk_utils.zk_locker import RWLockManager, OnLockCallback, RWLock
 from fetcher_dispatcher.data_set_manager import DataSetManager, DataSetDispatcher, DataSetOnDone
 
+ZK_VERSION = 1
+
+CLIENT_ID = "CLIENT_ID"
+
+ACTION_ID = "ACTION_ID"
+
 SOME_PATH = "/some/path"
 
 
-def data_set_to_path(dataset: DataSet) -> str:
+def data_set_to_path(client_id: str, action_id: str = None, dataset: DataSet = None) -> str:
     return SOME_PATH
 
 
@@ -26,7 +33,7 @@ def _mock_result_binary(status: FetcherStatus, msg: str = None):
 BIN_RESULT_RUNNING = _mock_result_binary(FetcherStatus.RUNNING)
 BIN_RESULT_PENDING = _mock_result_binary(FetcherStatus.PENDING)
 BIN_RESULT_DONE = _mock_result_binary(FetcherStatus.DONE)
-
+BIN_RESULT_CANCELED = _mock_result_binary(FetcherStatus.CANCELED)
 
 ERROR_MESSAGE = "Error"
 
@@ -34,8 +41,10 @@ ERROR_MESSAGE = "Error"
 BIN_RESULT_FAILED = _mock_result_binary(FetcherStatus.FAILED, ERROR_MESSAGE)
 
 
-def _mock_node_stat():
-    return create_autospec(ZnodeStat)
+def _mock_node_stat(version: int = ZK_VERSION):
+    zk_node = create_autospec(ZnodeStat)
+    zk_node.version = version
+    return zk_node
 
 
 def _mock_running_node():
@@ -108,9 +117,9 @@ def some_data_set() -> DataSet:
 @fixture
 def enclosing_event() -> BenchmarkEvent:
     return BenchmarkEvent(
-        action_id="DONTCARE",
+        action_id=ACTION_ID,
         message_id="DONTCARE",
-        client_id="DONTCARE",
+        client_id=CLIENT_ID,
         client_version="DONTCARE",
         client_username="DONTCARE",
         authenticated=False,
@@ -163,7 +172,7 @@ def test_first_fast_success(
         zoo_keeper_client_with_done_node, enclosing_event, kubernetes_job_starter, mock_lock_manager, some_data_set
     )
 
-    kubernetes_job_starter.assert_called_with(some_data_set, enclosing_event, SOME_PATH)
+    kubernetes_job_starter.dispatch_fetch.assert_called_with(some_data_set, enclosing_event, SOME_PATH)
     on_done.assert_called_with(some_data_set)
 
 
@@ -186,7 +195,7 @@ def test_first_wait_success(
         zoo_keeper_client_with_running_node, enclosing_event, kubernetes_job_starter, mock_lock_manager, some_data_set
     )
 
-    kubernetes_job_starter.assert_called_with(some_data_set, enclosing_event, SOME_PATH)
+    kubernetes_job_starter.dispatch_fetch.assert_called_with(some_data_set, enclosing_event, SOME_PATH)
     assert not on_done.called
 
     _verify_wait_succes(on_done, zoo_keeper_client_with_running_node)
@@ -203,3 +212,93 @@ def _verify_wait_succes(on_done: DataSetOnDone, zoo_keeper_client: KazooClient):
 
     assert on_done.called
     zoo_keeper_client.delete.assert_called_with(SOME_PATH)
+
+
+DATASET_PATH = "dataset1"
+
+
+@fixture
+def zoo_keeper_client_to_cancel(zoo_keeper_client: KazooClient) -> KazooClient:
+    zoo_keeper_client.get_children.return_value = [DATASET_PATH]
+    zoo_keeper_client.get.return_value = (BIN_RESULT_RUNNING, _mock_node_stat())
+    return zoo_keeper_client
+
+
+@fixture
+def zoo_keeper_client_with_conflict(zoo_keeper_client: KazooClient) -> KazooClient:
+    zoo_keeper_client.get_children.return_value = [DATASET_PATH]
+    zoo_keeper_client.get.side_effect = [
+        (BIN_RESULT_RUNNING, _mock_node_stat(1)),
+        (BIN_RESULT_RUNNING, _mock_node_stat(2)),
+        (BIN_RESULT_DONE, _mock_node_stat(3)),
+    ]
+    zoo_keeper_client.set.side_effect = BadVersionError()
+    return zoo_keeper_client
+
+
+@fixture
+def zoo_keeper_client_with_almost_done(zoo_keeper_client: KazooClient) -> KazooClient:
+    zoo_keeper_client.get_children.return_value = [DATASET_PATH]
+    # And then it's gone!
+    zoo_keeper_client.get.side_effect = NoNodeError()
+    return zoo_keeper_client
+
+
+@fixture
+def zoo_keeper_client_nothing_to_cancel(zoo_keeper_client: KazooClient) -> KazooClient:
+    zoo_keeper_client.get_children.return_value = []
+    return zoo_keeper_client
+
+
+def test_cancel_happy_path(
+    kubernetes_job_starter: DataSetDispatcher, zoo_keeper_client_to_cancel, mock_lock_manager: RWLockManager
+):
+    data_set_manager = DataSetManager(
+        zoo_keeper_client_to_cancel, kubernetes_job_starter, mock_lock_manager, data_set_to_path
+    )
+    data_set_manager.cancel(CLIENT_ID, ACTION_ID)
+
+    kubernetes_job_starter.cancel_all.assert_called_once_with(CLIENT_ID, ACTION_ID)
+    zoo_keeper_client_to_cancel.set.assert_called_once_with(
+        SOME_PATH + "/" + DATASET_PATH, BIN_RESULT_CANCELED, ZK_VERSION
+    )
+
+
+def test_cancel_node_is_done(
+    kubernetes_job_starter: DataSetDispatcher,
+    zoo_keeper_client_with_almost_done: KazooClient,
+    mock_lock_manager: RWLockManager,
+):
+    data_set_manager = DataSetManager(
+        zoo_keeper_client_with_almost_done, kubernetes_job_starter, mock_lock_manager, data_set_to_path
+    )
+
+    data_set_manager.cancel(CLIENT_ID, ACTION_ID)
+    zoo_keeper_client_with_almost_done.set.assert_not_called()
+
+
+def test_cancel_conflict(
+    kubernetes_job_starter: DataSetDispatcher,
+    zoo_keeper_client_with_conflict: KazooClient,
+    mock_lock_manager: RWLockManager,
+):
+    data_set_manager = DataSetManager(
+        zoo_keeper_client_with_conflict, kubernetes_job_starter, mock_lock_manager, data_set_to_path
+    )
+
+    data_set_manager.cancel(CLIENT_ID, ACTION_ID)
+    # We expect 2 conflicts as stated in the fixture
+    zoo_keeper_client_with_conflict.set.call_count == 2
+
+
+def test_cancel_nothing_to_do(
+    kubernetes_job_starter: DataSetDispatcher,
+    zoo_keeper_client_nothing_to_cancel: KazooClient,
+    mock_lock_manager: RWLockManager,
+):
+    data_set_manager = DataSetManager(
+        zoo_keeper_client_nothing_to_cancel, kubernetes_job_starter, mock_lock_manager, data_set_to_path
+    )
+    data_set_manager.cancel(CLIENT_ID, ACTION_ID)
+
+    zoo_keeper_client_nothing_to_cancel.set.assert_not_called()
