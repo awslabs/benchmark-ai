@@ -137,9 +137,9 @@ class CommandRequestEvent(BenchmarkEvent):
 @dataclass
 class CommandResponsePayload:
     return_code: int
-    return_value: Any
-    message: str
     cmd_submit: CommandRequestEvent
+    return_value: Optional[Any] = None
+    message: Optional[str] = None
 
 
 @dataclass_json
