@@ -153,4 +153,4 @@
   "
   [script-map]
   (log/trace "scripts->s3 "script-map)
-  )
+  (s3/put-object (env :scripts-exchange-s3-bucket-name) (:filename script-map) (:tempfile script-map)))
