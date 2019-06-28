@@ -3,9 +3,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - pip
-  - pip:
-      - pytest
-      - mock
-      - pytest-mock
-      - pytest-timeout
+  - pytest
+  - mock
+  - pytest-mock
+  - pytest-timeout
