@@ -79,11 +79,11 @@ def _convert_status_json_response(json_string: str) -> List[StatusMessageBenchma
         dumped_json = json.dumps(status_message_as_dict)
         try:
             status_message_event = StatusMessageBenchmarkEvent.from_json(dumped_json)
-        except Exception:
-            logger.error(f"Failed to deserialize the following json: {dumped_json}\n")
+        except KeyError:
+            # TODO: Fix StatusMessageBenchmarkEvent modeling status messages:
+            #       https://github.com/MXNetEdge/benchmark-ai/issues/491
+            logger.exception(f"Failed to deserialize the following json: {dumped_json}\n")
             continue
-            # HACK: should probably raise the exception here, but BFF must comply with the schema
-            # raise
         ret.append(status_message_event)
     return ret
 
