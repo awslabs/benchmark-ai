@@ -16,6 +16,10 @@ import datetime
 import time
 import pytest
 
+import logging
+
+logging.basicConfig(level="DEBUG")
+
 
 @contextmanager
 def create_client():
