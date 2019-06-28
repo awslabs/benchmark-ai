@@ -1,4 +1,5 @@
 import pytest
+import threading
 from kazoo.client import KazooClient
 from pytest import fixture
 
@@ -7,11 +8,14 @@ from bai_zk_utils.zk_locker import DistributedRWLockManager
 from fetcher_dispatcher.args import FetcherServiceConfig
 from fetcher_dispatcher.data_set_manager import DataSetManager
 from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
+from integration_tests.fetcher_dispatcher.test_utils import get_test_timeout
 
 EXISTING_DATASET = "http://files.grouplens.org/datasets/movielens/ml-1m.zip"
 
 # This will last forever - until we cancel it.
 VERY_LARGE_DATASET = "http://files.grouplens.org/datasets/movielens/ml-1m.zip?delay=3600"
+
+WAIT_TIMEOUT = get_test_timeout()
 
 
 @fixture
@@ -41,7 +45,7 @@ def test_fetch(
             )
         )
 
-    test_fetch.completed = 0
+    completed = threading.Barrier(parties=repeat + 1)
 
     def on_done_test(data_set: DataSet):
         assert data_set.src
@@ -49,13 +53,12 @@ def test_fetch(
         assert data_set.dst
         assert data_set.status == FetcherStatus.DONE
 
-        test_fetch.completed += 1
+        completed.wait(WAIT_TIMEOUT)
 
     for data_set in data_sets:
         data_set_manager.fetch(data_set, benchmark_event_dummy_payload, on_done_test)
 
-    while test_fetch.completed < repeat:
-        pass
+    completed.wait(WAIT_TIMEOUT)
 
 
 # This test may be not suitable for real environments
@@ -71,7 +74,7 @@ def test_cancel(
         src=VERY_LARGE_DATASET, dst=f"s3://{fetcher_service_config.s3_data_set_bucket}/it/test.file", md5=None
     )
 
-    test_fetch.completed = False
+    completed = threading.Event()
 
     def on_done_test(data_set: DataSet):
         assert data_set.src
@@ -83,5 +86,4 @@ def test_cancel(
     data_set_manager.fetch(data_set, benchmark_event_dummy_payload, on_done_test)
     data_set_manager.cancel(benchmark_event_dummy_payload.client_id, benchmark_event_dummy_payload.action_id)
 
-    while not test_fetch.completed:
-        pass
+    completed.wait(WAIT_TIMEOUT)

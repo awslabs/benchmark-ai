@@ -3,6 +3,7 @@ import dataclasses
 import pytest
 from kafka import KafkaProducer, KafkaConsumer
 from time import time
+from timeout_decorator import timeout
 from typing import Callable, List
 
 from bai_kafka_utils.cmd_callback import KafkaCommandCallback
@@ -19,7 +20,7 @@ from bai_kafka_utils.events import (
     CommandRequestEvent,
 )
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
-
+from integration_tests.fetcher_dispatcher.test_utils import get_test_timeout
 
 EventFilter = Callable[[BenchmarkEvent], bool]
 DataSetFilter = Callable[[DataSet], bool]
@@ -186,6 +187,10 @@ def send_salted_fetch_request(benchmark_event_dummy_payload, kafka_producer_to_c
     return benchmark_event
 
 
+WAIT_TIMEOUT = get_test_timeout()
+
+
+@timeout(WAIT_TIMEOUT)
 def wait_for_response(filter_event, kafka_consumer_of_produced):
     while True:
         records = kafka_consumer_of_produced.poll(POLL_TIMEOUT_MS)

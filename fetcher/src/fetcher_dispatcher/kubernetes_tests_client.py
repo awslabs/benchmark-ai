@@ -1,13 +1,11 @@
 import logging
 
-import timeout_decorator
-from time import sleep
-
 import kubernetes
 from kubernetes.client import V1PodList
+from time import sleep
+from timeout_decorator import timeout
 
 from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
-
 
 logger = logging.getLogger(__name__)
 
@@ -36,25 +34,25 @@ class KubernetesTestUtilsClient:
         pods: V1PodList = self.batch_api_instance.list_namespaced_job(namespace, label_selector=label_selector)
         return bool(pods.items)
 
-    @timeout_decorator.timeout(DEFAULT_TIMEOUT_SECONDS)
+    @timeout(DEFAULT_TIMEOUT_SECONDS)
     def wait_for_pod_exists(self, namespace: str, client_id: str, action_id: str):
         while not self.is_pod_present(namespace, client_id, action_id):
             logger.info("pod doesn't exist yet")
             sleep(1)
 
-    @timeout_decorator.timeout(DEFAULT_TIMEOUT_SECONDS)
+    @timeout(DEFAULT_TIMEOUT_SECONDS)
     def wait_for_pod_not_exists(self, namespace: str, client_id: str, action_id: str):
         while self.is_pod_present(namespace, client_id, action_id):
             logger.info("pod still exists")
             sleep(1)
 
-    @timeout_decorator.timeout(DEFAULT_TIMEOUT_SECONDS)
+    @timeout(DEFAULT_TIMEOUT_SECONDS)
     def wait_for_job_exists(self, namespace: str, client_id: str, action_id: str):
         while not self.is_job_present(namespace, client_id, action_id):
             logger.info("job doesn't exist yet")
             sleep(1)
 
-    @timeout_decorator.timeout(DEFAULT_TIMEOUT_SECONDS)
+    @timeout(DEFAULT_TIMEOUT_SECONDS)
     def wait_for_job_not_exists(self, namespace: str, client_id: str, action_id: str):
         while self.is_job_present(namespace, client_id, action_id):
             logger.info("job still exists")
