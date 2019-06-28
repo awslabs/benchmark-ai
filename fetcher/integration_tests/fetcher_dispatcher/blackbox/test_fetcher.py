@@ -20,7 +20,7 @@ from bai_kafka_utils.events import (
     CommandRequestEvent,
 )
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
-from integration_tests.fetcher_dispatcher.test_utils import get_test_timeout
+from utils.test_utils import get_test_timeout
 
 EventFilter = Callable[[BenchmarkEvent], bool]
 DataSetFilter = Callable[[DataSet], bool]
