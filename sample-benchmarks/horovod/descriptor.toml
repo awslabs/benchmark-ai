@@ -8,7 +8,7 @@ spec_version = "0.1.0"
 task_name = "Example Horovod benchmark"
 description = """ \
     An example benchmark using Horovod as distributed training strategy. \
-    Running TensorFlow 1.13. \
+    Running TensorFlow 1.14. \
     """
 
 # 1. Hardware
@@ -26,39 +26,25 @@ num_instances = 2
 # 2. Environment
 [env]
 # Docker hub <hub-user>/<repo-name>:<tag> 
-docker_image = "841569659894.dkr.ecr.us-east-1.amazonaws.com/testdockerpull:1.12-py3-gpu-with-horovod-build-for-bai"
+docker_image = "benchmarkai/horovod"
+privileged = true
 
 # 3. Machine learning related settings: 
 # dataset, benchmark code and parameters it takes
 [ml]
-benchmark_code = """
-#!/bin/bash
-cp /etc/mpi/hostfile /deep-learning-models/models/resnet/tensorflow/hosts
-chmod +x /deep-learning-models/models/resnet/tensorflow/train.sh
-cd /deep-learning-models/models/resnet/tensorflow/
-# 4 GPUs per node
-./train.sh 8
-
-"""
+args = "4"
 
 # [Opt] 4. Dataset 
 [data]
 # Dataset ID
-id = "imagenet"
-# md5 = "rddytftyfrdr75657fftrtrt11"
+id = "MNIST"
 
 # [Opt] Data sources
 # List all required data sources below. 
 # Make an entry for each with the same format as the ones below.
 [[data.sources]]
 # Data download URI.
-src = "s3://mlperf-data-mxnet-berlin/imagenet/raw/train-480px"
+src = "https://storage.googleapis.com/tensorflow/tf-keras-datasets/mnist.npz"
 # Path where the dataset is stored in the container FS
-path = "/root/data/tf-imagenet"
-
-# Second data source
-[[data.sources]]
-# Data download URI.
-src = "s3://mlperf-data-mxnet-berlin/imagenet/raw/validation-480px"
-# Path where the dataset is stored in the container FS
-path = "/root/data/tf-imagenet"
+path = "/root/.keras/datasets/mnist.npz"
+md5 = "8a61469f7ea1b51cbae51d4f78837e45"
