@@ -69,6 +69,7 @@ CD_TARGET_PATH := target
 # Deployment
 #---
 DEPLOY_TEMPLATE := etc/deploy.yml.tmpl
+SERVICE_TEMPLATE := etc/service.yml.tmpl
 DOCKER_TEMPLATE := etc/Dockerfile.tmpl
 DOCKER_DEV_TEMPLATE := etc/Dockerfile_dev.tmpl
 
@@ -180,6 +181,7 @@ clean:	project.clj
 clean-all: clean
 	$(shell [[ -f project.clj ]]    && rm project.clj)
 	$(shell [[ -f deploy.yml ]]     && rm deploy.yml)
+	$(shell [[ -f service.yml ]]     && rm service.yml)
 	$(shell [[ -f Dockerfile ]]     && rm Dockerfile)
 	$(shell [[ -f Dockerfile_dev ]] && rm Dockerfile_dev)
 	$(shell [[ -d $(RELEASE_PATH) ]]   && rm -rf $(RELEASE_PATH))
@@ -323,18 +325,30 @@ deploy.yml: FORCE
 	     -e 's|@@KAFKA_CMD_SUBMIT_TOPIC@@|$(KAFKA_CMD_SUBMIT_TOPIC)|g' \
 	     -e 's|@@KAFKA_CMD_RETURN_TOPIC@@|$(KAFKA_CMD_RETURN_TOPIC)|g' $(DEPLOY_TEMPLATE) > $(shell sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(DEPLOY_TEMPLATE))
 
-deploy: deploy.yml
+service.yml: FORCE
+	@echo "Generating kubernetes service.yaml from template..."
+	@sed -e 's|@@PROJECT@@|$(PROJECT)|g' \
+	     -e 's|@@ENVIRONMENT@@|$(ENVIRONMENT)|g' \
+	     -e 's|@@SVC_PORT@@|$(SVC_PORT)|g' $(SERVICE_TEMPLATE) > $(shell sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(SERVICE_TEMPLATE))
+
+deploy: deploy.yml service.yml
 	@echo "------------------------"
 	@echo "K8S deployment..."
 	@echo "------------------------"
 	#Deploy this service to the k8s cluster
 	kubectl $(K8S_KUBECTL_ARGS) apply -f deploy.yml
+	kubectl $(K8S_KUBECTL_ARGS) apply -f service.yml
 
-undeploy:
-	@echo "------------------------"
-	@echo "K8S ***NUKING*** the deployment... (softly)"
-	@echo "------------------------"
+undeploy-deployment:
 	kubectl $(K8S_KUBECTL_ARGS) delete deployment $(PROJECT) --grace-period=60
+
+undeploy-service:
+	kubectl $(K8S_KUBECTL_ARGS) delete service $(PROJECT) --grace-period=60
+
+undeploy: undeploy-deployment undeploy-service
+	@echo "------------------------"
+	@echo "K8S ***NUKING*** the deployment and service... (softly)"
+	@echo "------------------------"
 
 rollback:
 	@echo "------------------------"
