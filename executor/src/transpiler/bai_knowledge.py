@@ -21,24 +21,6 @@ SHARED_MEMORY_VOLUME = "dshm"
 SHARED_MEMORY_VOLUME_MOUNT = "/dev/shm"
 
 
-GPU_MAPPINGS = {
-    # From https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEC2/current/us-west-2/index.json
-    "g2.2xlarge": 1,
-    "g2.8xlarge": 4,
-    "g3s.xlarge": 1,
-    "g3.4xlarge": 1,
-    "g3.8xlarge": 2,
-    "g3.16xlarge": 4,
-    "p2.xlarge": 1,
-    "p2.8xlarge": 8,
-    "p2.16xlarge": 16,
-    "p3.2xlarge": 1,
-    "p3.8xlarge": 4,
-    "p3.16xlarge": 8,
-    "p3dn.24xlarge": 8,
-}
-
-
 @dataclass
 class PullerDataSource:
     name: str
@@ -86,7 +68,6 @@ class BaiKubernetesObjectBuilder:
         config_template.feed({"service_name": SERVICE_NAME})
         config_template.feed({"job_id": self.job_id})
         config_template.feed({"availability_zone": availability_zone})
-
         self.root = config_template.build()
         self.add_volumes(data_sources)
 
@@ -309,13 +290,3 @@ def create_job_yaml_spec(
         extra_bai_config_args=extra_bai_config_args,
     )
     return bai_k8s_builder.dump_yaml_string()
-
-
-def _get_num_installed_gpus(instance_type):
-    """
-    Given an instance type, determine the number of available GPUs
-    :param instance_type: Instance type, e.g. "p3.8xlarge"
-    :return: Number of available GPUs
-    """
-    if instance_type in GPU_MAPPINGS:
-        return GPU_MAPPINGS[instance_type]
