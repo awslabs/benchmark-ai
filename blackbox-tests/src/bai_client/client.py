@@ -8,7 +8,7 @@ import socket
 import uuid
 import requests
 from dataclasses import dataclass
-from typing import List, Dict
+from typing import List, Dict, Optional
 from dataclasses_json import dataclass_json
 from pathlib import Path
 from bai_kafka_utils.events import VisitedService, BenchmarkPayload, BenchmarkDoc, StatusMessageBenchmarkEvent
@@ -122,11 +122,13 @@ class BaiClient:
             self._handle_response(response)
             return response.text
 
-    def status(self, action_id: str, client_id: str = None) -> List[StatusMessageBenchmarkEvent]:
+    def status(self, action_id: str, client_id: str = None) -> Optional[List[StatusMessageBenchmarkEvent]]:
         if client_id is None:
             client_id = get_client_id()
         with requests.Session() as session:
             response = session.get(self.endpoint + f"/api/job/{client_id}/{action_id}?since=0")
+            if response.status_code == 404:
+                return None
             self._handle_response(response)
             return _convert_status_json_response(response.text)
 

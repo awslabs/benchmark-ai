@@ -19,6 +19,7 @@ import pytest
 import logging
 
 logging.basicConfig(level="DEBUG")
+logger = logging.getLogger(__name__)
 
 
 @contextmanager
@@ -77,17 +78,22 @@ def generator_status_messages(
     deadline = datetime.datetime.utcnow() + timeout
     index_of_last_status = 0
     while deadline > datetime.datetime.utcnow():
+        time.sleep(sleep_between_status_checks.total_seconds())
         status_messages = bai_client.status(action_id)
         callback_on_every_status_check()
 
+        if status_messages is None:
+            logger.info("Status is None")
+            continue
+
         if len(status_messages) == 0:
+            logger.info("No status messages obtained")
             continue
 
         status_infos_to_print = status_messages[index_of_last_status:]
         for status_info in status_infos_to_print:
             yield status_info
         index_of_last_status = len(status_messages)
-        time.sleep(sleep_between_status_checks.total_seconds())
     else:
         raise TimeoutError()
 
