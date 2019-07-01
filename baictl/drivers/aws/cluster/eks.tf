@@ -10,20 +10,20 @@ locals {
 
   other_worker_groups = [
     {
-      instance_type        = "t2.small"
+      instance_type        = "m5.large"
       subnets              = "${join(",", slice(module.vpc.private_subnets, 0, 3))}"
-      asg_desired_capacity = 2
+      asg_desired_capacity = 1
       asg_max_size         = 10
       asg_min_size         = 1
       name                 = "k8s-services"
       kubelet_extra_args   = "${local.k8s_services_kubelet_args}"
     },
     {
-      instance_type        = "t2.small"
+      instance_type        = "t3.medium"
       subnets              = "${join(",", slice(module.vpc.private_subnets, 0, 3))}"
-      asg_desired_capacity = 0
+      asg_desired_capacity = 3
       asg_max_size         = 100
-      asg_min_size         = 0
+      asg_min_size         = 3
       name                 = "bai-services-cheap"
       kubelet_extra_args   = "${local.bai_services_cheap_kubelet_args}"
     },
