@@ -20,3 +20,26 @@ admin:
 #service:
 #  type: LoadBalancer
 
+prometheus:
+  prometheusSpec:
+    additionalScrapeConfigs:
+      - job_name: gpu_metrics
+        honor_timestamps: true
+        scrape_interval: 1s
+        scrape_timeout: 800ms
+        metrics_path: /gpu/metrics
+        scheme: http
+        kubernetes_sd_configs:
+        - role: pod
+          namespaces:
+            names:
+            - default
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: keep
+            regex: pod-gpu-metrics-exporter
+          - source_labels: [__address__]
+            action: replace
+            regex: ([^:]+)(?::\d+)?
+            replacement: ${1}:9400
+            target_label: __address__

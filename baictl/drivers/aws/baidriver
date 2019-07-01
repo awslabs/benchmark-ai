@@ -156,6 +156,12 @@ _install_tiller(){
 
 _install_prometheus(){
     ${helm} upgrade --install prometheus-operator-1 -f ${k8s_deploy_dir}/prometheus-operator.yaml stable/prometheus-operator || return 1
+
+    # The prometheus node-exporter does not support GPU metrics by default. Thus, adding it separately
+    # This also provides per-pod metrics. But this requires that a pod actually allocates a gpu. See
+    # https://github.com/MXNetEdge/benchmark-ai/issues/483 for details.
+    # https://github.com/NVIDIA/gpu-monitoring-tools/tree/master/exporters/prometheus-dcgm/k8s/pod-gpu-metrics-exporter#pod-gpu-metrics-exporter
+    ${kubectl} apply -f ${k8s_deploy_dir}/pod-gpu-metrics-exporter-daemonset.yaml || return 1
 }
 
 port_forward() {
@@ -283,8 +289,15 @@ _destroy_helm_charts() {
     echo "-> Destroying helm charts:\n$(helm ls --short)\n"
     ${helm} delete $(${helm} ls --short) --purge || return 1
 
-    # TODO: `helm delete` does not properly delete CRDs which are created by the Prometheus Operator, for example:
-    # https://github.com/istio/istio/issues/7688
+    _destroy_orphaned_crds || return 1
+}
+
+_destroy_orphaned_crds() {
+    # https://github.com/helm/charts/issues/9161
+    ${kubectl} delete crd prometheuses.monitoring.coreos.com || return 1
+    ${kubectl} delete crd prometheusrules.monitoring.coreos.com || return 1
+    ${kubectl} delete crd servicemonitors.monitoring.coreos.com || return 1
+    ${kubectl} delete crd alertmanagers.monitoring.coreos.com || return 1
 }
 
 _install_zookeeper(){
