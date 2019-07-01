@@ -14,4 +14,6 @@ def test_s3_with_a_file(s3_with_a_file):
 
 
 def test_s3_with_a_folder(s3_with_a_folder):
-    assert DataSetSizeInfo(FILE_SIZE * FILE_COUNT, FILE_COUNT, FILE_SIZE) == s3_estimate_size(S3_FOLDER, s3_with_a_folder)
+    assert DataSetSizeInfo(FILE_SIZE * FILE_COUNT, FILE_COUNT, FILE_SIZE) == s3_estimate_size(
+        S3_FOLDER, s3_with_a_folder
+    )
