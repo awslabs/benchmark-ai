@@ -1,3 +1,4 @@
+import dataclasses
 from unittest import mock
 
 import kafka
@@ -129,12 +130,22 @@ def collect_send_event_calls(kafka_service: KafkaService, cls: Type[BenchmarkEve
     return calls
 
 
+@pytest.mark.parametrize(
+    ["fetch_status", "expected_total_status"],
+    [
+        (FetcherStatus.DONE, Status.SUCCEEDED),
+        (FetcherStatus.CANCELED, Status.CANCELED),
+        (FetcherStatus.FAILED, Status.FAILED),
+    ],
+)
 def test_fetcher_event_handler_fetch(
     fetcher_callback: FetcherEventHandler,
     data_set_manager: DataSetManager,
     benchmark_event_with_datasets: FetcherBenchmarkEvent,
     kafka_service: KafkaService,
-    datasets,
+    datasets: List[DataSet],
+    fetch_status: FetcherStatus,
+    expected_total_status: Status,
 ):
     event_to_send_sync = fetcher_callback.handle_event(benchmark_event_with_datasets, kafka_service)
 
@@ -152,16 +163,18 @@ def test_fetcher_event_handler_fetch(
 
     validate_populated_dst(benchmark_event_with_datasets)
 
-    simulate_fetched_datasets(data_set_manager)
+    simulate_fetched_datasets(data_set_manager, fetch_status)
 
-    assert collect_send_event_calls(kafka_service, FetcherBenchmarkEvent) == [
-        call(benchmark_event_with_datasets, PRODUCER_TOPIC)
-    ]
+    # Validate the event was sent downstream
+    expected_sent_events = (
+        [call(benchmark_event_with_datasets, PRODUCER_TOPIC)] if fetch_status == FetcherStatus.DONE else []
+    )
+    assert collect_send_event_calls(kafka_service, FetcherBenchmarkEvent) == expected_sent_events
 
     send_status_message_calls = kafka_service.send_status_message_event.call_args_list
     assert send_status_message_calls[3] == call(ANY, Status.PENDING, f"Dataset {datasets[0]} processed")
     assert send_status_message_calls[4] == call(ANY, Status.PENDING, f"Dataset {datasets[1]} processed")
-    assert send_status_message_calls[5] == call(ANY, Status.SUCCEEDED, "All data sets processed")
+    assert send_status_message_calls[5] == call(ANY, expected_total_status, "All data sets processed")
     # One for every data set. One as header, one as footer
     assert (
         kafka_service.send_status_message_event.call_count
@@ -185,13 +198,11 @@ def validate_populated_dst(benchmark_event):
         assert data_set.dst
 
 
-def simulate_fetched_datasets(data_set_manager):
+def simulate_fetched_datasets(data_set_manager: DataSetManager, fetch_status: FetcherStatus):
     for kall in data_set_manager.fetch.call_args_list:
         args, _ = kall
-        args, _ = kall
-        data_set = args[0]
-        _ = args[1]  # Event
-        on_done = args[2]
+        data_set, _, on_done = args
+        data_set.status = fetch_status
         on_done(data_set)
 
 
