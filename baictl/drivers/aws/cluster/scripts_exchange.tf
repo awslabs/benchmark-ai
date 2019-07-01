@@ -45,7 +45,7 @@ resource "aws_iam_policy" "scripts-exchange-policy" {
 EOF
 }
 
-resource "aws_iam_role_policy_attachment" "data_pull_policy_attachment" {
+resource "aws_iam_role_policy_attachment" "scripts_exchange_policy_attachment" {
   policy_arn = "${aws_iam_policy.scripts-exchange-policy.arn}"
   role       = "${module.eks.worker_iam_role_name}"
 }
