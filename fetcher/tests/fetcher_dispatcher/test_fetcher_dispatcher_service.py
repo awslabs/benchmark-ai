@@ -1,9 +1,7 @@
-import dataclasses
 from unittest import mock
 
 import kafka
 import pytest
-
 from kazoo.client import KazooClient
 from pytest import fixture
 from typing import List, Type
