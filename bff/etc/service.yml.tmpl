@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: @@PROJECT@@
   annotations:
-    service.beta.kubernetes.io/aws-load-balancer-extra-security-groups: "sg-069f9642db2fa41fe"
+    service.beta.kubernetes.io/aws-load-balancer-extra-security-groups: ["sg-069f9642db2fa41fe"]
 spec:
   selector:
     app: benchmark-ai
