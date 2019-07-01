@@ -81,8 +81,10 @@ class FetcherEventHandler(KafkaServiceCallback):
             return
 
         def on_all_done():
-            kafka_service.send_event(event, self.producer_topic)
             total_status = FetcherEventHandler._collect_status(event.payload.datasets)
+            # Any failed/canceled fetching is not actionable - so we don't send it down the pipeline
+            if total_status == Status.SUCCEEDED:
+                kafka_service.send_event(event, self.producer_topic)
             kafka_service.send_status_message_event(event, total_status, "All data sets processed")
 
         execute_all(tasks, on_all_done)

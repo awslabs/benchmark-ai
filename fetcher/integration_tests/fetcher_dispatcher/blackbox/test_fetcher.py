@@ -55,17 +55,7 @@ def is_dataset_successful(data_set: DataSet) -> bool:
     return data_set.dst is not None and data_set.type == FetchedType.FILE and data_set.status == FetcherStatus.DONE
 
 
-def is_dataset_failed(data_set: DataSet) -> bool:
-    return data_set.dst is None and data_set.message is not None and data_set.status == FetcherStatus.FAILED
-
-
-def is_dataset_canceled(data_set: DataSet) -> bool:
-    return data_set.dst is None and data_set.status == FetcherStatus.CANCELED
-
-
-def get_is_fetch_response_filter(
-    src_event: BenchmarkEvent, data_set_check: DataSetFilter, kafka_service_config: KafkaServiceConfig
-) -> EventFilter:
+def get_is_fetch_response_filter(src_event: BenchmarkEvent, kafka_service_config: KafkaServiceConfig) -> EventFilter:
     src_to_check = src_event.payload.datasets[0].src
 
     def filter_fetcher_event(event: BenchmarkEvent) -> bool:
@@ -73,7 +63,9 @@ def get_is_fetch_response_filter(
         return (
             event.type == kafka_service_config.producer_topic
             and isinstance(event.payload, FetcherPayload)
-            and any(data_set.src == src_to_check and data_set_check(data_set) for data_set in event.payload.datasets)
+            and any(
+                data_set.src == src_to_check and is_dataset_successful(data_set) for data_set in event.payload.datasets
+            )
         )
 
     return filter_fetcher_event
@@ -126,11 +118,8 @@ POLL_TIMEOUT_MS = 500
 
 
 @pytest.mark.parametrize(
-    "src,data_set_check,expected_status",
-    [
-        (EXISTING_DATASET_WITH_DELAY, is_dataset_successful, Status.SUCCEEDED),
-        (FAILING_DATASET_WITH_DELAY, is_dataset_failed, Status.FAILED),
-    ],
+    "src,expected_status",
+    [(EXISTING_DATASET_WITH_DELAY, Status.SUCCEEDED), (FAILING_DATASET_WITH_DELAY, Status.FAILED)],
     ids=["successful", "failing"],
 )
 def test_fetcher(
@@ -139,16 +128,20 @@ def test_fetcher(
     kafka_consumer_of_produced: KafkaConsumer,
     kafka_service_config: KafkaServiceConfig,
     src: str,
-    data_set_check: DataSetFilter,
     expected_status: Status,
 ):
     benchmark_event = send_salted_fetch_request(
         benchmark_event_dummy_payload, kafka_producer_to_consume, kafka_service_config.consumer_topic, src
     )
 
-    fetcher_event_filter = get_is_fetch_response_filter(benchmark_event, data_set_check, kafka_service_config)
     status_event_filter = get_is_status_filter(benchmark_event, expected_status, kafka_service_config)
-    combined_filter = CombinedFilter([fetcher_event_filter, status_event_filter])
+    filters = [status_event_filter]
+
+    if expected_status == Status.SUCCEEDED:
+        fetcher_event_filter = get_is_fetch_response_filter(benchmark_event, kafka_service_config)
+        filters.append(fetcher_event_filter)
+
+    combined_filter = CombinedFilter(filters)
 
     return wait_for_response(combined_filter, kafka_consumer_of_produced)
 
@@ -170,12 +163,11 @@ def test_cancel(
         kafka_service_config.cmd_submit_topic, value=cancel_event, key=cancel_event.client_id
     )
 
-    fetcher_event_filter = get_is_fetch_response_filter(benchmark_event, is_dataset_canceled, kafka_service_config)
     status_event_filter = get_is_status_filter(benchmark_event, Status.CANCELED, kafka_service_config)
     command_return_filter = get_is_command_return_filter(
         cancel_event, KafkaCommandCallback.CODE_SUCCESS, kafka_service_config
     )
-    combined_filter = CombinedFilter([fetcher_event_filter, status_event_filter, command_return_filter])
+    combined_filter = CombinedFilter([status_event_filter, command_return_filter])
 
     return wait_for_response(combined_filter, kafka_consumer_of_produced)
 
