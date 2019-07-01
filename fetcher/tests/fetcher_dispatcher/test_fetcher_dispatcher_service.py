@@ -15,6 +15,7 @@ from bai_kafka_utils.events import (
     FetcherBenchmarkEvent,
     Status,
     FetcherStatus,
+    StatusMessageBenchmarkEvent,
 )
 from bai_kafka_utils.kafka_service import KafkaService, KafkaServiceConfig
 from bai_zk_utils.zk_locker import DistributedRWLockManager
@@ -28,6 +29,8 @@ from fetcher_dispatcher.fetcher_dispatcher_service import (
     DataSetCmdObject,
 )
 from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
+
+STATUS_TOPIC = "STATUS_TOPIC"
 
 FETCHER_JOB_IMAGE = "job/image"
 
@@ -70,7 +73,7 @@ def kafka_service(mocker) -> KafkaService:
         kafka_consumer=mocker.create_autospec(KafkaConsumer),
         kafka_producer=mocker.create_autospec(KafkaProducer),
         pod_name=POD_NAME,
-        status_topic="STATUS_TOPIC",
+        status_topic=STATUS_TOPIC,
     )
     mocker.spy(kafka_service, "send_status_message_event")
     mocker.spy(kafka_service, "send_event")
@@ -114,7 +117,7 @@ def get_benchmark_event(payload: FetcherPayload):
         authenticated=False,
         tstamp=42,
         visited=[],
-        type="BAI_APP_FETCHER",
+        type=PRODUCER_TOPIC,
         payload=payload,
     )
 
@@ -145,19 +148,18 @@ def test_fetcher_event_handler_fetch(
     fetch_status: FetcherStatus,
     expected_total_status: Status,
 ):
-    event_to_send_sync = fetcher_callback.handle_event(benchmark_event_with_datasets, kafka_service)
+    fetcher_callback.handle_event(benchmark_event_with_datasets, kafka_service)
 
-    # Nothing to send immediately
-    assert not event_to_send_sync
     # All datasets fetched
     assert data_set_manager.fetch.call_count == len(benchmark_event_with_datasets.payload.datasets)
     # Nothing yet fetched, but sent for fetching
-    assert collect_send_event_calls(kafka_service, FetcherBenchmarkEvent) == []
+    validate_sent_events(kafka_service, [])
 
-    send_status_message_calls = kafka_service.send_status_message_event.call_args_list
-    assert send_status_message_calls[0] == call(ANY, Status.PENDING, "Start fetching datasets")
-    assert send_status_message_calls[1] == call(ANY, Status.PENDING, f"Dataset {datasets[0]} sent to fetch")
-    assert send_status_message_calls[2] == call(ANY, Status.PENDING, f"Dataset {datasets[1]} sent to fetch")
+    expected_sent_statuses_before = [call(ANY, Status.PENDING, "Start fetching datasets")] + [
+        call(ANY, Status.PENDING, f"Dataset {d} sent to fetch") for d in datasets
+    ]
+
+    validate_send_status_message_calls(kafka_service, expected_sent_statuses_before)
 
     validate_populated_dst(benchmark_event_with_datasets)
 
@@ -167,17 +169,22 @@ def test_fetcher_event_handler_fetch(
     expected_sent_events = (
         [call(benchmark_event_with_datasets, PRODUCER_TOPIC)] if fetch_status == FetcherStatus.DONE else []
     )
+    validate_sent_events(kafka_service, expected_sent_events)
+
+    expected_sent_statuses_after = [call(ANY, Status.PENDING, f"Dataset {d} processed") for d in datasets] + [
+        call(ANY, expected_total_status, "All data sets processed")
+    ]
+
+    validate_send_status_message_calls(kafka_service, expected_sent_statuses_before + expected_sent_statuses_after)
+
+
+def validate_sent_events(kafka_service, expected_sent_events):
     assert collect_send_event_calls(kafka_service, FetcherBenchmarkEvent) == expected_sent_events
 
+
+def validate_send_status_message_calls(kafka_service, expected_sent_statuses_before):
     send_status_message_calls = kafka_service.send_status_message_event.call_args_list
-    assert send_status_message_calls[3] == call(ANY, Status.PENDING, f"Dataset {datasets[0]} processed")
-    assert send_status_message_calls[4] == call(ANY, Status.PENDING, f"Dataset {datasets[1]} processed")
-    assert send_status_message_calls[5] == call(ANY, expected_total_status, "All data sets processed")
-    # One for every data set. One as header, one as footer
-    assert (
-        kafka_service.send_status_message_event.call_count
-        == 2 * len(benchmark_event_with_datasets.payload.datasets) + 1 + 1
-    )
+    assert send_status_message_calls == expected_sent_statuses_before
 
 
 def test_fetcher_event_handler_nothing_to_do(
@@ -186,9 +193,18 @@ def test_fetcher_event_handler_nothing_to_do(
     fetcher_callback.handle_event(benchmark_event_without_datasets, kafka_service)
     # 1 call to notify, that nothing to do
     assert kafka_service.send_status_message_event.call_args_list == [call(ANY, Status.SUCCEEDED, "Nothing to fetch")]
+
+    args, _ = kafka_service.send_event.call_args_list[0]
+    status_event, topic = args
+    assert isinstance(status_event, StatusMessageBenchmarkEvent)
+    assert topic == STATUS_TOPIC
+
     # 2nd call to emit an event with the same payload to the producer topic
-    event_in_call = kafka_service.send_event.call_args_list[1][0][0]
-    assert event_in_call.payload.datasets == []
+    args, _ = kafka_service.send_event.call_args_list[1]
+    fetcher_event, topic = args
+    assert isinstance(fetcher_event, FetcherBenchmarkEvent)
+    assert topic == PRODUCER_TOPIC
+    assert fetcher_event.payload.datasets == []
 
 
 def validate_populated_dst(benchmark_event):

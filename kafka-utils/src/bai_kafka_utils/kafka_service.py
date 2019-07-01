@@ -118,7 +118,7 @@ class KafkaService:
             logger.info(f"No status topic specified. Losing event: {status_event}")
             return
 
-        self.send_event(status_event, topic=self._status_topic)
+        self.send_event(status_event, self._status_topic)
 
     def send_event(self, event: BenchmarkEvent, topic: str):
         """
