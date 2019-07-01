@@ -63,5 +63,10 @@ spec:
                 configMapKeyRef:
                   name: pytest
                   key: timeout
+            - name: S3_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: outputs-infrastructure
+                  key: s3_endpoint
       restartPolicy: Never
   backoffLimit: 0

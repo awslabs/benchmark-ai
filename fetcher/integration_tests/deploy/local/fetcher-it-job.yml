@@ -9,3 +9,14 @@ spec:
         - name: it
           imagePullPolicy: Never
           image: benchmarkai/fetcher-it:local-latest
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: s3
+                  key: access-key-id
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: s3
+                  key: secret-access-key
