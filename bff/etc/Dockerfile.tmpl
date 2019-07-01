@@ -1,7 +1,7 @@
 FROM clojure:lein-alpine
 RUN mkdir -p /srv/app
 WORKDIR /srv/app
-COPY @@JAR_FILE@@ /srv/app/
+COPY @@JAR_FILE@@ @@RUN_SCRIPT@@ /srv/app/
 LABEL version="@@VERSION@@" \
         vcs.tag="@@TAG@@" \
         repo="@@REPO_SITE@@" \
@@ -9,4 +9,5 @@ LABEL version="@@VERSION@@" \
         release.name="@@RELEASE_NAME@@" \
         maintainer="@@AUTHOR@@"
 EXPOSE @@SVC_PORT@@
-CMD ["java", "-jar", "@@JAR_FILENAME@@"]
+ENTRYPOINT ["@@RUN_SCRIPT@@"]
+CMD ["@@JAR_FILENAME@@"]

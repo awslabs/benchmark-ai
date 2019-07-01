@@ -93,13 +93,14 @@ LOGGING_LEVEL := trace
 SVC_PORT := 8080
 THREAD_POOL_SIZE := 6
 MAX_QUEUE_SIZE := 21
-#KAFKA_BOOTSTRAP_SERVERS #Here only as a note that this is a thing
+#KAFKA_BOOTSTRAP_SERVERS #Here only as a note: gotten from k8s configmap
 KAFKA_CONSUMER_GROUP_ID := $(PROJECT)
 KAFKA_POLL_INTERVAL_MS := 500
 KAFKA_SOURCE_TOPICS := BAI_APP_STATUS,CMD_RETURN
 KAFKA_SINK_TOPICS := BAI_APP_STATUS,BAI_APP_BFF,CMD_SUBMIT
 KAFKA_DEFAULT_NUM_PARTITIONS := 3
 KAFKA_DEFAULT_REPLICATION_FACTOR := 3
+#SCRIPTS_EXCHANGE_S3_BUCKET_NAME #Here only as note: gotten from k8s configmap
 
 #This project may be built in the context of a docker environment using the image: gavin/bai-bff-dev
 #docker run -it --rm -v "$PWD":/srv/app -w /srv/app gavin/bai-bff-dev <command>
