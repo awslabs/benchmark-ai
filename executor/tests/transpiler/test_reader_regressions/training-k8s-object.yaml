@@ -35,6 +35,9 @@ spec:
       containers:
       - name: benchmark
         image: jlcont/benchmarking:270219
+        resources:
+          limits:
+            nvidia.com/gpu: 4
         command:
         - python
         - /home/benchmark/image_classification.py

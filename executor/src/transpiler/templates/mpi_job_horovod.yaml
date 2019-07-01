@@ -62,6 +62,9 @@ spec:
       containers:
       - image: {descriptor.docker_image}
         name: benchmark
+        resources:
+          limits:
+            nvidia.com/gpu: {num_gpus}
         command: 
         - /bin/entrypoint.sh
         volumeMounts:
