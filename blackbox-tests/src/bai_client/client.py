@@ -80,10 +80,12 @@ def _convert_status_json_response(json_string: str) -> List[StatusMessageBenchma
         try:
             status_message_event = StatusMessageBenchmarkEvent.from_json(dumped_json)
         except KeyError:
-            # TODO: Fix StatusMessageBenchmarkEvent modeling status messages:
-            #       https://github.com/MXNetEdge/benchmark-ai/issues/491
+            if status_message_as_dict["payload"]["visited"][-1]["svc"] == "bai-bff":
+                # TODO: Fix StatusMessageBenchmarkEvent modeling status messages:
+                #       https://github.com/MXNetEdge/benchmark-ai/issues/491
+                continue
             logger.exception(f"Failed to deserialize the following json: {dumped_json}\n")
-            continue
+            raise
         ret.append(status_message_event)
     return ret
 
