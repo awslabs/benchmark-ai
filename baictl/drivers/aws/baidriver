@@ -289,11 +289,15 @@ _destroy_helm_charts() {
     echo "-> Destroying helm charts:\n$(helm ls --short)\n"
     ${helm} delete $(${helm} ls --short) --purge || return 1
 
+    _destroy_orphaned_crds || return 1
+}
+
+_destroy_orphaned_crds() {
     # https://github.com/helm/charts/issues/9161
-    ${kubectl} delete crd prometheuses.monitoring.coreos.com
-    ${kubectl} delete crd prometheusrules.monitoring.coreos.com
-    ${kubectl} delete crd servicemonitors.monitoring.coreos.com
-    ${kubectl} delete crd alertmanagers.monitoring.coreos.com
+    ${kubectl} delete crd prometheuses.monitoring.coreos.com || return 1
+    ${kubectl} delete crd prometheusrules.monitoring.coreos.com || return 1
+    ${kubectl} delete crd servicemonitors.monitoring.coreos.com || return 1
+    ${kubectl} delete crd alertmanagers.monitoring.coreos.com || return 1
 }
 
 _install_zookeeper(){
