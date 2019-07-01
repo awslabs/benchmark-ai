@@ -18,8 +18,9 @@ import pytest
 
 import logging
 
-logging.basicConfig(level="DEBUG")
+logging.basicConfig()
 logger = logging.getLogger(__name__)
+logger.setLevel(level="DEBUG")
 
 
 @contextmanager
