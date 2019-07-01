@@ -69,6 +69,9 @@ spec:
       containers:
       - image: user/repo:tag
         name: benchmark
+        resources:
+          limits:
+            nvidia.com/gpu: 4
         command:
         - /bin/entrypoint.sh
         volumeMounts:
@@ -86,9 +89,6 @@ spec:
           subPath: p1
         - name: dshm
           mountPath: /dev/shm
-        resources:
-          limits:
-            nvidia.com/gpu: 4
         env:
         - name: BENCHMARK_AI
           value: fifo

@@ -30,6 +30,9 @@ spec:
       containers:
       - name: benchmark
         image: {descriptor.docker_image}
+        resources:
+          limits:
+            nvidia.com/gpu: {descriptor.gpus_per_instance}
         command: []
         args: []
         securityContext:

@@ -28,6 +28,9 @@ spec:
       containers:
       - name: benchmark
         image: test/example:latest
+        resources:
+          limits:
+            nvidia.com/gpu: 4
         command:
         - python
         - /home/benchmark/image_classification.py
