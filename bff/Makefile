@@ -327,7 +327,8 @@ deploy.yml: FORCE
 
 service.yml: FORCE
 	@echo "Generating kubernetes service.yaml from template..."
-	@sed -e 's|@@PROJECT@@|$(PROJECT)|g' \
+	@sed -e 's|@@BFF_SECURITY_GROUP_ID@@|$(shell kubectl get configmaps  outputs-infrastructure --output json | jq '.data.bff_security_group_id')|g' \
+	     -e 's|@@PROJECT@@|$(PROJECT)|g' \
 	     -e 's|@@ENVIRONMENT@@|$(ENVIRONMENT)|g' \
 	     -e 's|@@SVC_PORT@@|$(SVC_PORT)|g' $(SERVICE_TEMPLATE) > $(shell sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(SERVICE_TEMPLATE))
 
