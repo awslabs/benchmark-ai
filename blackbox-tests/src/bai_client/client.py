@@ -80,7 +80,7 @@ def _convert_status_json_response(json_string: str) -> List[StatusMessageBenchma
         try:
             status_message_event = StatusMessageBenchmarkEvent.from_json(dumped_json)
         except KeyError:
-            if status_message_as_dict["payload"]["visited"][-1]["svc"] == "bai-bff":
+            if status_message_as_dict["visited"][-1]["svc"] == "bai-bff":
                 # TODO: Fix StatusMessageBenchmarkEvent modeling status messages:
                 #       https://github.com/MXNetEdge/benchmark-ai/issues/491
                 continue

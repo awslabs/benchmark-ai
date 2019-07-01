@@ -1,3 +1,4 @@
+import dataclasses
 import os
 import sys
 from builtins import TimeoutError
@@ -158,7 +159,9 @@ def test_sample_benchmarks(descriptor_filename):
     print("#" * 120)
     print("# Status messages (for debugging)")
     print("#" * 120)
-    pprint(status_messages)
+    for status_message in status_messages:
+        pprint(dataclasses.asdict(status_message))
+        print("-" * 80)
 
     ServiceAndStatus = namedtuple("T", ("visited_service", "status"))
     events = (
