@@ -14,5 +14,4 @@ ENV CONNECT_BOOTSTRAP_SERVERS="b-2.benchmark-cluster.ds33ls.c2.kafka.eu-west-1.a
     CONNECT_REST_ADVERTISED_HOST_NAME="kafka-s3-exporter" \
     KAFKA_VERSION=2.1.0
 
-# TODO: Find root docker file 
-# COPY ./s3-sink.properties /etc/kafka-connect-s3/quickstart-s3.properties
+COPY config/s3-sink.properties .
