@@ -32,7 +32,7 @@ spec:
         image: {descriptor.docker_image}
         resources:
           limits:
-            nvidia.com/gpu: {num_gpus}
+            nvidia.com/gpu: {descriptor.gpus_per_instance}
         command: []
         args: []
         securityContext:

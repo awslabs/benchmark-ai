@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from typing import Dict, List
 from crontab import CronSlices
+from util import ec2_instance_info
 
 
 @dataclass
@@ -43,7 +44,7 @@ class Descriptor:
         self.distributed = "distributed" in descriptor_data["hardware"]
         distributed_data = descriptor_data["hardware"].get("distributed", {})
         self.num_instances = distributed_data.get("num_instances", 1)
-        self.gpus_per_instance = self.get_instance_gpus(self.instance_type)
+        self.gpus_per_instance = ec2_instance_info.get_instance_gpus(instance_type=self.instance_type)
 
         self.extended_shm = descriptor_data["env"].get("extended_shm", True)
         self.privileged = descriptor_data["env"].get("privileged", False)
@@ -82,18 +83,6 @@ class Descriptor:
                     f"Invalid cron expression in scheduling field: {self.scheduling}. "
                     f'Please use Kubernetes cron job syntax or "single_run" for non-periodic runs'
                 )
-
-    def get_instance_gpus(self, instance_type: str) -> int:
-        file_dir = os.path.dirname(os.path.abspath(__file__))
-
-        with open(os.path.join(file_dir, os.pardir, "util", "ec2_instance_info.csv"), mode="r") as infile:
-            reader = csv.reader(infile)
-            gpus_per_instance = {rows[0]: rows[1] for rows in reader}
-
-        if instance_type in gpus_per_instance:
-            return gpus_per_instance[instance_type]
-        else:
-            raise DescriptorError(f"Invalid instance type: {instance_type}")
 
     def find_data_source(self, src: str):
         for source in self.data_sources:

@@ -64,7 +64,7 @@ spec:
         name: benchmark
         resources:
           limits:
-            nvidia.com/gpu: {num_gpus}
+            nvidia.com/gpu: {descriptor.gpus_per_instance}
         command: 
         - /bin/entrypoint.sh
         volumeMounts:
@@ -74,9 +74,6 @@ spec:
           subPath: entrypoint.sh
         - name: benchmark-ai
           mountPath: /tmp/benchmark-ai
-        resources:
-          limits:
-            nvidia.com/gpu: {descriptor.gpus_per_instance}
         env:
         - name: BENCHMARK_AI
           value: "fifo"
