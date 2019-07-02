@@ -45,6 +45,8 @@ spec:
               value: BAI_APP_STATUS
             - name: LOGGING_LEVEL
               value: INFO
+            - name: SERVICE_LOGGING_LEVEL
+              value: DEBUG
       nodeSelector:
         node.type: bai-services-cheap
       restartPolicy: Always

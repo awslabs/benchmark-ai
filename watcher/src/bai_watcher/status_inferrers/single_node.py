@@ -1,5 +1,4 @@
 import collections
-import logging
 from enum import Enum, auto
 from typing import List, Dict, Set, Optional
 
@@ -15,12 +14,13 @@ from kubernetes.client import (
     V1PodCondition,
 )
 
+from bai_watcher import service_logger
 from bai_watcher.status_inferrers.status import BenchmarkJobStatus
 
 
 ContainerInfo = collections.namedtuple("ContainerInfo", ("container_name", "message"))
 
-logger = logging.getLogger(__name__)
+logger = service_logger.getChild(__name__)
 
 
 class ContainerState(Enum):

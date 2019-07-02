@@ -1,4 +1,3 @@
-import logging
 from typing import Callable
 
 import itertools
@@ -8,10 +7,11 @@ from kubernetes.client import V1Job, V1JobStatus, V1PodList, BatchV1Api, CoreV1A
 from pathlib import Path
 from threading import Thread
 
+from bai_watcher import service_logger
 from bai_watcher.status_inferrers.single_node import SingleNodeStrategyKubernetesStatusInferrer
 from bai_watcher.status_inferrers.status import BenchmarkJobStatus
 
-logger = logging.getLogger(__name__)
+logger = service_logger.getChild(__name__)
 
 SLEEP_TIME_BETWEEN_CHECKING_K8S_STATUS = 5
 
@@ -56,12 +56,12 @@ class KubernetesJobWatcher:
             k8s_job: V1Job = self.jobs_client.read_namespaced_job_status(self.job_id, self.kubernetes_namespace)
         except kubernetes.client.rest.ApiException as e:
             if e.status == 404:
-                logging.exception(
+                logger.exception(
                     "The specified job {job_id} does not exist. Stopping thread.".format(job_id=self.job_id)
                 )
                 return BenchmarkJobStatus.JOB_DOES_NOT_EXIST
 
-            logging.exception(
+            logger.exception(
                 "Unknown error from Kubernetes, stopping thread that watches job {job_id} with an exception".format(
                     job_id=self.job_id
                 )

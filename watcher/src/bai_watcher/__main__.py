@@ -1,6 +1,3 @@
-import logging
-
-
 def main(argv=None):
     from bai_kafka_utils.kafka_service_args import get_kafka_service_config
     from bai_kafka_utils.logging import configure_logging
@@ -12,9 +9,13 @@ def main(argv=None):
 
     configure_logging(level=common_kafka_cfg.logging_level)
 
+    from bai_watcher import service_logger
+
+    service_logger.setLevel(service_cfg.logging_level)
+
     from bai_watcher.kafka_service_watcher import create_service
 
-    logger = logging.getLogger(SERVICE_NAME)
+    logger = service_logger.getChild(SERVICE_NAME)
     logger.info(f"Starting {SERVICE_NAME} Service: {SERVICE_DESCRIPTION}")
     logger.info("common_args = %s", common_kafka_cfg)
     logger.info("service_specific_args = %s", service_cfg)

@@ -1,4 +1,3 @@
-import logging
 from typing import Tuple
 
 import kubernetes
@@ -7,12 +6,12 @@ from bai_kafka_utils.events import ExecutorBenchmarkEvent, Status
 from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
 from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService, KafkaServiceConfig
 from bai_kafka_utils.utils import get_pod_name
-from bai_watcher import SERVICE_NAME, __version__
+from bai_watcher import SERVICE_NAME, __version__, service_logger
 from bai_watcher.args import WatcherServiceConfig
 from bai_watcher.kubernetes_job_watcher import KubernetesJobWatcher, load_kubernetes_config
 from bai_watcher.status_inferrers.status import BenchmarkJobStatus
 
-logger = logging.getLogger(__name__)
+logger = service_logger.getChild(__name__)
 
 
 def choose_status_from_benchmark_status(job_status: BenchmarkJobStatus) -> Tuple[Status, str]:
