@@ -93,6 +93,9 @@ create_infra() {
 
     echo "==> Validating infrastructure"
     [[ "$validate" == false ]] || validate_infra $@
+
+    echo "==> Syncing remote data directory"
+    _sync_bai_home || return 1
 }
 
 _initialize_terraform_backend() {
@@ -563,6 +566,14 @@ schedule_benchmark() {
 show_k8s_dashboard() {
     echo "The Kubernetes dashboard will be available in http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/"
     ${kubectl} proxy
+}
+
+_sync_bai_home() {
+    local region=$1
+    local account_id=$(aws sts get-caller-identity | jq -r '.Account') || return 1
+    local bucket="bai-terraform-state-${region}-${account_id}"
+
+    aws s3 sync $data_dir s3://$bucket
 }
 
 verb=$1
