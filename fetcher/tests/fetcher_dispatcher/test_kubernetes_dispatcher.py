@@ -8,6 +8,7 @@ from bai_kafka_utils.events import DataSet, BenchmarkEvent
 from fetcher_dispatcher import kubernetes_dispatcher, SERVICE_NAME
 from fetcher_dispatcher.args import FetcherJobConfig
 from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
+from preflight.data_set_size import DataSetSizeInfo
 
 CLIENT_ID = "CLIENT_ID"
 
@@ -44,6 +45,8 @@ PULL_POLICY = "OnFailure"
 RESTART_POLICY = "OnFailure"
 
 TTL = 42
+
+DATA_SET_SIZE = 1024
 
 FETCHER_JOB_CONFIG = FetcherJobConfig(
     namespace=NAMESPACE,
@@ -162,7 +165,9 @@ def test_call_dispatcher(mock_batch_api_instance, mock_k8s_config, data_set):
         SERVICE_NAME, zk_ensemble=ZOOKEEPER_ENSEMBLE_HOSTS, kubeconfig=None, fetcher_job=FETCHER_JOB_CONFIG
     )
 
-    dispatcher.dispatch_fetch(data_set, BENCHMARK_EVENT, ZK_NODE_PATH)
+    size_info = DataSetSizeInfo(DATA_SET_SIZE, 1, DATA_SET_SIZE)
+
+    dispatcher.dispatch_fetch(data_set, size_info, BENCHMARK_EVENT, ZK_NODE_PATH)
     mock_batch_api_instance.create_namespaced_job.assert_called_once()
 
     job_args, _ = mock_batch_api_instance.create_namespaced_job.call_args

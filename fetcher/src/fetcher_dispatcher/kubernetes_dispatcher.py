@@ -7,6 +7,7 @@ from bai_kafka_utils.events import DataSet, BenchmarkEvent
 from bai_kafka_utils.utils import id_generator
 from fetcher_dispatcher.args import FetcherJobConfig
 from fetcher_dispatcher.data_set_manager import DataSetDispatcher
+from preflight.data_set_size import DataSetSizeInfo
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +134,7 @@ class KubernetesDispatcher(DataSetDispatcher):
     def _get_label_selector(self, client_id: str, action_id: str = None):
         return KubernetesDispatcher.get_label_selector(self.service_name, client_id, action_id)
 
-    def dispatch_fetch(self, task: DataSet, event: BenchmarkEvent, zk_node_path: str):
+    def dispatch_fetch(self, task: DataSet, size: DataSetSizeInfo, event: BenchmarkEvent, zk_node_path: str):
         try:
             fetcher_job = self._get_fetcher_job(task, event, zk_node_path)
 

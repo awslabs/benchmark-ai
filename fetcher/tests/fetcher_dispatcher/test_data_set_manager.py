@@ -12,6 +12,9 @@ from bai_kafka_utils.events import DataSet, BenchmarkEvent, FetcherStatus
 from bai_zk_utils.states import FetcherResult
 from bai_zk_utils.zk_locker import RWLockManager, OnLockCallback, RWLock
 from fetcher_dispatcher.data_set_manager import DataSetManager, DataSetDispatcher, DataSetOnDone
+from preflight.data_set_size import DataSetSizeInfo
+
+FILE_SIZE = 42
 
 ZK_VERSION = 1
 
@@ -20,6 +23,12 @@ CLIENT_ID = "CLIENT_ID"
 ACTION_ID = "ACTION_ID"
 
 SOME_PATH = "/some/path"
+
+SOME_SIZE_INFO = DataSetSizeInfo(FILE_SIZE, 1, FILE_SIZE)
+
+
+def mock_size_estimator(src: str) -> DataSetSizeInfo:
+    return SOME_SIZE_INFO
 
 
 def data_set_to_path(client_id: str, action_id: str = None, dataset: DataSet = None) -> str:
@@ -104,8 +113,16 @@ def kubernetes_job_starter() -> DataSetDispatcher:
 
 
 @fixture
-def data_set_manager(zoo_keeper_client: KazooClient, kubernetes_job_starter: DataSetDispatcher) -> DataSetManager:
-    data_set_manager = DataSetManager(zoo_keeper_client, kubernetes_job_starter, data_set_to_path)
+def data_set_manager(
+    zoo_keeper_client: KazooClient, kubernetes_job_starter: DataSetDispatcher, mock_lock_manager: RWLockManager
+) -> DataSetManager:
+    data_set_manager = DataSetManager(
+        zoo_keeper_client,
+        kubernetes_job_starter,
+        mock_lock_manager,
+        data_set_to_path,
+        size_estimator=mock_size_estimator,
+    )
     return data_set_manager
 
 
@@ -148,7 +165,9 @@ def mock_lock_manager(mock_lock: RWLock) -> RWLockManager:
 def test_pass_through_start(
     zoo_keeper_client: KazooClient, kubernetes_job_starter: DataSetDispatcher, mock_lock_manager: RWLockManager
 ):
-    data_set_manager = DataSetManager(zoo_keeper_client, kubernetes_job_starter, mock_lock_manager)
+    data_set_manager = DataSetManager(
+        zoo_keeper_client, kubernetes_job_starter, mock_lock_manager
+    )
     data_set_manager.start()
     assert zoo_keeper_client.start.called
 
@@ -156,7 +175,9 @@ def test_pass_through_start(
 def test_pass_through_stop(
     zoo_keeper_client: KazooClient, kubernetes_job_starter: DataSetDispatcher, mock_lock_manager: RWLockManager
 ):
-    data_set_manager = DataSetManager(zoo_keeper_client, kubernetes_job_starter, mock_lock_manager)
+    data_set_manager = DataSetManager(
+        zoo_keeper_client, kubernetes_job_starter, mock_lock_manager
+    )
     data_set_manager.stop()
     assert zoo_keeper_client.stop.called
 
@@ -172,13 +193,19 @@ def test_first_fast_success(
         zoo_keeper_client_with_done_node, enclosing_event, kubernetes_job_starter, mock_lock_manager, some_data_set
     )
 
-    kubernetes_job_starter.dispatch_fetch.assert_called_with(some_data_set, enclosing_event, SOME_PATH)
+    kubernetes_job_starter.dispatch_fetch.assert_called_with(some_data_set, SOME_SIZE_INFO, enclosing_event, SOME_PATH)
     on_done.assert_called_with(some_data_set)
 
 
 # Common part of the tests
 def _test_fetch(zoo_keeper_client, enclosing_event, kubernetes_job_starter, mock_lock_manager, some_data_set):
-    data_set_manager = DataSetManager(zoo_keeper_client, kubernetes_job_starter, mock_lock_manager, data_set_to_path)
+    data_set_manager = DataSetManager(
+        zoo_keeper_client,
+        kubernetes_job_starter,
+        mock_lock_manager,
+        data_set_to_path,
+        size_estimator=mock_size_estimator,
+    )
     on_done = create_autospec(DataSetOnDone)
     data_set_manager.fetch(some_data_set, enclosing_event, on_done)
     return on_done
@@ -195,7 +222,7 @@ def test_first_wait_success(
         zoo_keeper_client_with_running_node, enclosing_event, kubernetes_job_starter, mock_lock_manager, some_data_set
     )
 
-    kubernetes_job_starter.dispatch_fetch.assert_called_with(some_data_set, enclosing_event, SOME_PATH)
+    kubernetes_job_starter.dispatch_fetch.assert_called_with(some_data_set, SOME_SIZE_INFO, enclosing_event, SOME_PATH)
     assert not on_done.called
 
     _verify_wait_succes(on_done, zoo_keeper_client_with_running_node)
