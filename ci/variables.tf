@@ -14,7 +14,7 @@ variable "projects" {
     "metrics-extractor",
     "prometheus-kafka-topic-exporter",
     "sm-executor",
-    "cron-job"
+    "anubis-cron-job"
   ]
 }
 
@@ -44,22 +44,22 @@ variable "ecr_repo" {
 }
 
 variable "github_organization" {
-  type = string
+  type    = string
   default = "MXNetEdge"
 }
 
 variable "github_branch" {
-  type = string
+  type    = string
   default = "master"
 }
 
 variable "chime_hook_url" {
-  type = string
+  type    = string
   default = ""
 }
 
 variable "run_integration_tests" {
-  type = bool
+  type    = bool
   default = true
 }
 
