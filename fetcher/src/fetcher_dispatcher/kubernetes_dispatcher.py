@@ -211,6 +211,10 @@ class KubernetesDispatcher(DataSetDispatcher):
             self.fetcher_job.namespace, label_selector=action_id_label_selector
         )
         logger.debug("k8s response: %s", pods_response)
+        volumes_response = self.core_api_instance.delete_collection_namespaced_persistent_volume_claim(
+            self.fetcher_job.namespace, label_selector=action_id_label_selector
+        )
+        logger.debug("k8s response: %s", volumes_response)
 
     @staticmethod
     def _get_volume_size(size_info: DataSetSizeInfo):
