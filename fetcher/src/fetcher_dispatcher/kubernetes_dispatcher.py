@@ -76,7 +76,10 @@ class KubernetesDispatcher(DataSetDispatcher):
     ) -> kubernetes.client.V1PodTemplateSpec:
         pod_spec = self._get_fetcher_pod_spec(task, zk_node_path)
         return kubernetes.client.V1PodTemplateSpec(
-            spec=pod_spec, metadata=kubernetes.client.V1ObjectMeta(labels=self._get_labels(task, event))
+            spec=pod_spec,
+            metadata=kubernetes.client.V1ObjectMeta(
+                labels=self._get_labels(task, event), annotations=self._get_fetcher_pod_annotations()
+            ),
         )
 
     def _get_fetcher_pod_spec(self, task: DataSet, zk_node_path: str):
@@ -97,6 +100,9 @@ class KubernetesDispatcher(DataSetDispatcher):
             env=env_list,
             image_pull_policy=self.fetcher_job.pull_policy,
         )
+
+    def _get_fetcher_pod_annotations(self):
+        return {"iam.amazonaws.com/role": "fetcher"}
 
     def _get_args(self, task: DataSet, zk_node_path: str) -> List[str]:
         return [
