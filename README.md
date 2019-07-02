@@ -41,7 +41,6 @@ For more information on all commands, please see the [full documentation]() of `
    It can be either `AWS_PROFILE` or `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`.
    [This guide](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/setup-credentials.html) helps setting these
    variables (ignore the fact it says it's for the Java SDK).
-1. Install [miniconda](https://docs.conda.io/en/latest/miniconda.html).
    
 
 You are now ready to create the environment to use the tool:
@@ -49,25 +48,8 @@ You are now ready to create the environment to use the tool:
 ```bash
 git clone https://github.com/MXNetEdge/benchmark-ai.git
 cd benchmark-ai/baictl
-conda env update
-conda activate baictl
-./baictl.sh --help
+./baictl-infrastructure.py --help
 ``` 
-
-If you want baictl.sh to be available as baictl in terminal do the following:
-
-```
-cd && mkdir -p work && cd work
-git clone git@github.com:MXNetEdge/benchmark-ai.git
-
-# choose or create a path on $PATH to put the link
-cd && mkdir -p bin
-echo 'export PATH=~/bin:$PATH' >> ~/.bashrc
-ln -s ~/work/benchmark-ai/baictl/baictl.sh baictl
-
-# install completion
-echo 'source ~/work/benchmark-ai/baictl/baictl-complete.sh' >> ~/.bashrc
-```
 
 ## Step 1 - Create the infrastructure
 
