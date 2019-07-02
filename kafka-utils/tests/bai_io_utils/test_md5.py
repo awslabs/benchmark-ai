@@ -2,7 +2,7 @@ import pytest
 from typing import TextIO
 from unittest.mock import create_autospec
 
-from bai_fetcher_job.md5sum import calculate_md5_and_etag, DigestPair
+from bai_io_utils.md5sum import calculate_md5_and_etag, DigestPair
 
 SMALL_MD5 = "acbd18db4cc2f85cedef654fccc4a4d8"
 

@@ -7,7 +7,7 @@ import boto3
 from botocore.exceptions import ClientError
 from typing import TextIO
 
-from bai_fetcher_job.failures import S3Error
+from bai_io_utils.failures import S3Error
 
 MD5_TAG = "MD5"
 

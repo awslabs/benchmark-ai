@@ -6,9 +6,9 @@ from pytest import fixture
 from typing import TextIO
 from unittest.mock import MagicMock, ANY, PropertyMock, call
 
-from bai_fetcher_job import s3_utils
-from bai_fetcher_job.failures import S3Error
-from bai_fetcher_job.s3_utils import S3Object, upload_to_s3, download_from_s3, is_s3_file, ProgressCallback
+from bai_io_utils import s3_utils
+from bai_io_utils.failures import S3Error
+from bai_io_utils.s3_utils import S3Object, upload_to_s3, download_from_s3, is_s3_file, ProgressCallback
 
 MOCK_ERROR_RESPONSE = {"Error": {"Message": "Something is wrong"}}
 
