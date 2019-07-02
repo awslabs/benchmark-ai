@@ -6,7 +6,7 @@ from pytest import fixture, mark
 
 from bai_kafka_utils.events import DataSet, BenchmarkEvent
 from fetcher_dispatcher import kubernetes_dispatcher, SERVICE_NAME
-from fetcher_dispatcher.args import FetcherJobConfig, FetcherVolumeConfig, MIN_VOLUME_SIZE_MB
+from fetcher_dispatcher.args import FetcherJobConfig, FetcherVolumeConfig
 from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
 from preflight.data_set_size import DataSetSizeInfo
 
