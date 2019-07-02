@@ -93,6 +93,9 @@ create_infra() {
 
     echo "==> Validating infrastructure"
     [[ "$validate" == false ]] || validate_infra $@
+
+    echo "==> Syncing remote data directory"
+    _sync_bai_home || return 1
 }
 
 _initialize_terraform_backend() {
@@ -572,6 +575,14 @@ show_k8s_dashboard() {
     ${kubectl} proxy
 }
 
+_sync_bai_home() {
+    local region=$1
+    local account_id=$(aws sts get-caller-identity | jq -r '.Account') || return 1
+    local bucket="bai-terraform-state-${region}-${account_id}"
+
+    aws s3 sync $data_dir s3://$bucket
+}
+
 verb=$1
 object=$2
 
@@ -579,7 +590,7 @@ shift
 shift
 
 verbose=""
-data_dir=${HOME}/.bai
+data_dir=${ANUBIS_HOME:=${HOME}/.bai}
 
 #Common args
 for arg in "$@"; do
