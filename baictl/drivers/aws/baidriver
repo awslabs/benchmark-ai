@@ -219,9 +219,10 @@ EOF
 }
 
 _install_kubeflow_operators() {
-    # TODO check /Users/mabreu/.bai/kubeflow-ks-app/ks_app/app.yaml and whether the URL is correct. If not, delete it
-
     pushd .
+
+    _check_kubeflow_app_config
+
     mkdir $data_dir/kubeflow-ks-app
     cd $data_dir/kubeflow-ks-app
 
@@ -258,6 +259,26 @@ _install_kubeflow_operators() {
 
     popd
     return 0
+}
+
+_check_kubeflow_app_config() {
+    local kubeflow_config_path="${data_dir}/kubeflow-ks-app/ks_app/app.yaml"
+    if [[ ! -f ${kubeflow_config_path} ]]; then
+        echo "Kubeflow is not initialized yet"
+        return 0
+    fi
+
+    # Check if URL in config is the right one. if not, it's stale and we have to re-create it
+    local eks_server_url=$(cat $data_dir/kubeconfig | grep -o -e 'https://.*eks.amazonaws.com')
+
+    if grep -q "$eks_server_url" "${kubeflow_config_path}"
+    then
+        echo "Kubeflow already has been connected to the correct EKS server"
+        # code if found
+    else
+        echo "Kubeflow is currently not connected to the correct EKS server"
+        rm -rf $data_dir/kubeflow-ks-app
+    fi
 }
 
 _init_service_account() {
