@@ -27,7 +27,7 @@ from transpiler.descriptor import DescriptorError
 logger = logging.getLogger(SERVICE_NAME)
 
 
-JOB_ID_PREFIX = "benchmark-"
+JOB_ID_PREFIX = "b-"
 
 
 class ExecutorEventHandler(KafkaServiceCallback):
