@@ -15,4 +15,4 @@ def estimate_fetch_size(src: str) -> DataSetSizeInfo:
         return http_estimate_size(src)
     if parsed.scheme == "s3":
         return s3_estimate_size(src)
-    raise UnknownSchemeException("Unknown scheme")
+    raise UnknownSchemeException(f"Unknown scheme '{parsed.scheme}' in '{src}'")
