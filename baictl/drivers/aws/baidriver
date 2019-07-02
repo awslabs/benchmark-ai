@@ -162,6 +162,23 @@ _install_prometheus(){
     # https://github.com/MXNetEdge/benchmark-ai/issues/483 for details.
     # https://github.com/NVIDIA/gpu-monitoring-tools/tree/master/exporters/prometheus-dcgm/k8s/pod-gpu-metrics-exporter#pod-gpu-metrics-exporter
     ${kubectl} apply -f ${k8s_deploy_dir}/pod-gpu-metrics-exporter-daemonset.yaml || return 1
+
+
+    _deploy_grafana_dashboards || return 1
+
+}
+
+_deploy_grafana_dashboards() {
+    # Deploy configmaps that contain the grafana dashboards, they will be loaded by the sidecar as long as they
+    # have the "grafana_dashboard" label
+    for filename in ${k8s_deploy_dir}/grafana-dashboards/*.json; do
+        local configmap_name=$(echo "grafana-dashboard-${filename##*/}" | sed 's/.json//g')
+        echo "Applying Grafana dashboard '${configmap_name}'"
+        ${kubectl} create configmap ${configmap_name} --from-file "${filename}" --dry-run -o yaml | ${kubectl} apply -f - || return 1
+
+        # https://github.com/kubernetes/kubernetes/issues/60295
+        ${kubectl} label configmap ${configmap_name} grafana_dashboard=1 --overwrite=true || return 1
+    done
 }
 
 port_forward() {
@@ -273,16 +290,6 @@ _init_helm() {
     ${helm} init --upgrade --history-max 200 --wait --service-account tiller || return 1
     echo "-> Updating helm"
     ${helm} repo update || return 1
-}
-
-_install_grafana() {
-    ${helm} upgrade --install grafana \
-        --namespace ${tiller_namespace} \
-        --set rbac.pspEnabled=false \
-        --set rbac.create=false \
-        --set service.type=LoadBalancer \
-        --wait \
-        stable/grafana || return 1
 }
 
 _destroy_helm_charts() {
