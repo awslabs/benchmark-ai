@@ -583,7 +583,7 @@ shift
 shift
 
 verbose=""
-data_dir=${HOME}/.bai
+data_dir=${ANUBIS_HOME:=${HOME}/.bai}
 
 #Common args
 for arg in "$@"; do

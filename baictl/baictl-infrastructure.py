@@ -350,12 +350,13 @@ def parse_ecs_response(ecs_task_response):
 
 
 def sync_bai_home(boto_session, config):
-    logging.info("Syncing ~/.bai directory")
     s3_client = boto_session.client("s3")
     sts_client = boto_session.client("sts")
     data_dir = os.environ["HOME"] + "/.bai"
     account_id = sts_client.get_caller_identity()["Account"]
     bucket = "bai-terraform-state-" + config.get_aws_region() + "-" + account_id
+
+    logging.info("Syncing {} directory with infrastructure information".format(data_dir))
 
     # Remove files from current data directory
     # HACK: boto doesn't support s3 sync command https://github.com/boto/boto/issues/3343
