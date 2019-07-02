@@ -4,6 +4,7 @@ from preflight.http_estimator import http_estimate_size
 BIG_FILE = "http://dataserver:8080/big-file"
 
 # Test environment has a file with a line "HUGE FILE", which is 9 bytes.
+# File is defined in benchmark-ai/mock-infra/internet.yml
 HUGE_SIZE = 9
 
 

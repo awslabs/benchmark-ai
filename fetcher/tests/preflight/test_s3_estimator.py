@@ -1,9 +1,7 @@
-from typing import NamedTuple, Any, List, Tuple
-
 import boto3
-import botocore
 from botocore.stub import Stubber
 from pytest import fixture
+from typing import NamedTuple, Any, List
 
 from preflight.data_set_size import DataSetSizeInfo
 from preflight.s3_estimator import s3_estimate_size
