@@ -8,6 +8,6 @@ LABEL version="@@VERSION@@" \
         organization="@@ORGANIZATION@@" \
         release.name="@@RELEASE_NAME@@" \
         maintainer="@@AUTHOR@@"
-EXPOSE @@SVC_PORT@@
-ENTRYPOINT ["@@RUN_SCRIPT@@"]
+EXPOSE @@SVC_PORT@@ @@JMX_PORT@@
+ENTRYPOINT ["./@@RUN_SCRIPT_NAME@@"]
 CMD ["@@JAR_FILENAME@@"]
