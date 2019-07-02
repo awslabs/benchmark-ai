@@ -219,8 +219,7 @@ EOF
 }
 
 _install_kubeflow_operators() {
-    pushd .
-
+    (
     _check_kubeflow_app_config
 
     mkdir $data_dir/kubeflow-ks-app
@@ -239,25 +238,18 @@ _install_kubeflow_operators() {
     ks env describe "$kubeflow_namespace" || ks env add kubeflow --namespace "$kubeflow_namespace" || return 1
 
     echo "-> Applying kubeflow stuff"
-    ks pkg list --installed -o table | awk '{print $2}' | xargs | grep "mpi-job" || ks pkg install kubeflow/mpi-job && \
-        ks pkg list --installed -o table | awk '{print $2}' | xargs | grep "mxnet-job" || ks pkg install kubeflow/mxnet-job && \
-        ks component list | awk '{print $1}' | xargs | grep "mpi-operator" || ks generate mpi-operator mpi-operator && \
-        ks component list | awk '{print $1}' | xargs | grep "mxnet-operator" || ks generate mxnet-operator mxnet-operator
-    local exit_code=$?
-    [[ "$exit_code" != 0 ]] && echo "[ERROR] Failed with exit code: $exit_code" && return 1
+    ks pkg list --installed -o table | awk '{print $2}' | xargs | grep "mpi-job" || ks pkg install kubeflow/mpi-job || return 1 && \
+        ks pkg list --installed -o table | awk '{print $2}' | xargs | grep "mxnet-job" || ks pkg install kubeflow/mxnet-job || return 1 && \
+        ks component list | awk '{print $1}' | xargs | grep "mpi-operator" || ks generate mpi-operator mpi-operator || return 1 && \
+        ks component list | awk '{print $1}' | xargs | grep "mxnet-operator" || ks generate mxnet-operator mxnet-operator || return 1
 
 
-    echo "-> Applying configuration"
-    (
-    export KUBECONFIG=$kubeconfig
-    cd $data_dir/kubeflow-ks-app/ks_app
     ks apply kubeflow --component mpi-operator && \
         ks apply kubeflow --component mxnet-operator
+    )
     local exit_code=$?
     [[ "$exit_code" != 0 ]] && echo "[ERROR] Failed with exit code: $exit_code" && return 1
-    )
 
-    popd
     return 0
 }
 
@@ -265,6 +257,8 @@ _check_kubeflow_app_config() {
     local kubeflow_config_path="${data_dir}/kubeflow-ks-app/ks_app/app.yaml"
     if [[ ! -f ${kubeflow_config_path} ]]; then
         echo "Kubeflow is not initialized yet"
+        # Just to be safe
+        rm -rf $data_dir/kubeflow-ks-app
         return 0
     fi
 
