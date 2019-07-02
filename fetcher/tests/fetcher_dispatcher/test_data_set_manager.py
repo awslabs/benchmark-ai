@@ -165,9 +165,7 @@ def mock_lock_manager(mock_lock: RWLock) -> RWLockManager:
 def test_pass_through_start(
     zoo_keeper_client: KazooClient, kubernetes_job_starter: DataSetDispatcher, mock_lock_manager: RWLockManager
 ):
-    data_set_manager = DataSetManager(
-        zoo_keeper_client, kubernetes_job_starter, mock_lock_manager
-    )
+    data_set_manager = DataSetManager(zoo_keeper_client, kubernetes_job_starter, mock_lock_manager)
     data_set_manager.start()
     assert zoo_keeper_client.start.called
 
@@ -175,9 +173,7 @@ def test_pass_through_start(
 def test_pass_through_stop(
     zoo_keeper_client: KazooClient, kubernetes_job_starter: DataSetDispatcher, mock_lock_manager: RWLockManager
 ):
-    data_set_manager = DataSetManager(
-        zoo_keeper_client, kubernetes_job_starter, mock_lock_manager
-    )
+    data_set_manager = DataSetManager(zoo_keeper_client, kubernetes_job_starter, mock_lock_manager)
     data_set_manager.stop()
     assert zoo_keeper_client.stop.called
 
