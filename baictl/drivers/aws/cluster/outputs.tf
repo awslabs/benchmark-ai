@@ -77,3 +77,8 @@ output "bff_security_group_id" {
   description = "Security group id to allow corp access to bff loadbalancer"
   value       = "${aws_security_group.bff_external_access.id}"
 }
+
+output "kube2iam_default_pod_role_name" {
+  description = "Role that is used by PODs by default"
+  value = "${aws_iam_role.kube2iam-default-pod-role.name}"
+}

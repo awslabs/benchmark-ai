@@ -47,12 +47,17 @@ metadata:
     version: v1
     kubernetes.io/cluster-service: 'true'
 spec:
+  updateStrategy:
+    # https://kubernetes.io/docs/tasks/manage-daemon/update-daemon-set/
+    type: RollingUpdate
   template:
     metadata:
       labels:
         k8s-app: fluentd-logging
         version: v1
         kubernetes.io/cluster-service: 'true'
+      annotations:
+        iam.amazonaws.com/role: ${kube2iam_pod_role_name}
     spec:
       serviceAccount: fluentd
       serviceAccountName: fluentd
