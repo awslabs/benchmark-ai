@@ -1,11 +1,11 @@
 import logging
 import tempfile
 
+from bai_io_utils.failures import InvalidDigestError
+from bai_io_utils.md5sum import DigestPair, calculate_md5_and_etag
+from bai_io_utils.s3_utils import S3Object, check_s3_for_md5, check_s3_for_etag, upload_to_s3, update_s3_hash_tagging
 from typing import Optional, TextIO, Callable
 
-from bai_fetcher_job.failures import InvalidDigestError
-from bai_fetcher_job.md5sum import calculate_md5_and_etag, DigestPair
-from bai_fetcher_job.s3_utils import S3Object, upload_to_s3, check_s3_for_md5, check_s3_for_etag, update_s3_hash_tagging
 
 logger = logging.getLogger(__name__)
 

@@ -2,10 +2,12 @@ import logging
 
 import boto3
 from bai_zk_utils.states import FetchedType
+
+from bai_io_utils.s3_utils import ProgressCallback, S3Object, download_from_s3, is_s3_file
 from botocore.exceptions import ClientError
 from typing import Optional, Dict, NamedTuple
 
-from bai_fetcher_job.s3_utils import S3Object, download_from_s3, is_s3_file, ProgressCallback
+
 from bai_fetcher_job.transfer_to_s3 import transfer_to_s3
 
 

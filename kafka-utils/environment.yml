@@ -5,6 +5,8 @@ channels:
 dependencies:
   - kazoo 2.5.*
   - kafka-python 1.4.6
+  - boto3 1.9.*
+  - pycurl 7.43.*
   - pip
   - pip:
       - ConfigArgParse

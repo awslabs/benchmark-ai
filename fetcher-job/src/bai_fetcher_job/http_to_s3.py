@@ -1,8 +1,9 @@
 import logging
 
+from bai_io_utils.http_utils import http_download
 from typing import Optional
 
-from bai_fetcher_job.http_utils import http_download
+
 from bai_fetcher_job.transfer_to_s3 import transfer_to_s3
 
 logger = logging.getLogger(__name__)

@@ -1,12 +1,13 @@
 import pytest
+from bai_io_utils.failures import HttpClientError, HttpServerError, InvalidDigestError
+from bai_io_utils.md5sum import DigestPair
+from bai_io_utils.s3_utils import S3Object
 from pytest import fixture
 from typing import TextIO
 from unittest.mock import create_autospec
 
 import bai_fetcher_job
-from bai_fetcher_job.failures import HttpServerError, HttpClientError, InvalidDigestError
-from bai_fetcher_job.md5sum import DigestPair
-from bai_fetcher_job.s3_utils import S3Object
+
 from bai_fetcher_job.transfer_to_s3 import transfer_to_s3, DownloadCallback
 
 S3DST = S3Object("bucket", "key")
