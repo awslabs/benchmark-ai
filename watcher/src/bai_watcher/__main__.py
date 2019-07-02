@@ -1,6 +1,3 @@
-import logging
-
-
 def main(argv=None):
     from bai_kafka_utils.kafka_service_args import get_kafka_service_config
     from bai_kafka_utils.logging import configure_logging
