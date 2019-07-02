@@ -3,7 +3,7 @@ from unittest.mock import patch
 # Regression test
 from bai_kafka_utils.kafka_service import KafkaServiceConfig, DEFAULT_NUM_PARTITIONS, DEFAULT_REPLICATION_FACTOR
 from fetcher_dispatcher import fetcher_dispatcher_service, args
-from fetcher_dispatcher.args import FetcherServiceConfig, FetcherJobConfig
+from fetcher_dispatcher.args import FetcherServiceConfig, FetcherJobConfig, FetcherVolumeConfig
 
 BOOTSTRAP_SERVERS = ["K1", "K2"]
 
@@ -33,6 +33,8 @@ DEFAULT_RESTART_POLICY = "OnFailure"
 
 STATUS_TOPIC = "STATUS"
 
+MIN_VOLUME_SIZE = 256
+
 
 @patch.object(args.os, "environ", autospec=True)
 @patch.object(fetcher_dispatcher_service, "create_fetcher_dispatcher", autospec=True)
@@ -50,6 +52,7 @@ def test_main(mock_create_fetcher_dispatcher, mock):
         f"--status-topic {STATUS_TOPIC} "
         f"--cmd-return-topic {CMD_RETURN_TOPIC} "
         f"--cmd-submit-topic {CMD_SUBMIT_TOPIC} "
+        f"--fetcher-job-min-volume-size {MIN_VOLUME_SIZE}"
     )
 
     expected_common_kafka_cfg = KafkaServiceConfig(
@@ -68,7 +71,10 @@ def test_main(mock_create_fetcher_dispatcher, mock):
         zookeeper_ensemble_hosts=ZOOKEEPER_ENSEMBLE_HOSTS,
         s3_data_set_bucket=S3_DATASET_BUCKET,
         fetcher_job=FetcherJobConfig(
-            image=FETCHER_JOB_IMAGE, namespace=DEFAULT_NAMESPACE, restart_policy=DEFAULT_RESTART_POLICY
+            image=FETCHER_JOB_IMAGE,
+            namespace=DEFAULT_NAMESPACE,
+            restart_policy=DEFAULT_RESTART_POLICY,
+            volume=FetcherVolumeConfig(min_size=MIN_VOLUME_SIZE),
         ),
     )
 

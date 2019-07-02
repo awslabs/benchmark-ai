@@ -6,9 +6,11 @@ from pytest import fixture, mark
 
 from bai_kafka_utils.events import DataSet, BenchmarkEvent
 from fetcher_dispatcher import kubernetes_dispatcher, SERVICE_NAME
-from fetcher_dispatcher.args import FetcherJobConfig
+from fetcher_dispatcher.args import FetcherJobConfig, FetcherVolumeConfig, MIN_VOLUME_SIZE_MB
 from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
 from preflight.data_set_size import DataSetSizeInfo
+
+MB = 1024 * 1024
 
 CLIENT_ID = "CLIENT_ID"
 
@@ -46,7 +48,13 @@ RESTART_POLICY = "OnFailure"
 
 TTL = 42
 
-DATA_SET_SIZE = 1024
+SMALL_DATA_SET_SIZE = 1 * MB
+
+MIN_VOLUME_SIZE_MB = 64
+
+
+SMALL_DATA_SET_SIZE_INFO = DataSetSizeInfo(SMALL_DATA_SET_SIZE, 1, SMALL_DATA_SET_SIZE)
+BIG_DATA_SET_SIZE_INFO = DataSetSizeInfo(MIN_VOLUME_SIZE_MB * MB, 1, MIN_VOLUME_SIZE_MB * MB)
 
 FETCHER_JOB_CONFIG = FetcherJobConfig(
     namespace=NAMESPACE,
@@ -55,6 +63,7 @@ FETCHER_JOB_CONFIG = FetcherJobConfig(
     pull_policy=PULL_POLICY,
     ttl=TTL,
     restart_policy=RESTART_POLICY,
+    volume=FetcherVolumeConfig(MIN_VOLUME_SIZE_MB),
 )
 
 KUBECONFIG = "path/cfg"
@@ -139,7 +148,7 @@ def validate_namespaced_job(namespace: str, job: V1Job, data_set: DataSet):
 
     assert pod_spec.restart_policy == RESTART_POLICY
     assert pod_spec.node_selector == NODE_SELECTOR
-    container = pod_spec.containers[0]
+    container: kubernetes.client.V1Container = pod_spec.containers[0]
     assert container.image_pull_policy == PULL_POLICY
     assert container.image == FETCHER_JOB_IMAGE
 
@@ -153,28 +162,47 @@ def validate_namespaced_job(namespace: str, job: V1Job, data_set: DataSet):
         KubernetesDispatcher.MD5_ARG,
         data_set.md5,
     ]
+
+    # We have added the volume for temp files
+    assert container.volume_mounts == [
+        kubernetes.client.V1VolumeMount(
+            mount_path=KubernetesDispatcher.TMP_MOUNT_PATH, name=KubernetesDispatcher.TMP_VOLUME
+        )
+    ]
+
+    # We passed the ZooKeeper env
     assert (
         kubernetes.client.V1EnvVar(name=KubernetesDispatcher.ZOOKEEPER_ENSEMBLE_HOSTS, value=ZOOKEEPER_ENSEMBLE_HOSTS)
         in container.env
     )
+    # We have created a cozy mount for the download
+    assert (
+        kubernetes.client.V1EnvVar(name=KubernetesDispatcher.TMP_DIR, value=KubernetesDispatcher.TMP_MOUNT_PATH)
+        in container.env
+    )
 
 
-@mark.parametrize("data_set", [DATA_SET, DATA_SET_WITH_MD5])
-def test_call_dispatcher(mock_batch_api_instance, mock_k8s_config, data_set):
+@mark.parametrize(
+    ["data_set", "size_info"],
+    [
+        (DATA_SET, SMALL_DATA_SET_SIZE_INFO),
+        (DATA_SET_WITH_MD5, SMALL_DATA_SET_SIZE_INFO),
+        (DATA_SET, BIG_DATA_SET_SIZE_INFO),
+    ],
+    ids=["small_no_md5", "small_with_md5", "big_no_md5"],
+)
+def test_call_dispatcher(mock_batch_api_instance, mock_core_api_instance, mock_k8s_config, data_set, size_info):
     dispatcher = KubernetesDispatcher(
         SERVICE_NAME, zk_ensemble=ZOOKEEPER_ENSEMBLE_HOSTS, kubeconfig=None, fetcher_job=FETCHER_JOB_CONFIG
     )
 
-    size_info = DataSetSizeInfo(DATA_SET_SIZE, 1, DATA_SET_SIZE)
-
     dispatcher.dispatch_fetch(data_set, size_info, BENCHMARK_EVENT, ZK_NODE_PATH)
+
     mock_batch_api_instance.create_namespaced_job.assert_called_once()
 
     job_args, _ = mock_batch_api_instance.create_namespaced_job.call_args
 
-    namespace = job_args[0]
-    job = job_args[1]
-
+    namespace, job = job_args
     validate_namespaced_job(namespace, job, data_set)
 
 

@@ -2,27 +2,7 @@ import logging
 from math import ceil
 
 import kubernetes
-from kubernetes.client import (
-    V1PersistentVolumeClaim,
-    V1PersistentVolumeClaimSpec,
-    V1ResourceRequirements,
-    V1EmptyDirVolumeSource,
-    V1PersistentVolumeClaimVolumeSource,
-    V1Volume,
-    V1VolumeMount,
-    V1EnvVar,
-    V1PodTemplateSpec,
-    V1PodSpec,
-    V1ObjectMeta,
-    V1Container,
-    V1JobSpec,
-    V1JobStatus,
-    V1Job,
-    BatchV1Api,
-    CoreV1Api,
-    ApiClient,
-    Configuration,
-)
+
 from typing import Dict, List, Optional
 
 from bai_kafka_utils.events import DataSet, BenchmarkEvent
@@ -36,7 +16,7 @@ X = 16
 logger = logging.getLogger(__name__)
 
 
-def create_kubernetes_api_client(kubeconfig: str) -> ApiClient:
+def create_kubernetes_api_client(kubeconfig: str) -> kubernetes.client.ApiClient:
     logger.info("Initializing with KUBECONFIG=%s", kubeconfig)
 
     if kubeconfig:
@@ -44,8 +24,8 @@ def create_kubernetes_api_client(kubeconfig: str) -> ApiClient:
     else:
         kubernetes.config.load_incluster_config()
 
-    configuration = Configuration()
-    return ApiClient(configuration)
+    configuration = kubernetes.client.Configuration()
+    return kubernetes.client.ApiClient(configuration)
 
 
 class KubernetesDispatcher(DataSetDispatcher):
@@ -80,23 +60,25 @@ class KubernetesDispatcher(DataSetDispatcher):
 
         api_client = create_kubernetes_api_client(kubeconfig)
 
-        self.batch_api_instance = BatchV1Api(api_client)
-        self.core_api_instance = CoreV1Api(api_client)
+        self.batch_api_instance = kubernetes.client.BatchV1Api(api_client)
+        self.core_api_instance = kubernetes.client.CoreV1Api(api_client)
 
     def _get_fetcher_job(
         self, task: DataSet, event: BenchmarkEvent, zk_node_path: str, volume_claim_name: Optional[str]
-    ) -> V1Job:
+    ) -> kubernetes.client.V1Job:
 
-        job_metadata = V1ObjectMeta(
+        job_metadata = kubernetes.client.V1ObjectMeta(
             namespace=self.fetcher_job.namespace, name=self._get_job_name(task), labels=self._get_labels(task, event)
         )
 
-        job_status = V1JobStatus()
+        job_status = kubernetes.client.V1JobStatus()
 
         pod_template = self._get_fetcher_pod_template(task, event, zk_node_path, volume_claim_name)
-        job_spec = V1JobSpec(ttl_seconds_after_finished=self.fetcher_job.ttl, template=pod_template)
+        job_spec = kubernetes.client.V1JobSpec(ttl_seconds_after_finished=self.fetcher_job.ttl, template=pod_template)
 
-        return V1Job(api_version="batch/v1", kind="Job", spec=job_spec, status=job_status, metadata=job_metadata)
+        return kubernetes.client.V1Job(
+            api_version="batch/v1", kind="Job", spec=job_spec, status=job_status, metadata=job_metadata
+        )
 
     # TODO Implement some human readable name from DataSet
     def _get_job_name(self, task: DataSet) -> str:
@@ -104,15 +86,17 @@ class KubernetesDispatcher(DataSetDispatcher):
 
     def _get_fetcher_pod_template(
         self, task: DataSet, event: BenchmarkEvent, zk_node_path: str, volume_claim_name: Optional[str]
-    ) -> V1PodTemplateSpec:
+    ) -> kubernetes.client.V1PodTemplateSpec:
         pod_spec = self._get_fetcher_pod_spec(task, zk_node_path, volume_claim_name)
-        return V1PodTemplateSpec(spec=pod_spec, metadata=V1ObjectMeta(labels=self._get_labels(task, event)))
+        return kubernetes.client.V1PodTemplateSpec(
+            spec=pod_spec, metadata=kubernetes.client.V1ObjectMeta(labels=self._get_labels(task, event))
+        )
 
     def _get_fetcher_pod_spec(self, task: DataSet, zk_node_path: str, volume_claim_name: Optional[str]):
         volume = self._get_fetcher_volume(volume_claim_name)
         container = self._get_fetcher_container(task, zk_node_path)
 
-        return V1PodSpec(
+        return kubernetes.client.V1PodSpec(
             containers=[container],
             volumes=[volume],
             restart_policy=self.fetcher_job.restart_policy,
@@ -120,25 +104,27 @@ class KubernetesDispatcher(DataSetDispatcher):
         )
 
     def _get_fetcher_volume(self, volume_claim_name: str = None):
-        return V1Volume(
+        return kubernetes.client.V1Volume(
             name=KubernetesDispatcher.TMP_VOLUME,
-            persistent_volume_claim=V1PersistentVolumeClaimVolumeSource(claim_name=volume_claim_name)
+            persistent_volume_claim=kubernetes.client.V1PersistentVolumeClaimVolumeSource(claim_name=volume_claim_name)
             if volume_claim_name
             else None,
-            empty_dir=None if volume_claim_name else V1EmptyDirVolumeSource(),
+            empty_dir=None if volume_claim_name else kubernetes.client.V1EmptyDirVolumeSource(),
         )
 
-    def _get_fetcher_container(self, task: DataSet, zk_node_path: str) -> V1Container:
+    def _get_fetcher_container(self, task: DataSet, zk_node_path: str) -> kubernetes.client.V1Container:
         job_args = self._get_args(task, zk_node_path)
         env_list = self._get_env()
-        return V1Container(
+        return kubernetes.client.V1Container(
             name=KubernetesDispatcher.FETCHER_CONTAINER_NAME,
             image=self.fetcher_job.image,
             args=job_args,
             env=env_list,
             image_pull_policy=self.fetcher_job.pull_policy,
             volume_mounts=[
-                V1VolumeMount(name=KubernetesDispatcher.TMP_VOLUME, mount_path=KubernetesDispatcher.TMP_MOUNT_PATH)
+                kubernetes.client.V1VolumeMount(
+                    name=KubernetesDispatcher.TMP_VOLUME, mount_path=KubernetesDispatcher.TMP_MOUNT_PATH
+                )
             ],
         )
 
@@ -154,10 +140,10 @@ class KubernetesDispatcher(DataSetDispatcher):
             task.md5,
         ]
 
-    def _get_env(self) -> List[V1EnvVar]:
+    def _get_env(self) -> List[kubernetes.client.V1EnvVar]:
         return [
-            V1EnvVar(name=KubernetesDispatcher.ZOOKEEPER_ENSEMBLE_HOSTS, value=self.zk_ensemble),
-            V1EnvVar(name=KubernetesDispatcher.TMP_DIR, value=KubernetesDispatcher.TMP_MOUNT_PATH),
+            kubernetes.client.V1EnvVar(name=KubernetesDispatcher.ZOOKEEPER_ENSEMBLE_HOSTS, value=self.zk_ensemble),
+            kubernetes.client.V1EnvVar(name=KubernetesDispatcher.TMP_DIR, value=KubernetesDispatcher.TMP_MOUNT_PATH),
         ]
 
     def _get_labels(self, task: DataSet, event: BenchmarkEvent) -> Dict[str, str]:
@@ -189,16 +175,16 @@ class KubernetesDispatcher(DataSetDispatcher):
             if volume_size >= self.fetcher_job.volume.min_size:
                 volume_claim = "pv-" + self._get_job_name(task)
                 # Do we need a volume?
-                pv_metadata = V1ObjectMeta(
+                pv_metadata = kubernetes.client.V1ObjectMeta(
                     namespace=self.fetcher_job.namespace, name=volume_claim, labels=self._get_labels(task, event)
                 )
 
-                volume_body = V1PersistentVolumeClaim(
+                volume_body = kubernetes.client.V1PersistentVolumeClaim(
                     metadata=pv_metadata,
-                    spec=V1PersistentVolumeClaimSpec(
+                    spec=kubernetes.client.V1PersistentVolumeClaimSpec(
                         access_modes=["ReadWriteOnce"],
                         storage_class_name=self.fetcher_job.volume.storage_class,
-                        resources=V1ResourceRequirements(requests={"storage": f"{volume_size}M"}),
+                        resources=kubernetes.client.V1ResourceRequirements(requests={"storage": f"{volume_size}M"}),
                     ),
                 )
                 resp = self.core_api_instance.create_namespaced_persistent_volume_claim(

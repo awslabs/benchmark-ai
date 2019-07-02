@@ -7,12 +7,12 @@ from typing import Optional, Dict
 
 from fetcher_dispatcher import SERVICE_NAME
 
-MIN_VOLUME_SIZE_MB = 64 * 1024
+MIN_VOLUME_SIZE_MB = 64 * 1024  # 64 gb
 
 
 @dataclass
 class FetcherVolumeConfig:
-    min_size: Optional[int] = None  # In MB
+    min_size: int = 0  # In MB
     storage_class: Optional[str] = None
 
 
@@ -92,7 +92,8 @@ def get_fetcher_service_config(args) -> FetcherServiceConfig:
             ttl=parsed_args.fetcher_job_ttl,
             restart_policy=parsed_args.fetcher_job_restart_policy,
             volume=FetcherVolumeConfig(
-                storage_class=parsed_args.fetcher_job_volume_storage_class, min_size=parsed_args.fetcher_job_min_volume_size
+                storage_class=parsed_args.fetcher_job_volume_storage_class,
+                min_size=parsed_args.fetcher_job_min_volume_size,
             ),
         ),
     )
