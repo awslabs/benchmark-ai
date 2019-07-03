@@ -100,7 +100,7 @@ create_infra() {
     [[ "$validate" == false ]] || validate_infra $@
 
     echo "==> Syncing remote data directory"
-    _sync_bai_home || return 1
+    _sync_bai_home ${region} || return 1
 }
 
 _initialize_terraform_backend() {
