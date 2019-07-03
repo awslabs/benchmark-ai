@@ -449,7 +449,7 @@ validate_infra() {
     [[ "$all_ok" == true ]] || return 1
 }
 
-get_benchmark() {
+get_benchmark_logs() {
     local benchmark_name=""
 
     for arg in "$@"; do
@@ -464,6 +464,49 @@ get_benchmark() {
     done
 
     [ -z "$benchmark_name" ] && printf "Missing required argument --name\n" && return 1
+    [ -z "$page_size" ] && page_size=10000
+
+    _query_fluentd_logs_from_elasticsearch --key "kubernetes.labels.action-id" --value $benchmark_name
+}
+
+get_pod_logs() {
+    local pod_name=""
+
+    for arg in "$@"; do
+        case "${arg}" in
+        --name=*)
+            pod_name="${arg#*=}"
+            ;;
+        --aws-es-page-size=*)
+            page_size="${arg#*=}"
+            ;;
+        esac
+    done
+
+    [ -z "$pod_name" ] && printf "Missing required argument --name\n" && return 1
+
+    _query_fluentd_logs_from_elasticsearch --key=kubernetes.pod_name --value=${pod_name}
+}
+
+_query_fluentd_logs_from_elasticsearch() {
+    local value=""
+
+    for arg in "$@"; do
+        case "${arg}" in
+        --value=*)
+            value="${arg#*=}"
+            ;;
+        --key=*)
+            key="${arg#*=}"
+            ;;
+        --aws-es-page-size=*)
+            page_size="${arg#*=}"
+            ;;
+        esac
+    done
+
+    [ -z "$value" ] && printf "Missing required argument --value\n" && return 1
+    [ -z "$key" ] && printf "Missing required argument --key\n" && return 1
     [ -z "$page_size" ] && page_size=10000
 
     cd $terraform_dir
@@ -501,7 +544,7 @@ get_benchmark() {
         {
             "size" : $page_size,
             "query" : {
-                "match" : { "kubernetes.labels.action-id":"$benchmark_name" }
+                "match" : { "${key}":"$value" }
             },
             "sort": [
                 {"@timestamp": {"order": "asc"}}
@@ -674,14 +717,26 @@ benchmark)
     schedule)
         schedule_benchmark $@
         ;;
-    get)
-        get_benchmark $@
+    logs)
+        get_benchmark_logs $@
         ;;
     delete)
         delete_benchmark $@
         ;;
     list)
         list_benchmarks $@
+        ;;
+    *)
+        print_unsupported_verb $object $verb
+        ;;
+    esac
+    ;;
+
+pod)
+
+    case "${verb}" in
+    logs)
+        get_pod_logs $@
         ;;
     *)
         print_unsupported_verb $object $verb
