@@ -5,7 +5,7 @@ metadata:
   namespace: default
 rules:
 - apiGroups: ["","batch"]
-  resources: ["pods", "jobs"]
+  resources: ["pods", "jobs","persistentvolumeclaims"]
   verbs: ["list","get"]
 ---
 kind: RoleBinding

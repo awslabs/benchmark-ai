@@ -13,8 +13,8 @@ rules:
   resources: ["jobs"]
   verbs: ["create", "deletecollection"]
 - apiGroups: ["","batch"]
-  resources: ["pods"]
-  verbs: ["deletecollection"]
+  resources: ["pods", "persistentvolumeclaims"]
+  verbs: ["create", "deletecollection"]
 ---
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1

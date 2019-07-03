@@ -1,7 +1,7 @@
 import logging
 
 import kubernetes
-from kubernetes.client import V1PodList
+from kubernetes.client import V1PodList, V1PersistentVolumeClaimList
 from time import sleep
 from timeout_decorator import timeout
 
@@ -33,6 +33,26 @@ class KubernetesTestUtilsClient:
         logger.info(f"job selector request:{label_selector}")
         pods: V1PodList = self.batch_api_instance.list_namespaced_job(namespace, label_selector=label_selector)
         return bool(pods.items)
+
+    def is_volume_claim_present(self, namespace: str, client_id: str, action_id: str):
+        label_selector = KubernetesDispatcher.get_label_selector(self.service, client_id, action_id)
+        logger.info(f"volume claim selector request:{label_selector}")
+        pods: V1PersistentVolumeClaimList = self.core_api_instance.list_namespaced_persistent_volume_claim(
+            namespace, label_selector=label_selector
+        )
+        return bool(pods.items)
+
+    @timeout(DEFAULT_TIMEOUT_SECONDS)
+    def wait_for_volume_claim_exists(self, namespace: str, client_id: str, action_id: str):
+        while not self.is_volume_claim_present(namespace, client_id, action_id):
+            logger.info("volume claim doesn't exist yet")
+            sleep(1)
+
+    @timeout(DEFAULT_TIMEOUT_SECONDS)
+    def wait_for_volume_claim_not_exists(self, namespace: str, client_id: str, action_id: str):
+        while self.is_volume_claim_present(namespace, client_id, action_id):
+            logger.info("volume claim still exists")
+            sleep(1)
 
     @timeout(DEFAULT_TIMEOUT_SECONDS)
     def wait_for_pod_exists(self, namespace: str, client_id: str, action_id: str):

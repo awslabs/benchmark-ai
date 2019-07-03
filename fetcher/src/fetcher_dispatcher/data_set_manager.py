@@ -26,6 +26,10 @@ class DataSetDispatcher(metaclass=abc.ABCMeta):
     def cancel_all(self, client_id: str, action_id: str = None):
         pass
 
+    @abc.abstractmethod
+    def cleanup(self, task: DataSet, event: BenchmarkEvent):
+        pass
+
 
 # client_id/action_id/dataset
 NodePathSource = Callable[[str, Optional[str], Optional[DataSet]], str]

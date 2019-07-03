@@ -6,7 +6,7 @@ import kubernetes
 from typing import Dict, List, Optional
 
 from bai_kafka_utils.events import DataSet, BenchmarkEvent
-from bai_kafka_utils.utils import id_generator
+from bai_kafka_utils.utils import id_generator, md5sum
 from fetcher_dispatcher.args import FetcherJobConfig
 from fetcher_dispatcher.data_set_manager import DataSetDispatcher
 from preflight.data_set_size import DataSetSizeInfo
@@ -34,6 +34,8 @@ class KubernetesDispatcher(DataSetDispatcher):
     CLIENT_ID_LABEL = "client-id"
 
     CREATED_BY_LABEL = "created-by"
+
+    DATA_SET_HASH_LABEL = "data-set-md5"
 
     ZK_NODE_PATH_ARG = "--zk-node-path"
 
@@ -151,20 +153,25 @@ class KubernetesDispatcher(DataSetDispatcher):
             KubernetesDispatcher.ACTION_ID_LABEL: event.action_id,
             KubernetesDispatcher.CLIENT_ID_LABEL: event.client_id,
             KubernetesDispatcher.CREATED_BY_LABEL: self.service_name,
+            KubernetesDispatcher.DATA_SET_HASH_LABEL: md5sum(task.src),
         }
 
     @staticmethod
-    def get_label_selector(service_name: str, client_id: str, action_id: str = None):
+    def get_label_selector(service_name: str, client_id: str, action_id: str = None, data_set: DataSet = None):
         selector = (
             f"{KubernetesDispatcher.CREATED_BY_LABEL}={service_name},"
             + f"{KubernetesDispatcher.CLIENT_ID_LABEL}={client_id}"
         )
         if action_id:
             selector += f",{KubernetesDispatcher.ACTION_ID_LABEL}={action_id}"
+
+            if data_set:
+                selector += f",{KubernetesDispatcher.DATA_SET_HASH_LABEL}={md5sum(data_set.src)}"
+
         return selector
 
-    def _get_label_selector(self, client_id: str, action_id: str = None):
-        return KubernetesDispatcher.get_label_selector(self.service_name, client_id, action_id)
+    def _get_label_selector(self, client_id: str, action_id: str = None, data_set: DataSet = None):
+        return KubernetesDispatcher.get_label_selector(self.service_name, client_id, action_id, data_set)
 
     def dispatch_fetch(self, task: DataSet, size_info: DataSetSizeInfo, event: BenchmarkEvent, zk_node_path: str):
         try:
@@ -207,14 +214,35 @@ class KubernetesDispatcher(DataSetDispatcher):
             self.fetcher_job.namespace, label_selector=action_id_label_selector
         )
         logger.debug("k8s response: %s", jobs_response)
+        logger.info(f"Removing pods {client_id}/{action_id}")
         pods_response = self.core_api_instance.delete_collection_namespaced_pod(
             self.fetcher_job.namespace, label_selector=action_id_label_selector
         )
         logger.debug("k8s response: %s", pods_response)
+        logger.info(f"Removing volume claims {client_id}/{action_id}")
         volumes_response = self.core_api_instance.delete_collection_namespaced_persistent_volume_claim(
             self.fetcher_job.namespace, label_selector=action_id_label_selector
         )
         logger.debug("k8s response: %s", volumes_response)
+
+    def cleanup(self, task: DataSet, event: BenchmarkEvent):
+        killa_label_selector = self._get_label_selector(event.client_id, event.action_id, task)
+        print(killa_label_selector)
+
+        job_response = self.batch_api_instance.delete_collection_namespaced_job(
+            self.fetcher_job.namespace, label_selector=killa_label_selector
+        )
+        print(job_response)
+
+        pod_response = self.core_api_instance.delete_collection_namespaced_pod(
+            self.fetcher_job.namespace, label_selector=killa_label_selector
+        )
+        print(pod_response)
+
+        volumes_response = self.core_api_instance.delete_collection_namespaced_persistent_volume_claim(
+            self.fetcher_job.namespace, label_selector=killa_label_selector
+        )
+        print(volumes_response)
 
     @staticmethod
     def _get_volume_size(size_info: DataSetSizeInfo):
