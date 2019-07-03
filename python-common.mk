@@ -84,5 +84,9 @@ deploy.yml:
 	echo "Creating a dummy `deploy.yml` so that there are artifacts to be published"
 	touch deploy.yml
 
+pytest-regen-regressions: develop
+	# Regenerates pytest-regressions files (https://pytest-regressions.readthedocs.io/).
+	# It is a useful target to avoid having to update the files manually.
+	$(PYTEST) --force-regen
 
 default: install
