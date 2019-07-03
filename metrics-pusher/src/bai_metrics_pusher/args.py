@@ -1,11 +1,10 @@
 import inspect
 import os
-import typing
 
 import configargparse
 from bai_metrics_pusher.backends import BACKENDS
-from dataclasses import dataclass
-from typing import Optional, Dict, Callable
+from dataclasses import dataclass, field
+from typing import Optional, Dict, Callable, List
 
 
 @dataclass()
@@ -14,6 +13,7 @@ class InputValue:
     pod_name: Optional[str]
     pod_namespace: Optional[str]
     backend_args: Dict[str, str]
+    fifo_filenames: List[str] = field(default_factory=list)
 
 
 def get_input(argv, environ: Dict[str, str] = None) -> InputValue:
@@ -24,6 +24,20 @@ def get_input(argv, environ: Dict[str, str] = None) -> InputValue:
     parser.add_argument("--pod-name")
     parser.add_argument("--pod-namespace")
 
+    class SplitEnvironmentVariableValueAction(configargparse.Action):
+        def __init__(self, option_strings, dest, **kwargs):
+            super(SplitEnvironmentVariableValueAction, self).__init__(option_strings, dest, **kwargs)
+
+        def __call__(self, parser, namespace, values, option_string=None):
+            splitted_values = []
+            for v in values:
+                splitted_values.extend(v.split(" "))
+            setattr(namespace, self.dest, splitted_values)
+
+    parser.add_argument(
+        "--fifo-filenames", nargs="+", default=["/tmp/benchmarkai/fifo"], action=SplitEnvironmentVariableValueAction
+    )
+
     args = parser.parse_args(argv)
 
     environ = {key.lower(): value for key, value in environ.items()}
@@ -32,7 +46,11 @@ def get_input(argv, environ: Dict[str, str] = None) -> InputValue:
     )
 
     return InputValue(
-        backend=args.backend, backend_args=backend_args, pod_name=args.pod_name, pod_namespace=args.pod_namespace
+        backend=args.backend,
+        backend_args=backend_args,
+        pod_name=args.pod_name,
+        pod_namespace=args.pod_namespace,
+        fifo_filenames=args.fifo_filenames,
     )
 
 
@@ -87,9 +105,9 @@ def create_dict_of_parameter_values_for_callable(prefix: str, values: Dict[str, 
 
         string_value = values[key]
 
-        if parameter_type == typing.List[str]:
+        if parameter_type == List[str]:
             value = string_value.split(",")
-        elif parameter_type == typing.List[int]:
+        elif parameter_type == List[int]:
             value = map(int, string_value.split(","))
             value = list(value)
         else:

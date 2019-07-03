@@ -1,18 +1,21 @@
-import io
-import os
-import stat
-import logging
 import json
-import signal
+import logging
+import os
+import selectors
+import stat
+from contextlib import ExitStack
 from json import JSONDecodeError
-from bai_metrics_pusher.backends import create_backend
+
+import io
+import signal
+from typing import List, Iterable, Tuple
+
 from bai_metrics_pusher.args import InputValue
+from bai_metrics_pusher.backends import create_backend
 from bai_metrics_pusher.backends.backend_interface import Backend
 from bai_metrics_pusher.kubernetes_pod_watcher import start_kubernetes_pod_watcher
 
-
 logger = logging.getLogger(__name__)
-FIFO_FILEPATH = os.environ.get("BENCHMARK_AI_FIFO_FILEPATH", "/tmp/benchmark-ai-fifo")
 
 
 def _deserialize(line):
@@ -32,20 +35,72 @@ def _get_fifo(pathname):
         logger.info("Creating fifo at %s", pathname)
         os.mkfifo(pathname)
 
+    def opener(path, flags):
+        # Opens the FIFO in non-blocking mode
+        return os.open(path, os.O_RDONLY | os.O_NONBLOCK)
+
     # Use line buffering (buffering=1) since we want every line to be read as soon as possible. Since the delimiter of
     # our JSON is a line ending, then this is the optimal way of configuring the stream.
-    return io.open(pathname, "r", buffering=1)
+    return io.open(pathname, "r", buffering=1, opener=opener)
 
 
-def listen_to_fifo_and_emit_metrics(backend: Backend):
-    with _get_fifo(FIFO_FILEPATH) as fifo:
-        while True:
-            logger.debug("Reading line from fifo")
-            line = fifo.readline()
-            if line == "":  # The client side sent an EOF
-                break
-            metrics = _deserialize(line)
-            backend.emit(metrics)
+def collect_lines(fileobj) -> Iterable[str]:
+    while True:
+        line = fileobj.readline()
+        if line == "":  # EOF
+            break
+        yield line
+
+
+def generate_lines_from_fifos(fifo_filenames: List[str]):
+    """
+    A generator that reads all lines from the files specified by :param(fifo_filenames) using `fifo.readline()`.
+
+    Each file will be created as a FIFO (https://docs.python.org/3/library/os.html#os.mkfifo) by the method _get_fifo().
+
+    The default behaviour of named pipes is to block as soon as the file is open for reading, but this is NOT desired
+    here since we want to generate lines from all FIFOs as soon as possible.
+
+    The trick is to use non-blocking IO and the `selectors` module:
+
+    - Each FIFO is opened for reading in non-blocking mode: see _get_fifo()
+    - Register for EVENT_READ events on each FIFO using a "selector"
+    - A FIFO was closed on the "writing end" when:
+        - There was an EVENT_READ
+        - The result of `fifo.readline()` is empty
+
+    :param fifo_filenames:
+    :return:
+    """
+    with ExitStack() as stack:
+        selector: selectors.DefaultSelector = stack.enter_context(selectors.DefaultSelector())
+
+        for filename in fifo_filenames:
+            fifo = stack.enter_context(_get_fifo(filename))
+            logger.debug(f"Fifo {filename} opened")
+            selector.register(fifo, selectors.EVENT_READ)
+
+        while selector.get_map():
+            logger.debug("Waiting for data to be ready")
+            events: List[Tuple[selectors.SelectorKey, int]] = selector.select()
+            for key, event in events:
+                fifo = key.fileobj
+                lines = list(collect_lines(fifo))
+                if not lines:
+                    logger.debug(f"FIFO {fifo.name} is closed on the writing side")
+                    selector.unregister(fifo)
+                else:
+                    yield from lines
+
+
+def listen_to_fifos_and_emit_metrics(fifo_filenames: List[str], backend: Backend):
+    """
+    :param fifo_filenames: The fifo filenames
+    :param backend: The backend used to emit metrics
+    """
+    for line in generate_lines_from_fifos(fifo_filenames):
+        metrics = _deserialize(line)
+        backend.emit(metrics)
 
 
 def start_loop(metrics_pusher_input: InputValue):
@@ -80,10 +135,10 @@ def start_loop(metrics_pusher_input: InputValue):
         else:
             logger.info("Pod watcher thread will not start because either Pod or Namespace were not specified")
 
-        listen_to_fifo_and_emit_metrics(backend)
-    except SigtermReceived:
-        logger.info("Sigterm received")
+        listen_to_fifos_and_emit_metrics(metrics_pusher_input.fifo_filenames, backend)
+    except (SigtermReceived, KeyboardInterrupt) as e:
+        logger.info(f"{type(e).__name__} received")
     finally:
         # TODO: Do I need to finish reading the FIFO contents?
-        logger.info("Pod is terminated, exiting")
+        logger.info("Closing backend")
         backend.close()
