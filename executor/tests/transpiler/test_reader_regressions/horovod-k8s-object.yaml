@@ -35,7 +35,7 @@ spec:
   template:
     metadata:
       annotations:
-        iam.amazonaws.com/role: bai-data-puller-pod
+        iam.amazonaws.com/role: data-puller
     spec:
       serviceAccountName: metrics-pusher
       affinity:

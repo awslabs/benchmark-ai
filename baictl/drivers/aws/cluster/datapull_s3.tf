@@ -45,8 +45,8 @@ resource "aws_iam_policy" "data-pull-policy" {
 EOF
 }
 
-resource "aws_iam_role" "kube2iam-data-puller-pod-role" {
-  name = "bai-data-puller-pod"
+resource "aws_iam_role" "kube2iam-data-puller-role" {
+  name = "data-puller"
   assume_role_policy = <<-EOF
   {
     "Version": "2012-10-17",
@@ -65,5 +65,5 @@ resource "aws_iam_role" "kube2iam-data-puller-pod-role" {
 
 resource "aws_iam_role_policy_attachment" "data_pull_policy_attachment" {
   policy_arn = "${aws_iam_policy.data-pull-policy.arn}"
-  role       = "${aws_iam_role.kube2iam-data-puller-pod-role.name}"
+  role       = "${aws_iam_role.kube2iam-data-puller-role.name}"
 }
