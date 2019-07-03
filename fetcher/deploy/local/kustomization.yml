@@ -7,6 +7,7 @@ configMapGenerator:
       - job_node_selector='{}'
       - job_image=benchmarkai/mock-fetcher-job:local-latest
       - pull_policy=Never
+      - min_volume_size=32
     behavior: merge
 patchesStrategicMerge:
   - fetcher-dispatcher.yml

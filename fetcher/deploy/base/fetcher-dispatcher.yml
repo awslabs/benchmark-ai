@@ -83,6 +83,16 @@ spec:
                 configMapKeyRef:
                   name: fetcher-dispatcher
                   key: job_node_selector
+            - name: FETCHER_JOB_MIN_VOLUME_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: fetcher-dispatcher
+                  key: min_volume_size
+            - name: FETCHER_JOB_VOLUME_STORAGE_CLASS
+              valueFrom:
+                configMapKeyRef:
+                  name: fetcher-dispatcher
+                  key: storage_class
       nodeSelector:
         node.type: bai-services-cheap
       restartPolicy: Always
