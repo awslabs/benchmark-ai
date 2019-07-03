@@ -37,7 +37,7 @@ clean:
 #Things to run before - extendable
 _pre_venv::
 	echo "Pre env actions"
-	conda install --channel conda-forge --name base conda==4.6.14 --yes
+	conda install --override-channels --channel defaults --name base --yes conda==4.6.14
 
 #venv body - replacable
 _venv: _pre_venv
@@ -83,5 +83,6 @@ _format:
 deploy.yml:
 	echo "Creating a dummy `deploy.yml` so that there are artifacts to be published"
 	touch deploy.yml
+
 
 default: install
