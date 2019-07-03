@@ -41,8 +41,9 @@ def test_kubernetes_client(
 
     if size_info == BIG_SIZE:
         k8s_test_client.wait_for_volume_claim_exists(
-            fetcher_job_config.namespace, benchmark_event_dummy_payload.client_id,
-            benchmark_event_dummy_payload.action_id
+            fetcher_job_config.namespace,
+            benchmark_event_dummy_payload.client_id,
+            benchmark_event_dummy_payload.action_id,
         )
 
 
@@ -76,8 +77,9 @@ def test_kubernetes_cancel(
 
     if size_info == BIG_SIZE:
         k8s_test_client.wait_for_volume_claim_not_exists(
-            fetcher_job_config.namespace, benchmark_event_dummy_payload.client_id,
-            benchmark_event_dummy_payload.action_id
+            fetcher_job_config.namespace,
+            benchmark_event_dummy_payload.client_id,
+            benchmark_event_dummy_payload.action_id,
         )
 
 
@@ -110,8 +112,9 @@ def test_kubernetes_cleanup(
 
     if size_info == BIG_SIZE:
         k8s_test_client.wait_for_volume_claim_not_exists(
-            fetcher_job_config.namespace, benchmark_event_dummy_payload.client_id,
-            benchmark_event_dummy_payload.action_id
+            fetcher_job_config.namespace,
+            benchmark_event_dummy_payload.client_id,
+            benchmark_event_dummy_payload.action_id,
         )
 
 
