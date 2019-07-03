@@ -12,6 +12,8 @@ spec:
         action-id: ACTION_ID
         client-id: CLIENT_ID
         created-by: executor
+      annotations:
+        iam.amazonaws.com/role: bai-data-puller-pod
     spec:
       serviceAccountName: metrics-pusher
       affinity:
