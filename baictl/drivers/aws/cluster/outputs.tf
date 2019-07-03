@@ -60,12 +60,12 @@ output "private_subnets" {
 
 output "msk_bootstrap_brokers" {
   description = "A list of brokers that a client application can use to bootstrap."
-  value       = "${aws_msk_cluster.benchmark-msk-cluster.bootstrap_brokers}"
+  value       = "${aws_msk_cluster.benchmark-msk-cluster.bootstrap_brokers_tls}"
 }
 
 output "msk_zookeeper_connect" {
   description = "Connection string for Zookeeper."
-  value       = "${aws_msk_cluster.benchmark-msk-cluster.zookeeper_connect}"
+  value       = "${aws_msk_cluster.benchmark-msk-cluster.zookeeper_connect_string}"
 }
 
 output "s3_endpoint" {
@@ -80,5 +80,5 @@ output "bff_security_group_id" {
 
 output "kube2iam_default_pod_role_name" {
   description = "Role that is used by PODs by default"
-  value = "${aws_iam_role.kube2iam-default-pod-role.name}"
+  value       = "${aws_iam_role.kube2iam-default-pod-role.name}"
 }

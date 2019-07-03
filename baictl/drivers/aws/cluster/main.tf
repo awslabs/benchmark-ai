@@ -4,7 +4,7 @@ terraform {
 }
 
 provider "aws" {
-  version = "~> 2.4.0"
+  version = "~> 2.17.0"
   region  = "${var.region}"
 }
 
@@ -173,6 +173,7 @@ module "vpc" {
   private_subnet_tags = {
     Visibility = "private"
   }
+
   public_subnet_tags = {
     Visibility = "public"
   }
@@ -180,11 +181,20 @@ module "vpc" {
 
 resource "aws_msk_cluster" "benchmark-msk-cluster" {
   depends_on             = ["module.vpc"]
-  name                   = "${var.cluster_name_prefix}"
-  broker_count           = "${var.msk_brokers_per_az * local.msk_subnet_count}"
-  broker_instance_type   = "${var.msk_broker_instance_type}"
-  broker_security_groups = ["${module.eks.worker_security_group_id}", "${aws_security_group.loopback.id}", "${aws_security_group.ssh-access-rules.id}"]
-  broker_volume_size     = "${var.msk_broker_volume_size}"
-  client_subnets         = ["${slice(module.vpc.private_subnets, 0, local.msk_subnet_count)}"]
+  cluster_name           = "${var.cluster_name_prefix}"
   kafka_version          = "${var.msk_kafka_version}"
+  number_of_broker_nodes = "${var.msk_brokers_per_az * local.msk_subnet_count}"
+
+  broker_node_group_info {
+    instance_type   = "${var.msk_broker_instance_type}"
+    ebs_volume_size = "${var.msk_broker_volume_size}"
+
+    client_subnets = ["${slice(module.vpc.private_subnets, 0, local.msk_subnet_count)}"]
+
+    security_groups = [
+      "${module.eks.worker_security_group_id}",
+      "${aws_security_group.loopback.id}",
+      "${aws_security_group.ssh-access-rules.id}",
+    ]
+  }
 }
