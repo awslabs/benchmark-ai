@@ -197,4 +197,10 @@ resource "aws_msk_cluster" "benchmark-msk-cluster" {
       "${aws_security_group.ssh-access-rules.id}",
     ]
   }
+
+  encryption_info {
+    encryption_in_transit = {
+      client_broker = "PLAINTEXT"
+    }
+  }
 }
