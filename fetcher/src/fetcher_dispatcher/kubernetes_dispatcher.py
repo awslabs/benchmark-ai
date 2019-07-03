@@ -86,6 +86,9 @@ class KubernetesDispatcher(DataSetDispatcher):
     def _get_job_name(self, task: DataSet) -> str:
         return "fetcher-" + id_generator()
 
+    def _get_volume_name(self, task: DataSet) -> str:
+        return "fetcher-pv-" + id_generator()
+
     def _get_fetcher_pod_template(
         self, task: DataSet, event: BenchmarkEvent, zk_node_path: str, volume_claim_name: Optional[str]
     ) -> kubernetes.client.V1PodTemplateSpec:
@@ -180,7 +183,7 @@ class KubernetesDispatcher(DataSetDispatcher):
             volume_size = KubernetesDispatcher._get_volume_size(size_info)
 
             if volume_size >= self.fetcher_job.volume.min_size:
-                volume_claim = "pv-" + self._get_job_name(task)
+                volume_claim = self._get_volume_name(task)
                 # Do we need a volume?
                 pv_metadata = kubernetes.client.V1ObjectMeta(
                     namespace=self.fetcher_job.namespace, name=volume_claim, labels=self._get_labels(task, event)
