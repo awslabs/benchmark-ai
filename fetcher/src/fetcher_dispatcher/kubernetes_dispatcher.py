@@ -226,29 +226,29 @@ class KubernetesDispatcher(DataSetDispatcher):
         logger.debug("k8s response: %s", volumes_response)
 
     def cleanup(self, task: DataSet, event: BenchmarkEvent):
-        killa_label_selector = self._get_label_selector(event.client_id, event.action_id, task)
-        print(killa_label_selector)
+        delete_selector = self._get_label_selector(event.client_id, event.action_id, task)
+        logger.info(delete_selector)
 
         job_response = self.batch_api_instance.delete_collection_namespaced_job(
-            self.fetcher_job.namespace, label_selector=killa_label_selector
+            self.fetcher_job.namespace, label_selector=delete_selector
         )
-        print(job_response)
+        logger.info(job_response)
 
         pod_response = self.core_api_instance.delete_collection_namespaced_pod(
-            self.fetcher_job.namespace, label_selector=killa_label_selector
+            self.fetcher_job.namespace, label_selector=delete_selector
         )
-        print(pod_response)
+        logger.info(pod_response)
 
         volumes_response = self.core_api_instance.delete_collection_namespaced_persistent_volume_claim(
-            self.fetcher_job.namespace, label_selector=killa_label_selector
+            self.fetcher_job.namespace, label_selector=delete_selector
         )
-        print(volumes_response)
+        logger.info(volumes_response)
 
     @staticmethod
     def _get_volume_size(size_info: DataSetSizeInfo):
         # Max file + 20% just for any case.
         # Not less than 10% of total size
         # Round to the next X mb. X=16
-        MB = 1024 * 1024
-        XMB = X * MB
-        return X * ceil(max(size_info.max_size * 1.2, size_info.total_size * 0.1) / XMB)
+        total_mb = ceil(size_info.total_size / (1024 * 1024))
+        max_mb = ceil(size_info.max_size / (1024 * 1024))
+        return int(ceil(max(max_mb * 1.2, total_mb * 0.1)))
