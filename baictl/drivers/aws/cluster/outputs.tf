@@ -60,7 +60,7 @@ output "private_subnets" {
 
 output "msk_bootstrap_brokers" {
   description = "A list of brokers that a client application can use to bootstrap."
-  value       = "${aws_msk_cluster.benchmark-msk-cluster.bootstrap_brokers}"
+  value       = "${aws_msk_cluster.benchmark-msk-cluster.bootstrap_brokers_tls}"
 }
 
 output "msk_zookeeper_connect" {
