@@ -70,11 +70,6 @@ FETCHER_JOB_CONFIG = FetcherJobConfig(
 KUBECONFIG = "path/cfg"
 
 
-def validate_client_calls(mock_client):
-    mock_client.ApiClient.assert_called_once()
-    mock_client.BatchV1Api.assert_called_once()
-
-
 @fixture
 def mock_k8s_config(mocker):
     return mocker.patch.object(kubernetes_dispatcher.kubernetes, "config", autospec=True)
@@ -82,11 +77,12 @@ def mock_k8s_config(mocker):
 
 @fixture
 def mock_k8s_client(mocker):
+    # Don't use this fixture with api-mocks
     return mocker.patch.object(kubernetes_dispatcher.kubernetes, "client", autospec=True)
 
 
 @fixture
-def mock_batch_api_instance(mocker):
+def mock_batch_api_instance(mocker) -> kubernetes.client.BatchV1Api:
     mock_api_instance = mocker.create_autospec(kubernetes.client.BatchV1Api)
 
     mocker.patch.object(
@@ -97,7 +93,7 @@ def mock_batch_api_instance(mocker):
 
 
 @fixture
-def mock_core_api_instance(mocker):
+def mock_core_api_instance(mocker) -> kubernetes.client.CoreV1Api:
     mock_api_instance = mocker.create_autospec(kubernetes.client.CoreV1Api)
 
     mocker.patch.object(
@@ -115,6 +111,11 @@ def test_kubernetes_init_in_cluster(mock_k8s_client, mock_k8s_config):
     validate_client_calls(mock_k8s_client)
 
 
+def validate_client_calls(mock_client):
+    mock_client.ApiClient.assert_called_once()
+    mock_client.BatchV1Api.assert_called_once()
+
+
 def test_kubernetes_init_standalone(mock_k8s_client, mock_k8s_config):
     KubernetesDispatcher(
         SERVICE_NAME, zk_ensemble=ZOOKEEPER_ENSEMBLE_HOSTS, kubeconfig=KUBECONFIG, fetcher_job=FETCHER_JOB_CONFIG
@@ -126,6 +127,17 @@ def test_kubernetes_init_standalone(mock_k8s_client, mock_k8s_config):
 @fixture
 def original_kubernetes_client():
     return kubernetes.client
+
+
+@fixture
+def k8s_dispatcher(
+    mock_k8s_config,
+    mock_batch_api_instance: kubernetes.client.BatchV1Api,
+    mock_core_api_instance: kubernetes.client.CoreV1Api,
+):
+    return KubernetesDispatcher(
+        SERVICE_NAME, zk_ensemble=ZOOKEEPER_ENSEMBLE_HOSTS, kubeconfig=None, fetcher_job=FETCHER_JOB_CONFIG
+    )
 
 
 def validate_namespaced_job(namespace: str, job: V1Job, data_set: DataSet):
@@ -193,12 +205,15 @@ def validate_namespaced_job(namespace: str, job: V1Job, data_set: DataSet):
     ],
     ids=["small_no_md5", "small_with_md5", "big_no_md5"],
 )
-def test_call_dispatcher(mock_batch_api_instance, mock_core_api_instance, mock_k8s_config, data_set, size_info):
-    dispatcher = KubernetesDispatcher(
-        SERVICE_NAME, zk_ensemble=ZOOKEEPER_ENSEMBLE_HOSTS, kubeconfig=None, fetcher_job=FETCHER_JOB_CONFIG
-    )
-
-    dispatcher.dispatch_fetch(data_set, size_info, BENCHMARK_EVENT, ZK_NODE_PATH)
+def test_call_dispatcher(
+    k8s_dispatcher: KubernetesDispatcher,
+    mock_batch_api_instance: kubernetes.client.BatchV1Api,
+    mock_core_api_instance: kubernetes.client.CoreV1Api,
+    mock_k8s_config,
+    data_set: DataSet,
+    size_info: DataSetSizeInfo,
+):
+    k8s_dispatcher.dispatch_fetch(data_set, size_info, BENCHMARK_EVENT, ZK_NODE_PATH)
 
     mock_batch_api_instance.create_namespaced_job.assert_called_once()
 
@@ -208,29 +223,56 @@ def test_call_dispatcher(mock_batch_api_instance, mock_core_api_instance, mock_k
     validate_namespaced_job(namespace, job, data_set)
 
 
-def test_cancel_single_action(mock_batch_api_instance, mock_core_api_instance, mock_k8s_config):
-    dispatcher = KubernetesDispatcher(
-        SERVICE_NAME, zk_ensemble=ZOOKEEPER_ENSEMBLE_HOSTS, kubeconfig=None, fetcher_job=FETCHER_JOB_CONFIG
-    )
+def test_cancel_single_action(
+    k8s_dispatcher: KubernetesDispatcher,
+    mock_batch_api_instance: kubernetes.client.BatchV1Api,
+    mock_core_api_instance: kubernetes.client.CoreV1Api,
+    mock_k8s_config,
+):
+    k8s_dispatcher.cancel_all(CLIENT_ID, ACTION_ID)
 
-    dispatcher.cancel_all(CLIENT_ID, ACTION_ID)
+    _verify_k8s_all_delete(mock_batch_api_instance, mock_core_api_instance)
 
+
+def test_cleanup(
+    k8s_dispatcher: KubernetesDispatcher,
+    mock_batch_api_instance: kubernetes.client.BatchV1Api,
+    mock_core_api_instance: kubernetes.client.CoreV1Api,
+    mock_k8s_config,
+):
+    k8s_dispatcher.cleanup(DATA_SET, BENCHMARK_EVENT)
+
+    _verify_k8s_all_delete(mock_batch_api_instance, mock_core_api_instance)
+
+
+def _verify_k8s_all_delete(
+    mock_batch_api_instance: kubernetes.client.BatchV1Api, mock_core_api_instance: kubernetes.client.CoreV1Api
+):
     mock_batch_api_instance.delete_collection_namespaced_job.assert_called_once()
     mock_core_api_instance.delete_collection_namespaced_pod.assert_called_once()
+    mock_core_api_instance.delete_collection_namespaced_persistent_volume_claim.assert_called_once()
 
 
-def test_cancel_all_actions(mock_batch_api_instance, mock_core_api_instance, mock_k8s_config):
-    dispatcher = KubernetesDispatcher(
-        SERVICE_NAME, zk_ensemble=ZOOKEEPER_ENSEMBLE_HOSTS, kubeconfig=None, fetcher_job=FETCHER_JOB_CONFIG
+def test_cancel_all_actions(
+    k8s_dispatcher: KubernetesDispatcher,
+    mock_batch_api_instance: kubernetes.client.BatchV1Api,
+    mock_core_api_instance: kubernetes.client.CoreV1Api,
+    mock_k8s_config,
+):
+    k8s_dispatcher.cancel_all(CLIENT_ID)
+
+    _verify_k8s_all_delete(mock_batch_api_instance, mock_core_api_instance)
+
+
+def test_get_label_selector_all_actions():
+    assert (
+        KubernetesDispatcher.get_label_selector(SERVICE_NAME, CLIENT_ID)
+        == f"{KubernetesDispatcher.CREATED_BY_LABEL}={SERVICE_NAME},"
+        + f"{KubernetesDispatcher.CLIENT_ID_LABEL}={CLIENT_ID}"
     )
 
-    dispatcher.cancel_all(CLIENT_ID)
 
-    mock_batch_api_instance.delete_collection_namespaced_job.assert_called_once()
-    mock_core_api_instance.delete_collection_namespaced_pod.assert_called_once()
-
-
-def test_get_label_selector(mock_batch_api_instance, mock_core_api_instance, mock_k8s_config):
+def test_get_label_selector_all_data_sets():
     assert (
         KubernetesDispatcher.get_label_selector(SERVICE_NAME, CLIENT_ID, ACTION_ID)
         == f"{KubernetesDispatcher.CREATED_BY_LABEL}={SERVICE_NAME},"
@@ -239,9 +281,11 @@ def test_get_label_selector(mock_batch_api_instance, mock_core_api_instance, moc
     )
 
 
-def test_get_label_selector_all_actions(mock_batch_api_instance, mock_core_api_instance, mock_k8s_config):
+def test_get_label_selector():
     assert (
-        KubernetesDispatcher.get_label_selector(SERVICE_NAME, CLIENT_ID)
+        KubernetesDispatcher.get_label_selector(SERVICE_NAME, CLIENT_ID, ACTION_ID, DATA_SET)
         == f"{KubernetesDispatcher.CREATED_BY_LABEL}={SERVICE_NAME},"
-        + f"{KubernetesDispatcher.CLIENT_ID_LABEL}={CLIENT_ID}"
+        + f"{KubernetesDispatcher.CLIENT_ID_LABEL}={CLIENT_ID},"
+        + f"{KubernetesDispatcher.ACTION_ID_LABEL}={ACTION_ID},"
+        + f"{KubernetesDispatcher.DATA_SET_HASH_LABEL}={md5sum(DATA_SET.src)}"
     )

@@ -11,7 +11,7 @@ from fetcher_dispatcher.args import FetcherJobConfig
 from fetcher_dispatcher.data_set_manager import DataSetDispatcher
 from preflight.data_set_size import DataSetSizeInfo
 
-X = 16
+BYTES_IN_MB = 1024 * 1024
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +26,11 @@ def create_kubernetes_api_client(kubeconfig: str) -> kubernetes.client.ApiClient
 
     configuration = kubernetes.client.Configuration()
     return kubernetes.client.ApiClient(configuration)
+
+
+def _align(n: int, align: int) -> int:
+    r = n % align
+    return n + (align - r) if r else n
 
 
 class KubernetesDispatcher(DataSetDispatcher):
@@ -54,6 +59,8 @@ class KubernetesDispatcher(DataSetDispatcher):
     TMP_MOUNT_PATH = "/var/tmp/"
 
     TMP_VOLUME = "tmp-volume"
+
+    VOLUME_SIZE_ALIGN = 4
 
     def __init__(self, service_name: str, kubeconfig: str, zk_ensemble: str, fetcher_job: FetcherJobConfig):
         self.service_name = service_name
@@ -252,6 +259,7 @@ class KubernetesDispatcher(DataSetDispatcher):
         # Max file + 20% just for any case.
         # Not less than 10% of total size
         # Round to the next X mb. X=16
-        total_mb = ceil(size_info.total_size / (1024 * 1024))
-        max_mb = ceil(size_info.max_size / (1024 * 1024))
-        return int(ceil(max(max_mb * 1.2, total_mb * 0.1)))
+        total_mb = ceil(size_info.total_size / BYTES_IN_MB)
+        max_mb = ceil(size_info.max_size / BYTES_IN_MB)
+        required_mb = int(ceil(max(max_mb * 1.2, total_mb * 0.1)))
+        return _align(required_mb, KubernetesDispatcher.VOLUME_SIZE_ALIGN)
