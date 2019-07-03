@@ -31,6 +31,9 @@ metadata:
 spec:
   replicas: {descriptor.num_instances}
   template:
+    metadata:
+      annotations:
+        iam.amazonaws.com/role: bai-data-puller-pod
     spec:
       serviceAccountName: metrics-pusher
       affinity:
