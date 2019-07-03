@@ -184,13 +184,14 @@ def test_first_fast_success(
     enclosing_event: BenchmarkEvent,
     kubernetes_job_starter: DataSetDispatcher,
     mock_lock_manager: RWLockManager,
+    mock_lock: RWLock,
 ):
     on_done = _test_fetch(
         zoo_keeper_client_with_done_node, enclosing_event, kubernetes_job_starter, mock_lock_manager, some_data_set
     )
 
-    kubernetes_job_starter.dispatch_fetch.assert_called_with(some_data_set, SOME_SIZE_INFO, enclosing_event, SOME_PATH)
-    on_done.assert_called_with(some_data_set)
+    _verify_fetch(enclosing_event, kubernetes_job_starter, some_data_set, mock_lock_manager)
+    _verify_success(on_done, some_data_set, kubernetes_job_starter, zoo_keeper_client_with_done_node, mock_lock)
 
 
 # Common part of the tests
@@ -213,28 +214,48 @@ def test_first_wait_success(
     enclosing_event: BenchmarkEvent,
     kubernetes_job_starter: DataSetDispatcher,
     mock_lock_manager: RWLockManager,
+    mock_lock: RWLock,
 ):
     on_done = _test_fetch(
         zoo_keeper_client_with_running_node, enclosing_event, kubernetes_job_starter, mock_lock_manager, some_data_set
     )
 
+    _verify_fetch(enclosing_event, kubernetes_job_starter, some_data_set, mock_lock_manager)
+    _verify_wait_success(zoo_keeper_client_with_running_node)
+    _verify_success(on_done, some_data_set, kubernetes_job_starter, zoo_keeper_client_with_running_node, mock_lock)
+
+
+def _verify_fetch(
+    enclosing_event: BenchmarkEvent,
+    kubernetes_job_starter: DataSetDispatcher,
+    some_data_set: DataSet,
+    lock_manager: RWLockManager,
+):
     kubernetes_job_starter.dispatch_fetch.assert_called_with(some_data_set, SOME_SIZE_INFO, enclosing_event, SOME_PATH)
-    assert not on_done.called
-
-    _verify_wait_succes(on_done, zoo_keeper_client_with_running_node)
+    lock_manager.acquire_write_lock.assert_called_once()
 
 
-def _verify_wait_succes(on_done: DataSetOnDone, zoo_keeper_client: KazooClient):
+def _verify_wait_success(zoo_keeper_client: KazooClient):
     get_args, _ = zoo_keeper_client.get.call_args
-    assert get_args[0] == SOME_PATH
+    path, node_watcher = get_args
+    assert path == SOME_PATH
 
     zk_node_evt = WatchedEvent(path=SOME_PATH, type=EventType.CHANGED, state=KeeperState.CONNECTED_RO)
 
-    node_watcher = get_args[1]
     node_watcher(zk_node_evt)
 
-    assert on_done.called
+
+def _verify_success(
+    on_done: DataSetOnDone,
+    data_set: DataSet,
+    kubernetes_job_starter: DataSetDispatcher,
+    zoo_keeper_client: KazooClient,
+    lock: RWLock,
+):
+    on_done.assert_called_with(data_set)
     zoo_keeper_client.delete.assert_called_with(SOME_PATH)
+    kubernetes_job_starter.cleanup.assert_called_once()
+    lock.release.assert_called_once()
 
 
 DATASET_PATH = "dataset1"

@@ -84,6 +84,7 @@ class DataSetManager:
         def on_data_set_locked(data_set: DataSet, lock: RWLock):
             def _on_done_and_unlock(data_set: DataSet):
                 on_done(data_set)
+                self._data_set_dispatcher.cleanup(data_set, event)
                 lock.release()
 
             # This node will be killed if I die

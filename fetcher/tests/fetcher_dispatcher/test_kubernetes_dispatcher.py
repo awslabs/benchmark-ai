@@ -1,6 +1,7 @@
 import dataclasses
 
 import kubernetes
+from bai_kafka_utils.utils import md5sum
 from kubernetes.client import V1Job
 from pytest import fixture, mark
 
@@ -138,6 +139,7 @@ def validate_namespaced_job(namespace: str, job: V1Job, data_set: DataSet):
         KubernetesDispatcher.ACTION_ID_LABEL: ACTION_ID,
         KubernetesDispatcher.CLIENT_ID_LABEL: CLIENT_ID,
         KubernetesDispatcher.CREATED_BY_LABEL: SERVICE_NAME,
+        KubernetesDispatcher.DATA_SET_HASH_LABEL: md5sum(data_set.src),
     }
 
     spec: kubernetes.client.V1JobSpec = job.spec
