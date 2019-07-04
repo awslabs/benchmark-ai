@@ -10,15 +10,16 @@ phases:
       - apt-get update && apt-get install -y apt-transport-https
       - curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
       - echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | tee -a /etc/apt/sources.list.d/kubernetes.list
-      - apt-get update && apt-get install -y kubectl=1.14.*
-      # Delete the older version from runtime
-      - rm $(which kubectl)  
+      - apt-get update 
+      # Delete the older version from docker runtime
+      - which kubectl && rm $(which kubectl)  
+      - apt-get install -y kubectl=1.14.*
     runtime-versions:
       docker: 18
   build:
     commands:
-      - which kubectl
       - env
+      # To diagnose if it's 1.14
       - kubectl version --client=true
       - mkdir -p build
       - cd ${PROJECT_NAME}
