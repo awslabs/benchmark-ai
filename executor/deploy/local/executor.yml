@@ -1,0 +1,14 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: executor
+spec:
+  template:
+    spec:
+      containers:
+        - name: executor
+          imagePullPolicy: Never
+      affinity:
+      #--
+      nodeSelector:
+      #--
