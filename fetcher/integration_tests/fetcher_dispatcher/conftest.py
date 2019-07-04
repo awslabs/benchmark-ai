@@ -10,7 +10,7 @@ from bai_kafka_utils.kafka_service_args import get_kafka_service_config
 from fetcher_dispatcher import SERVICE_NAME
 from fetcher_dispatcher.args import get_fetcher_service_config, FetcherServiceConfig, FetcherJobConfig
 from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher, create_kubernetes_api_client
-from fetcher_dispatcher.kubernetes_tests_client import KubernetesTestUtilsClient
+from bai_k8s_utils.kubernetes_tests_client import KubernetesTestUtilsClient
 
 
 @fixture

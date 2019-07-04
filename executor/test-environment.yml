@@ -8,3 +8,4 @@ dependencies:
   - pytest-mock
   - pytest-datadir
   - pytest-regressions
+  - timeout-decorator

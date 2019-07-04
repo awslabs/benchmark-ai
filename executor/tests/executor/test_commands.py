@@ -1,9 +1,7 @@
 import pytest
-
 from bai_kafka_utils.events import create_from_object, CommandRequestEvent, CommandRequestPayload
 
 from executor.commands import ExecutorCommandObject
-from executor import SERVICE_NAME
 
 KUBECTL = "kubectl"
 CMD_RETURN_TOPIC = "OUT_TOPIC"
@@ -13,6 +11,8 @@ WRONG_COMMAND = "WRONG_COMMAND"
 RETURN_CODE_SUCCESS = 0
 RETURN_VALUE = "Return value"
 MESSAGE = "Message"
+
+JOINED_RESOURCE_TYPES = ",".join(ExecutorCommandObject.ALL_K8S_RESOURCE_TYPES)
 
 
 @pytest.fixture
@@ -40,18 +40,8 @@ def test_cancel_benchmark(mocker, cmd_object):
     expected_call = [
         KUBECTL,
         "delete",
-        cmd_object.ALL_K8S_RESOURCE_TYPES,
+        JOINED_RESOURCE_TYPES,
         "--selector",
         cmd_object._create_label_selector(TARGET_ACTION_ID, CLIENT_ID),
     ]
-    assert mock_check_output.called_with(expected_call)
-
-
-def test_create_label_selector(cmd_object):
-    label_selector = cmd_object._create_label_selector(TARGET_ACTION_ID, CLIENT_ID)
-    expected_label_selector = (
-        f"{cmd_object.LABEL_ACTION_ID}={TARGET_ACTION_ID},"
-        f"{cmd_object.LABEL_CREATED_BY}={SERVICE_NAME},"
-        f"{cmd_object.LABEL_CLIENT_ID}={CLIENT_ID}"
-    )
-    assert label_selector == expected_label_selector
+    mock_check_output.assert_called_with(expected_call)

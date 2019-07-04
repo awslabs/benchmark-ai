@@ -6,7 +6,7 @@ from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
 
 
 # API boundary test - should just not fail starting the job - the job itself can fail
-from fetcher_dispatcher.kubernetes_tests_client import KubernetesTestUtilsClient
+from bai_k8s_utils.kubernetes_tests_client import KubernetesTestUtilsClient
 
 S3_DST = "s3://dst"
 SOMEDATA_BIG = "http://somedata.big"

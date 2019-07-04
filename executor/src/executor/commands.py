@@ -3,16 +3,13 @@ import logging
 
 from executor import SERVICE_NAME
 from bai_kafka_utils.utils import DEFAULT_ENCODING
+from bai_k8s_utils.service_labels import ServiceLabels
 
 
 logger = logging.getLogger(SERVICE_NAME)
 
 
 class ExecutorCommandObject:
-    LABEL_ACTION_ID = "action-id"
-    LABEL_CREATED_BY = "created-by"
-    LABEL_CLIENT_ID = "client-id"
-
     # This lists all the resource types we have in our cluster.
     # When deleting, we use the label selector to choose what gets removed.
     ALL_K8S_RESOURCE_TYPES = ["jobs", "cronjobs", "mpijobs", "configmaps"]
@@ -37,9 +34,5 @@ class ExecutorCommandObject:
         logger.info(f"Kubectl output: {result}")
         return result
 
-    def _create_label_selector(self, action_id: str, client_id: str):
-        return (
-            f"{self.LABEL_ACTION_ID}={action_id},"
-            f"{self.LABEL_CREATED_BY}={SERVICE_NAME},"
-            f"{self.LABEL_CLIENT_ID}={client_id}"
-        )
+    def _create_label_selector(self, action_id, client_id):
+        return ServiceLabels.get_label_selector(SERVICE_NAME, client_id, action_id)
