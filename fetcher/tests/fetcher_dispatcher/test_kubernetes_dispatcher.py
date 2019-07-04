@@ -265,28 +265,9 @@ def test_cancel_all_actions(
     _verify_k8s_all_delete(mock_batch_api_instance, mock_core_api_instance)
 
 
-def test_get_label_selector_all_actions():
-    assert (
-        KubernetesDispatcher.get_label_selector(SERVICE_NAME, CLIENT_ID)
-        == f"{KubernetesDispatcher.CREATED_BY_LABEL}={SERVICE_NAME},"
-        + f"{KubernetesDispatcher.CLIENT_ID_LABEL}={CLIENT_ID}"
-    )
-
-
-def test_get_label_selector_all_data_sets():
-    assert (
-        KubernetesDispatcher.get_label_selector(SERVICE_NAME, CLIENT_ID, ACTION_ID)
-        == f"{KubernetesDispatcher.CREATED_BY_LABEL}={SERVICE_NAME},"
-        + f"{KubernetesDispatcher.CLIENT_ID_LABEL}={CLIENT_ID},"
-        + f"{KubernetesDispatcher.ACTION_ID_LABEL}={ACTION_ID}"
-    )
-
-
 def test_get_label_selector():
     assert (
         KubernetesDispatcher.get_label_selector(SERVICE_NAME, CLIENT_ID, ACTION_ID, DATA_SET)
-        == f"{KubernetesDispatcher.CREATED_BY_LABEL}={SERVICE_NAME},"
-        + f"{KubernetesDispatcher.CLIENT_ID_LABEL}={CLIENT_ID},"
-        + f"{KubernetesDispatcher.ACTION_ID_LABEL}={ACTION_ID},"
-        + f"{KubernetesDispatcher.DATA_SET_HASH_LABEL}={md5sum(DATA_SET.src)}"
+        == ServiceLabels.get_label_selector(SERVICE_NAME, CLIENT_ID, ACTION_ID)
+        + f",{KubernetesDispatcher.DATA_SET_HASH_LABEL}={md5sum(DATA_SET.src)}"
     )

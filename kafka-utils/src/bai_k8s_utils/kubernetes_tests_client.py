@@ -35,7 +35,7 @@ class KubernetesTestUtilsClient:
         return bool(pods.items)
 
     def is_volume_claim_present(self, namespace: str, client_id: str, action_id: str):
-        label_selector = KubernetesDispatcher.get_label_selector(self.service, client_id, action_id)
+        label_selector = ServiceLabels.get_label_selector(self.service, client_id, action_id)
         logger.info(f"volume claim selector request:{label_selector}")
         pods: V1PersistentVolumeClaimList = self.core_api_instance.list_namespaced_persistent_volume_claim(
             namespace, label_selector=label_selector
