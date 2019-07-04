@@ -1,8 +1,0 @@
-name: executor
-channels:
-  - conda-forge
-  - defaults
-dependencies:
-  - bash 4.4.18
-  - sed 4.7
-  - jq 1.6

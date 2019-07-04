@@ -1,5 +1,25 @@
 #!/usr/bin/env bash
 
+conda_usage() {
+    printf '
+
+ Anubis uses Conda to provide a predictable running environment.  Make
+ sure you have Conda installed. We recommend installing miniconda via
+ https://docs.conda.io/en/latest/miniconda.html
+
+ Once Conda is installed run the following:
+
+ ${0##*/} --env-setup
+
+'
+    exit 9
+}
+
+if ! source $(conda info --root)/bin/activate anubis >& /dev/null; then
+    echo "there is a problem with conda..."
+    conda_usage
+fi
+
 DEBUG=${DEBUG:-0}
 VERBOSE=${VERBOSE:-0}
 SYNC_DATA=${SYNC_DATA:-0}
@@ -546,6 +566,31 @@ _write_descriptor() {
 get_history() {
     cat "${BAI_ACTION_IDS}"
 }
+
+env_setup() {
+    if ! conda --version && conda_usage; then conda_usage; fi;
+    local tmp_environment_file=$(mktemp  -t "${0##*/}")
+    mv ${tmp_environment_file}{,.yml}
+    echo ${tmp_environment_file}
+    cat <<EOF > ${tmp_environment_file}.yml
+name: anubis
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - bash 4.4.18
+  - sed 4.7
+  - jq 1.6
+EOF
+    cmd="conda env update -f ${tmp_environment_file}.yml"
+    ${cmd}
+    rm "${tmp_environment_file}.yml"
+
+    printf '
+  Please proceed with your ${0##*/} shenanigans
+
+'
+}
 #---------------------------------------
 
 
@@ -601,6 +646,10 @@ main() {
                 --abort|--cancel)
                     shift
                     abort_submission ${@} ; shift
+                    exit $?
+                    ;;
+                --env-setup)
+                    env_setup
                     exit $?
                     ;;
                 --check-prerequisites) # hidden option
