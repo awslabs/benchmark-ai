@@ -180,9 +180,9 @@ class KubernetesDispatcher(DataSetDispatcher):
 
             volume_size = KubernetesDispatcher._get_volume_size(size_info)
 
+            # Do we need a volume?
             if volume_size >= self.fetcher_job.volume.min_size:
                 volume_claim = self._get_volume_name(task)
-                # Do we need a volume?
                 pv_metadata = kubernetes.client.V1ObjectMeta(
                     namespace=self.fetcher_job.namespace, name=volume_claim, labels=self._get_labels(task, event)
                 )
@@ -249,7 +249,7 @@ class KubernetesDispatcher(DataSetDispatcher):
     def _get_volume_size(size_info: DataSetSizeInfo):
         # Max file + 20% just for any case.
         # Not less than 10% of total size
-        # Round to the next X mb. X=16
+        # Round to the next X mb. X=4
         total_mb = ceil(size_info.total_size / BYTES_IN_MB)
         max_mb = ceil(size_info.max_size / BYTES_IN_MB)
         required_mb = int(ceil(max(max_mb * 1.2, total_mb * 0.1)))
