@@ -6,11 +6,21 @@ phases:
       - curl -O https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
       - bash Miniconda3-latest-Linux-x86_64.sh -b
       - export PATH=$PATH:/root/miniconda3/condabin
+      # Install kubectl 1.14 
+      - apt-get update && apt-get install -y apt-transport-https
+      - curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+      - echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | tee -a /etc/apt/sources.list.d/kubernetes.list
+      - apt-get update 
+      # Delete the older version from docker runtime
+      - which kubectl && rm $(which kubectl)  
+      - apt-get install -y kubectl=1.14.*
     runtime-versions:
       docker: 18
   build:
     commands:
       - env
+      # To diagnose if it's 1.14
+      - kubectl version --client=true
       - mkdir -p build
       - cd ${PROJECT_NAME}
       - make deploy.yml STAGE=prod COMMIT_SHORT_HASH=${CODEBUILD_RESOLVED_SOURCE_VERSION} VERSION=latest DOCKER_REGISTRY=${DOCKER_REGISTRY}
@@ -18,10 +28,8 @@ phases:
       - make publish COMMIT_SHORT_HASH=${CODEBUILD_RESOLVED_SOURCE_VERSION} VERSION=latest DOCKER_REGISTRY=${DOCKER_REGISTRY}
       # Move built files to the root `build` directory since that's the directory that gets packaged
       - if [ -e deploy.yml ]; then cp --verbose deploy.yml ../build/; fi
-      - if [ -d deploy ]; then cp -r --verbose deploy ../build/; fi
 artifacts:
   files:
     - deploy.yml
-    - deploy/**/*
   discard-paths: no
   base-directory: build
