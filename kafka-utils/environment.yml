@@ -7,7 +7,9 @@ dependencies:
   - kafka-python 1.4.6
   - boto3 1.9.*
   - pycurl 7.43.*
+  - timeout-decorator
   - pip
+  - python-kubernetes 9.0.*
   - pip:
       - ConfigArgParse
       - dataclasses-json >= 0.2.7

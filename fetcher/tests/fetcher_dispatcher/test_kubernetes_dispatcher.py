@@ -4,6 +4,7 @@ import kubernetes
 from kubernetes.client import V1Job
 from pytest import fixture, mark
 
+from bai_k8s_utils.service_labels import ServiceLabels
 from bai_kafka_utils.events import DataSet, BenchmarkEvent
 from fetcher_dispatcher import kubernetes_dispatcher, SERVICE_NAME
 from fetcher_dispatcher.args import FetcherJobConfig
@@ -122,11 +123,7 @@ def validate_namespaced_job(namespace: str, job: V1Job, data_set: DataSet):
 
     assert metadata.namespace == NAMESPACE
 
-    assert metadata.labels == {
-        KubernetesDispatcher.ACTION_ID_LABEL: ACTION_ID,
-        KubernetesDispatcher.CLIENT_ID_LABEL: CLIENT_ID,
-        KubernetesDispatcher.CREATED_BY_LABEL: SERVICE_NAME,
-    }
+    assert metadata.labels == ServiceLabels.get_labels(SERVICE_NAME, CLIENT_ID, ACTION_ID)
 
     spec: kubernetes.client.V1JobSpec = job.spec
 
@@ -193,20 +190,3 @@ def test_cancel_all_actions(mock_batch_api_instance, mock_core_api_instance, moc
 
     mock_batch_api_instance.delete_collection_namespaced_job.assert_called_once()
     mock_core_api_instance.delete_collection_namespaced_pod.assert_called_once()
-
-
-def test_get_label_selector(mock_batch_api_instance, mock_core_api_instance, mock_k8s_config):
-    assert (
-        KubernetesDispatcher.get_label_selector(SERVICE_NAME, CLIENT_ID, ACTION_ID)
-        == f"{KubernetesDispatcher.CREATED_BY_LABEL}={SERVICE_NAME},"
-        + f"{KubernetesDispatcher.CLIENT_ID_LABEL}={CLIENT_ID},"
-        + f"{KubernetesDispatcher.ACTION_ID_LABEL}={ACTION_ID}"
-    )
-
-
-def test_get_label_selector_all_actions(mock_batch_api_instance, mock_core_api_instance, mock_k8s_config):
-    assert (
-        KubernetesDispatcher.get_label_selector(SERVICE_NAME, CLIENT_ID)
-        == f"{KubernetesDispatcher.CREATED_BY_LABEL}={SERVICE_NAME},"
-        + f"{KubernetesDispatcher.CLIENT_ID_LABEL}={CLIENT_ID}"
-    )

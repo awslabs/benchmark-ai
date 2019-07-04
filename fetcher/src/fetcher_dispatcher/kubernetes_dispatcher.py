@@ -3,6 +3,7 @@ import logging
 import kubernetes
 from typing import Dict, List
 
+from bai_k8s_utils.service_labels import ServiceLabels
 from bai_kafka_utils.events import DataSet, BenchmarkEvent
 from bai_kafka_utils.utils import id_generator
 from fetcher_dispatcher.args import FetcherJobConfig
@@ -24,12 +25,6 @@ def create_kubernetes_api_client(kubeconfig: str) -> kubernetes.client.ApiClient
 
 
 class KubernetesDispatcher(DataSetDispatcher):
-    ACTION_ID_LABEL = "action-id"
-
-    CLIENT_ID_LABEL = "client-id"
-
-    CREATED_BY_LABEL = "created-by"
-
     ZK_NODE_PATH_ARG = "--zk-node-path"
 
     DST_ARG = "--dst"
@@ -114,24 +109,10 @@ class KubernetesDispatcher(DataSetDispatcher):
         return [kubernetes.client.V1EnvVar(name=KubernetesDispatcher.ZOOKEEPER_ENSEMBLE_HOSTS, value=self.zk_ensemble)]
 
     def _get_labels(self, task: DataSet, event: BenchmarkEvent) -> Dict[str, str]:
-        return {
-            KubernetesDispatcher.ACTION_ID_LABEL: event.action_id,
-            KubernetesDispatcher.CLIENT_ID_LABEL: event.client_id,
-            KubernetesDispatcher.CREATED_BY_LABEL: self.service_name,
-        }
-
-    @staticmethod
-    def get_label_selector(service_name: str, client_id: str, action_id: str = None):
-        selector = (
-            f"{KubernetesDispatcher.CREATED_BY_LABEL}={service_name},"
-            + f"{KubernetesDispatcher.CLIENT_ID_LABEL}={client_id}"
-        )
-        if action_id:
-            selector += f",{KubernetesDispatcher.ACTION_ID_LABEL}={action_id}"
-        return selector
+        return ServiceLabels.get_labels(self.service_name, event.client_id, event.action_id)
 
     def _get_label_selector(self, client_id: str, action_id: str = None):
-        return KubernetesDispatcher.get_label_selector(self.service_name, client_id, action_id)
+        return ServiceLabels.get_label_selector(self.service_name, client_id, action_id)
 
     def dispatch_fetch(self, task: DataSet, event: BenchmarkEvent, zk_node_path: str):
         try:
