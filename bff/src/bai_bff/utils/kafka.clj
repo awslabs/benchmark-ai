@@ -11,8 +11,8 @@
   (log/trace "create-kafka-topics  ["set-of-topic-names"]")
   (let [^AdminClient admin-client (AdminClient/create (doto (java.util.Properties.)
                                                         (.put AdminClientConfig/BOOTSTRAP_SERVERS_CONFIG, (env :kafka-bootstrap-servers))))
-        num-partitions     (env :kafka-default-num-partitions 1)
-        replication-factor (env :kafka-default-replication-factor 1)
+        num-partitions     (Integer/valueOf (env :kafka-default-num-partitions "1") )
+        replication-factor (Integer/valueOf (env :kafka-default-replication-factor "1" ))
         all-existing-topic-names (.get (.names (.listTopics admin-client)))] ;; <-- block here on future until realized
     (log/trace "Listing of all current topics: "all-existing-topic-names)
     (when-let [missing-topics (seq (difference set-of-topic-names all-existing-topic-names))]

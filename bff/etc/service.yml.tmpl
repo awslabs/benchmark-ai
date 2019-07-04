@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: @@PROJECT@@
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-extra-security-groups: @@BFF_SECURITY_GROUP_ID@@
+spec:
+  selector:
+    app: benchmark-ai
+    service: @@PROJECT@@
+    env: @@ENVIRONMENT@@
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: @@SVC_PORT@@
+  type: LoadBalancer
