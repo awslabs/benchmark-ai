@@ -68,10 +68,10 @@ def test_generate_lines_from_fifo(tmp_path, request):
             f.write("Fifo2-line1\n")
             f.write("Fifo2-line2\n")
 
-    # Write to the FIFO files in another because we're simulating as if a benchmark would be running, which is always
-    # in another process
+    # Write to the FIFO files in another thread because we're simulating as if a benchmark would be running, which is
+    # always in another process
     thread = Thread(target=write_to_fifos)
     thread.start()
     lines = list(generate_lines_from_fifos([str(fifo1), str(fifo2)]))
-    assert not thread.is_alive()
+    thread.join(timeout=5)
     assert sorted(lines) == ["Fifo1-line1\n", "Fifo1-line2\n", "Fifo2-line1\n", "Fifo2-line2\n"]
