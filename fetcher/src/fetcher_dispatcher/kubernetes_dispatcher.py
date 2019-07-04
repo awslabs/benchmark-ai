@@ -5,6 +5,7 @@ import kubernetes
 
 from typing import Dict, List, Optional
 
+from bai_k8s_utils.service_labels import ServiceLabels
 from bai_kafka_utils.events import DataSet, BenchmarkEvent
 from bai_kafka_utils.utils import id_generator, md5sum
 from fetcher_dispatcher.args import FetcherJobConfig
@@ -34,12 +35,6 @@ def _align(n: int, align: int) -> int:
 
 
 class KubernetesDispatcher(DataSetDispatcher):
-    ACTION_ID_LABEL = "action-id"
-
-    CLIENT_ID_LABEL = "client-id"
-
-    CREATED_BY_LABEL = "created-by"
-
     DATA_SET_HASH_LABEL = "data-set-md5"
 
     ZK_NODE_PATH_ARG = "--zk-node-path"
@@ -101,7 +96,10 @@ class KubernetesDispatcher(DataSetDispatcher):
     ) -> kubernetes.client.V1PodTemplateSpec:
         pod_spec = self._get_fetcher_pod_spec(task, zk_node_path, volume_claim_name)
         return kubernetes.client.V1PodTemplateSpec(
-            spec=pod_spec, metadata=kubernetes.client.V1ObjectMeta(labels=self._get_labels(task, event))
+            spec=pod_spec,
+            metadata=kubernetes.client.V1ObjectMeta(
+                labels=self._get_labels(task, event), annotations=self._get_fetcher_pod_annotations()
+            ),
         )
 
     def _get_fetcher_pod_spec(self, task: DataSet, zk_node_path: str, volume_claim_name: Optional[str]):
@@ -140,6 +138,9 @@ class KubernetesDispatcher(DataSetDispatcher):
             ],
         )
 
+    def _get_fetcher_pod_annotations(self):
+        return {"iam.amazonaws.com/role": "fetcher"}
+
     def _get_args(self, task: DataSet, zk_node_path: str) -> List[str]:
         return [
             KubernetesDispatcher.SRC_ARG,
@@ -159,25 +160,15 @@ class KubernetesDispatcher(DataSetDispatcher):
         ]
 
     def _get_labels(self, task: DataSet, event: BenchmarkEvent) -> Dict[str, str]:
-        return {
-            KubernetesDispatcher.ACTION_ID_LABEL: event.action_id,
-            KubernetesDispatcher.CLIENT_ID_LABEL: event.client_id,
-            KubernetesDispatcher.CREATED_BY_LABEL: self.service_name,
-            KubernetesDispatcher.DATA_SET_HASH_LABEL: md5sum(task.src),
-        }
+        labels = ServiceLabels.get_labels(self.service_name, event.client_id, event.action_id)
+        labels[KubernetesDispatcher.DATA_SET_HASH_LABEL] = md5sum(task.src)
+        return labels
 
     @staticmethod
     def get_label_selector(service_name: str, client_id: str, action_id: str = None, data_set: DataSet = None):
-        selector = (
-            f"{KubernetesDispatcher.CREATED_BY_LABEL}={service_name},"
-            + f"{KubernetesDispatcher.CLIENT_ID_LABEL}={client_id}"
-        )
-        if action_id:
-            selector += f",{KubernetesDispatcher.ACTION_ID_LABEL}={action_id}"
-
-            if data_set:
-                selector += f",{KubernetesDispatcher.DATA_SET_HASH_LABEL}={md5sum(data_set.src)}"
-
+        selector = ServiceLabels.get_label_selector(service_name, client_id, action_id)
+        if action_id and data_set:
+            selector += f",{KubernetesDispatcher.DATA_SET_HASH_LABEL}={md5sum(data_set.src)}"
         return selector
 
     def _get_label_selector(self, client_id: str, action_id: str = None, data_set: DataSet = None):

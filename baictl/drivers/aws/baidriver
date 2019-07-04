@@ -45,8 +45,6 @@ create_infra() {
     [ -z "$prefix_list_id" ] && printf "Missing required argument --aws-prefix-list-id\n" && return 1
     [ -z "$region" ] && printf "Missing required argument --aws-region\n" && return 1
 
-    _install_msk_aware_terraform_plugin || return 1
-
     cd $terraform_dir
 
     local vars=""
@@ -67,6 +65,8 @@ create_infra() {
 
     echo "==> Creating Kubernetes objects"
     ${kubectl} apply -f $data_dir/fluentd-daemonset.yaml
+    ${kubectl} -n kube-system rollout status ds/fluentd
+
     ${kubectl} apply -f $data_dir/autoscaler-deployment.yaml
 
     ${kubectl} apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v1.11/nvidia-device-plugin.yml
@@ -88,11 +88,17 @@ create_infra() {
     echo "==> Installing Prometheus"
     _install_prometheus || return 1
 
+    echo "==> Installing kube2iam"
+    _install_kube2iam || return 1
+
     echo "==> Installing zookeeper"
     _install_zookeeper || return 1
 
     echo "==> Validating infrastructure"
     [[ "$validate" == false ]] || validate_infra $@
+
+    echo "==> Syncing remote data directory"
+    _sync_bai_home ${region} || return 1
 }
 
 _initialize_terraform_backend() {
@@ -125,25 +131,6 @@ END
     terraform get || return 1
 }
 
-_install_msk_aware_terraform_plugin(){
-    # Get Kafka AWS binary and put it in terraform plugins directory
-    local plugin_zip="terraform-provider-aws_v2.4.0.zip"
-    local plugin_name="terraform-provider-aws_v2.4.0"
-    local kernel=$(uname | awk '{print tolower($0)}')
-    local plugin_url="https://chancebair.github.io/terraform-msk-binaries/${kernel}/${plugin_zip}"
-    if [[ ! -f ~/.terraform.d/plugins/${plugin_name} ]] ; then
-        printf 'Downloading MSK-aware aws terraform plugin binary...\n'
-        mkdir -p ~/.terraform.d/plugins
-        if wget -nv -P ~/.terraform.d/plugins ${plugin_url} ; then
-            unzip ~/.terraform.d/plugins/${plugin_zip} -d ~/.terraform.d/plugins/
-            chmod +x ~/.terraform.d/plugins/${plugin_name}
-        else
-            printf "Failed to download MSK plugin zip file from $plugin_url\n"
-            return 1
-        fi
-    fi
-}
-
 _install_tiller(){
     ${kubectl} get serviceaccount -n ${tiller_namespace} tiller -o yaml || $kubectl create serviceaccount --namespace ${tiller_namespace} tiller || return 1
     ${kubectl} get clusterrolebinding tiller-cluster-rule -o yaml || $kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=${tiller_namespace}:tiller || return 1
@@ -162,6 +149,23 @@ _install_prometheus(){
     # https://github.com/MXNetEdge/benchmark-ai/issues/483 for details.
     # https://github.com/NVIDIA/gpu-monitoring-tools/tree/master/exporters/prometheus-dcgm/k8s/pod-gpu-metrics-exporter#pod-gpu-metrics-exporter
     ${kubectl} apply -f ${k8s_deploy_dir}/pod-gpu-metrics-exporter-daemonset.yaml || return 1
+
+
+    _deploy_grafana_dashboards || return 1
+
+}
+
+_deploy_grafana_dashboards() {
+    # Deploy configmaps that contain the grafana dashboards, they will be loaded by the sidecar as long as they
+    # have the "grafana_dashboard" label
+    for filename in ${k8s_deploy_dir}/grafana-dashboards/*.json; do
+        local configmap_name=$(echo "grafana-dashboard-${filename##*/}" | sed 's/.json//g')
+        echo "Applying Grafana dashboard '${configmap_name}'"
+        ${kubectl} create configmap ${configmap_name} --from-file "${filename}" --dry-run -o yaml | ${kubectl} apply -f - || return 1
+
+        # https://github.com/kubernetes/kubernetes/issues/60295
+        ${kubectl} label configmap ${configmap_name} grafana_dashboard=1 --overwrite=true || return 1
+    done
 }
 
 port_forward() {
@@ -225,42 +229,60 @@ EOF
 }
 
 _install_kubeflow_operators() {
-    if [[ ! -d "$data_dir/kubeflow-ks-app" ]]; then
     (
-        mkdir $data_dir/kubeflow-ks-app
-        cd $data_dir/kubeflow-ks-app
+    _check_kubeflow_app_config
 
-        export KUBECONFIG=$kubeconfig
-        ks init ks_app
+    mkdir $data_dir/kubeflow-ks-app
+    cd $data_dir/kubeflow-ks-app
 
-        cd ks_app || return 1
-
-        echo "-> Creating kubeflow namespace"
-        __create_kubeflow_namespace | ${kubectl} apply -f -
-
-        echo "-> Applying kubeflow stuff"
-        ks registry add kubeflow https://github.com/kubeflow/kubeflow/tree/v0.4.1/kubeflow && \
-            ks env add kubeflow --namespace "$kubeflow_namespace" && \
-            ks pkg install kubeflow/mpi-job && \
-            ks pkg install kubeflow/mxnet-job && \
-            ks generate mpi-operator mpi-operator && \
-            ks generate mxnet-operator mxnet-operator
-        local exit_code=$?
-        [[ "$exit_code" != 0 ]] && echo "[ERROR] Failed with exit code: $exit_code" && return 1
-    )
-    fi
-
-    echo "-> Kubeflow should be already installed, re-applying configuration"
-    (
     export KUBECONFIG=$kubeconfig
-    cd $data_dir/kubeflow-ks-app/ks_app
+    ks init ks_app || echo "App already exists, continuing" # If the creation fails, the following cd will fail
+
+    cd ks_app || return 1
+
+    echo "-> Creating kubeflow namespace"
+    __create_kubeflow_namespace | ${kubectl} apply -f - || return 1
+
+    echo "-> Creating kubeflow environment"
+    ks registry describe kubeflow || ks registry add kubeflow https://github.com/kubeflow/kubeflow/tree/v0.4.1/kubeflow || return 1
+    ks env describe "$kubeflow_namespace" || ks env add kubeflow --namespace "$kubeflow_namespace" || return 1
+
+    echo "-> Applying kubeflow stuff"
+    ks pkg list --installed -o table | awk '{print $2}' | xargs | grep "mpi-job" || ks pkg install kubeflow/mpi-job || return 1 && \
+        ks pkg list --installed -o table | awk '{print $2}' | xargs | grep "mxnet-job" || ks pkg install kubeflow/mxnet-job || return 1 && \
+        ks component list | awk '{print $1}' | xargs | grep "mpi-operator" || ks generate mpi-operator mpi-operator || return 1 && \
+        ks component list | awk '{print $1}' | xargs | grep "mxnet-operator" || ks generate mxnet-operator mxnet-operator || return 1
+
+
     ks apply kubeflow --component mpi-operator && \
         ks apply kubeflow --component mxnet-operator
+    )
     local exit_code=$?
     [[ "$exit_code" != 0 ]] && echo "[ERROR] Failed with exit code: $exit_code" && return 1
-    )
 
     return 0
+}
+
+_check_kubeflow_app_config() {
+    local kubeflow_config_path="${data_dir}/kubeflow-ks-app/ks_app/app.yaml"
+    if [[ ! -f ${kubeflow_config_path} ]]; then
+        echo "Kubeflow is not initialized yet"
+        # Just to be safe
+        rm -rf $data_dir/kubeflow-ks-app
+        return 0
+    fi
+
+    # Check if URL in config is the right one. if not, it's stale and we have to re-create it
+    local eks_server_url=$(cat $data_dir/kubeconfig | grep -o -e 'https://.*eks.amazonaws.com')
+
+    if grep -q "$eks_server_url" "${kubeflow_config_path}"
+    then
+        echo "Kubeflow already has been connected to the correct EKS server"
+        # code if found
+    else
+        echo "Kubeflow is currently not connected to the correct EKS server"
+        rm -rf $data_dir/kubeflow-ks-app
+    fi
 }
 
 _init_service_account() {
@@ -275,14 +297,20 @@ _init_helm() {
     ${helm} repo update || return 1
 }
 
-_install_grafana() {
-    ${helm} upgrade --install grafana \
+_install_kube2iam() {
+    local default_pod_role_name=$(terraform output kube2iam_default_pod_role_name)
+    local account_id=$(aws sts get-caller-identity | jq -r '.Account') || return 1
+    ${helm} upgrade --install kube2iam \
         --namespace ${tiller_namespace} \
-        --set rbac.pspEnabled=false \
-        --set rbac.create=false \
-        --set service.type=LoadBalancer \
+        --set aws.region=${region} \
+        --set host.iptables=true \
+        --set host.interface=eni+ \
+        --set rbac.create=true \
+        --set extraArgs.default-role=${default_pod_role_name} \
+        --set extraArgs.base-role-arn=arn:aws:iam::${account_id}:role/ \
+        --set updateStrategy=RollingUpdate \
         --wait \
-        stable/grafana || return 1
+        stable/kube2iam || return 1
 }
 
 _destroy_helm_charts() {
@@ -320,8 +348,6 @@ destroy_infra() {
     else
         printf "Missing required argument --aws-region\n" && return 1
     fi
-
-    _install_msk_aware_terraform_plugin || return 1
 
     _initialize_terraform_backend ${region} || return 1
     terraform destroy -auto-approve ${vars}
@@ -423,7 +449,7 @@ validate_infra() {
     [[ "$all_ok" == true ]] || return 1
 }
 
-get_benchmark() {
+get_benchmark_logs() {
     local benchmark_name=""
 
     for arg in "$@"; do
@@ -438,6 +464,49 @@ get_benchmark() {
     done
 
     [ -z "$benchmark_name" ] && printf "Missing required argument --name\n" && return 1
+    [ -z "$page_size" ] && page_size=10000
+
+    _query_fluentd_logs_from_elasticsearch --key "kubernetes.labels.action-id" --value $benchmark_name
+}
+
+get_pod_logs() {
+    local pod_name=""
+
+    for arg in "$@"; do
+        case "${arg}" in
+        --name=*)
+            pod_name="${arg#*=}"
+            ;;
+        --aws-es-page-size=*)
+            page_size="${arg#*=}"
+            ;;
+        esac
+    done
+
+    [ -z "$pod_name" ] && printf "Missing required argument --name\n" && return 1
+
+    _query_fluentd_logs_from_elasticsearch --key=kubernetes.pod_name --value=${pod_name}
+}
+
+_query_fluentd_logs_from_elasticsearch() {
+    local value=""
+
+    for arg in "$@"; do
+        case "${arg}" in
+        --value=*)
+            value="${arg#*=}"
+            ;;
+        --key=*)
+            key="${arg#*=}"
+            ;;
+        --aws-es-page-size=*)
+            page_size="${arg#*=}"
+            ;;
+        esac
+    done
+
+    [ -z "$value" ] && printf "Missing required argument --value\n" && return 1
+    [ -z "$key" ] && printf "Missing required argument --key\n" && return 1
     [ -z "$page_size" ] && page_size=10000
 
     cd $terraform_dir
@@ -475,7 +544,7 @@ get_benchmark() {
         {
             "size" : $page_size,
             "query" : {
-                "match" : { "kubernetes.labels.action-id":"$benchmark_name" }
+                "match" : { "${key}":"$value" }
             },
             "sort": [
                 {"@timestamp": {"order": "asc"}}
@@ -565,6 +634,14 @@ show_k8s_dashboard() {
     ${kubectl} proxy
 }
 
+_sync_bai_home() {
+    local region=$1
+    local account_id=$(aws sts get-caller-identity | jq -r '.Account') || return 1
+    local bucket="bai-terraform-state-${region}-${account_id}"
+
+    aws s3 sync $data_dir s3://$bucket
+}
+
 verb=$1
 object=$2
 
@@ -572,7 +649,7 @@ shift
 shift
 
 verbose=""
-data_dir=${HOME}/.bai
+data_dir=${ANUBIS_HOME:=${HOME}/.bai}
 
 #Common args
 for arg in "$@"; do
@@ -640,14 +717,26 @@ benchmark)
     schedule)
         schedule_benchmark $@
         ;;
-    get)
-        get_benchmark $@
+    logs)
+        get_benchmark_logs $@
         ;;
     delete)
         delete_benchmark $@
         ;;
     list)
         list_benchmarks $@
+        ;;
+    *)
+        print_unsupported_verb $object $verb
+        ;;
+    esac
+    ;;
+
+pod)
+
+    case "${verb}" in
+    logs)
+        get_pod_logs $@
         ;;
     *)
         print_unsupported_verb $object $verb

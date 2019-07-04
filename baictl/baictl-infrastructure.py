@@ -64,6 +64,7 @@ def main():
     )
     check_ecs_task(boto_session=boto_session, ecs_cluster_name=ECS_CLUSTER_NAME, task_arn=task_arn)
     destroy_cloudformation()
+    sync_bai_home(boto_session=boto_session, config=config)
 
 
 def load_config(path):
@@ -307,6 +308,7 @@ def destroy_cloudformation():
     # TODO: Ask whether CloudFormation stack should be destroyed again - this requires the ability to wait for the ECS task to finish first
     pass
 
+
 def get_cloudwatch_logs(boto_session, cloudwatch_log_group, cloudwatch_log_stream, aws_region):
     logs_client = boto_session.client("logs")
     LOG_STREAM_INCREMENT_SECONDS = 10
@@ -345,6 +347,34 @@ def parse_ecs_response(ecs_task_response):
     cloudwatch_log_stream = ecs_prefix_name + "/" + ecs_container_name + "/" + ecs_task_id
     task_arn = ecs_task["taskArn"]
     return cloudwatch_log_stream, task_arn
+
+
+def sync_bai_home(boto_session, config):
+    s3_client = boto_session.client("s3")
+    sts_client = boto_session.client("sts")
+    data_dir = os.environ["HOME"] + "/.bai"
+    account_id = sts_client.get_caller_identity()["Account"]
+    bucket = "bai-terraform-state-" + config.get_aws_region() + "-" + account_id
+
+    logging.info("Syncing {} directory with infrastructure information".format(data_dir))
+
+    # Remove files from current data directory
+    # HACK: boto doesn't support s3 sync command https://github.com/boto/boto/issues/3343
+    for the_file in os.listdir(data_dir):
+        file_path = os.path.join(data_dir, the_file)
+        try:
+            if os.path.isfile(file_path):
+                os.unlink(file_path)
+        except Exception as e:
+            print(e)
+
+    # Download updated files from S3, but skip terraform statefile
+    list_resp = s3_client.list_objects(Bucket=bucket)["Contents"]
+    for key in list_resp:
+        key_name = key["Key"]
+        if key_name in "terraform.tfstate":
+            continue
+        s3_client.download_file(bucket, key_name, data_dir + "/" + key_name)
 
 
 if __name__ == "__main__":

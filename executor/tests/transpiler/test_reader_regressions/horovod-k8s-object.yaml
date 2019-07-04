@@ -33,6 +33,9 @@ metadata:
 spec:
   replicas: 2
   template:
+    metadata:
+      annotations:
+        iam.amazonaws.com/role: data-puller
     spec:
       serviceAccountName: metrics-pusher
       affinity:

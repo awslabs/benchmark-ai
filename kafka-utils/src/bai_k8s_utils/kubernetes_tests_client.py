@@ -5,7 +5,7 @@ from kubernetes.client import V1PodList, V1PersistentVolumeClaimList
 from time import sleep
 from timeout_decorator import timeout
 
-from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
+from bai_k8s_utils.service_labels import ServiceLabels
 
 logger = logging.getLogger(__name__)
 
@@ -23,13 +23,13 @@ class KubernetesTestUtilsClient:
     DEFAULT_TIMEOUT_SECONDS = 30
 
     def is_pod_present(self, namespace: str, client_id: str, action_id: str):
-        label_selector = KubernetesDispatcher.get_label_selector(self.service, client_id, action_id)
+        label_selector = ServiceLabels.get_label_selector(self.service, client_id, action_id)
         logger.info(f"pod selector request:{label_selector}")
         pods: V1PodList = self.core_api_instance.list_namespaced_pod(namespace, label_selector=label_selector)
         return bool(pods.items)
 
     def is_job_present(self, namespace: str, client_id: str, action_id: str):
-        label_selector = KubernetesDispatcher.get_label_selector(self.service, client_id, action_id)
+        label_selector = ServiceLabels.get_label_selector(self.service, client_id, action_id)
         logger.info(f"job selector request:{label_selector}")
         pods: V1PodList = self.batch_api_instance.list_namespaced_job(namespace, label_selector=label_selector)
         return bool(pods.items)

@@ -118,6 +118,8 @@ spec:
     metadata:
       labels:
         app: cluster-autoscaler
+      annotations:
+        iam.amazonaws.com/role: ${kube2iam_pod_role_name}
     spec:
       serviceAccountName: cluster-autoscaler
       containers:

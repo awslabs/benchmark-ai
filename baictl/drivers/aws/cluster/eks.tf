@@ -10,20 +10,20 @@ locals {
 
   other_worker_groups = [
     {
-      instance_type        = "t2.small"
+      instance_type        = "m5.large"
       subnets              = "${join(",", slice(module.vpc.private_subnets, 0, 3))}"
-      asg_desired_capacity = 2
+      asg_desired_capacity = 1
       asg_max_size         = 10
       asg_min_size         = 1
       name                 = "k8s-services"
       kubelet_extra_args   = "${local.k8s_services_kubelet_args}"
     },
     {
-      instance_type        = "t2.small"
+      instance_type        = "t3.medium"
       subnets              = "${join(",", slice(module.vpc.private_subnets, 0, 3))}"
-      asg_desired_capacity = 0
+      asg_desired_capacity = 3
       asg_max_size         = 100
-      asg_min_size         = 0
+      asg_min_size         = 3
       name                 = "bai-services-cheap"
       kubelet_extra_args   = "${local.bai_services_cheap_kubelet_args}"
     },
@@ -250,4 +250,54 @@ module "eks" {
   map_accounts                         = "${var.map_accounts}"
   map_accounts_count                   = "${var.map_accounts_count}"
   config_output_path                   = "${var.data_dir}/"
+}
+
+##################
+# kube2iam roles #
+##################
+resource "aws_iam_role" "kube2iam-default-pod-role" {
+  # The default POD role does not have any policies attached on purpose.
+  # PODs that require permissions should have their own role.
+  name = "bai-default-pod-role"
+  assume_role_policy = <<-EOF
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": {
+          "AWS": "${module.eks.worker_iam_role_arn}"
+        },
+        "Action": "sts:AssumeRole"
+      }
+    ]
+  }
+  EOF
+}
+
+resource "aws_iam_role" "kube2iam-fetcher-pod-role" {
+  name = "fetcher"  # The idea is to have a very simple name here, since this role is what users will have to whitelist
+                    # in their bucket policy in order to give fetcher access to download their datasets.
+  assume_role_policy = <<-EOF
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": {
+          "AWS": "${module.eks.worker_iam_role_arn}"
+        },
+        "Action": "sts:AssumeRole"
+      }
+    ]
+  }
+  EOF
+}
+resource "aws_iam_role_policy_attachment" "kube2iam-fetcher-pod-role-data-puller" {
+  policy_arn = "${aws_iam_policy.data-pull-policy.arn}"
+  role = "${aws_iam_role.kube2iam-fetcher-pod-role.name}"
+}
+resource "aws_iam_role_policy_attachment" "kube2iam-fetcher-pod-role-s3-read-only" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
+  role = "${aws_iam_role.kube2iam-fetcher-pod-role.name}"
 }

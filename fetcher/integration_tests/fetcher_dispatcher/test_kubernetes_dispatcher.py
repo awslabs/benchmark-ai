@@ -8,6 +8,7 @@ from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
 
 
 # API boundary test - should just not fail starting the job - the job itself can fail
+from bai_k8s_utils.kubernetes_tests_client import KubernetesTestUtilsClient
 from fetcher_dispatcher.kubernetes_tests_client import KubernetesTestUtilsClient
 from preflight.data_set_size import DataSetSizeInfo
 

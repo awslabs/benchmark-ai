@@ -5,6 +5,7 @@ from bai_kafka_utils.utils import md5sum
 from kubernetes.client import V1Job
 from pytest import fixture, mark
 
+from bai_k8s_utils.service_labels import ServiceLabels
 from bai_kafka_utils.events import DataSet, BenchmarkEvent
 from fetcher_dispatcher import kubernetes_dispatcher, SERVICE_NAME
 from fetcher_dispatcher.args import FetcherJobConfig, FetcherVolumeConfig
@@ -148,9 +149,9 @@ def validate_namespaced_job(namespace: str, job: V1Job, data_set: DataSet):
     assert metadata.namespace == NAMESPACE
 
     assert metadata.labels == {
-        KubernetesDispatcher.ACTION_ID_LABEL: ACTION_ID,
-        KubernetesDispatcher.CLIENT_ID_LABEL: CLIENT_ID,
-        KubernetesDispatcher.CREATED_BY_LABEL: SERVICE_NAME,
+        ServiceLabels.ACTION_ID_LABEL: ACTION_ID,
+        ServiceLabels.CLIENT_ID_LABEL: CLIENT_ID,
+        ServiceLabels.CREATED_BY_LABEL: SERVICE_NAME,
         KubernetesDispatcher.DATA_SET_HASH_LABEL: md5sum(data_set.src),
     }
 
