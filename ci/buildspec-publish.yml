@@ -6,21 +6,19 @@ phases:
       - curl -O https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
       - bash Miniconda3-latest-Linux-x86_64.sh -b
       - export PATH=$PATH:/root/miniconda3/condabin
-      #Install kubectl 1.14 
+      # Install kubectl 1.14 
       - apt-get update && apt-get install -y apt-transport-https
       - curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
       - echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | tee -a /etc/apt/sources.list.d/kubernetes.list
-      - apt-get update 
+      - apt-get update && apt-get install -y kubectl=1.14.*
+      # Delete the older version from runtime
+      - rm $(which kubectl)  
     runtime-versions:
       docker: 18
   pre_build:
-    commands:
-      - which kubectl
-      - kubectl version --client=true
-      - apt-get install -y kubectl=1.14.*
-      - kubectl version --client=true
   build:
     commands:
+      - which kubectl
       - env
       - kubectl version --client=true
       - mkdir -p build
