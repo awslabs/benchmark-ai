@@ -2,6 +2,8 @@ version: 0.2
 
 phases:
   install:
+    runtime-versions:
+      docker: 18
     commands:
       - curl -O https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
       - bash Miniconda3-latest-Linux-x86_64.sh -b
@@ -11,8 +13,6 @@ phases:
       - curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
       - echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | tee -a /etc/apt/sources.list.d/kubernetes.list
       - apt-get update && apt-get install -y kubectl=1.14.*
-    runtime-versions:
-      docker: 18
   build:
     commands:
       - env
