@@ -1,4 +1,9 @@
-from fetcher_dispatcher.args import get_fetcher_service_config, FetcherServiceConfig, FetcherJobConfig
+from fetcher_dispatcher.args import (
+    get_fetcher_service_config,
+    FetcherServiceConfig,
+    FetcherJobConfig,
+    FetcherVolumeConfig,
+)
 
 MOCK_S3_BUCKET = "s3://something"
 
@@ -18,6 +23,10 @@ MOCK_NAMESPACE = "internal_namespace"
 
 MOCK_TTL = 42
 
+MOCK_MIN_VOLUME_SIZE = 64
+
+MOCK_STORAGE_CLASS = "very_fast"
+
 ALL_ARGS = (
     f"--s3-data-set-bucket={MOCK_S3_BUCKET} "
     f"--fetcher-job-image={MOCK_DOCKER_IMAGE} "
@@ -28,6 +37,8 @@ ALL_ARGS = (
     f"--fetcher-job-ttl={MOCK_TTL} "
     f"--fetcher-job-restart-policy={MOCK_RESTART_POLICY} "
     f"--fetcher-job-namespace={MOCK_NAMESPACE} "
+    f"--fetcher-job-min-volume-size={MOCK_MIN_VOLUME_SIZE} "
+    f"--fetcher-job-volume-storage-class={MOCK_STORAGE_CLASS}"
 )
 
 EXPECTED_CFG = FetcherServiceConfig(
@@ -41,6 +52,7 @@ EXPECTED_CFG = FetcherServiceConfig(
         namespace=MOCK_NAMESPACE,
         restart_policy=MOCK_RESTART_POLICY,
         ttl=MOCK_TTL,
+        volume=FetcherVolumeConfig(min_size=MOCK_MIN_VOLUME_SIZE, storage_class=MOCK_STORAGE_CLASS),
     ),
 )
 

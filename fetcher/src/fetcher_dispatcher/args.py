@@ -7,6 +7,14 @@ from typing import Optional, Dict
 
 from fetcher_dispatcher import SERVICE_NAME
 
+MIN_VOLUME_SIZE_MB = 64 * 1024  # 64 gb
+
+
+@dataclass
+class FetcherVolumeConfig:
+    min_size: int = 0  # In MB
+    storage_class: Optional[str] = None
+
 
 @dataclass
 class FetcherJobConfig:
@@ -16,6 +24,7 @@ class FetcherJobConfig:
     restart_policy: Optional[str] = None
     ttl: Optional[int] = None
     node_selector: Dict[str, str] = field(default_factory=dict)
+    volume: FetcherVolumeConfig = FetcherVolumeConfig()
 
 
 @dataclass
@@ -59,6 +68,16 @@ def get_fetcher_service_config(args) -> FetcherServiceConfig:
     )
 
     parser.add_argument("--fetcher-job-namespace", env_var="FETCHER_JOB_NAMESPACE", required=False, default="default")
+    parser.add_argument(
+        "--fetcher-job-min-volume-size",
+        env_var="FETCHER_JOB_MIN_VOLUME_SIZE",
+        required=False,
+        type=int,
+        default=MIN_VOLUME_SIZE_MB,
+    )
+    parser.add_argument(
+        "--fetcher-job-volume-storage-class", env_var="FETCHER_JOB_VOLUME_STORAGE_CLASS", required=False
+    )
 
     parsed_args, _ = parser.parse_known_args(args, env_vars=os.environ)
     return FetcherServiceConfig(
@@ -72,5 +91,9 @@ def get_fetcher_service_config(args) -> FetcherServiceConfig:
             pull_policy=parsed_args.fetcher_job_pull_policy,
             ttl=parsed_args.fetcher_job_ttl,
             restart_policy=parsed_args.fetcher_job_restart_policy,
+            volume=FetcherVolumeConfig(
+                storage_class=parsed_args.fetcher_job_volume_storage_class,
+                min_size=parsed_args.fetcher_job_min_volume_size,
+            ),
         ),
     )
