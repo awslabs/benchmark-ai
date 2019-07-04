@@ -15,7 +15,6 @@ phases:
       - rm $(which kubectl)  
     runtime-versions:
       docker: 18
-  pre_build:
   build:
     commands:
       - which kubectl
