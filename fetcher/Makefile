@@ -32,18 +32,10 @@ integration_tests:
 	cd mock-fetcher-job && $(MAKE) docker_publish $(TEST_LABEL)
 	cd $(INTEGRATION_TEST_FOLDERS) && $(MAKE) run $(TEST_LABEL)
 
-# Overrides how to deploy to Kubernetes because fetcher is using a poor man's version of Kustomize. Until we adopt it
-# properly this is good enough.
-override define fn_k8s_deploy
-	$(KUBECTL) apply $(KUBECTL_FLAGS) -k ./deploy
-endef
-
-override define fn_k8s_undeploy
-	$(KUBECTL) delete $(KUBECTL_FLAGS) -k ./deploy
-endef
-
 deploy.yml: _deploy_venv
 	echo "Kustomize deployment"
 	$(DEPLOY_CONDA_RUN) sed -e 's\|@@DOCKER_IMAGE_TAG@@\|$(DOCKER_IMAGE_TAG)\|g' \
 		-e 's\|@@JOB_DOCKER_IMAGE_TAG@@\|$(JOB_DOCKER_IMAGE_TAG)\|g' \
 		-e 's\|@@STAGE@@\|$(STAGE)\|g' deploy/kustomization.tpl.yml > deploy/kustomization.yml
+	$(KUBECTL) kustomize deploy > deploy.yml
+	rm -f deploy/kustomization.yml

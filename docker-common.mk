@@ -53,6 +53,12 @@ define fn_k8s_deploy
 	$(KUBECTL) apply $(KUBECTL_FLAGS) -f deploy.yml
 endef
 
+define fn_k8s_deploy
+	$(KUBECTL) apply $(KUBECTL_FLAGS) -f deploy.yml
+endef
+
+PHONY: deploy.yml
+
 deploy.yml: _deploy_venv
 	rm -f deploy.yml
 	cd deploy && for file in *.yml ; do \

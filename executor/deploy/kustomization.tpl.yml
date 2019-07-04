@@ -1,0 +1,5 @@
+bases:
+  - @@STAGE@@
+images:
+  - name: benchmarkai/executor
+    newName: @@DOCKER_IMAGE_TAG@@
