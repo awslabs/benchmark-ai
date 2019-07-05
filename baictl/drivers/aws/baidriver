@@ -71,7 +71,6 @@ create_infra() {
 
     ${kubectl} apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v1.11/nvidia-device-plugin.yml
     ${kubectl} apply -f $project_dir/metrics-pusher/metrics-pusher-roles.yaml
-    ${kubectl} apply -f https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended/kubernetes-dashboard.yaml
 
     echo "==> Adding permission for CodeBuild role to deploy into the Kubernetes cluster"
     _add_codebuild_role || return 1
@@ -84,6 +83,9 @@ create_infra() {
 
     echo "==> Installing Tiller"
     _install_tiller || return 1
+
+    echo "==> Installing kubernetes-dashboard"
+    _install_kubernetes_dashboard || return 1
 
     echo "==> Installing Prometheus"
     _install_prometheus || return 1
@@ -139,6 +141,15 @@ _install_tiller(){
     #TODO: Secure through TLS?: https://github.com/jonbcampos/kubernetes-series/blob/master/helm/scripts/add_secure_helm.sh
     # TODO: Permissions RBAC
     # https://medium.com/@amimahloof/how-to-setup-helm-and-tiller-with-rbac-and-namespaces-34bf27f7d3c3
+}
+
+_install_kubernetes_dashboard(){
+    # Remove the old dashboard which might have been installed manually in the cluster
+    if [[ "$(${helm} ls -q kubernetes-dashboard)" = "" ]] && [[ $(${kubectl} -n kube-system get --ignore-not-found=true -o json deployment/kubernetes-dashboard) != "" ]]; then
+        echo "INFO: Removing old kubernetes dashboard"
+        kubectl delete -f https://raw.githubusercontent.com/kubernetes/dashboard/5c5c73639a0a43df552ff839d8e358c2430b71f7/aio/deploy/recommended/kubernetes-dashboard.yaml
+    fi
+    ${helm} upgrade --install kubernetes-dashboard --namespace ${tiller_namespace} --wait stable/kubernetes-dashboard || return 1
 }
 
 _install_prometheus(){
