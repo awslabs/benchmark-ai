@@ -343,7 +343,7 @@ resource "aws_codebuild_project" "ci-blackbox-tests" {
   badge_enabled = false
 
   artifacts {
-    type = "NO_ARTIFACTS"
+    type = "CODEPIPELINE"
   }
 
   environment {
@@ -353,21 +353,7 @@ resource "aws_codebuild_project" "ci-blackbox-tests" {
   }
 
   source {
-    # Notice that `type` is set as GITHUB and not CODEPIPELINE.
-    #
-    # The reason is that if `CODEPIPELINE` is set, then the project cannot be run alone, it can only run within the
-    # context of a pipeline.
-    # While this is the intention of this job, it makes debugging more dificult, since the feedback-loop from "commit"
-    # to "running" the tests has to wait for the full pipeline execution.
-    #
-    # Also, if set to "GITHUB", then the CodeBuild project can also fit in a pipeline if it only contains `source_output`
-    # as its `input_artifact`, which is the case for the blackbox-tests CodeBuild project.
-    type            = "GITHUB"
-    location        = "https://github.com/${var.github_organization}/benchmark-ai.git"
-    git_clone_depth = 1
-    auth {
-      type = "OAUTH"
-    }
+    type            = "CODEPIPELINE"
     buildspec = "blackbox-tests/buildspec.yml"
   }
 
