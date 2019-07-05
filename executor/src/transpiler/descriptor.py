@@ -82,6 +82,9 @@ class Descriptor:
                     f'Please use Kubernetes cron job syntax or "single_run" for non-periodic runs'
                 )
 
+        if not isinstance(self.ml_args, str):
+            raise DescriptorError(f"Invalid type in field ml.args: it must be a string")
+
     def find_data_source(self, src: str):
         for source in self.data_sources:
             if source["src"] == src:

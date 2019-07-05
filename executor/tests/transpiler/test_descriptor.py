@@ -22,6 +22,12 @@ def test_descriptor_config(descriptor_config):
     assert descriptor_config.valid_strategies == strategies
 
 
+def test_invalid_args_type(descriptor_as_dict, descriptor_config):
+    descriptor_as_dict["ml"]["args"] = 4
+    with pytest.raises(DescriptorError):
+        Descriptor(descriptor_as_dict, descriptor_config)
+
+
 def test_find_data_source(descriptor, base_data_sources):
     source = descriptor.find_data_source(base_data_sources[0]["src"])
     assert source["path"] == base_data_sources[0]["path"]
