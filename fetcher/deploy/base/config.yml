@@ -8,7 +8,7 @@ data:
   job_node_selector: '{"node.type":"bai-services-network"}'
   job_image: benchmarkai/fetcher-job
   pull_policy: Always
-  min_volume_size: 65536
+  min_volume_size: "65536"
   storage_class: ""
 metadata:
   name: fetcher-dispatcher
