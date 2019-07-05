@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 conda_usage() {
-    printf '
+    printf "
 
  Anubis uses Conda to provide a predictable running environment.  Make
  sure you have Conda installed. We recommend installing miniconda via
@@ -11,12 +11,16 @@ conda_usage() {
 
  ${0##*/} --env-setup
 
-'
+ And then re-run the ${0##*/} command :-)
+
+"
     exit 9
 }
 
 if ! source $(conda info --root)/bin/activate anubis >& /dev/null; then
-    echo "there is a problem with conda..."
+    printf "
+  Oops, there seems to be a problem with Conda...
+        (Co you have Conda installed? Is it in your \$PATH?)\n"
     conda_usage
 fi
 
@@ -115,6 +119,10 @@ show_legend() {
 }
 
 check_tools() {
+    ((VERBOSE || DEBUG)) && echo "Using, bash --> BASH VERSION = ${BASH_VERSION}"
+    if (( $(sed -n -re 's/^([0-9]*).[0-9]*.[0-9]*.*-release.*/\1/p' <<< ${BASH_VERSION})  < 5 )); then
+        printf "\n\033[01;33mYour bash is too old, son. You need v5+, money-grip ;-)\033[0m\n\n"; exit 9;fi
+
     local num_missing_tools=0
     if type uuidgen  >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "uuidgen"; (( num_missing_tools++ ));fi
     if type sha1sum  >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "sha1sum"; (( num_missing_tools++ ));fi
@@ -567,6 +575,10 @@ get_history() {
     cat "${BAI_ACTION_IDS}"
 }
 
+#TODO - add the dependencies that cover some of the other tools this script needs:
+#  uuidgen
+#  sha1sum (GNU coreutils) 8.31
+#  curl (7.54.0)
 env_setup() {
     if ! conda --version && conda_usage; then conda_usage; fi;
     local tmp_environment_file=$(mktemp  -t "${0##*/}")
@@ -578,7 +590,6 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - bash 4.4.18
   - sed 4.7
   - jq 1.6
 EOF
@@ -586,10 +597,10 @@ EOF
     ${cmd}
     rm "${tmp_environment_file}.yml"
 
-    printf '
+    printf "
   Please proceed with your ${0##*/} shenanigans
 
-'
+"
 }
 #---------------------------------------
 
