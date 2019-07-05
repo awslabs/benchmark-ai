@@ -286,7 +286,14 @@ def test_create_data_set_manager(
 @patch.object(fetcher_dispatcher_service, "DataSetManager", autospec=True)
 def test_cmd_object(mockDataSetManager):
     cmd_object = DataSetCmdObject(mockDataSetManager)
-    cmd_object.cancel("CLIENT_ID", "ACTION_ID")
+    cmd_object.cancel("ACTION_ID", "CLIENT_ID")
+    mockDataSetManager.cancel.assert_called_once_with("CLIENT_ID", "ACTION_ID")
+
+
+@patch.object(fetcher_dispatcher_service, "DataSetManager", autospec=True)
+def test_cmd_object_positional_argument(mockDataSetManager):
+    cmd_object = DataSetCmdObject(mockDataSetManager)
+    cmd_object.cancel("ACTION_ID", client_id="CLIENT_ID")
     mockDataSetManager.cancel.assert_called_once_with("CLIENT_ID", "ACTION_ID")
 
 
