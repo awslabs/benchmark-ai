@@ -66,11 +66,10 @@ def bai_config():
 
 
 @pytest.fixture
-def descriptor(descriptor_config, base_data_sources):
-    return Descriptor(
-        toml.loads(
-            textwrap.dedent(
-                f"""\
+def descriptor_as_dict(descriptor_config, base_data_sources):
+    return toml.loads(
+        textwrap.dedent(
+            f"""\
         spec_version = '0.1.0'
         [info]
         task_name = 'Title'
@@ -93,11 +92,14 @@ def descriptor(descriptor_config, base_data_sources):
         [[data.sources]]
         src = '{base_data_sources[1]['src']}'
         path = '{base_data_sources[1]['path']}'
-    """
-            )
-        ),
-        descriptor_config,
+        """
+        )
     )
+
+
+@pytest.fixture
+def descriptor(descriptor_config, descriptor_as_dict):
+    return Descriptor(descriptor_as_dict, descriptor_config)
 
 
 @pytest.fixture
