@@ -34,6 +34,17 @@ spec:
               configMapKeyRef:
                 name: outputs-infrastructure
                 key: msk_bootstrap_brokers
+          - name: KAFKA_ZOOKEEPER_SERVERS
+            valueFrom:
+              configMapKeyRef:
+                name: outputs-infrastructure
+                key: msk_zookeeper_connect
+          - name: METRICS_CONSUMER_TOPIC
+            value: "BAI_METRICS"
+          - name: KAFKA_REPLICATION_FACTOR
+            value: "3"
+          - name: KAFKA_PARTITIONS
+            value: "3"
           volumeMounts:
             - mountPath: /config
               name: config-volume
