@@ -39,12 +39,18 @@ spec:
         - name: executor
           image: "benchmarkai/executor"
           env:
-          - name: AVAILABILITY_ZONES
+          - name: AVAILABILITY_ZONES_NAMES
             value:
             valueFrom:
               configMapKeyRef:
                 name: outputs-infrastructure
-                key: availability_zones
+                key: availability_zones_names
+          - name: AVAILABILITY_ZONES_IDS
+            value:
+            valueFrom:
+              configMapKeyRef:
+                name: outputs-infrastructure
+                key: availability_zones_ids
           - name: KAFKA_BOOTSTRAP_SERVERS
             valueFrom:
               configMapKeyRef:

@@ -1,7 +1,7 @@
 import os
 import configargparse
 
-from transpiler.config import BaiConfig, EnvironmentInfo
+from transpiler.config import BaiConfig, EnvironmentInfo, AvailabilityZoneInfo
 from transpiler.descriptor import DescriptorConfig
 from executor.config import ExecutorConfig
 
@@ -22,10 +22,18 @@ def get_args(argv):
     parser.add("-c", "--my-config", required=False, is_config_file=True, help="Config file path")
 
     parser.add(
-        "--availability-zones",
+        "--availability-zones-names",
         type=list_str,
-        env_var="AVAILABILITY_ZONES",
+        env_var="AVAILABILITY_ZONES_NAMES",
         help="All the availability zones which the benchmark can run, as a comma-separated list",
+        required=True,
+    )
+    parser.add(
+        "--availability-zones-ids",
+        type=list_str,
+        env_var="AVAILABILITY_ZONES_IDS",
+        help="Zone Ids of the passed availability zones",
+        required=True,
     )
 
     parser.add(
@@ -75,9 +83,19 @@ def create_bai_config(args):
     )
 
 
+def create_environment_info(args) -> EnvironmentInfo:
+    availability_zones_names = args.availability_zones_names
+    availability_zones_ids = args.availability_zones_ids
+
+    zones = [
+        AvailabilityZoneInfo(name, zone_id) for name, zone_id in zip(availability_zones_names, availability_zones_ids)
+    ]
+    return EnvironmentInfo(zones)
+
+
 def create_executor_config(argv):
     args = get_args(argv)
-    environment_info = EnvironmentInfo(availability_zones=args.availability_zones)
+    environment_info = create_environment_info(args)
     return ExecutorConfig(
         kubectl=args.kubectl,
         descriptor_config=create_descriptor_config(args),

@@ -8,8 +8,7 @@ from bai_kafka_utils.events import DataSet, BenchmarkDoc, FetcherPayload, Benchm
 from bai_kafka_utils.kafka_service import KafkaServiceConfig, KafkaService
 from transpiler.descriptor import Descriptor, DescriptorConfig
 from transpiler.bai_knowledge import EnvironmentInfo
-from transpiler.config import BaiConfig
-
+from transpiler.config import BaiConfig, AvailabilityZoneInfo
 
 ACTION_ID = "ACTION_ID"
 
@@ -34,7 +33,13 @@ def base_data_sources():
 
 @pytest.fixture
 def bai_environment_info():
-    return EnvironmentInfo(availability_zones=["us-east-1a", "us-east-1b", "us-east-1c"])
+    return EnvironmentInfo(
+        availability_zones=[
+            AvailabilityZoneInfo("us-east-1a", "use1-az1"),
+            AvailabilityZoneInfo("us-east-1b", "use1-az2"),
+            AvailabilityZoneInfo("us-east-1c", "use1-az3"),
+        ]
+    )
 
 
 @pytest.fixture
@@ -49,7 +54,10 @@ def fetched_data_sources(base_data_sources):
 @pytest.fixture
 def config_args(shared_datadir):
     required_args = (
-        "--descriptor=descriptor.toml --availability-zones=us-east-1a,us-east-1b,us-east-1c --kubectl=kubectl/path"
+        "--descriptor=descriptor.toml "
+        + "--availability-zones-names=us-east-1a,us-east-1b,us-east-1c "
+        + "--availability-zones-ids=use1-az1,use1-az2,use1-az3 "
+        + "--kubectl=kubectl/path"
     )
     return f'{required_args} -c {str(shared_datadir / "default_config.yaml")}'
 

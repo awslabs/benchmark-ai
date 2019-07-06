@@ -52,6 +52,9 @@ class Descriptor:
         self.dataset = descriptor_data.get("data", {}).get("id", "")
         self.data_sources = descriptor_data.get("data", {}).get("sources", [])
 
+        self.zone_id = descriptor_data["hardware"].get("aws_zone_id", "")
+        self.availability_zone = descriptor_data["hardware"].get("availability_zone", "")
+
         self._validate()
 
     @classmethod

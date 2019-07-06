@@ -1,3 +1,4 @@
+import logging
 import os
 import random
 import shlex
@@ -9,7 +10,7 @@ from typing import List, Dict
 
 from executor import SERVICE_NAME
 from executor.config import ExecutorConfig
-from transpiler.config import BaiConfig, BaiDataSource, EnvironmentInfo
+from transpiler.config import BaiConfig, BaiDataSource, EnvironmentInfo, AvailabilityZoneInfo
 from transpiler.descriptor import Descriptor
 from transpiler.kubernetes_spec_logic import ConfigTemplate, VolumeMount, Volume, EmptyDirVolumeSource
 
@@ -25,6 +26,9 @@ SHARED_MEMORY_VOLUME_MOUNT = "/dev/shm"
 class PullerDataSource:
     name: str
     puller_path: str
+
+
+logger = logging.getLogger(__name__)
 
 
 class BaiKubernetesObjectBuilder:
@@ -57,11 +61,8 @@ class BaiKubernetesObjectBuilder:
         self.config = config
         self.job_id = job_id.lower()  # Let's make it lower case - k8s complains about upper case chars
 
-        if random_object is None:
-            random_object = random.Random()
-
         # Using a random AZ is good enough for now
-        availability_zone = random_object.choice(environment_info.availability_zones)
+        availability_zone = self.choose_availability_zone(descriptor, environment_info, random_object)
 
         config_template.feed({"descriptor": descriptor})
         config_template.feed({"event": event})
@@ -73,6 +74,28 @@ class BaiKubernetesObjectBuilder:
 
         if descriptor.scheduling != "single_run":
             self.root.to_cronjob(descriptor.scheduling)
+
+    @staticmethod
+    def choose_availability_zone(
+        descriptor: Descriptor, environment_info: EnvironmentInfo, random_object: random.Random = None
+    ):
+        if descriptor.availability_zone:
+            if any(
+                [zone_info.name == descriptor.availability_zone for zone_info in environment_info.availability_zones]
+            ):
+                return descriptor.availability_zone
+        # Try to find the zone id
+        if descriptor.zone_id:
+            for zone_info in environment_info.availability_zones:
+                if zone_info.zone_id == descriptor.zone_id:
+                    return zone_info.name
+            logger.warning(f"Ignoring the zone id {descriptor.zone_id}")
+
+        if random_object is None:
+            random_object = random.Random()
+
+        zone: AvailabilityZoneInfo = random_object.choice(environment_info.availability_zones)
+        return zone.name
 
     def add_volumes(self, data_sources: List[BaiDataSource]):
         benchmark_container = self.root.find_container(BENCHMARK_CONTAINER)

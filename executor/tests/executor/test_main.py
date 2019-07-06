@@ -1,6 +1,6 @@
 from unittest import mock
 
-from transpiler.config import BaiConfig, EnvironmentInfo
+from transpiler.config import BaiConfig, EnvironmentInfo, AvailabilityZoneInfo
 from transpiler.descriptor import DescriptorConfig
 from bai_kafka_utils.kafka_service import KafkaServiceConfig, DEFAULT_NUM_PARTITIONS, DEFAULT_REPLICATION_FACTOR
 from executor.config import ExecutorConfig
@@ -19,7 +19,14 @@ VALID_STRATEGIES = "s1,s2"
 PULLER_MOUNT_CHMOD = "700"
 PULLER_S3_REGION = "us-east-1"
 PULLER_DOCKER_IMAGE = "example/docker:img"
-AVAILABILITY_ZONES = "az1,az2,az3"
+AVAILABILITY_ZONES_NAMES = "az1,az2,az3"
+AVAILABILITY_ZONES_IDS = "az-id1,az-id2,az-id3"
+
+EXPECTED_AVAILABILITY_ZONES = [
+    AvailabilityZoneInfo("az1", "az-id1"),
+    AvailabilityZoneInfo("az2", "az-id2"),
+    AvailabilityZoneInfo("az3", "az-id3"),
+]
 
 
 @mock.patch("executor.executor.create_executor")
@@ -39,7 +46,8 @@ def test_main(mock_create_executor):
         f" --transpiler-puller-mount-chmod {PULLER_MOUNT_CHMOD} "
         f" --transpiler-puller-s3-region {PULLER_S3_REGION} "
         f" --transpiler-puller-docker-image {PULLER_DOCKER_IMAGE} "
-        f" --availability-zones {AVAILABILITY_ZONES} "
+        f" --availability-zones-names {AVAILABILITY_ZONES_NAMES} "
+        f" --availability-zones-ids {AVAILABILITY_ZONES_IDS} "
     )
 
     expected_common_kafka_cfg = KafkaServiceConfig(
@@ -62,7 +70,7 @@ def test_main(mock_create_executor):
             puller_mount_chmod=PULLER_MOUNT_CHMOD,
             puller_docker_image=PULLER_DOCKER_IMAGE,
         ),
-        environment_info=EnvironmentInfo(availability_zones=AVAILABILITY_ZONES.split(",")),
+        environment_info=EnvironmentInfo(availability_zones=EXPECTED_AVAILABILITY_ZONES),
     )
 
     mock_create_executor.assert_called_with(expected_common_kafka_cfg, expected_executor_config)
