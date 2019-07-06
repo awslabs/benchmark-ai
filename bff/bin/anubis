@@ -127,19 +127,17 @@ check_tools() {
 
     local num_missing_tools=0
     if type uuidgen  >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "uuidgen"; (( num_missing_tools++ ));fi
-    if type sha1sum  >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "sha1sum"; (( num_missing_tools++ ));fi
-    if type whoami   >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "whoami"; (( num_missing_tools++ ));fi
     if type hostname >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "hostname"; (( num_missing_tools++ ));fi
-    if type date     >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "date"; (( num_missing_tools++ ));fi
     if type tar      >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "tar"; (( num_missing_tools++ ));fi
+
+    # ---- gotten via conda ----
+    if type whoami   >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "whoami"; (( num_missing_tools++ ));fi
+    if type date     >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "date"; (( num_missing_tools++ ));fi
+    if type sha1sum  >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "sha1sum"; (( num_missing_tools++ ));fi
     if type curl     >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "curl"; (( num_missing_tools++ ));fi
     if type jq       >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "jq"; (( num_missing_tools++ ));fi
-
-    #----------------
-    #HACK! For getting the correct damn base64 program when on a fuggin mac.  If on a mac install with brew to get real tools, damnit!!!
-    [[ $(uname) == "Darwin" ]] && base64_command="gbase64" || base64_command="base64"
-    if type ${base64_command}   >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "${base64_command}"; (( num_missing_tools++ ));fi
-    #----------------
+    if type base64   >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "base64"; (( num_missing_tools++ ));fi
+    if type sed      >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "sed"; (( num_missing_tools++ ));fi
 
     echo
     if (( num_missing_tools > 0 )); then
@@ -261,7 +259,7 @@ EOF
         "toml" : {
             "descriptor_filename" : "${descriptor_filename##*/}",
             "sha1" : "$(sha1sum ${descriptor_filename} | awk '{print $1}')",
-            "doc"  : "$(${base64_command} --wrap=0 ${descriptor_filename})"
+            "doc"  : "$(base64 --wrap=0 ${descriptor_filename})"
         }
     }
 }
@@ -609,13 +607,13 @@ get_history() {
 
 #TODO - add the dependencies that cover some of the other tools this script needs:
 #  uuidgen
-#  sha1sum (GNU coreutils) 8.31
+#  hostname
+#  tar
 env_setup() {
     if ! conda --version && conda_usage; then conda_usage; fi;
-    local tmp_environment_file=$(mktemp  -t "${0##*/}")
-    mv "${tmp_environment_file}"{,.yml}
+    local tmp_environment_file=$(mktemp -t "${0##*/}-XXXXXXXXX.yml")
     ((DEDBUG)) && echo "${tmp_environment_file}"
-    cat <<EOF > "${tmp_environment_file}".yml
+    cat <<EOF > "${tmp_environment_file}"
 name: anubis
 channels:
   - conda-forge
@@ -624,10 +622,11 @@ dependencies:
   - sed 4.7
   - jq 1.6
   - curl 7.54.1
+  - coreutils 8.31
 EOF
-    cmd="conda env update -f ${tmp_environment_file}.yml"
+    cmd="conda env update -f ${tmp_environment_file}"
     ${cmd}
-    rm "${tmp_environment_file}.yml"
+    rm "${tmp_environment_file}"
 
     printf "
   Please proceed with your %s shenanigans
