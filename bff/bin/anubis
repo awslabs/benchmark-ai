@@ -17,7 +17,7 @@ conda_usage() {
     exit 9
 }
 
-if ! source $(conda info --root)/bin/activate anubis >& /dev/null; then
+if ! source "${CONDA_EXE%/*}"/activate anubis >& /dev/null; then
     printf "
   Oops, there seems to be a problem with Conda...
         (Co you have Conda installed? Is it in your \$PATH?)\n"
@@ -80,12 +80,12 @@ Brought to you by the cool peeps of the  MXNet-Berlin Team
 }
 
 usage() {
-    printf '
+    printf "
 usage:
 
 This is the command-line, client-side interface to the Bechmark AI service...
 
- > %s --submit <descriptor file | action id> [ --script <path to script>] : Returns an "action id" if submission successful
+ > %s --submit <descriptor file | action id> [ --script <path to script>] : Returns an \"action id\" if submission successful
           --status   <action id>   : displays a report of the current status
           --results  <action id>   : displays results report of completed jobs
           --inspect  <message id> [<action-id>] : displays full details of specified message object
@@ -103,9 +103,9 @@ This is the command-line, client-side interface to the Bechmark AI service...
           --legend                 : displays quick legend of the emojis used
           --help                   : (this output)
 
-          (please use gnu tools for best results)
+          (please use gnu tools for best results!!!)
 
- "${0##*/}"' "${0##*/}"
+ " "${0##*/}" "${0##*/}"
     exit 0
 }
 
@@ -612,12 +612,11 @@ get_history() {
 #TODO - add the dependencies that cover some of the other tools this script needs:
 #  uuidgen
 #  sha1sum (GNU coreutils) 8.31
-#  curl (7.54.0)
 env_setup() {
     if ! conda --version && conda_usage; then conda_usage; fi;
     local tmp_environment_file=$(mktemp  -t "${0##*/}")
     mv ${tmp_environment_file}{,.yml}
-    echo ${tmp_environment_file}
+    ((DEDBUG)) && echo ${tmp_environment_file}
     cat <<EOF > ${tmp_environment_file}.yml
 name: anubis
 channels:
@@ -626,6 +625,7 @@ channels:
 dependencies:
   - sed 4.7
   - jq 1.6
+  - curl 7.54.1
 EOF
     cmd="conda env update -f ${tmp_environment_file}.yml"
     ${cmd}
