@@ -95,7 +95,6 @@
      {:message_id       (uuid)                                     ; <--
       :client_id        (some-> message-body :client_id)
       :action_id        (uuid)                                     ; <--
-      :target_action_id (some-> message-body :target_action_id)
       :client_version   (some-> message-body :client_version)
       :client_sha1      (some-> message-body :client_sha1)
       :client_username  (some-> message-body :client_username)
