@@ -16,6 +16,9 @@ description = """ \
 instance_type = "p3.8xlarge"
 strategy = "horovod"
 
+# 7/7/2019 this should do
+# aws_zone_id="use1-az6"
+
 # [Opt]
 [hardware.distributed]
 num_instances = 2
@@ -30,12 +33,12 @@ docker_image = "841569659894.dkr.ecr.us-east-1.amazonaws.com/testdockerpull:1.12
 [ml]
 benchmark_code = """
 #!/bin/bash
-echo 'ROLE' $ROLE
-cp /etc/mpi/hostfile /root/hosts
-cp /etc/mpi/hostfile /hosts
 cp /etc/mpi/hostfile /deep-learning-models/models/resnet/tensorflow/hosts
 chmod +x /deep-learning-models/models/resnet/tensorflow/train.sh
-./deep-learning-models/models/resnet/tensorflow/train.sh 3
+cd /deep-learning-models/models/resnet/tensorflow/
+# 4 GPUs per node
+./train.sh 8
+
 """
 
 # [Opt] 4. Dataset 
@@ -51,12 +54,12 @@ id = "imagenet"
 # Data download URI.
 src = "s3://mlperf-data-mxnet-berlin/imagenet/train-480px"
 # Path where the dataset is stored in the container FS
-path = "~/data/tf-imagenet/"
+path = "/root/data/tf-imagenet"
 
 # Second data source
 [[data.sources]]
 # Data download URI.
 src = "s3://mlperf-data-mxnet-berlin/imagenet/validation-480px"
 # Path where the dataset is stored in the container FS
-path = "~/data/tf-imagenet/"
+path = "/root/data/tf-imagenet"
 
