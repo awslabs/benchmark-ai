@@ -9,11 +9,11 @@ conda_usage() {
 
  Once Conda is installed run the following:
 
- ${0##*/} --env-setup
+ %s --env-setup
 
  And then re-run the ${0##*/} command :-)
 
-"
+" "${0##*/}"
     exit 9
 }
 
@@ -32,7 +32,7 @@ WATCH_PERIOD=5
 
 declare -r VERSION="0.1.0-481dad2"
 declare -r SERVICE_NAME="anubis-client"
-declare -r MY_SHA1=$(sha1sum ${0} | awk '{print $1}')
+declare -r MY_SHA1=$(sha1sum "${0}" | awk '{print $1}')
 declare -r BAI_HOME=${HOME}/.bai
 declare -r BAI_HISTORY=${BAI_HOME}/history
 declare -r BAI_SCRIPT_STAGING=${BAI_HOME}/script_staging
@@ -122,7 +122,7 @@ show_legend() {
 
 check_tools() {
     ((VERBOSE || DEBUG)) && echo "Using, bash --> BASH VERSION = ${BASH_VERSION}"
-    if (( $(sed -n -re 's/^([0-9]*).[0-9]*.[0-9]*.*-release.*/\1/p' <<< ${BASH_VERSION})  < 5 )); then
+    if (( $(sed -n -re 's/^([0-9]*).[0-9]*.[0-9]*.*-release.*/\1/p' <<< "${BASH_VERSION}")  < 5 )); then
         printf "\n\033[01;33mYour bash is too old, son. You need v5+, money-grip ;-)\033[0m\n\n"; exit 9;fi
 
     local num_missing_tools=0
@@ -171,7 +171,7 @@ get_client_id() {
 }
 
 ping_service_endpoint() {
-    show_registered_service_endpoint && curl $(_construct_endpoint_URL)/ready
+    show_registered_service_endpoint && curl "$(_construct_endpoint_URL)"/ready
 }
 
 register_service_endpoint() {
@@ -321,7 +321,6 @@ _prepare_script() {
 
     #NOTE: restrict (lint) script locations... (don't want script to point to "dangerous" places etc...)
     local artifact
-    local target
     if [[ -e "${script}" ]]; then
         ((DEBUG)) && echo "Located ${script} "$([[ -d "${script}" ]] && echo -n "directory" ; [[ -f "${script}" ]] && echo -n "file")", building artifact..."
         pushd "${script%/*}" >& /dev/null
@@ -355,12 +354,12 @@ _has_script() {
 submit() {
     local descriptor_filename=${1?"submit() -> You MUST supply a descriptor file (or <action id>)"}
     if [[ -n $(sed -rne '/[a-f0-9-]{8}-([a-f0-9-]{4}-){3}[a-f0-9-]{12}/p' <<<"${descriptor_filename}") ]]; then
-        descriptor_filename=$(_write_descriptor ${descriptor_filename})
+        descriptor_filename=$(_write_descriptor "${descriptor_filename}")
     fi
     local script_filename=${2:-""}
-    local current_service_endpoint=$(cat ${BAI_SERVICE_ENDPOINT_CONFIG} | tail -n 1)
+    local current_service_endpoint=$(cat "${BAI_SERVICE_ENDPOINT_CONFIG}" | tail -n 1)
 
-    if [ ! -f "${descriptor_filename}" ]; then echo "file does not exist"; exit 1; fi
+    if [ ! -f "${descriptor_filename}" ]; then echo "file [${descriptor_filename}], does not exist"; exit 1; fi
     if [[ -z "${current_service_endpoint}" ]]; then
         printf "
 \033[01;31m[WARNING]\033[0m You do not have a service endpoint registered.
@@ -387,8 +386,8 @@ submit() {
         if [[ -z "${returned}" ]]; then
             printf "
 \033[01;31m[WARNING]\033[0m Your submission was not sent, please check:
-          $(show_registered_service_endpoint)
- "
+          %s
+ " "$(show_registered_service_endpoint)"
             curl $(_construct_endpoint_URL)/ready
 
 
@@ -397,7 +396,7 @@ submit() {
         echo "${returned}"
         if [[ -n $(sed -rne '/[a-f0-9-]{8}-([a-f0-9-]{4}-){3}[a-f0-9-]{12}/p' <<<"${returned}") ]]; then
             [[ ! -d "${BAI_DATABASE}/$(get_client_id)/${returned}" ]] && mkdir -p "${BAI_DATABASE}/$(get_client_id)/${returned}"
-            echo "${returned} : ${descriptor_filename} : $(date)" >>  ${BAI_ACTION_IDS}
+            echo "${returned} : ${descriptor_filename} : $(date)" >>  "${BAI_ACTION_IDS}"
         fi
     else
         printf '\033[01;31m[ERROR]\033[0m No data to send.\n\n'
@@ -407,9 +406,9 @@ submit() {
 
 #local db lookup
 use_last_action_id() {
-    local last_action_id=$(cat ${BAI_ACTION_IDS} | tail -n 1 | awk '{print $1}')
+    local last_action_id=$(cat "${BAI_ACTION_IDS}" | tail -n 1 | awk '{print $1}')
     current_action_id=${last_action_id}
-    printf "$last_action_id"
+    printf "%s" "$last_action_id"
 }
 
 get_latest_event_timestamp() {
@@ -442,9 +441,8 @@ _read_local_submission_status() {
 
 _read_remote_submission_status() {
     local action_id=${1:-$(use_last_action_id)}
-    ((VERBOSE)) && echo "get_submission_status for action: ${action_id}"
+    ((DEBUG)) && echo "_read_remote_submission_status for action: ${action_id}"
     current_action_id=$action_id
-    ((DEBUG)) && echo "_read_local_submission_status for action: ${action_id}"
 
     local path=$(get_client_id)"/"${action_id}
     local current_service_endpoint=$(cat "${BAI_SERVICE_ENDPOINT_CONFIG}")
@@ -452,7 +450,7 @@ _read_remote_submission_status() {
 
     ((VERBOSE)) && echo "database = ${BAI_DATABASE}"
 
-    local since_tstamp=$(get_latest_event_timestamp ${action_id})
+    local since_tstamp=$(get_latest_event_timestamp "${action_id}")
 
     cmd="curl -s -X GET -H Content-Type: application/json http://"${current_service_endpoint}"/api/job/"${path}?since="${since_tstamp}"
     ((VERBOSE)) && echo ${cmd}
@@ -470,7 +468,7 @@ get_submission_status() {
 
     if ((SYNC_DATA)); then
         since_tstamp=0
-        [[ -f "${BAI_DATABASE}/$(get_client_id)/${action_id}/data" ]] && mv ${BAI_DATABASE}/$(get_client_id)"/"${action_id}/data{,.bkup}
+        [[ -f "${BAI_DATABASE}/$(get_client_id)/${action_id}/data" ]] && mv "${BAI_DATABASE}/$(get_client_id)/${action_id}/data"{,.bkup}
     else
         _read_local_submission_status "${action_id}"
     fi
@@ -492,7 +490,7 @@ get_submission_status() {
             sleep "${WATCH_PERIOD}"
         done
     else
-        curl -s $(_construct_endpoint_URL)/ready
+        curl -s "$(_construct_endpoint_URL)"/ready
         if (( $? != 0 )); then
             printf "\033[01;31m[no connection to service]\033[0m\n"
             exit 9
@@ -536,7 +534,7 @@ get_results() {
 #command event
 abort_submission() {
     local action_id=${1:?"abort_submission() -> You MUST provide the action_id returned by the initial submission"}
-    local current_service_endpoint=$(cat ${BAI_SERVICE_ENDPOINT_CONFIG} | tail -n 1)
+    local current_service_endpoint=$(cat "${BAI_SERVICE_ENDPOINT_CONFIG}" | tail -n 1)
     shift
     ((VERBOSE)) && echo "abort submisson ${action_id}"
 
@@ -554,7 +552,7 @@ abort_submission() {
     if [[ -n "${data}" ]]; then
         cmd="curl -s -X DELETE -H Content-Type: application/json -d '"${data}"' http://"${current_service_endpoint}"/api/job/$(get_client_id)/${action_id}"
         ((VERBOSE)) && echo ${cmd}
-        returned=$(eval ${cmd})
+        returned=$(eval "${cmd}")
         echo "${returned}"
     else
         printf '\033[01;31m[ERROR]\033[0m No data to send.\n\n'
@@ -615,9 +613,9 @@ get_history() {
 env_setup() {
     if ! conda --version && conda_usage; then conda_usage; fi;
     local tmp_environment_file=$(mktemp  -t "${0##*/}")
-    mv ${tmp_environment_file}{,.yml}
-    ((DEDBUG)) && echo ${tmp_environment_file}
-    cat <<EOF > ${tmp_environment_file}.yml
+    mv "${tmp_environment_file}"{,.yml}
+    ((DEDBUG)) && echo "${tmp_environment_file}"
+    cat <<EOF > "${tmp_environment_file}".yml
 name: anubis
 channels:
   - conda-forge
@@ -632,9 +630,9 @@ EOF
     rm "${tmp_environment_file}.yml"
 
     printf "
-  Please proceed with your ${0##*/} shenanigans
+  Please proceed with your %s shenanigans
 
-"
+" "${0##*/}"
 }
 #---------------------------------------
 
@@ -719,7 +717,7 @@ main() {
                     ;;
                 --register)
                     shift
-                    register_service_endpoint ${1}
+                    register_service_endpoint "${1}"
                     ;;
                 --ping-service-endpoint)
                     shift
