@@ -19,7 +19,7 @@ exporter.metric.expire.seconds=60
 # kubectl describe configmap outputs-infrastructure -> msk_bootstrap_brokers
 bootstrap.servers=@@KAFKA_BOOTSTRAP_SERVERS@@
 
-kafka.consumer.topics=BAI_METRICS
+kafka.consumer.topics=@@METRICS_CONSUMER_TOPIC@@
 
 # A unique string that identifies the consumer group this consumer belongs to. This property is required if
 # the consumer uses either the group management functionality by using <code>subscribe(topic)</code> or the

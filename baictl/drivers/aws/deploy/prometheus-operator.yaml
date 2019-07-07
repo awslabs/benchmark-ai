@@ -43,3 +43,23 @@ prometheus:
             regex: ([^:]+)(?::\d+)?
             replacement: ${1}:9400
             target_label: __address__
+      - job_name: bai_kafka_metrics
+        honor_timestamps: true
+        scrape_interval: 5s
+        scrape_timeout: 4s
+        metrics_path: /metrics
+        scheme: http
+        kubernetes_sd_configs:
+        - role: pod
+          namespaces:
+            names:
+            - default
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_service]
+            action: keep
+            regex: prometheus-kafka-topic-exporter
+          - source_labels: [__address__]
+            action: replace
+            regex: ([^:]+)(?::\d+)?
+            replacement: ${1}:12340
+            target_label: __address__
