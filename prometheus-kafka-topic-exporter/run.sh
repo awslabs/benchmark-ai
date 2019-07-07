@@ -8,10 +8,11 @@ sed  "s/@@METRICS_CONSUMER_TOPIC@@/$METRICS_CONSUMER_TOPIC/g" /config/kafka-topi
 
 # Create Kafka Topic we're consuming
 /opt/kafka/bin/kafka-topics.sh --create \
+  --if-not-exists \
   --zookeeper ${KAFKA_ZOOKEEPER_SERVERS} \
   --replication-factor ${KAFKA_REPLICATION_FACTOR} --partitions ${KAFKA_PARTITIONS} \
   --topic ${METRICS_CONSUMER_TOPIC} \
-  || echo "Topic already exists"
+  || echo "Topic might already exist"
 
 # The default is to log to a local file - not that convenient when expecting output on stdout
 java -Dlog4j.configuration=file:///config/log4j.properties -jar /opt/kafka-topic-exporter.jar /tmp/kafka-topic-exporter.properties

@@ -27,6 +27,7 @@ spec:
               topologyKey: kubernetes.io/hostname
       containers:
         - name: prometheus-kafka-topic-exporter
+          imagePullPolicy: Always
           image: @@DOCKER_IMAGE_TAG@@
           env:
           - name: KAFKA_BOOTSTRAP_SERVERS
