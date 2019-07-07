@@ -229,8 +229,6 @@ _generate_submit_event() {
     local descriptor_filename=${1?"generate_submit_event() -> You MUST supply a descriptor file as first argument to this function"}
     local script=${2:-""}
 
-    #TODO - edit this file properly with SED...
-    #To insert the [[ml.script]] TOML section...
     if [[ -n "${script}" ]]; then
         if grep -q '\[\[ml.script\]\]' "${descriptor_filename}"; then
             sed -i "/^###.*begin.*anubis.*###$/, /^###.*end.*anubis.*###$/ s#^\(script[ ]*=\)\(.*\)#\1 \""${script_artifact##*/}"\"#"  ${descriptor_filename}
@@ -273,8 +271,7 @@ _generate_command_event() {
     local command=${1}
     shift
     local action_id=${1?"generate_command_event() -> You MUST supply the action id as the second argument to this function"}
-    local command_args=(${@})
-
+    local command_args=("${@}")
 
     local event=$(cat <<-EOF
 {
@@ -345,7 +342,7 @@ _prepare_script() {
 _has_script() {
     local cmd
     cmd="curl http://${current_service_endpoint}/api/job/script/${script_artifact##*/}"
-    if [[ "true" == $(eval cmd) ]]; then  0; else 1; fi;
+    if [[ "true" == "$(eval ${cmd})" ]]; then  return 0; else return 1; fi;
 }
 
 #submit event
@@ -373,7 +370,7 @@ submit() {
     local returned
 
     if [[ -n "${data}" ]]; then
-        [[ -n "${script_artifact}" ]] && echo "Using Script: ${script_artifact##*/}"
+        [[ -n "${script_artifact}" ]] && echo "Using Script: ${script_artifact##*/}" 1>&2
         cmd="curl -F submit-event='"${data}"' "$( [[ -n "${script_artifact}" && ! $(_has_script "${script_artifact##*/}") ]] && echo -n "-F script="@${script_artifact})" http://"${current_service_endpoint}"/api/job/descriptor"
         ((VERBOSE)) && echo ${cmd}
         _print_status "sending ${descriptor_filename} "$( [[ -n "${script_artifact}" ]] && echo -n "and '"@${script_artifact##*/}"'")"to anubis service @ ${current_service_endpoint}"
@@ -391,11 +388,11 @@ submit() {
 
         fi
 
-        echo "${returned}"
         if [[ -n $(sed -rne '/[a-f0-9-]{8}-([a-f0-9-]{4}-){3}[a-f0-9-]{12}/p' <<<"${returned}") ]]; then
             [[ ! -d "${BAI_DATABASE}/$(get_client_id)/${returned}" ]] && mkdir -p "${BAI_DATABASE}/$(get_client_id)/${returned}"
             echo "${returned} : ${descriptor_filename} : $(date)" >>  "${BAI_ACTION_IDS}"
         fi
+        echo "${returned}"
     else
         printf '\033[01;31m[ERROR]\033[0m No data to send.\n\n'
         exit 1
@@ -460,6 +457,12 @@ EOF
 #REST API call
 get_submission_status() {
     local action_id=${1:-$(use_last_action_id)}
+
+    if [[ -z $(sed -rne '/[a-f0-9-]{8}-([a-f0-9-]{4}-){3}[a-f0-9-]{12}/p' <<<"${action_id}") ]]; then
+        printf "\033[01;31m[ERROR] Incorrect action-id format: expecting a UUID\033[0m\n"
+        exit 9
+    fi
+
     ((VERBOSE)) && echo "get_submission_status for action: ${action_id}"
     current_action_id=$action_id
     echo "Status: [${action_id}]"
@@ -508,8 +511,7 @@ _print_status() {
 
 # (Note: $line is scope in the while loop that this function is called in)
 _as_status_line() {
-    #TODO - see if can pass in a value that reflects if this is a "new" entry of not. confirm while scoping of line
-    #     - change these 3 jq calls to a single jq call that creates the arg list for _print_status directly
+    #TODO - change these 3 jq calls to a single jq call that creates the arg list for _print_status directly
     local msg=$(jq --compact-output '.msg' <<<"$line")
     local src=$(jq --compact-output '.src' <<<"$line")
     local id=$(jq  --compact-output '.id'  <<<"$line")
@@ -642,38 +644,59 @@ main() {
     _setup
 
     local SUBMIT=0;
+    local STATUS=0;
     local descriptor_filename=""
+    local id_status_is_desired_for=""
     local script=""
 
         while [ -n "$1" ]; do
-    #echo "arg ${i} = $1"
+            #echo "arg ${i} = $1"
             local unshift=0
             case $1 in
                 --verbose | -vv)
                     VERBOSE=1
+                    echo "[verbose mode: on]"
                     ;;
                 --debug | -dbg)
                     DEBUG=1
+                    echo "[debug mode: on]"
                     ;;
                 --sync-data)
                     SYNC_DATA=1
+                    ((VERBOSE)) && echo "[sync local data <==> service data]"
                     ;;
                 --watch)
                     WATCH=1
+                    printf " %b\n" "${emoji[watcher]}"
                     ;;
                 --submit)
                     shift
-                    ((SUBMIT++))
-                    descriptor_filename="${1}"
+                    SUBMIT=1
+                    until [[ -n "$(echo "${1}" | sed -rn '/^\s*--/p')" || -z "${1}" ]]; do
+                        ((DEBUG)) && echo "submit looking at arg $1"
+                        descriptor_filename="${1}"
+                        shift
+                    done
+                    unshift=1
                     ;;
                 --script)
                     shift
-                    script="${1}"
+                    until [[ -n "$(echo "${1}" | sed -rn '/^\s*--/p')" || -z "${1}" ]]; do
+                        ((DEBUG)) && echo "script looking at arg $1"
+                        script="${1}"
+                        shift
+                    done
+                    unshift=1
                     ;;
                 --status)
                     shift
-                    get_submission_status ${1}
-                    [ -z "${1}" ] && shift
+                    STATUS=1
+                    until [[ -n "$(echo "${1}" | sed -rn '/^\s*--/p')" || -z "${1}" ]]; do
+                        ((DEBUG)) && echo "status looking at arg $1"
+                        id_status_is_desired_for="${1}"
+                        shift
+                    done
+                    unshift=1
                     ;;
                 --results)
                     shift
@@ -742,17 +765,17 @@ main() {
                     ;;
                 --inspect| -i)
                     shift
-                    inspect ${@}
-                    exit 0
+                    inspect "${@}"
+                    exit $?
                     ;;
                 --show-descriptor | --show-desc)
                     shift
-                    show_descriptor $@
+                    show_descriptor "${@}"
                     exit $?
                     ;;
                 --write-descriptor | --write-desc) #"hidden" option
                     shift
-                    _write_descriptor $@
+                    _write_descriptor "${@}"
                     exit $?
                     ;;
                 --banner) #"hidden" option
@@ -767,7 +790,12 @@ main() {
             esac
             ((!unshift)) && shift
         done
-        ((SUBMIT)) && submit "${descriptor_filename}" "${script}"
+        if ((SUBMIT && STATUS)) ; then
+            get_submission_status $(submit "${descriptor_filename}" "${script}")
+        else
+            ((SUBMIT)) && submit "${descriptor_filename}" "${script}"
+            ((STATUS)) && get_submission_status "${id_status_is_desired_for}"
+        fi
 }
 
 main "$@"
