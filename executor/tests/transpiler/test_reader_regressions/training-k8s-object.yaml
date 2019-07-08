@@ -29,7 +29,7 @@ spec:
         volumeMounts:
         - name: datasets-volume
           mountPath: /data
-        image: benchmarkai/puller:fef9a60
+        image: benchmarkai/puller:3115770
         args:
         - puller-data
         - object-name/dir0,777,p0:object-name/dir1,777,p1

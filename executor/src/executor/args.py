@@ -63,10 +63,7 @@ def create_descriptor_config(args):
 
 
 def create_bai_config(args):
-    return BaiConfig(
-        puller_mount_chmod=args.puller_mount_chmod,
-        puller_docker_image=args.puller_docker_image,
-    )
+    return BaiConfig(puller_mount_chmod=args.puller_mount_chmod, puller_docker_image=args.puller_docker_image)
 
 
 def create_executor_config(argv, env=os.environ):

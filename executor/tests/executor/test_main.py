@@ -63,10 +63,7 @@ def test_main(mock_create_executor, mock_availability_zones, mock_env):
     expected_executor_config = ExecutorConfig(
         kubectl=KUBECTL,
         descriptor_config=DescriptorConfig(valid_strategies=VALID_STRATEGIES.split(",")),
-        bai_config=BaiConfig(
-            puller_mount_chmod=PULLER_MOUNT_CHMOD,
-            puller_docker_image=PULLER_DOCKER_IMAGE,
-        ),
+        bai_config=BaiConfig(puller_mount_chmod=PULLER_MOUNT_CHMOD, puller_docker_image=PULLER_DOCKER_IMAGE),
         environment_info=EnvironmentInfo(availability_zones=mock_availability_zones),
     )
 
