@@ -15,4 +15,4 @@ phases:
       - ls -la
       - env
       - cd ${PROJECT_NAME}
-      - make deploy STAGE=prod COMMIT_SHORT_HASH=${CODEBUILD_RESOLVED_SOURCE_VERSION} VERSION=latest DOCKER_REGISTRY=${DOCKER_REGISTRY} || echo "New deploy failed :)"
+      - make deploy STAGE=prod COMMIT_SHORT_HASH=${CODEBUILD_RESOLVED_SOURCE_VERSION} VERSION=latest DOCKER_REGISTRY=${DOCKER_REGISTRY}
