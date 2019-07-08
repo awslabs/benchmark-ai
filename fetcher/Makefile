@@ -5,6 +5,7 @@ include ../python-common.mk
 PROJECT=fetcher
 
 include ../docker-common.mk
+include ../deploy-common.mk
 
 STAGE ?= devo
 

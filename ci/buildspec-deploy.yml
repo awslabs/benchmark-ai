@@ -14,28 +14,5 @@ phases:
     commands:
       - ls -la
       - env
-      # The directory where the artifacts from the `publish` step (Kubernetes yaml files) is explained here:
-      # https://docs.aws.amazon.com/codebuild/latest/userguide/sample-pipeline-multi-input-output.html
-      # More specifically this part:
-      #   > Each input source is installed in its own directory. This directory is stored in the built-in environment
-      #   > variable $CODEBUILD_SRC_DIR for the primary source and $CODEBUILD_SRC_DIR_yourInputArtifactName for all
-      #   > other sources. For the pipeline in this sample, the two input source directories are $CODEBUILD_SRC_DIR and
-      #   > $CODEBUILD_SRC_DIR_source2. For more information, see Environment Variables in Build Environments.
-      - deploy_artifacts_directory=$(env | grep CODEBUILD_SRC_DIR_ | cut -d '=' -f 2)
-      - cd $deploy_artifacts_directory
-      - ls -la
-      - |
-        if [ -f "deploy.yml" ]; then
-          if  [ $(stat --printf="%s" deploy.yml) -gt 0 ]; then
-            echo "==> Deploying with 'deploy.yml' file:"
-            cat deploy.yml
-            kubectl apply -f deploy.yml
-          else
-            echo "==> The file 'deploy.yml' exists but is empty. Assuming there is nothing to deploy."
-          fi
-        else
-          echo "==> ERROR: Artifacts to deploy were not created. Erroring!"
-          echo "PWD=$(pwd)"
-          env
-          exit 1
-        fi
+      - cd ${PROJECT_NAME}
+      - make deploy STAGE=prod COMMIT_SHORT_HASH=${CODEBUILD_RESOLVED_SOURCE_VERSION} VERSION=latest DOCKER_REGISTRY=${DOCKER_REGISTRY} || echo "New deploy failed :)"

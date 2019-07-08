@@ -150,13 +150,12 @@ resource "aws_codepipeline" "codepipeline" {
         category = "Build"
         owner = "AWS"
         provider = "CodeBuild"
-        input_artifacts = ["source_output", replace("publish_output_${project.value}", "-", "_")]
+        input_artifacts = ["source_output"]
         output_artifacts = []
         version = "1"
 
         configuration = {
           ProjectName = "${project.value}-deploy"
-          PrimarySource = "source_output"
         }
       }
     }

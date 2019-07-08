@@ -7,6 +7,7 @@ BENCHMARK_DIR=../..
 JOB_NAME=fetcher-it
 
 include $(BENCHMARK_DIR)/docker-common.mk
+include $(BENCHMARK_DIR)/deploy-common.mk
 
 
 build:
@@ -14,7 +15,7 @@ build:
 
 run: publish k8s_run
 
-k8s_run: _k8s_silent_cleanup _k8s_silent_undeploy k8s_deploy _wait_for_job _k8s_cleanup
+k8s_run: _k8s_silent_cleanup _k8s_silent_undeploy deploy _wait_for_job _k8s_cleanup
 
 _docker_package: _pre_docker_package
 	$(DOCKER) build $(BENCHMARK_DIR) -f $(BENCHMARK_DIR)/Dockerfile-it --build-arg SERVICE=$(SERVICE) -t $(DOCKER_IMAGE_TAG)

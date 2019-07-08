@@ -29,6 +29,7 @@ phases:
             # Now we need the cluster
             export KUBECONFIG=$(kind get kubeconfig-path)
             kubectl wait --for=condition=ready --timeout=120s node/kind-control-plane
+            make publish STAGE=local LOCAL_DEPLOY="kind load docker-image " COMMIT_SHORT_HASH="local-latest"
             make deploy STAGE=local LOCAL_DEPLOY="kind load docker-image " COMMIT_SHORT_HASH="local-latest"
             # All the containers are probably just creating
             kubectl get pods
