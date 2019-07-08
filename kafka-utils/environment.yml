@@ -12,5 +12,5 @@ dependencies:
   - python-kubernetes 9.0.*
   - pip:
       - ConfigArgParse
-      - dataclasses-json >= 0.2.7
+      - dataclasses-json==0.2.7
       - dacite
