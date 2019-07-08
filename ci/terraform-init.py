@@ -1,7 +1,15 @@
 #!/usr/bin/env python3
+import json
 import os
+
+import requests
+from pathlib import Path
+
+import shutil
 import textwrap
 from collections import namedtuple
+from time import time
+
 from typing import Dict
 
 import subprocess
@@ -122,6 +130,68 @@ def chime_hook_url(config, session):
         pass
 
 
+def file_replace_line(file_path, str_find, str_replace):
+    """ Replace line <str_find> with <str_replace> in the file located at <file_path>
+    """
+    tmp_file_path = file_path + ".tmp"
+    with open(file_path, "r") as file_orig, open(tmp_file_path, "w") as file_new:
+        for line in file_orig:
+            file_new.write(line.replace(str_find, str_replace))
+
+    shutil.move(tmp_file_path, file_path)
+
+
+def load_cookies_from_mozilla(filename):
+    """ Loads cookies from the file saved in Netscape format (e.g. curl saves in this format)
+    Returns MozillaCookieJar object
+    """
+    import tempfile
+    from http.cookiejar import MozillaCookieJar
+    from http.cookiejar import Cookie
+
+    if not os.path.isfile(filename):
+        return None
+
+    tmp_file = tempfile.NamedTemporaryFile()
+    tmp_file.close()
+    tmp_file_path = tmp_file.name
+    shutil.copy(filename, tmp_file_path)
+
+    file_replace_line(tmp_file_path, "#HttpOnly_", "")  # Cheating: just remove HttpOnly_ flag
+    file_replace_line(
+        tmp_file_path, "\r", ""
+    )  # if created on Windows, cookie value will have \r at the end on Linux which breaks SSL connection with midway-auth
+
+    ns_cookiejar = MozillaCookieJar()
+    ns_cookiejar.load(tmp_file_path, ignore_discard=True, ignore_expires=True)
+    os.remove(tmp_file_path)
+
+    for c in ns_cookiejar:
+        args = dict(vars(c).items())
+        args["rest"] = args["_rest"]
+        del args["_rest"]
+        c = Cookie(**args)
+        epoch_time = int(time())
+        if c.expires > 0 and c.expires < epoch_time:
+            raise ValueError("cookie is expired. Please run mwinit")
+        if c.expires == 0:
+            c.expires = None  # convert curl format to python cookie format
+        ns_cookiejar.set_cookie(c)
+
+    return ns_cookiejar
+
+
+def prefix_list_id(config):
+    if config["prefix_list_id"]:
+        return
+
+    region = config["region"]
+    jar = load_cookies_from_mozilla(str(Path.home() / ".midway/cookie"))
+    response = requests.get(f"https://apll.corp.amazon.com/?region={region}&format=json", cookies=jar, verify=False)
+    result = json.loads(response.text)
+    config["prefix_list_id"] = result["result"]["com.amazonaws.firewall.regional-corp-only"]
+
+
 def main():
     description = textwrap.dedent(
         """\
@@ -147,6 +217,7 @@ def main():
 
     chime_hook_url(config, session)
     s3_remote_state_bucket(config, region, session)
+    prefix_list_id(config)
 
     config.write()
 
