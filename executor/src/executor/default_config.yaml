@@ -1,6 +1,5 @@
 transpiler-puller-mount-chmod: 777
-transpiler-puller-s3-region: eu-west-1
-transpiler-puller-docker-image: stsukrov/puller
+transpiler-puller-docker-image: benchmarkai/puller:3115770
 
 # descriptor config
 transpiler-valid-strategies: single_node,horovod

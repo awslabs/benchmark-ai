@@ -38,13 +38,6 @@ def get_args(argv, env=None):
     )
 
     parser.add(
-        "--transpiler-puller-s3-region",
-        env_var="TRANSPILER_PULLER_S3_REGION",
-        dest="puller_s3_region",
-        help="Region for the data pullers S3 bucket",
-    )
-
-    parser.add(
         "--transpiler-puller-docker-image",
         env_var="TRANSPILER_PULLER_DOCKER_IMAGE",
         dest="puller_docker_image",
@@ -70,11 +63,7 @@ def create_descriptor_config(args):
 
 
 def create_bai_config(args):
-    return BaiConfig(
-        puller_mount_chmod=args.puller_mount_chmod,
-        puller_s3_region=args.puller_s3_region,
-        puller_docker_image=args.puller_docker_image,
-    )
+    return BaiConfig(puller_mount_chmod=args.puller_mount_chmod, puller_docker_image=args.puller_docker_image)
 
 
 def create_executor_config(argv, env=os.environ):

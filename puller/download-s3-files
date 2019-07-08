@@ -1,43 +1,22 @@
 #!/bin/bash
 
-REGION=$1
-declare -a REGIONS=(
-    "ap-northeast-1"
-    "ap-southeast-1"
-    "ap-southeast-2"
-    "cn-north-1"
-    "eu-west-1"
-    "sa-east-1"
-    "us-east-1"
-    "us-gov-west-1"
-    "us-west-1"
-    "us-west-2"
-    "eu-central-1"
-)
+BUCKET=$1
 
 declare -a HELP=("--help" "-h" "help")
-if [[ " ${HELP[*]} " == *" $REGION "* ]]; then
-    echo "Usage: $0 <REGION> <S3Bucket> <FILE1>:<FILE2>:..."
+if [[ " ${HELP[*]} " == *" $BUCKET "* ]]; then
+    echo "Usage: $0 <S3Bucket> <FILE1>:<FILE2>:..."
     echo "  <Files> format: <S3Path>[,Permissions][,DOWNLOADPATH]"
     exit 0
 fi
 
-if [[ " ${REGIONS[*]} " != *" $REGION "* ]]; then
-    echo "'${REGION}' not a recognized region!"
-    echo "Must be one of: [ ${REGIONS[@]} ]"
-    exit 1
-fi
-
-BUCKET=$2
-
-USER_FILES=$3
+USER_FILES=$2
 FILES=(${USER_FILES//:/ })
 
 #Ugly HACK to check if should be a dir.
 #Brittle and unstable - yes, fails for filenames with PRE
 is_prefix(){
     local S3FILE=$1
-    pre=$(aws s3 ls --region ${REGION} s3://${BUCKET}/${S3FILE} | grep " PRE ")
+    pre=$(aws s3 ls s3://${BUCKET}/${S3FILE} | grep " PRE ")
     [ -n "${pre}" ] || return 1
 }
 
@@ -60,8 +39,8 @@ for file in "${FILES[@]}"; do
         echo " ---> No download path for ${file}, assuming ${TARGET}"
     fi
 
-    CMD="aws s3 cp --region ${REGION} s3://${BUCKET}/${S3FILE} ${TARGET}"
-    is_prefix "$S3FILE" && CMD="aws s3 sync --region ${REGION} s3://${BUCKET}/${S3FILE} ${TARGET}"
+    CMD="aws s3 cp s3://${BUCKET}/${S3FILE} ${TARGET}"
+    is_prefix "$S3FILE" && CMD="aws s3 sync s3://${BUCKET}/${S3FILE} ${TARGET}"
     echo " ---> Executing: ${CMD}"
     eval $CMD
 

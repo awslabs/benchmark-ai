@@ -24,9 +24,7 @@ def test_create_descriptor_config(config_args, config_env):
 def test_create_bai_config(config_args, config_env):
     args = get_args(config_args, config_env)
     expected_config = BaiConfig(
-        puller_docker_image=args.puller_docker_image,
-        puller_mount_chmod=args.puller_mount_chmod,
-        puller_s3_region=args.puller_s3_region,
+        puller_docker_image=args.puller_docker_image, puller_mount_chmod=args.puller_mount_chmod
     )
     bai_config = create_bai_config(args)
 
@@ -39,9 +37,7 @@ def test_create_executor_config(config_args, config_env, mock_availability_zones
     args = get_args(config_args, config_env)
     expected_descriptor_config = DescriptorConfig(valid_strategies=args.valid_strategies)
     expected_bai_config = BaiConfig(
-        puller_docker_image=args.puller_docker_image,
-        puller_mount_chmod=args.puller_mount_chmod,
-        puller_s3_region=args.puller_s3_region,
+        puller_docker_image=args.puller_docker_image, puller_mount_chmod=args.puller_mount_chmod
     )
     expected_environment_info = EnvironmentInfo(mock_availability_zones)
     expected_executor_config = ExecutorConfig(
