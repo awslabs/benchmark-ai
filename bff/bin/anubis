@@ -170,6 +170,25 @@ check_version() {
 #---------------------------------------------------------
 # Event Construction
 #---------------------------------------------------------
+_package_command_args() {
+    local required_field="${1}"
+    shift
+
+    local data
+    if [[ "${1}" == "--json" ]]; then
+        shift
+        local required_map=$(cat <<EOF
+{"target_action_id" : "${required_field}"}
+EOF
+              )
+        data=$(jq '.' <<< "$@")
+        echo ${required_map} ${data} | jq -s add
+    else
+        #echo "Number of args is ${#command_args[@]}"
+        data=$(sed 's/.$//g' <<< $(for item in $(echo "${required_field} "${@}); do echo -n "\""${item}"\","; done))
+        printf "[${data}]"
+    fi
+}
 
 # TODO - Also, look at changing the formulation of client_id to just be the user's hashed email
 _generate_submit_event() {
@@ -203,15 +222,11 @@ _generate_command_event() {
     local action_id=${1?"generate_command_event() -> You MUST supply the action id as the second argument to this function"}
     local command_args=(${@})
 
-    #echo "Number of args is ${#command_args[@]}"
-    local command_args_strings=$(sed 's/.$//g' <<< $(for item in ${command_args[@]}; do echo -n "\""${item}"\","; done))
-    #echo "The args as strings are:${command_args_strings}"
 
     local event=$(cat <<-EOF
 {
     "message_id" : "$(uuidgen)",
     "client_id"  : "$(get_client_id)",
-    "target_action_id" : "${action_id}",
     "client_version" : "${VERSION}",
     "client_sha1"    : "${MY_SHA1}",
     "client_username" : "$(whoami)",
@@ -219,7 +234,7 @@ _generate_command_event() {
     "visited"  : [{"svc" : "${SERVICE_NAME}", "tstamp" : $(( $(date +%s) * 1000 )), "version" :"${VERSION}"}],
     "payload"  : {
         "command" : "${command}",
-        "args" : [ ${command_args_strings}]
+        "args" : $(_package_command_args ${command_args[@]})
     }
 }
 EOF
@@ -406,7 +421,7 @@ abort_submission() {
 
     local cmd
     local returned
-    local data=$(_generate_command_event "cancel" ${action_id} $*)
+    local data=$(_generate_command_event "cancel" ${action_id} "--json" $*)
     if [[ -n "${data}" ]]; then
         cmd="curl -s -X DELETE -H Content-Type: application/json -d '"${data}"' http://"${current_service_endpoint}"/api/job/$(get_client_id)/${action_id}"
         ((VERBOSE)) && echo ${cmd}
