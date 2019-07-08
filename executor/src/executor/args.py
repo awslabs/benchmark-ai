@@ -1,12 +1,13 @@
+import json
 import os
 import configargparse
 
-from transpiler.config import BaiConfig, EnvironmentInfo, AvailabilityZoneInfo
+from transpiler.config import BaiConfig, EnvironmentInfo
 from transpiler.descriptor import DescriptorConfig
 from executor.config import ExecutorConfig
 
 
-def get_args(argv):
+def get_args(argv, env=None):
     def list_str(values):
         return values.split(",")
 
@@ -22,17 +23,10 @@ def get_args(argv):
     parser.add("-c", "--my-config", required=False, is_config_file=True, help="Config file path")
 
     parser.add(
-        "--availability-zones-names",
-        type=list_str,
-        env_var="AVAILABILITY_ZONES_NAMES",
-        help="All the availability zones which the benchmark can run, as a comma-separated list",
-        required=True,
-    )
-    parser.add(
-        "--availability-zones-ids",
-        type=list_str,
-        env_var="AVAILABILITY_ZONES_IDS",
-        help="Zone Ids of the passed availability zones",
+        "--availability-zones",
+        type=json.loads,
+        env_var="AVAILABILITY_ZONES",
+        help="All the availability zones which the benchmark can run, as json mapping zone-ids to zone-names",
         required=True,
     )
 
@@ -67,7 +61,7 @@ def get_args(argv):
 
     parser.add("--kubectl", env_var="KUBECTL", help="Path to kubectl in the deployment pod")
 
-    parsed_args, _ = parser.parse_known_args(argv)
+    parsed_args, _ = parser.parse_known_args(argv, env_vars=env)
     return parsed_args
 
 
@@ -83,19 +77,9 @@ def create_bai_config(args):
     )
 
 
-def create_environment_info(args) -> EnvironmentInfo:
-    availability_zones_names = args.availability_zones_names
-    availability_zones_ids = args.availability_zones_ids
-
-    zones = [
-        AvailabilityZoneInfo(name, zone_id) for name, zone_id in zip(availability_zones_names, availability_zones_ids)
-    ]
-    return EnvironmentInfo(zones)
-
-
-def create_executor_config(argv):
-    args = get_args(argv)
-    environment_info = create_environment_info(args)
+def create_executor_config(argv, env=os.environ):
+    args = get_args(argv, env)
+    environment_info = EnvironmentInfo(args.availability_zones)
     return ExecutorConfig(
         kubectl=args.kubectl,
         descriptor_config=create_descriptor_config(args),

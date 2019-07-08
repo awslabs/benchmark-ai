@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from urllib.parse import urlparse
 
 from bai_kafka_utils.events import DataSet
-from typing import List
+from typing import Dict
 
 from transpiler.descriptor import DescriptorError
 
@@ -15,19 +15,13 @@ class BaiConfig:
 
 
 @dataclass
-class AvailabilityZoneInfo:
-    name: str
-    zone_id: str
-
-
-@dataclass
 class EnvironmentInfo:
     """
     Holds information on the environment that BAI is running.
     It is meant to aid in making decisions on how to run the benchmarks.
     """
 
-    availability_zones: List[AvailabilityZoneInfo]
+    availability_zones: Dict[str, str]
 
 
 @dataclass(init=False)
