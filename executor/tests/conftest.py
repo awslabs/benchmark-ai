@@ -73,7 +73,7 @@ def descriptor_config():
 
 @pytest.fixture
 def bai_config():
-    return BaiConfig(puller_mount_chmod="700", puller_s3_region="s3_region", puller_docker_image="test/docker:image")
+    return BaiConfig(puller_mount_chmod="700", puller_docker_image="test/docker:image")
 
 
 @pytest.fixture

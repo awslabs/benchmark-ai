@@ -26,7 +26,6 @@ def test_create_bai_config(config_args, config_env):
     expected_config = BaiConfig(
         puller_docker_image=args.puller_docker_image,
         puller_mount_chmod=args.puller_mount_chmod,
-        puller_s3_region=args.puller_s3_region,
     )
     bai_config = create_bai_config(args)
 
@@ -41,7 +40,6 @@ def test_create_executor_config(config_args, config_env, mock_availability_zones
     expected_bai_config = BaiConfig(
         puller_docker_image=args.puller_docker_image,
         puller_mount_chmod=args.puller_mount_chmod,
-        puller_s3_region=args.puller_s3_region,
     )
     expected_environment_info = EnvironmentInfo(mock_availability_zones)
     expected_executor_config = ExecutorConfig(

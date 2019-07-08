@@ -64,9 +64,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.labels['mpi_role_type']
-        image: stsukrov/puller
+        image: benchmarkai/puller:fef9a60
         args:
-        - eu-west-1
         - puller-data
         - object-name/dir0,777,p0:object-name/dir1,777,p1
       containers:

@@ -212,7 +212,7 @@ class BaiKubernetesObjectBuilder:
                 )
             )
 
-        puller_args = [self.config.puller_s3_region, data_sources[0].bucket, ":".join(s3_objects)]
+        puller_args = [data_sources[0].bucket, ":".join(s3_objects)]
 
         data_puller.image = self.config.puller_docker_image
         data_puller.args = puller_args

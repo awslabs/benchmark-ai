@@ -22,7 +22,6 @@ STATUS_TOPIC = "STATUS_TOPIC"
 BOOTSTRAP_SERVERS_ARG = ",".join(BOOTSTRAP_SERVERS)
 VALID_STRATEGIES = "s1,s2"
 PULLER_MOUNT_CHMOD = "700"
-PULLER_S3_REGION = "us-east-1"
 PULLER_DOCKER_IMAGE = "example/docker:img"
 
 
@@ -46,7 +45,6 @@ def test_main(mock_create_executor, mock_availability_zones, mock_env):
         f" --kubectl {KUBECTL} "
         f" --transpiler-valid-strategies {VALID_STRATEGIES} "
         f" --transpiler-puller-mount-chmod {PULLER_MOUNT_CHMOD} "
-        f" --transpiler-puller-s3-region {PULLER_S3_REGION} "
         f" --transpiler-puller-docker-image {PULLER_DOCKER_IMAGE} "
     )
 
@@ -66,7 +64,6 @@ def test_main(mock_create_executor, mock_availability_zones, mock_env):
         kubectl=KUBECTL,
         descriptor_config=DescriptorConfig(valid_strategies=VALID_STRATEGIES.split(",")),
         bai_config=BaiConfig(
-            puller_s3_region=PULLER_S3_REGION,
             puller_mount_chmod=PULLER_MOUNT_CHMOD,
             puller_docker_image=PULLER_DOCKER_IMAGE,
         ),

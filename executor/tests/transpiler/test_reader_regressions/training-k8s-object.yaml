@@ -29,9 +29,8 @@ spec:
         volumeMounts:
         - name: datasets-volume
           mountPath: /data
-        image: stsukrov/puller
+        image: benchmarkai/puller:fef9a60
         args:
-        - eu-west-1
         - puller-data
         - object-name/dir0,777,p0:object-name/dir1,777,p1
       containers:

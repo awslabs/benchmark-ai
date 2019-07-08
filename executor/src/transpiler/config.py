@@ -10,7 +10,6 @@ from transpiler.descriptor import DescriptorError
 @dataclass
 class BaiConfig:
     puller_mount_chmod: str
-    puller_s3_region: str
     puller_docker_image: str
 
 

@@ -13,7 +13,7 @@ data:
   puller_entrypoint.sh: |-
     #!/bin/bash
     if [ "$ROLE" == "worker" ]; then
-      /opt/behance/download-s3-files "$@"
+      /opt/puller/download-s3-files "$@"
     else
       echo "Not a worker - no data necessary"
     fi
