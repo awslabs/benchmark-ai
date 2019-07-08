@@ -16,5 +16,5 @@ dependencies:
   - kafka-python 1.4.6
   - pip
   - pip:
-    - dataclasses-json >= 0.2.7
+    - dataclasses-json==0.2.7
     - dacite
