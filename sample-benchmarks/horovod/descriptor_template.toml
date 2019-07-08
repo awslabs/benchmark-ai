@@ -52,14 +52,14 @@ id = "imagenet"
 # Make an entry for each with the same format as the ones below.
 [[data.sources]]
 # Data download URI.
-src = "s3://mlperf-data-mxnet-berlin/imagenet/train-480px"
+src = "s3://mlperf-data-mxnet-berlin/imagenet/raw/train-480px"
 # Path where the dataset is stored in the container FS
 path = "/root/data/tf-imagenet"
 
 # Second data source
 [[data.sources]]
 # Data download URI.
-src = "s3://mlperf-data-mxnet-berlin/imagenet/validation-480px"
+src = "s3://mlperf-data-mxnet-berlin/imagenet/raw/validation-480px"
 # Path where the dataset is stored in the container FS
 path = "/root/data/tf-imagenet"
 
