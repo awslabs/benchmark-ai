@@ -30,6 +30,8 @@ def filter_terraform_outputs(terraform_outputs: Dict):
 
         if item["type"] == "list":
             value = ",".join(item["value"])
+        elif item["type"] == "map":
+            value = json.dumps(item["value"])
         else:
             value = item["value"]
         d[key] = value
