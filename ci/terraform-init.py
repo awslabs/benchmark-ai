@@ -32,6 +32,7 @@ class Config:
         "run_integration_tests",
         "region",
         "bucket",
+        "prefix_list_id",
     }
 
     def __init__(self):
@@ -44,9 +45,11 @@ class Config:
             self.variables[var_name] = existing_values.get(var_name, self.variables.get(var_name, None))
 
     def __getitem__(self, item):
-        return self.variables.get(item)
+        return self.variables[item]
 
     def __setitem__(self, key, value):
+        if key not in Config.VARIABLE_NAMES:
+            raise KeyError(f"{key} is not valid. Must be one of: {Config.VARIABLE_NAMES}")
         self.variables[key] = value
 
     def __str__(self):
