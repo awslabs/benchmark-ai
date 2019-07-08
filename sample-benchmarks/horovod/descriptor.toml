@@ -32,7 +32,7 @@ privileged = true
 # 3. Machine learning related settings: 
 # dataset, benchmark code and parameters it takes
 [ml]
-args = "4"
+args = "8"
 
 # [Opt] 4. Dataset 
 [data]

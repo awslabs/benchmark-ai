@@ -74,8 +74,6 @@ def main(_):
     )
     dataset = dataset.shuffle(1000).batch(32)
 
-    step_counter = tf.train.get_or_create_global_step()
-
     # Horovod: adjust number of steps based on number of GPUs.
     for (batch, (images, labels)) in enumerate(
             dataset.take(20000 // hvd.size())):
