@@ -26,7 +26,7 @@ num_instances = 2
 # 2. Environment
 [env]
 # Docker hub <hub-user>/<repo-name>:<tag> 
-docker_image = "benchmarkai/horovod"
+docker_image = "benchmarkai/horovod:090719"
 privileged = true
 
 # 3. Machine learning related settings: 
