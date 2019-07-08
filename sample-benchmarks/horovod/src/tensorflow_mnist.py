@@ -59,7 +59,7 @@ def main(_):
     # Horovod: adjust learning rate based on number of GPUs.
     opt = tf.train.RMSPropOptimizer(0.001 * hvd.size())
 
-    # Make sure the Fetcher workedq
+    # Make sure the Fetcher worked
     mnist_filename = 'mnist.npz'
     mnist_path = os.path.join(cache_dir, mnist_filename)
     if not os.path.isfile(mnist_path):
@@ -74,10 +74,7 @@ def main(_):
     )
     dataset = dataset.shuffle(1000).batch(32)
 
-    checkpoint_dir = './checkpoints'
     step_counter = tf.train.get_or_create_global_step()
-    checkpoint = tf.train.Checkpoint(model=mnist_model, optimizer=opt,
-                                     step_counter=step_counter)
 
     # Horovod: adjust number of steps based on number of GPUs.
     for (batch, (images, labels)) in enumerate(
@@ -102,11 +99,6 @@ def main(_):
         if batch % 50 == 0 and hvd.local_rank() == 0:
             print('Step #%d\tLoss: %.6f' % (batch, loss_value))
             emit({"batch": str(batch), "train_loss": "%.6f" % loss_value})
-
-    # Horovod: save checkpoints only on worker 0 to prevent other workers from
-    # corrupting it.
-    if hvd.rank() == 0:
-        checkpoint.save(checkpoint_dir)
 
 
 if __name__ == "__main__":
