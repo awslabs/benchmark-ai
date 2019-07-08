@@ -14,7 +14,7 @@ all_args="$@"
 verb=$1
 object=$2
 
-if ! [[ $verb =~ ^(create|destroy|port-forward|logs|list|run|schedule|delete|validate|show)$ ]]
+if ! [[ $verb =~ ^(create|destroy|port-forward|logs|list|run|schedule|delete|validate|show|sync)$ ]]
     then print_usage_and_exit
 fi
 

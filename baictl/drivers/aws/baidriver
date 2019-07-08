@@ -54,6 +54,9 @@ create_infra() {
     [[ -n "$prefix_list_id" ]] && vars="${vars} -var prefix_list_ids=[\"${prefix_list_id}\"]"
     [[ -n "$ssh_access_cidr_blocks" ]] && vars="${vars} -var ssh_access_cidr_blocks=[\"${ssh_access_cidr_blocks}\"]"
 
+    echo "==> Syncing remote data directory"
+    sync_bai_home --aws-region=${region} --mode="pull" || return 1
+
     echo "==> Initializing terraform"
     _initialize_terraform_backend ${region} || return 1
 
@@ -100,7 +103,7 @@ create_infra() {
     [[ "$validate" == false ]] || validate_infra $@
 
     echo "==> Syncing remote data directory"
-    _sync_bai_home ${region} || return 1
+    sync_bai_home --aws-region=${region} --mode="push" || return 1
 }
 
 _initialize_terraform_backend() {
@@ -645,12 +648,33 @@ show_k8s_dashboard() {
     ${kubectl} proxy
 }
 
-_sync_bai_home() {
-    local region=$1
+sync_bai_home() {
+    for arg in "$@"; do
+        case "${arg}" in
+        --aws-region=*)
+            region="${arg#*=}"
+            ;;
+        --mode=*)
+            mode="${arg#*=}"
+            ;;
+        esac
+    done
+
     local account_id=$(aws sts get-caller-identity | jq -r '.Account') || return 1
     local bucket="bai-terraform-state-${region}-${account_id}"
 
-    aws s3 sync $data_dir s3://$bucket
+    [ -z "$region" ] && printf "Missing required argument --aws-region\n" && return 1
+    [ -z "$mode" ] && printf "Missing required argument --mode\n" && return 1
+
+    if [[ "$mode" == "push" ]]; then
+        aws s3 sync $data_dir s3://$bucket --exclude "terraform.tfstate"
+        break
+    elif [[ "$mode" == "pull" ]]; then
+        aws s3 sync s3://$bucket $data_dir --exclude "terraform.tfstate"
+        break
+    else
+        printf "Missing required argument in _sync_bai_home, push or pull\n" && return 1
+    fi
 }
 
 verb=$1
@@ -712,6 +736,9 @@ infra)
         ;;
     validate)
         validate_infra $@
+        ;;
+    sync)
+        sync_bai_home $@
         ;;
     *)
         print_unsupported_verb $object $verb
