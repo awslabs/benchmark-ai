@@ -15,7 +15,8 @@ fi
 echo "Launching training job using $gpus GPUs"
 set -ex
 
-mpirun --allow-run-as-root -np $gpus
+
+mpirun --allow-run-as-root -np $gpus \
 	-mca plm_rsh_no_tree_spawn 1 \
 	-bind-to socket -map-by slot \
 	-x HOROVOD_HIERARCHICAL_ALLREDUCE=1 -x HOROVOD_FUSION_THRESHOLD=16777216 \
