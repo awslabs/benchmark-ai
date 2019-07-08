@@ -1,0 +1,8 @@
+version: 0.2
+
+phases:
+  build:
+    commands:
+      - env
+      - cd baictl
+      - make create-infra AWS_REGION=$AWS_DEFAULT_REGION AWS_PREFIX_LIST_ID=$AWS_PREFIX_LIST_ID

@@ -121,6 +121,24 @@ resource "aws_codepipeline" "codepipeline" {
   }
 
   stage {
+    name = "CreateInfra"
+
+    action {
+      name = "CreateInfra"
+      category = "Build"
+      owner = "AWS"
+      provider = "CodeBuild"
+      input_artifacts = ["source_output"]  # To obtain the buildspec
+      output_artifacts = []
+      version = "1"
+
+      configuration = {
+        ProjectName = aws_codebuild_project.ci-create-infra.name
+      }
+    }
+  }
+
+  stage {
     name = "Deploy"
 
     dynamic "action" {

@@ -58,3 +58,7 @@ variable "run_integration_tests" {
   type = bool
   default = true
 }
+
+variable "prefix_list_id" {
+  type = "string"
+}

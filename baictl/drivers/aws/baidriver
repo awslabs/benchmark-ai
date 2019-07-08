@@ -682,7 +682,9 @@ shift
 shift
 
 verbose=""
-data_dir=${ANUBIS_HOME:=${HOME}/.bai}
+
+terraform_dir=$(dirname $BASH_SOURCE)/cluster
+data_dir=${terraform_dir}/.terraform/bai
 
 #Common args
 for arg in "$@"; do
@@ -705,7 +707,6 @@ kubectl="kubectl ${kube_config_arg}"
 tiller_namespace="kube-system"
 helm_config_arg="${kube_config_arg} --tiller-namespace ${tiller_namespace}"
 helm="helm ${helm_config_arg}"
-terraform_dir=$(dirname $BASH_SOURCE)/cluster
 terraform_plan=${data_dir}/terraform.plan
 
 terraform_dir=$(realpath ${terraform_dir})
