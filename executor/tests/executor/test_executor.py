@@ -52,8 +52,8 @@ def benchmark_event_without_data_sets(benchmark_event, benchmark_doc: BenchmarkD
 
 
 @fixture
-def executor_callback(config_args, kafka_service_config) -> ExecutorEventHandler:
-    config = create_executor_config(config_args)
+def executor_callback(config_args, config_env, kafka_service_config) -> ExecutorEventHandler:
+    config = create_executor_config(config_args, config_env)
     return ExecutorEventHandler(config, kafka_service_config.producer_topic)
 
 
@@ -79,10 +79,10 @@ def test_executor_event_handler_handle_event(
     assert event_to_send.payload == expected_payload
 
 
-def test_executor_event_handler_k8s_apply(mocker, executor_callback: ExecutorEventHandler, config_args):
+def test_executor_event_handler_k8s_apply(mocker, executor_callback: ExecutorEventHandler, config_args, config_env):
     mock_check_output = mocker.patch("executor.executor.subprocess.check_output")
 
-    config = create_executor_config(config_args)
+    config = create_executor_config(config_args, config_env)
     executor_callback._kubernetes_apply(JOB_YAML)
     expected_args = [config.kubectl, "apply", "-f", "-"]
 
@@ -105,14 +105,14 @@ def test_create_response_event(benchmark_event_with_data_sets, executor_callback
     assert expected_event == response_event
 
 
-def test_create_executor(mocker, config_args, kafka_service_config):
+def test_create_executor(mocker, config_args, config_env, kafka_service_config):
     mock_consumer = MagicMock(spec=KafkaConsumer)
     mock_producer = MagicMock(spec=KafkaProducer)
     mock_create_consumer_producer = mocker.patch(
         "executor.executor.create_kafka_consumer_producer", return_value=(mock_consumer, mock_producer), autospec=True
     )
 
-    executor_config = create_executor_config(config_args)
+    executor_config = create_executor_config(config_args, config_env)
     executor = create_executor(kafka_service_config, executor_config)
 
     mock_create_consumer_producer.assert_called_once()

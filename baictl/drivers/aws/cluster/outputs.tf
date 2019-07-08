@@ -27,7 +27,12 @@ output "region" {
 
 output "availability_zones" {
   description = "AWS availability zones."
-  value       = "${data.aws_availability_zones.available.names}"
+  value       = "${zipmap(data.aws_availability_zones.available.zone_ids, data.aws_availability_zones.available.names)}"
+}
+
+output "availability_zones_ids" {
+  description = "AWS availability zones."
+  value       = "${data.aws_availability_zones.available.zone_ids}"
 }
 
 output "eks_cluster_name" {

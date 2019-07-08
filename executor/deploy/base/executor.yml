@@ -40,7 +40,6 @@ spec:
           image: "benchmarkai/executor"
           env:
           - name: AVAILABILITY_ZONES
-            value:
             valueFrom:
               configMapKeyRef:
                 name: outputs-infrastructure

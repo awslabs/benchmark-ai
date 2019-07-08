@@ -1,3 +1,4 @@
+import json
 import os
 import configargparse
 
@@ -6,7 +7,7 @@ from transpiler.descriptor import DescriptorConfig
 from executor.config import ExecutorConfig
 
 
-def get_args(argv):
+def get_args(argv, env=None):
     def list_str(values):
         return values.split(",")
 
@@ -23,9 +24,10 @@ def get_args(argv):
 
     parser.add(
         "--availability-zones",
-        type=list_str,
+        type=json.loads,
         env_var="AVAILABILITY_ZONES",
-        help="All the availability zones which the benchmark can run, as a comma-separated list",
+        help="All the availability zones which the benchmark can run, as json mapping zone-ids to zone-names",
+        required=True,
     )
 
     parser.add(
@@ -59,7 +61,7 @@ def get_args(argv):
 
     parser.add("--kubectl", env_var="KUBECTL", help="Path to kubectl in the deployment pod")
 
-    parsed_args, _ = parser.parse_known_args(argv)
+    parsed_args, _ = parser.parse_known_args(argv, env_vars=env)
     return parsed_args
 
 
@@ -75,9 +77,9 @@ def create_bai_config(args):
     )
 
 
-def create_executor_config(argv):
-    args = get_args(argv)
-    environment_info = EnvironmentInfo(availability_zones=args.availability_zones)
+def create_executor_config(argv, env=os.environ):
+    args = get_args(argv, env)
+    environment_info = EnvironmentInfo(args.availability_zones)
     return ExecutorConfig(
         kubectl=args.kubectl,
         descriptor_config=create_descriptor_config(args),

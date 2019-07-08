@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from urllib.parse import urlparse
 
 from bai_kafka_utils.events import DataSet
-from typing import List
+from typing import Dict
 
 from transpiler.descriptor import DescriptorError
 
@@ -21,7 +21,7 @@ class EnvironmentInfo:
     It is meant to aid in making decisions on how to run the benchmarks.
     """
 
-    availability_zones: List[str]
+    availability_zones: Dict[str, str]
 
 
 @dataclass(init=False)

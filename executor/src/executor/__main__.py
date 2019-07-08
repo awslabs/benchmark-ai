@@ -1,4 +1,5 @@
 import logging
+import os
 
 from executor import SERVICE_NAME, SERVICE_DESCRIPTION
 from executor.executor import create_executor
@@ -9,7 +10,7 @@ from bai_kafka_utils.logging import configure_logging
 
 def main(argv=None):
     common_kafka_cfg = get_kafka_service_config(SERVICE_NAME, argv)
-    executor_config = create_executor_config(argv)
+    executor_config = create_executor_config(argv, os.environ)
 
     configure_logging(level=common_kafka_cfg.logging_level)
 
