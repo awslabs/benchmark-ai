@@ -1,0 +1,3 @@
+tensorflow == 1.14.*
+horovod == 0.16.*
+benchmarkai-client-lib
