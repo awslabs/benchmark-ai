@@ -28,7 +28,7 @@ spec:
         env: @@ENVIRONMENT@@
         tag: @@TAG@@
       annotations:
-         iam.amazonaws.com/role: bai-bff-pod-role
+        iam.amazonaws.com/role: bai-bff-pod-role
         benchmark-ai.@@PROJECT@@.git-tag: "@@REPO_SITE@@ @@TAG@@"
         benchmark-ai.@@PROJECT@@.docker-tag: "@@DOCKER_REGISTRY@@ @@DOCKER_TAG@@"
         kubernetes.io/change-cause: "[@@TAG@@] @@CHANGE_CAUSE@@"
