@@ -294,11 +294,7 @@ resource "aws_codebuild_project" "ci-deploy-master" {
 
   environment {
     compute_type = "BUILD_GENERAL1_SMALL"
-    image = lookup(
-      var.ci_docker_image,
-      var.projects[count.index],
-      var.ci_docker_image["default"]
-    )
+    image = var.ci_docker_image["default"]
     type = "LINUX_CONTAINER"
 
     dynamic "environment_variable" {
