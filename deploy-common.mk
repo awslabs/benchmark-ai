@@ -1,5 +1,12 @@
 # Include this file to be able to deploy Kubernetes yaml files.
 # It requires that `docker-common.mk` was included before.
+DEPLOY_ENV_NAME = deploy-$(ENV_NAME)
+DEPLOY_CONDA_RUN = conda run --name $(DEPLOY_ENV_NAME)
+DEPLOY_CONDA_RUN_SHELL = $(DEPLOY_CONDA_RUN) $(SHELL)
+# Employ conda run as soon as kubectl 1.14 is available
+KUBECTL = kubectl
+
+BENCHMARK_DIR ?= ..
 
 _deploy_venv:
 	conda env update --file $(BENCHMARK_DIR)/deploy-environment.yml --prune --name $(DEPLOY_ENV_NAME)

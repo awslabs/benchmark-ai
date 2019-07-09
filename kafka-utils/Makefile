@@ -1,5 +1,6 @@
 ENV_NAME = kafka-utils-test
 
+include ../base-common.mk
 include ../python-common.mk
 include ../docker-common.mk
 

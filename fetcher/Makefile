@@ -1,5 +1,6 @@
 ENV_NAME = fetcher
 
+include ../base-common.mk
 include ../python-common.mk
 
 PROJECT=fetcher

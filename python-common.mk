@@ -1,8 +1,4 @@
 SHELL :=/bin/bash
-CONDA_RUN = conda run --name $(ENV_NAME)
-CONDA_ROOT = $(shell conda info --root)
-CONDA_ENV_BIN = $(CONDA_ROOT)/envs/$(ENV_NAME)/bin
-export PATH := $(CONDA_ENV_BIN):$(PATH)
 PYTHON = python
 PIP = pip
 PYTEST = pytest

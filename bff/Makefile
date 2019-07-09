@@ -1,5 +1,10 @@
 #NOTE: Requires: sed, git, docker, kubectl
 SHELL :=/bin/bash
+
+ENV_NAME = bff
+include ../base-common.mk
+include ../deploy-common.mk
+
 #----------------------------------------------------------------
 # Project Specific Info
 #----------------------------------------------------------------
@@ -301,7 +306,7 @@ cd-pipeline-setup:
 #----------------------------
 FORCE: ;
 
-deploy.yml: FORCE
+deploy.yml: FORCE _deploy_venv
 	@echo "Generating kubernetes deploy.yaml from template..."
 	@sed -e 's|@@PROJECT@@|$(PROJECT)|g' \
 	     -e 's|@@VERSION@@|$(VERSION)|g' \

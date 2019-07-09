@@ -1,5 +1,6 @@
 ENV_NAME = executor
 
+include ../base-common.mk
 include ../python-common.mk
 
 PROJECT=executor
