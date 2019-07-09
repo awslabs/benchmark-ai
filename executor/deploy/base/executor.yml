@@ -50,13 +50,35 @@ spec:
                 name: outputs-infrastructure
                 key: msk_bootstrap_brokers
           - name: CONSUMER_GROUP_ID
-            value: "executor"
+            valueFrom:
+               configMapKeyRef:
+                 name: executor
+                 key: consumer_group_id
           - name: CONSUMER_TOPIC
-            value: "BAI_APP_FETCHER"
+            valueFrom:
+              configMapKeyRef:
+                name: executor
+                key: consumer_topic
           - name: PRODUCER_TOPIC
-            value: "BAI_APP_EXECUTOR"
+            valueFrom:
+              configMapKeyRef:
+                name: executor
+                key: producer_topic
           - name: STATUS_TOPIC
-            value: "BAI_APP_STATUS"
+            valueFrom:
+              configMapKeyRef:
+                name: executor
+                key: status_topic
+          - name: TRANSPILER_PULLER_DOCKER_IMAGE
+            valueFrom:
+              configMapKeyRef:
+                name: executor
+                key: transpiler_puller_docker_image
+          - name: TRANSPILER_METRICS_PUSHER_DOCKER_IMAGE
+            valueFrom:
+              configMapKeyRef:
+                name: executor
+                key: transpiler_metrics_pusher_docker_image
           - name: LOGGING_LEVEL
             value: "INFO"
           - name: KUBECTL

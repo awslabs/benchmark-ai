@@ -26,10 +26,10 @@ spec:
             topologyKey: kubernetes.io/hostname
       initContainers:
       - name: data-puller
+        image: benchmarkai/puller:3115770
         volumeMounts:
         - name: datasets-volume
           mountPath: /data
-        image: benchmarkai/puller:3115770
         args:
         - puller-data
         - object-name/dir0,777,p0:object-name/dir1,777,p1

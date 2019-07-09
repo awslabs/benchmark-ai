@@ -23,6 +23,7 @@ BOOTSTRAP_SERVERS_ARG = ",".join(BOOTSTRAP_SERVERS)
 VALID_STRATEGIES = "s1,s2"
 PULLER_MOUNT_CHMOD = "700"
 PULLER_DOCKER_IMAGE = "example/docker:img"
+METRICS_PUSHER_DOCKER_IMAGE = "metrics_pusher/docker:img"
 
 
 @pytest.fixture
@@ -46,6 +47,7 @@ def test_main(mock_create_executor, mock_availability_zones, mock_env):
         f" --transpiler-valid-strategies {VALID_STRATEGIES} "
         f" --transpiler-puller-mount-chmod {PULLER_MOUNT_CHMOD} "
         f" --transpiler-puller-docker-image {PULLER_DOCKER_IMAGE} "
+        f" --transpiler-metrics-pusher-docker-image {METRICS_PUSHER_DOCKER_IMAGE} "
     )
 
     expected_common_kafka_cfg = KafkaServiceConfig(
@@ -63,7 +65,11 @@ def test_main(mock_create_executor, mock_availability_zones, mock_env):
     expected_executor_config = ExecutorConfig(
         kubectl=KUBECTL,
         descriptor_config=DescriptorConfig(valid_strategies=VALID_STRATEGIES.split(",")),
-        bai_config=BaiConfig(puller_mount_chmod=PULLER_MOUNT_CHMOD, puller_docker_image=PULLER_DOCKER_IMAGE),
+        bai_config=BaiConfig(
+            puller_mount_chmod=PULLER_MOUNT_CHMOD,
+            puller_docker_image=PULLER_DOCKER_IMAGE,
+            metrics_pusher_docker_image=METRICS_PUSHER_DOCKER_IMAGE,
+        ),
         environment_info=EnvironmentInfo(availability_zones=mock_availability_zones),
     )
 

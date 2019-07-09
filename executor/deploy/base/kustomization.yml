@@ -1,3 +1,4 @@
 resources:
   - roles.yml
   - executor.yml
+  - config.yml

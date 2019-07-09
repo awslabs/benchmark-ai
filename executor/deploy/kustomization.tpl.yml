@@ -3,3 +3,9 @@ bases:
 images:
   - name: benchmarkai/executor
     newName: @@DOCKER_IMAGE_TAG@@
+configMapGenerator:
+  - name: executor
+    literals:
+      - transpiler_puller_docker_image=@@PULLER_DOCKER_IMAGE_TAG@@
+      - transpiler_metrics_pusher_docker_image=@@METRICS_PUSHER_DOCKER_IMAGE_TAG@@
+    behavior: merge
