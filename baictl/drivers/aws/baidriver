@@ -85,7 +85,7 @@ create_infra() {
     _add_codebuild_role || return 1
 
     echo "==> Adding permission for extra users and roles into the Kubernetes cluster"
-    _add_extra_users_roles $extra_users $extra_roles || return 1
+    _add_extra_users_roles || return 1
 
     echo "==> Creating configmap from Terraform outputs"
     _create_configmap_yaml_from_terraform_outputs || return 1
@@ -243,8 +243,6 @@ _add_codebuild_role(){
 }
 
 _add_extra_users_roles(){
-    local iam_users=$1
-    local iam_roles=$2
     local bash_src=$(realpath ${BASH_SOURCE})
     local src_dir=$(dirname "${bash_src}")
 
