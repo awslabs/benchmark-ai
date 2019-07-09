@@ -102,7 +102,7 @@
   (context "/api/job" []
            (defroutes job-routes
              (GET  "/" [] (response (eventbus/get-all-jobs))) ;;TODO - remove this in production...? implement me
-             (GET  "/script/:filename" [filename] (response (eventbus/has-file? filename)))
+             (GET  "/script/:filename" [filename] (response (if (eventbus/has-file? filename) (str "true") (str "false"))))
              (POST "/" {body :body :as request} (post-proc-results (log/info (pprint request)) #_(create-job body)));TODO - implement me
              (POST "/descriptor" {{body :submit-event} :params :as request} (response (dispatch-submit-job request body)))
              (context "/:client-id" [client-id]
