@@ -57,8 +57,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: mpijob-execution
 rules:
-- apiGroups: ["","batch", "kubeflow.org"]
-  resources: ["mpijobs"]
+- apiGroups: ["","batch", "kubeflow.org","rbac.authorization.k8s.io"]
+  resources: ["mpijobs","rolebindings"]
   verbs: ["create", "get"]
 ---
 kind: RoleBinding
@@ -105,8 +105,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: delete-resources
 rules:
-- apiGroups: ["","batch", "kubeflow.org"]
-  resources: ["pods", "jobs", "cronjobs", "mpijobs", "configmaps"]
+- apiGroups: ["","batch", "kubeflow.org", "rbac.authorization.k8s.io"]
+  resources: ["pods", "jobs", "cronjobs", "mpijobs", "configmaps","rolebindings"]
   verbs: ["list", "get", "update", "delete"]
 ---
 kind: RoleBinding
@@ -122,3 +122,17 @@ roleRef:
   kind: Role
   name: delete-resources
   apiGroup: rbac.authorization.k8s.io
+---
+# To grant the role pod-status, executor must be in that role ourselves.
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: metrics-pusher-pod-status-binding
+subjects:
+- kind: ServiceAccount
+  name: executor
+  namespace: default
+roleRef:
+  kind: Role
+  name: pod-status
+  apiGroup: ""

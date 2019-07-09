@@ -12,7 +12,7 @@ logger = logging.getLogger(SERVICE_NAME)
 class ExecutorCommandObject:
     # This lists all the resource types we have in our cluster.
     # When deleting, we use the label selector to choose what gets removed.
-    ALL_K8S_RESOURCE_TYPES = ["jobs", "cronjobs", "mpijobs", "configmaps"]
+    ALL_K8S_RESOURCE_TYPES = ["jobs", "cronjobs", "mpijobs", "configmaps", "rolebindings"]
 
     def __init__(self, kubectl: str):
         self.kubectl = kubectl

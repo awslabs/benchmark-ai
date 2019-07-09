@@ -19,6 +19,27 @@ data:
     fi
 ---
 
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: metrics-pusher-{job_id}
+  namespace: default
+  labels:
+    benchmark: {job_id}
+    action-id: {event.action_id}
+    client-id: {event.client_id}
+    created-by: {service_name}
+subjects:
+- kind: ServiceAccount
+  name: {job_id}-launcher
+  namespace: default
+roleRef:
+  kind: Role
+  name: pod-status
+  apiGroup: ""
+
+---
+
 apiVersion: kubeflow.org/v1alpha1
 kind: MPIJob
 metadata:
