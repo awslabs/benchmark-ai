@@ -62,6 +62,7 @@ class KubernetesRootObjectHelper:
         """
         docs = yaml.load_all(contents, Loader=yaml.RoundTripLoader)
         self.config_maps = []
+        self.other = []
 
         # TODO: Improve generalization here
         for d in docs:
@@ -70,7 +71,8 @@ class KubernetesRootObjectHelper:
             elif d["kind"] in ["Job", "MPIJob"]:
                 self._root = addict.Dict(d)
             else:
-                raise ValueError("Kubernetes yaml object is of an unsupported kind type: {}".format(d["kind"]))
+                self.other.append(addict.Dict(d))
+                #raise ValueError("Kubernetes yaml object is of an unsupported kind type: {}".format(d["kind"]))
 
         self._validate()
 
@@ -196,7 +198,8 @@ class KubernetesRootObjectHelper:
         """
         root_as_dict = self._root.to_dict()
         config_maps_as_dicts = [cm.to_dict() for cm in self.config_maps]
-        return yaml.dump_all(itertools.chain(config_maps_as_dicts, [root_as_dict]), Dumper=yaml.RoundTripDumper)
+        others_as_dicts = [o.to_dict() for o in self.other]
+        return yaml.dump_all(itertools.chain(others_as_dicts, config_maps_as_dicts, [root_as_dict]), Dumper=yaml.RoundTripDumper)
 
 
 class ConfigTemplate:
