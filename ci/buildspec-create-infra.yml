@@ -6,3 +6,8 @@ phases:
       - env
       - cd baictl
       - make create-infra AWS_REGION=$AWS_DEFAULT_REGION AWS_PREFIX_LIST_ID=$AWS_PREFIX_LIST_ID
+artifacts:
+  files:
+    - kubeconfig
+  discard-paths: no
+  base-directory: baictl/drivers/aws/cluster/.terraform/bai

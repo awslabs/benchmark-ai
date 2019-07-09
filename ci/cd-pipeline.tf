@@ -130,7 +130,7 @@ resource "aws_codepipeline" "codepipeline" {
       owner = "AWS"
       provider = "CodeBuild"
       input_artifacts = ["source_output"]  # To obtain the buildspec
-      output_artifacts = []
+      output_artifacts = ["infra_output"]
       version = "1"
 
       configuration = {
@@ -151,12 +151,13 @@ resource "aws_codepipeline" "codepipeline" {
         category = "Build"
         owner = "AWS"
         provider = "CodeBuild"
-        input_artifacts = ["source_output"]
+        input_artifacts = ["source_output", "infra_output"]
         output_artifacts = []
         version = "1"
 
         configuration = {
           ProjectName = "${project.value}-deploy"
+          PrimarySource = "source_output"
         }
       }
     }
