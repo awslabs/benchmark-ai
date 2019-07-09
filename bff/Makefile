@@ -314,7 +314,7 @@ cd-pipeline-setup:
 #----------------------------
 FORCE: ;
 
-deploy.yml: FORCE _deploy_venv
+deploy.yml: FORCE
 	@echo "Generating kubernetes deploy.yaml from template..."
 	@sed -e 's|@@PROJECT@@|$(PROJECT)|g' \
 	     -e 's|@@VERSION@@|$(VERSION)|g' \
@@ -336,16 +336,16 @@ deploy.yml: FORCE _deploy_venv
 	     -e 's|@@KAFKA_POLL_INTERVAL_MS@@|$(KAFKA_POLL_INTERVAL_MS)|g' \
 	     -e 's|@@KAFKA_SINK_TOPICS@@|$(KAFKA_SINK_TOPICS)|g' \
 	     -e 's|@@KAFKA_CMD_SUBMIT_TOPIC@@|$(KAFKA_CMD_SUBMIT_TOPIC)|g' \
-	     -e 's|@@KAFKA_CMD_RETURN_TOPIC@@|$(KAFKA_CMD_RETURN_TOPIC)|g' $(DEPLOY_TEMPLATE) > $(shell sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(DEPLOY_TEMPLATE))
+	     -e 's|@@KAFKA_CMD_RETURN_TOPIC@@|$(KAFKA_CMD_RETURN_TOPIC)|g' $(DEPLOY_TEMPLATE) > $(shell PATH=$(PATH) sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(DEPLOY_TEMPLATE))
 
 service.yml: FORCE
 	@echo "Generating kubernetes service.yaml from template..."
-	@sed -e 's|@@BFF_SECURITY_GROUP_ID@@|$(shell kubectl get configmaps  outputs-infrastructure --output json | jq '.data.bff_security_group_id')|g' \
+	@sed -e 's|@@BFF_SECURITY_GROUP_ID@@|$(shell PATH=$(PATH) kubectl get configmaps  outputs-infrastructure --output json | PATH=$(PATH) jq '.data.bff_security_group_id')|g' \
 	     -e 's|@@PROJECT@@|$(PROJECT)|g' \
 	     -e 's|@@ENVIRONMENT@@|$(ENVIRONMENT)|g' \
-	     -e 's|@@SVC_PORT@@|$(SVC_PORT)|g' $(SERVICE_TEMPLATE) > $(shell sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(SERVICE_TEMPLATE))
+	     -e 's|@@SVC_PORT@@|$(SVC_PORT)|g' $(SERVICE_TEMPLATE) > $(shell PATH=$(PATH) sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(SERVICE_TEMPLATE))
 
-deploy: deploy.yml service.yml
+deploy: _deploy_venv deploy.yml service.yml
 	@echo "------------------------"
 	@echo "K8S deployment..."
 	@echo "------------------------"
