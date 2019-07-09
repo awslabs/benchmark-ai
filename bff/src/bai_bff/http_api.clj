@@ -28,7 +28,7 @@
 
 (defn dispatch-submit-job [request body]
   (try
-    (if-let [script-file-map (some-> request :params :script)]
+    #_(if-let [script-file-map (some-> request :params :script)]
       (eventbus/scripts->s3 script-file-map))
     (let [message-body (json/parse-string body true)]
       (log/debug "Printing request")
