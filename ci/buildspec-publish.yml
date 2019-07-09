@@ -2,10 +2,6 @@ version: 0.2
 
 phases:
   install:
-    commands:
-      - curl -O https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-      - bash Miniconda3-latest-Linux-x86_64.sh -b
-      - export PATH=$PATH:/root/miniconda3/condabin
     runtime-versions:
       docker: 18
   build:
