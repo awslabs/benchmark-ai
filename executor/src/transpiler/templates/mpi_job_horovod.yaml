@@ -23,6 +23,12 @@ kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: metrics-pusher-{job_id}
+  namespace: default
+  labels:
+    benchmark: {job_id}
+    action-id: {event.action_id}
+    client-id: {event.client_id}
+    created-by: {service_name}
 subjects:
 - kind: ServiceAccount
   name: {job_id}-launcher
@@ -116,8 +122,6 @@ spec:
               key: es_endpoint
         - name: BACKEND_ARG_PORT
           value: "443"
-        - name: LOGGING_LEVEL
-          value: "DEBUG"
         - name: POD_NAME
           valueFrom:
             fieldRef:

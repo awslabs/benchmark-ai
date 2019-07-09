@@ -1,3 +1,22 @@
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: metrics-pusher-benchmark-job-id
+  namespace: default
+  labels:
+    benchmark: benchmark-job-id
+    action-id: ACTION_ID
+    client-id: CLIENT_ID
+    created-by: executor
+subjects:
+- kind: ServiceAccount
+  name: benchmark-job-id-launcher
+  namespace: default
+roleRef:
+  kind: Role
+  name: pod-status
+  apiGroup: ''
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:

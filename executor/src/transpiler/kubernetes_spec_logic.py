@@ -62,17 +62,19 @@ class KubernetesRootObjectHelper:
         """
         docs = yaml.load_all(contents, Loader=yaml.RoundTripLoader)
         self.config_maps = []
-        self.other = []
+        self.role_bindings = []
 
         # TODO: Improve generalization here
         for d in docs:
-            if d["kind"] == "ConfigMap":
+            kind = d["kind"]
+            if kind == "ConfigMap":
                 self.config_maps.append(addict.Dict(d))
-            elif d["kind"] in ["Job", "MPIJob"]:
+            elif kind in ["Job", "MPIJob"]:
                 self._root = addict.Dict(d)
+            elif kind == "RoleBinding":
+                self.role_bindings.append(addict.Dict(d))
             else:
-                self.other.append(addict.Dict(d))
-                #raise ValueError("Kubernetes yaml object is of an unsupported kind type: {}".format(d["kind"]))
+                raise ValueError("Kubernetes yaml object is of an unsupported kind type: {}".format(d["kind"]))
 
         self._validate()
 
@@ -198,8 +200,10 @@ class KubernetesRootObjectHelper:
         """
         root_as_dict = self._root.to_dict()
         config_maps_as_dicts = [cm.to_dict() for cm in self.config_maps]
-        others_as_dicts = [o.to_dict() for o in self.other]
-        return yaml.dump_all(itertools.chain(others_as_dicts, config_maps_as_dicts, [root_as_dict]), Dumper=yaml.RoundTripDumper)
+        role_bindings_as_dicts = [rb.to_dict() for rb in self.role_bindings]
+        return yaml.dump_all(
+            itertools.chain(role_bindings_as_dicts, config_maps_as_dicts, [root_as_dict]), Dumper=yaml.RoundTripDumper
+        )
 
 
 class ConfigTemplate:
