@@ -230,13 +230,13 @@ _generate_submit_event() {
     local script=${2:-""}
 
     if [[ -n "${script}" ]]; then
-        if grep -q '\[\[ml.script\]\]' "${descriptor_filename}"; then
+        if grep -q '\[ml.script\]' "${descriptor_filename}"; then
             sed -i "/^###.*begin.*anubis.*###$/, /^###.*end.*anubis.*###$/ s#^\(script[ ]*=\)\(.*\)#\1 \""${script_artifact##*/}"\"#"  ${descriptor_filename}
         else
             cat <<EOF >> "${descriptor_filename}"
 
 ### --- beginning of anubis generated entry --- ###
-[[ml.script]]
+[ml.script]
 script = "${script_artifact##*/}"
 ### --- ending of anubis generated entry --- ###
 
@@ -272,7 +272,6 @@ _generate_command_event() {
     shift
     local action_id=${1?"generate_command_event() -> You MUST supply the action id as the second argument to this function"}
     local command_args=("${@}")
-
     local event=$(cat <<-EOF
 {
     "message_id" : "$(uuidgen)",
@@ -341,7 +340,7 @@ _prepare_script() {
 # Remember for a script a return value of 0 means TRUE (everything else is false... !0)
 _has_script() {
     local cmd
-    cmd="curl http://${current_service_endpoint}/api/job/script/${script_artifact##*/}"
+    cmd="curl -s http://${current_service_endpoint}/api/job/script/${script_artifact##*/}"
     if [[ "true" == "$(eval ${cmd})" ]]; then  return 0; else return 1; fi;
 }
 
@@ -367,18 +366,18 @@ submit() {
 
     local data=$(_generate_submit_event "${descriptor_filename}" "${script_artifact}")
     local cmd
-    local returned
+    local response
 
     if [[ -n "${data}" ]]; then
         [[ -n "${script_artifact}" ]] && echo "Using Script: ${script_artifact##*/}" 1>&2
-        cmd="curl -F submit-event='"${data}"' "$( [[ -n "${script_artifact}" && ! $(_has_script "${script_artifact##*/}") ]] && echo -n "-F script="@${script_artifact})" http://"${current_service_endpoint}"/api/job/descriptor"
+        cmd="curl -s -F submit-event='"${data}"' "$( [[ -n "${script_artifact}" && ! $(_has_script "${script_artifact##*/}") ]] && echo -n "-F script="@${script_artifact})" http://"${current_service_endpoint}"/api/job/descriptor"
         ((VERBOSE)) && echo ${cmd}
         _print_status "sending ${descriptor_filename} "$( [[ -n "${script_artifact}" ]] && echo -n "and '"@${script_artifact##*/}"'")"to anubis service @ ${current_service_endpoint}"
         [[ ! -d "${BAI_DATABASE}/$(get_client_id)" ]] && mkdir -p "${BAI_DATABASE}/$(get_client_id)"
 
-        returned=$(eval $cmd)
+        response=$(eval $cmd)
 
-        if [[ -z "${returned}" ]]; then
+        if [[ -z "${response}" ]]; then
             printf "
 \033[01;31m[WARNING]\033[0m Your submission was not sent, please check:
           %s
@@ -388,11 +387,14 @@ submit() {
 
         fi
 
-        if [[ -n $(sed -rne '/[a-f0-9-]{8}-([a-f0-9-]{4}-){3}[a-f0-9-]{12}/p' <<<"${returned}") ]]; then
-            [[ ! -d "${BAI_DATABASE}/$(get_client_id)/${returned}" ]] && mkdir -p "${BAI_DATABASE}/$(get_client_id)/${returned}"
-            echo "${returned} : ${descriptor_filename} : $(date)" >>  "${BAI_ACTION_IDS}"
+        if [[ -n $(sed -rne '/[a-f0-9-]{8}-([a-f0-9-]{4}-){3}[a-f0-9-]{12}/p' <<<"${response}") ]]; then
+            [[ ! -d "${BAI_DATABASE}/$(get_client_id)/${response}" ]] && mkdir -p "${BAI_DATABASE}/$(get_client_id)/${response}"
+            echo "${response} : ${descriptor_filename} : $(date)" >>  "${BAI_ACTION_IDS}"
+            echo "${response}"
+        else
+            printf '\033[01;31m[ERROR]\033[0m Submission was NOT successful - submission rejected by service:\n%s\n' "${response}"
+            exit 9
         fi
-        echo "${returned}"
     else
         printf '\033[01;31m[ERROR]\033[0m No data to send.\n\n'
         exit 1
@@ -410,7 +412,7 @@ get_latest_event_timestamp() {
     local action_id=${1:-$(use_last_action_id)}
     local path=${BAI_DATABASE}/$(get_client_id)"/"${action_id}
     local tstamp_file=${path}/${TSTAMP_FILENAME}
-    local tstamp_file_size=$([[ -f "${tstamp_file}" ]] && stat -x "${tstamp_file}" | grep Size | awk '{print $2}' || echo -n "0")
+    local tstamp_file_size=$([[ -f "${tstamp_file}" ]] && stat "${tstamp_file}" | grep Size | awk '{print $2}' || echo -n "0")
 
     if ((tstamp_file_size > 0)); then
         cat "${tstamp_file}"
@@ -457,7 +459,7 @@ EOF
 #REST API call
 get_submission_status() {
     local action_id=${1:-$(use_last_action_id)}
-
+    ((DEBUG)) && echo "[DEBUG] - get_submission_status, was passed in [${action_id}]"
     if [[ -z $(sed -rne '/[a-f0-9-]{8}-([a-f0-9-]{4}-){3}[a-f0-9-]{12}/p' <<<"${action_id}") ]]; then
         printf "\033[01;31m[ERROR] Incorrect action-id format: expecting a UUID\033[0m\n"
         exit 9
@@ -476,7 +478,7 @@ get_submission_status() {
 
     if ((WATCH)); then
         while ((WATCH)) ; do
-            curl -s $(_construct_endpoint_URL)/ready
+            curl -s $(_construct_endpoint_URL)/ready >& /dev/null
             if (( $? != 0 )); then
                 if ((WATCH)); then
                     ((VERBOSE)) && printf "\033[01;31m[no connection to service]\033[0m\n" || printf "\033[01;31mx\033[0m"
@@ -486,12 +488,12 @@ get_submission_status() {
                     exit 9
                 fi
             fi
-            echo
-            _read_local_submission_status "${action_id}"
+            printf "\033[01;32m.\033[0m"
+            _read_remote_submission_status "${action_id}"
             sleep "${WATCH_PERIOD}"
         done
     else
-        curl -s "$(_construct_endpoint_URL)"/ready
+        curl -s "$(_construct_endpoint_URL)"/ready >& /dev/null
         if (( $? != 0 )); then
             printf "\033[01;31m[no connection to service]\033[0m\n"
             exit 9
@@ -506,7 +508,7 @@ _print_status() {
     local id=${3:-"00000000"}
     local new=${4:-0}
 
-    printf "%b|\033[0$( ((new)) && printf "1" || printf "0");33m%s\033[0m|%s\n" "${emoji[${src}]}" "${id}" "${msg}"
+    printf "%b|\033[0$( ((new)) && printf "1" || printf "0");33m%s\033[0m|%s\n" "${emoji[${src}]}" "${id}" "${msg}" >&2
 }
 
 # (Note: $line is scope in the while loop that this function is called in)
