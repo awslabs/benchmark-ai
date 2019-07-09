@@ -10,6 +10,7 @@ from typing import List, Dict
 
 from executor import SERVICE_NAME
 from executor.config import ExecutorConfig
+from executor.strategy import Strategy
 from transpiler.config import BaiConfig, BaiDataSource, EnvironmentInfo
 from transpiler.descriptor import Descriptor, DescriptorError
 from transpiler.kubernetes_spec_logic import ConfigTemplate, VolumeMount, Volume, EmptyDirVolumeSource
@@ -245,7 +246,7 @@ def create_bai_k8s_builder(
     :param extra_bai_config_args: An optional Dict which will be forwarded to the `BaiConfig` object created.
     :return:
     """
-    template_files = {"single_node": "job_single_node.yaml", "horovod": "mpi_job_horovod.yaml"}
+    template_files = {Strategy.SINGLE_NODE: "job_single_node.yaml", Strategy.HOROVOD: "mpi_job_horovod.yaml"}
 
     if extra_bai_config_args is None:
         extra_bai_config_args = {}
@@ -269,9 +270,9 @@ def create_bai_k8s_builder(
         **extra_bai_config_args,
     )
 
-    if descriptor.strategy == "single_node":
+    if descriptor.strategy == Strategy.SINGLE_NODE:
         bai_k8s_builder.add_benchmark_cmd_to_container()
-    elif descriptor.strategy == "horovod":
+    elif descriptor.strategy == Strategy.HOROVOD:
         bai_k8s_builder.add_benchmark_cmd_to_config_map()
     else:
         raise ValueError("Unsupported configuration in descriptor file")

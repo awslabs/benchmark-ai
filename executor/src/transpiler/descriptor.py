@@ -4,6 +4,8 @@ from dataclasses import dataclass
 
 from typing import Dict, List
 from crontab import CronSlices
+
+from executor.strategy import Strategy
 from util import ec2_instance_info
 
 
@@ -32,10 +34,10 @@ class Descriptor:
 
         try:
             self.instance_type = descriptor_data["hardware"]["instance_type"]
-            self.strategy = descriptor_data["hardware"]["strategy"]
+            self.strategy = Strategy(descriptor_data["hardware"]["strategy"])
             self.docker_image = descriptor_data["env"]["docker_image"]
-        except KeyError as e:
-            raise DescriptorError(f"Required field is missing in the descriptor toml file: {e.args[0]}") from e
+        except (KeyError, ValueError) as e:
+            raise DescriptorError(f"Error in the descriptor toml file: {e.args[0]}") from e
 
         self.scheduling = descriptor_data["info"].get("scheduling", "single_run")
 
@@ -71,9 +73,6 @@ class Descriptor:
         """
         Validates that this descriptor is valid
         """
-        if self.strategy.lower() not in self.config.valid_strategies:
-            raise DescriptorError(f"Invalid strategy: {self.strategy} (must be one of {self.config.valid_strategies})")
-
         if self.distributed:
             if self.num_instances <= 1:
                 logging.warning(f"Specified a distributed strategy but using {self.num_instances} nodes")
