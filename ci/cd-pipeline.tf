@@ -70,6 +70,7 @@ resource "aws_codepipeline" "codepipeline" {
         Owner  = var.github_organization
         Repo   = "benchmark-ai"
         Branch = var.github_branch
+        PollForSourceChanges = true
       }
     }
   }
