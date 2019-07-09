@@ -26,6 +26,7 @@ spec:
             topologyKey: kubernetes.io/hostname
       initContainers:
       - name: data-puller
+        image: {config.puller_docker_image}
         volumeMounts:
         - name: datasets-volume
           mountPath: /data
@@ -50,8 +51,7 @@ spec:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
       - name: sidecar
-        # TODO: Automate tag selection
-        image: benchmarkai/metrics-pusher:ffed580
+        image: {config.metrics_pusher_docker_image}
         env:
         - name: BENCHMARK_AI_FIFO_FILEPATH
           value: /tmp/benchmark-ai/fifo

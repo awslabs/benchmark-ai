@@ -3,3 +3,5 @@ transpiler-puller-docker-image: benchmarkai/puller:3115770
 
 # descriptor config
 transpiler-valid-strategies: single_node,horovod
+
+transpiler-metrics-pusher-docker-image: benchmarkai/metrics-pusher:ffed580

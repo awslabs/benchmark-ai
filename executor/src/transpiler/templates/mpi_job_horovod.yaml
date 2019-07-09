@@ -48,6 +48,7 @@ spec:
             topologyKey: kubernetes.io/hostname
       initContainers:
       - name: data-puller
+        image: {config.puller_docker_image}
         command: 
         - /bin/puller_entrypoint.sh
         volumeMounts:
@@ -85,8 +86,7 @@ spec:
         - name: BENCHMARK_AI_FIFO_MAX_WAIT_TIME
           value: "60"
       - name: sidecar
-        # TODO: Automate tag selection
-        image: benchmarkai/metrics-pusher:ffed580
+        image: {config.metrics_pusher_docker_image}
         env:
         - name: BENCHMARK_AI_FIFO_FILEPATH
           value: /tmp/benchmark-ai/fifo

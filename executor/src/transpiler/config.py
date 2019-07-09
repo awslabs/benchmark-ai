@@ -11,6 +11,7 @@ from transpiler.descriptor import DescriptorError
 class BaiConfig:
     puller_mount_chmod: str
     puller_docker_image: str
+    metrics_pusher_docker_image: str
 
 
 @dataclass

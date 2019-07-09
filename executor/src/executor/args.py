@@ -45,6 +45,13 @@ def get_args(argv, env=None):
     )
 
     parser.add(
+        "--transpiler-metrics-pusher-docker-image",
+        env_var="TRANSPILER_METRICS_PUSHER_DOCKER_IMAGE",
+        dest="metrics_pusher_docker_image",
+        help="Docker image used by the metrics pusher",
+    )
+
+    parser.add(
         "--transpiler-valid-strategies",
         type=list_str,
         env_var="TRANSPILER_VALID_STRATEGIES",
@@ -63,7 +70,11 @@ def create_descriptor_config(args):
 
 
 def create_bai_config(args):
-    return BaiConfig(puller_mount_chmod=args.puller_mount_chmod, puller_docker_image=args.puller_docker_image)
+    return BaiConfig(
+        puller_mount_chmod=args.puller_mount_chmod,
+        puller_docker_image=args.puller_docker_image,
+        metrics_pusher_docker_image=args.metrics_pusher_docker_image,
+    )
 
 
 def create_executor_config(argv, env=os.environ):

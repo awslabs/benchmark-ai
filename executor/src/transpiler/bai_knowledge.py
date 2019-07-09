@@ -65,6 +65,7 @@ class BaiKubernetesObjectBuilder:
         availability_zone = self.choose_availability_zone(descriptor, environment_info, random_object)
 
         config_template.feed({"descriptor": descriptor})
+        config_template.feed({"config": config})
         config_template.feed({"event": event})
         config_template.feed({"service_name": SERVICE_NAME})
         config_template.feed({"job_id": self.job_id})
@@ -213,8 +214,6 @@ class BaiKubernetesObjectBuilder:
             )
 
         puller_args = [data_sources[0].bucket, ":".join(s3_objects)]
-
-        data_puller.image = self.config.puller_docker_image
         data_puller.args = puller_args
 
 
