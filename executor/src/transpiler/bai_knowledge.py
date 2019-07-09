@@ -10,7 +10,7 @@ from typing import List, Dict
 
 from executor import SERVICE_NAME
 from executor.config import ExecutorConfig
-from executor.strategy import Strategy
+from bai_k8s_utils.strategy import Strategy
 from transpiler.config import BaiConfig, BaiDataSource, EnvironmentInfo
 from transpiler.descriptor import Descriptor, DescriptorError
 from transpiler.kubernetes_spec_logic import ConfigTemplate, VolumeMount, Volume, EmptyDirVolumeSource

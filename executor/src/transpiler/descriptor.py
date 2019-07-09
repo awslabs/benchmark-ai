@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Dict, List
 from crontab import CronSlices
 
-from executor.strategy import Strategy
+from bai_k8s_utils.strategy import Strategy
 from util import ec2_instance_info
 
 

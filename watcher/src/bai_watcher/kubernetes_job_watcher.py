@@ -10,6 +10,7 @@ from threading import Thread
 from bai_watcher import service_logger
 from bai_watcher.status_inferrers.single_node import SingleNodeStrategyKubernetesStatusInferrer
 from bai_watcher.status_inferrers.status import BenchmarkJobStatus
+from bai_k8s_utils.strategy import Strategy
 
 logger = service_logger.getChild(__name__)
 
@@ -36,6 +37,7 @@ class KubernetesJobWatcher:
         self,
         job_id: str,
         callback: Callable[[str, BenchmarkJobStatus], bool],
+        strategy: Strategy,
         *,
         kubernetes_namespace: str,
         kubernetes_client_jobs: BatchV1Api,
@@ -43,6 +45,7 @@ class KubernetesJobWatcher:
     ):
         self.job_id = job_id
         self.callback = callback
+        self.strategy = strategy
         self.kubernetes_namespace = kubernetes_namespace
         self.jobs_client = kubernetes_client_jobs
         self.pod_client = kubernetes_client_pods
@@ -52,28 +55,33 @@ class KubernetesJobWatcher:
         self.thread.start()
 
     def get_status(self):
-        try:
-            k8s_job: V1Job = self.jobs_client.read_namespaced_job_status(self.job_id, self.kubernetes_namespace)
-        except kubernetes.client.rest.ApiException as e:
-            if e.status == 404:
+        if self.strategy == Strategy.SINGLE_NODE:
+            try:
+                k8s_job: V1Job = self.jobs_client.read_namespaced_job_status(self.job_id, self.kubernetes_namespace)
+            except kubernetes.client.rest.ApiException as e:
+                if e.status == 404:
+                    logger.exception(
+                        "The specified job {job_id} does not exist. Stopping thread.".format(job_id=self.job_id)
+                    )
+                    return BenchmarkJobStatus.JOB_DOES_NOT_EXIST
+
                 logger.exception(
-                    "The specified job {job_id} does not exist. Stopping thread.".format(job_id=self.job_id)
+                    "Unknown error from Kubernetes, stopping thread that watches job {job_id} with an exception".format(
+                        job_id=self.job_id
+                    )
                 )
-                return BenchmarkJobStatus.JOB_DOES_NOT_EXIST
+                raise
 
-            logger.exception(
-                "Unknown error from Kubernetes, stopping thread that watches job {job_id} with an exception".format(
-                    job_id=self.job_id
-                )
-            )
-            raise
+            k8s_job_status: V1JobStatus = k8s_job.status
+            logger.debug(f"[job-id: {self.job_id}] Kubernetes Job status: {k8s_job_status}")
+            logger.debug(f"[job-id: {self.job_id}] Kubernetes Job conditions: {k8s_job_status.conditions}")
+            label_selector = f"job-name={self.job_id}"
 
-        k8s_job_status: V1JobStatus = k8s_job.status
-        logger.debug(f"[job-id: {self.job_id}] Kubernetes Job status: {k8s_job_status}")
-        logger.debug(f"[job-id: {self.job_id}] Kubernetes Job conditions: {k8s_job_status.conditions}")
+        elif self.strategy == Strategy.HOROVOD:
+            label_selector = f"mpi_job_name={self.job_id}"
 
         pods: V1PodList = self.pod_client.list_namespaced_pod(
-            self.kubernetes_namespace, label_selector=f"job-name={self.job_id}"
+                self.kubernetes_namespace, label_selector=label_selector
         )
         logger.debug(f"[job-id: {self.job_id}] Kubernetes Job pods: {pods}")
         inferrer = SingleNodeStrategyKubernetesStatusInferrer(k8s_job_status, pods.items)

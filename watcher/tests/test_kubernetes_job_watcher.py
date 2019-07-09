@@ -2,6 +2,7 @@ import kubernetes
 import pytest
 from unittest.mock import Mock, create_autospec, call, MagicMock
 
+from bai_k8s_utils.strategy import Strategy
 from bai_watcher.kubernetes_job_watcher import KubernetesJobWatcher, SLEEP_TIME_BETWEEN_CHECKING_K8S_STATUS
 
 from bai_watcher.status_inferrers.status import BenchmarkJobStatus
@@ -31,6 +32,7 @@ def k8s_job_watcher(mocker):
     watcher = KubernetesJobWatcher(
         "job-id-1234",
         callback=Mock(),
+        strategy=Strategy.SINGLE_NODE,
         kubernetes_namespace="default",
         kubernetes_client_jobs=create_autospec(kubernetes.client.BatchV1Api),
         kubernetes_client_pods=create_autospec(kubernetes.client.CoreV1Api),
