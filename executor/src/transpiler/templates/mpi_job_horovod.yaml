@@ -22,7 +22,7 @@ data:
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: metrics-pusher-pod-status-binding
+  name: metrics-pusher-{job_id}
 subjects:
 - kind: ServiceAccount
   name: {job_id}-launcher
