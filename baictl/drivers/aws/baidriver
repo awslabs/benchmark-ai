@@ -79,7 +79,8 @@ create_infra() {
     ${kubectl} apply -f $data_dir/autoscaler-deployment.yaml
 
     ${kubectl} apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v1.11/nvidia-device-plugin.yml
-    ${kubectl} apply -f $project_dir/metrics-pusher/metrics-pusher-roles.yaml
+    ${kubectl} apply -f ${project_dir}/metrics-extractor/metrics-extractor-roles.yaml
+    ${kubectl} apply -f ${project_dir}/metrics-pusher/metrics-pusher-roles.yaml
 
     echo "==> Adding permission for CodeBuild role to deploy into the Kubernetes cluster"
     _add_codebuild_role || return 1
