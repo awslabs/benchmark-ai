@@ -3,8 +3,10 @@
 DEPLOY_ENV_NAME = deploy-$(ENV_NAME)
 DEPLOY_CONDA_RUN = conda run --name $(DEPLOY_ENV_NAME)
 DEPLOY_CONDA_RUN_SHELL = $(DEPLOY_CONDA_RUN) $(SHELL)
-# Employ conda run as soon as kubectl 1.14 is available
-KUBECTL = kubectl
+# Although kubectl is not present in the environment, we still use conda-run here because the `kubeconfig` files do
+# require other binaries to be available, such as `aws-iam-authenticator`, which are only present inside the
+# conda environment.
+KUBECTL = $(DEPLOY_CONDA_RUN) kubectl
 
 BENCHMARK_DIR ?= ..
 
