@@ -57,8 +57,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: mpijob-execution
 rules:
-- apiGroups: ["","batch", "kubeflow.org"]
-  resources: ["mpijobs"]
+- apiGroups: ["","batch", "kubeflow.org","rbac.authorization.k8s.io"]
+  resources: ["mpijobs","rolebindings"]
   verbs: ["create", "get"]
 ---
 kind: RoleBinding
