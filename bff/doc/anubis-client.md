@@ -149,7 +149,7 @@ Lets address some terminolgy and some default behavior.
 
 **Action ID**:  This is a UUID value that uniquely represents your run.  This is returned to the terminal after a successfully accepted submission.  It is used as a universal reference to this run. Most commands will assume the latest action id, however, it can always be explicitly set when necessary.
 
-**Status**: Calling the status flag is important because Anubis client obeys a pull model for how it gets data from the Anubis service.  Specifically, it is through status that the local database regarding the run is updated.  Subsequent to fetching status there are other commands you can issue that will take advanage of the local datastore provide further information to you.
+**Status**: Calling the status flag is important because Anubis client obeys a pull model for how it gets data from the Anubis service.  Specifically, it is through status that the local database regarding the run is updated.  Subsequent to fetching status there are other commands you can issue that will take advantage of the local datastore to provide further information to you.
 
 ```shell
 %> anubis --status 6ee29287-ce83-42e4-a618-0e7ac7e7f4af
