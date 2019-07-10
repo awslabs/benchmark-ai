@@ -30,7 +30,6 @@ Next setup your environment.  As mentioned, the Anubis client uses [Conda](https
 
 At this point Conda will initialize and begin pulling down the necessary tools for the environment.  This may take a few moments as it fetches and installs these packages.
 
-
 Now let's take a look at the help options.
 
 ```shell
