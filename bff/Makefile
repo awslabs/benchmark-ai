@@ -1,5 +1,18 @@
 #NOTE: Requires: sed, git, docker, kubectl
 SHELL :=/bin/bash
+
+ENV_NAME = bff
+ifneq (, $(shell which conda))
+# If doing `deploy`, then we use conda to grab the dependencies
+include ../base-common.mk
+include ../deploy-common.mk
+CONDA_DEPLOY_ENV_BIN = $(CONDA_ROOT)/envs/$(DEPLOY_ENV_NAME)/bin
+export PATH := $(CONDA_DEPLOY_ENV_BIN):$(PATH)
+else
+_deploy_venv:
+	@echo "No conda, so no environment for you :)"
+endif
+
 #----------------------------------------------------------------
 # Project Specific Info
 #----------------------------------------------------------------
@@ -323,16 +336,16 @@ deploy.yml: FORCE
 	     -e 's|@@KAFKA_POLL_INTERVAL_MS@@|$(KAFKA_POLL_INTERVAL_MS)|g' \
 	     -e 's|@@KAFKA_SINK_TOPICS@@|$(KAFKA_SINK_TOPICS)|g' \
 	     -e 's|@@KAFKA_CMD_SUBMIT_TOPIC@@|$(KAFKA_CMD_SUBMIT_TOPIC)|g' \
-	     -e 's|@@KAFKA_CMD_RETURN_TOPIC@@|$(KAFKA_CMD_RETURN_TOPIC)|g' $(DEPLOY_TEMPLATE) > $(shell sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(DEPLOY_TEMPLATE))
+	     -e 's|@@KAFKA_CMD_RETURN_TOPIC@@|$(KAFKA_CMD_RETURN_TOPIC)|g' $(DEPLOY_TEMPLATE) > $(shell PATH=$(PATH) sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(DEPLOY_TEMPLATE))
 
 service.yml: FORCE
 	@echo "Generating kubernetes service.yaml from template..."
-	@sed -e 's|@@BFF_SECURITY_GROUP_ID@@|$(shell kubectl get configmaps  outputs-infrastructure --output json | jq '.data.bff_security_group_id')|g' \
+	@sed -e 's|@@BFF_SECURITY_GROUP_ID@@|$(shell PATH=$(PATH) kubectl get configmaps  outputs-infrastructure --output json | PATH=$(PATH) jq '.data.bff_security_group_id')|g' \
 	     -e 's|@@PROJECT@@|$(PROJECT)|g' \
 	     -e 's|@@ENVIRONMENT@@|$(ENVIRONMENT)|g' \
-	     -e 's|@@SVC_PORT@@|$(SVC_PORT)|g' $(SERVICE_TEMPLATE) > $(shell sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(SERVICE_TEMPLATE))
+	     -e 's|@@SVC_PORT@@|$(SVC_PORT)|g' $(SERVICE_TEMPLATE) > $(shell PATH=$(PATH) sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(SERVICE_TEMPLATE))
 
-deploy: deploy.yml service.yml
+deploy: _deploy_venv deploy.yml service.yml
 	@echo "------------------------"
 	@echo "K8S deployment..."
 	@echo "------------------------"

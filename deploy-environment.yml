@@ -5,3 +5,4 @@ dependencies:
   # As long as we don't have kubernetes 1.14 on anaconda we do a separate install. Sorry.
   - aws-iam-authenticator >=1.11
   - sed 4.7.*
+  - jq

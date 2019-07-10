@@ -8,6 +8,7 @@ include $(BENCHMARK_DIR)/python-common.mk
 JOB_NAME = kafka-utils-it
 
 include $(BENCHMARK_DIR)/docker-common.mk
+include $(BENCHMARK_DIR)/deploy-common.mk
 
 
 build:
@@ -15,7 +16,7 @@ build:
 
 run: clean publish k8s_run
 
-k8s_run: _k8s_silent_undeploy k8s_deploy _wait_for_job clean_kustomization
+k8s_run: _k8s_silent_undeploy deploy _wait_for_job clean_kustomization
 
 
 _docker_package: _pre_docker_package

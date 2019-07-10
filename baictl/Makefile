@@ -1,6 +1,7 @@
 ENV_NAME = baictl
 PROJECT = baictl
 
+include ../base-common.mk
 include ../python-common.mk
 
 _venv:
@@ -27,10 +28,6 @@ _create-infra:
 destroy-infra: check-parameter-region venv _destroy-infra
 _destroy-infra:
 	./baictl create infra --aws-region=$(AWS_REGION) --aws-prefix-list-id=$(AWS_PREFIX_LIST_ID)
-
-deploy.yml:
-	# A dummy file since baictl is not a Kubernetes service
-	touch deploy.yml
 
 publish:
 	echo "Nothing to publish"

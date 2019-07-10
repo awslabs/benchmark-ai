@@ -1,10 +1,12 @@
 ENV_NAME = executor
 
+include ../base-common.mk
 include ../python-common.mk
 
 PROJECT=executor
 
 include ../docker-common.mk
+include ../deploy-common.mk
 
 STAGE ?= devo
 
