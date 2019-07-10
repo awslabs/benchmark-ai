@@ -104,6 +104,8 @@ As you probably guessed, under the hood, `baictl` is:
 - Using [terraform](https://www.terraform.io/) to create all of the AWS infrastructure:
     - an [EKS](https://aws.amazon.com/eks) cluster
     - an [Elasticsearch](https://aws.amazon.com/elasticsearch-service/) cluster
+    - an [MSK](http://aws.amazon.com/msk)
+    - a  [Prometheus](https://prometheus.io/) broker and Alert Manager
 - Adding some Pods to Kubernetes. Some of them are:
     - FluentD
     - Autoscaler
@@ -130,9 +132,9 @@ and the following will be done:
 - Kubernetes allocates node(s) for you (using [Cluster Autoscaler](https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler)).
 - The benchmark runs, emitting metrics via the `emit()` method provided by the [client-lib](https://github.com/MXNetEdge/benchmark-ai/tree/master/client-lib).
 - Logs are collected into:
-    - Elasticsearch
+    - ElasticSearch
 - Metrics are collected into:
-    - Elasticsearch
+    - Prometheus
 
 ## Step 3 - Collect the results of your run
 
