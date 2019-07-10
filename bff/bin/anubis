@@ -203,7 +203,13 @@ get_client_id() {
 }
 
 ping_service_endpoint() {
-    show_registered_service_endpoint && curl "$(_construct_endpoint_URL)"/ready
+    if show_registered_service_endpoint && curl "$(_construct_endpoint_URL)"/ready >& /dev/null ; then
+        printf "%b \033[01;32mR\033[0meady \033[01;32mA\033[0mnd \033[01;32mW\033[0milling like Big Daddy Kane\n\n" "${emoji[GOOD]}" >&2
+        return 0
+    else
+        printf "%b Anubis Service Endpoint \033[01;31mNOT AVAILABLE\033[0m\n\n" "${emoji[FAIL]}" >&2
+        return 1
+    fi
 }
 
 register_service_endpoint() {
@@ -211,6 +217,7 @@ register_service_endpoint() {
     #TODO - Do basic sanity checking on format and then write it to file;
 
     echo "${service_endpoint}" > "${BAI_SERVICE_ENDPOINT_CONFIG}"
+    show_registered_service_endpoint
 }
 
 unregister_service_endpoint() {
@@ -220,12 +227,12 @@ unregister_service_endpoint() {
 show_registered_service_endpoint() {
     local current_service_endpoint=$(cat "${BAI_SERVICE_ENDPOINT_CONFIG}")
     if [[ -n "${current_service_endpoint}" ]]; then
-        printf "Currently service endpoint is: [\033[01;33m%s\033[0m] \n" "$current_service_endpoint"
+        printf "Current service endpoint is: [\033[01;33m%s\033[0m] \n\n" "$current_service_endpoint" >&2
         return 0
     else
         printf "
 \033[01;31m[WARNING]\033[0m You do not have a service endpoint registered!!
-          Please do so.  (use --register to set one)\n\n";
+          Please do so.  (use --register to set one)\n\n" >&2
         return 1
     fi
 }
@@ -746,7 +753,7 @@ main() {
                     shift
                     register_service_endpoint "${1}"
                     ;;
-                --ping-service-endpoint)
+                --ping-service-endpoint | --ping)
                     shift
                     ping_service_endpoint
                     exit $?
