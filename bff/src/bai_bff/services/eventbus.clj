@@ -134,6 +134,11 @@
     (log/trace (str "since... "since-tstamp))
     (filterv #(< since-tstamp (:tstamp (peek (:visited %)))) (get-in @status-db [client-key action-key] {}))))
 
+(defn get-job-results [client-id action-id]
+  (log/trace "get-job-results - client-id ["clientid"] action-id ["action-id"]")
+  (LogIndexQuerier. (env :es-endpoint) 9200 "kubernetes.labels.pod-template-hash" action-id 100)
+  )
+
 ;;----------------------------------------------------------
 ;; Scripts Persistence
 ;;----------------------------------------------------------

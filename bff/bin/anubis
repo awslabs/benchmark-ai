@@ -585,9 +585,14 @@ _as_status_line() {
 #command event
 get_results() {
     local action_id=${1:?"get_results() -> You MUST provide the action_id returned by the initial submission"}
-    ((VERBOSE)) && echo "get_results ${action_id}"
-    #TODO - implement me
-    echo "(implement me)"
+    ((VERBOSE)) && echo "get_results ${action_id}" >&2
+
+    local cmd
+    local returned
+    cmd="curl -s -X GET -H Content-Type: application/json http://"${current_service_endpoint}"/api/job/results/$(get_client_id)/${action_id}"
+    ((VERBOSE)) && echo ${cmd} >&2
+    returned=$(eval "${cmd}")
+    echo "${returned}"
 }
 
 #command event
