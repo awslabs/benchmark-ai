@@ -18,7 +18,7 @@ Second thing: The prerequisites.
 
 * A Unix-like machine
 
-  (This is an executable script so don't forget to chmod it appropriately.  We recommend putting this programin your $PATH)
+  (This is an executable script so don't forget to chmod it appropriately.  We recommend putting this program in your $PATH)
 
 
 
@@ -28,13 +28,13 @@ Second thing: The prerequisites.
 
 
 
-Next setup your environment.  And mentioned, the Anubis client uses [Conda](https://docs.conda.io/en/latest/miniconda.html) to provide a suitable and predictable environement in which to run.  You only have to do the following command once (per new release).
+Next setup your environment.  As mentioned, the Anubis client uses [Conda](https://docs.conda.io/en/latest/miniconda.html) to provide a suitable and predictable environment in which to run.  You only have to do the following command once (per new release).
 
 ```shell
 %> anubis --env-setup
 ```
 
-At this point Conda will initialize and begin pulling down the necessary tools for the enviroment.  This may take a few moments as it fetches and installs these packages.
+At this point Conda will initialize and begin pulling down the necessary tools for the environment.  This may take a few moments as it fetches and installs these packages.
 
 
 

@@ -217,6 +217,7 @@ register_service_endpoint() {
     #TODO - Do basic sanity checking on format and then write it to file;
 
     echo "${service_endpoint}" > "${BAI_SERVICE_ENDPOINT_CONFIG}"
+    show_registered_service_endpoint
 }
 
 unregister_service_endpoint() {
@@ -226,7 +227,7 @@ unregister_service_endpoint() {
 show_registered_service_endpoint() {
     local current_service_endpoint=$(cat "${BAI_SERVICE_ENDPOINT_CONFIG}")
     if [[ -n "${current_service_endpoint}" ]]; then
-        printf "Currently service endpoint is: [\033[01;33m%s\033[0m] \n" "$current_service_endpoint" >&2
+        printf "Current service endpoint is: [\033[01;33m%s\033[0m] \n\n" "$current_service_endpoint" >&2
         return 0
     else
         printf "
