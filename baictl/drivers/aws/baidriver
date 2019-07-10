@@ -35,6 +35,12 @@ create_infra() {
         --aws-ssh-access-cidr-blocks=*)
             ssh_access_cidr_blocks="${arg#*=}"
             ;;
+        --extra-users=*)
+            extra_users="${arg#*=}"
+            ;;
+        --extra-roles=*)
+            extra_roles="${arg#*=}"
+            ;;
         --no-validate)
             validate=false
             ;;
@@ -77,6 +83,9 @@ create_infra() {
 
     echo "==> Adding permission for CodeBuild role to deploy into the Kubernetes cluster"
     _add_codebuild_role || return 1
+
+    echo "==> Adding permission for extra users and roles into the Kubernetes cluster"
+    _add_extra_users_roles || return 1
 
     echo "==> Creating configmap from Terraform outputs"
     _create_configmap_yaml_from_terraform_outputs || return 1
@@ -232,6 +241,32 @@ _add_codebuild_role(){
         python3 ${src_dir}/add_permission_to_aws_auth_configmap.py --role-arn "arn:aws:iam::${account_id}:role/code-build-role" --role-username build --role-groups system:masters || return 1
     )
 }
+
+_add_extra_users_roles(){
+    local bash_src=$(realpath ${BASH_SOURCE})
+    local src_dir=$(dirname "${bash_src}")
+
+    for user in $(echo $extra_users | sed "s/,/ /g")
+    do
+        (
+            export KUBECONFIG=${kubeconfig}
+            python3 ${src_dir}/add_permission_to_aws_auth_configmap.py --iam-user-arn $user --iam-user-username $(echo $user | sed -n 's/.*\/\(.[a-zA-Z0-9]*\)/\1/p') --iam-user-groups system:masters || return 1
+        )
+        local exit_code=$?
+        [[ "$exit_code" != 0 ]] && echo "[ERROR] Failed with exit code: $exit_code" && return 1
+    done
+
+    for role in $(echo $extra_roles | sed "s/,/ /g")
+    do
+        (
+            export KUBECONFIG=${kubeconfig}
+            python3 ${src_dir}/add_permission_to_aws_auth_configmap.py --role-arn $ --role-username $(echo $role | sed -n 's/.*\/\(.[a-zA-Z0-9]*\)/\1/p') --role-groups system:masters || return 1
+        )
+        local exit_code=$?
+        [[ "$exit_code" != 0 ]] && echo "[ERROR] Failed with exit code: $exit_code" && return 1
+    done
+}
+
 
 __create_kubeflow_namespace(){
     cat << EOF
