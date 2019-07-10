@@ -3,11 +3,31 @@ import collections
 from enum import Enum, auto
 from typing import List, Dict, Set
 
-from kubernetes.client import V1ContainerStatus, V1ContainerState, V1ContainerStateTerminated, V1ContainerStateWaiting, \
-    V1ContainerStateRunning
+from kubernetes.client import (
+    V1ContainerStatus,
+    V1ContainerState,
+    V1ContainerStateTerminated,
+    V1ContainerStateWaiting,
+    V1ContainerStateRunning,
+    V1Pod,
+    V1PodStatus,
+    V1PodCondition,
+)
+
+from bai_watcher import service_logger
+from bai_watcher.status_inferrers.status import BenchmarkJobStatus
 
 
+logger = service_logger.getChild(__name__)
 ContainerInfo = collections.namedtuple("ContainerInfo", ("container_name", "message"))
+"""
+Name of the container inside the POD that is running a benchmark.
+
+Must be in sync with what the name that the Executor gives to the benchmark container.
+
+HACK: It is not great to hardcode the name of the container like this, but Kubernetes does not
+      have a way to specify which container is a sidecar.
+"""
 BENCHMARK_CONTAINER_NAME = "benchmark"
 
 
@@ -46,3 +66,66 @@ def collect_container_states(container_statuses: List[V1ContainerStatus]) -> Dic
             obj = ContainerInfo(status.name, f"{running.started_at}")
             state_to_containers[ContainerState.RUNNING].add(obj)
     return state_to_containers
+
+
+def infer_status_from_pod(pod: V1Pod):
+    pod_status: V1PodStatus = pod.status
+
+    # https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase
+    phase = pod_status.phase
+    if phase == "Running":
+        return BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS
+
+    if phase == "Pending" and pod_status.conditions:
+        # https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-conditions
+        conditions: List[V1PodCondition] = pod_status.conditions
+        # TODO: handle multiple `conditions`
+        condition = conditions[0]
+        if condition.type == "PodScheduled" and condition.reason == "Unschedulable":
+            return BenchmarkJobStatus.PENDING_NODE_SCALING
+
+    # We don't handle the POD phases "Failed" or "Pending" here because we want to inspect each container of the POD
+
+
+def infer_status_from_containers(pod: V1Pod):
+    pod_status: V1PodStatus = pod.status
+
+    # init containers
+    init_containers = collect_container_states(pod_status.init_container_statuses or [])
+    if any(len(s) for s in init_containers.values()):
+        logger.info(f"[pod: {pod.metadata.name}] Init containers are not done yet: {init_containers}")
+    for state, container_infos in init_containers.items():
+        if state == ContainerState.PENDING:
+            return BenchmarkJobStatus.PENDING_AT_INIT_CONTAINERS
+        elif state == ContainerState.RUNNING:
+            return BenchmarkJobStatus.RUNNING_AT_INIT_CONTAINERS
+        elif state == ContainerState.FAILED:
+            return BenchmarkJobStatus.FAILED_AT_INIT_CONTAINERS
+        else:
+            assert False
+
+    # benchmark and sidecar containers
+    main_containers = collect_container_states(pod_status.container_statuses)
+    logger.info(f"[pod: {pod.metadata.name}] Main containers state: {main_containers}")
+    for state, container_infos in main_containers.items():
+        if state == ContainerState.PENDING:
+            for container_info in container_infos:
+                if container_info.container_name == BENCHMARK_CONTAINER_NAME:
+                    return BenchmarkJobStatus.PENDING_AT_BENCHMARK_CONTAINER
+                else:
+                    return BenchmarkJobStatus.PENDING_AT_SIDECAR_CONTAINER
+
+        elif state == ContainerState.FAILED:
+            for container_info in container_infos:
+                if container_info.container_name == BENCHMARK_CONTAINER_NAME:
+                    return BenchmarkJobStatus.FAILED_AT_BENCHMARK_CONTAINER
+                else:
+                    return BenchmarkJobStatus.FAILED_AT_SIDECAR_CONTAINER
+
+        elif state == ContainerState.RUNNING:
+            # We can safely ignore the state of this container because another container should be in a "Waiting"
+            # state. If not, then there is a bug in this code
+            continue
+
+        else:
+            assert False

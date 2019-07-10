@@ -1,17 +1,20 @@
 from typing import Callable
-
 import itertools
 import kubernetes
 import time
-from kubernetes.client import V1Job, V1JobStatus, V1PodList, BatchV1Api, CoreV1Api
+import logging
+
+from kubernetes.client import V1Job, V1JobStatus, V1PodList, BatchV1Api, CoreV1Api, CustomObjectsApi
 from pathlib import Path
 from threading import Thread
 
 from bai_watcher import service_logger
+from bai_watcher.status_inferrers.horovod import HorovodStrategyKubernetesStatusInferrer
 from bai_watcher.status_inferrers.single_node import SingleNodeStrategyKubernetesStatusInferrer
 from bai_watcher.status_inferrers.status import BenchmarkJobStatus
 from bai_k8s_utils.strategy import Strategy
 
+logging.basicConfig(level="DEBUG")
 logger = service_logger.getChild(__name__)
 
 SLEEP_TIME_BETWEEN_CHECKING_K8S_STATUS = 5
@@ -42,6 +45,7 @@ class KubernetesJobWatcher:
         kubernetes_namespace: str,
         kubernetes_client_jobs: BatchV1Api,
         kubernetes_client_pods: CoreV1Api,
+        kubernetes_client_crds: CustomObjectsApi,
     ):
         self.job_id = job_id
         self.callback = callback
@@ -49,6 +53,7 @@ class KubernetesJobWatcher:
         self.kubernetes_namespace = kubernetes_namespace
         self.jobs_client = kubernetes_client_jobs
         self.pod_client = kubernetes_client_pods
+        self.crds_client = kubernetes_client_crds
         self.thread = Thread(target=self._thread_run_loop, daemon=True, name=f"k8s-job-watcher-{job_id}")
 
     def start(self):
@@ -76,15 +81,30 @@ class KubernetesJobWatcher:
             logger.debug(f"[job-id: {self.job_id}] Kubernetes Job status: {k8s_job_status}")
             logger.debug(f"[job-id: {self.job_id}] Kubernetes Job conditions: {k8s_job_status.conditions}")
             label_selector = f"job-name={self.job_id}"
+            inferrer_type = SingleNodeStrategyKubernetesStatusInferrer
 
         elif self.strategy == Strategy.HOROVOD:
-            label_selector = f"mpi_job_name={self.job_id}"
+            try:
+                # TODO: Find a way to retrieve status of mpijobs, so we'll have to rely on inspecting pods instead
+                # CustomObjectsAPI:
+                # https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/CustomObjectsApi.md
+                k8s_mpijob = self.crds_client.get_namespaced_custom_object(
+                    group="kubeflow.org",
+                    version="v1alpha1",
+                    namespace=self.kubernetes_namespace,
+                    plural="mpijobs",
+                    name=self.job_id,
+                )
+            except kubernetes.client.rest.ApiException as e:
+                pass
 
-        pods: V1PodList = self.pod_client.list_namespaced_pod(
-                self.kubernetes_namespace, label_selector=label_selector
-        )
+            k8s_job_status = k8s_mpijob.status
+            label_selector = f"mpi_job_name={self.job_id}"
+            inferrer_type = HorovodStrategyKubernetesStatusInferrer
+
+        pods: V1PodList = self.pod_client.list_namespaced_pod(self.kubernetes_namespace, label_selector=label_selector)
         logger.debug(f"[job-id: {self.job_id}] Kubernetes Job pods: {pods}")
-        inferrer = SingleNodeStrategyKubernetesStatusInferrer(k8s_job_status, pods.items)
+        inferrer = inferrer_type(k8s_job_status, pods.items)
         status = inferrer.status()
         return status
 
@@ -96,3 +116,25 @@ class KubernetesJobWatcher:
             if stop_watching:
                 return
             time.sleep(SLEEP_TIME_BETWEEN_CHECKING_K8S_STATUS)
+
+
+# Leaving this code here as it is useful for testing
+#
+# job_id = "b-3a619d85-49dc-4000-9dd6-29422fa67432"
+# callback = lambda: None
+# strategy = Strategy.HOROVOD
+# kubernetes_namespace = "default"
+# os.environ["AWS_PROFILE"] = "jlcont"
+# load_kubernetes_config()
+# kubernetes_client_jobs = kubernetes.client.BatchV1Api()
+# kubernetes_client_pods = CoreV1Api()
+# kubernetes_client_crds = CustomObjectsApi()
+# KubernetesJobWatcher(
+#     job_id,
+#     callback,
+#     strategy,
+#     kubernetes_namespace=kubernetes_namespace,
+#     kubernetes_client_jobs=kubernetes_client_jobs,
+#     kubernetes_client_pods=kubernetes_client_pods,
+#     kubernetes_client_crds=kubernetes_client_crds,
+# ).get_status()

@@ -2,6 +2,7 @@ from typing import Tuple
 
 import kubernetes
 
+from bai_k8s_utils.strategy import Strategy
 from bai_kafka_utils.events import ExecutorBenchmarkEvent, Status
 from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
 from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService, KafkaServiceConfig
@@ -57,6 +58,11 @@ class WatchJobsEventHandler(KafkaServiceCallback):
             logger.warning("There is already a watcher for job '%s'", job_id)
             return
 
+        # HACK! This is not the best way to get the strategy, as it is duplicated logic
+        # TODO:  We should add it as a field of BenchmarkJob in ExecutorPayload
+        # (or modify BenchmarkDoc to start passing a Descriptor object instead of a Dict)
+        strategy = Strategy(event.payload.toml.contents["hardware"]["strategy"])
+
         logger.info("Starting to watch the job '%s'", job_id)
 
         def callback(job_id, benchmark_job_status: BenchmarkJobStatus):
@@ -73,8 +79,10 @@ class WatchJobsEventHandler(KafkaServiceCallback):
         watcher = KubernetesJobWatcher(
             job_id,
             callback,
+            strategy=strategy,
             kubernetes_client_jobs=kubernetes.client.BatchV1Api(),
             kubernetes_client_pods=kubernetes.client.CoreV1Api(),
+            kubernetes_client_crds=kubernetes.client.CustomObjectsApi(),
             kubernetes_namespace=self.config.kubernetes_namespace_of_running_jobs,
         )
         self.watchers[job_id] = watcher

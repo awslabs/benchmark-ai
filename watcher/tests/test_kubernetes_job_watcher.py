@@ -36,6 +36,7 @@ def k8s_job_watcher(mocker):
         kubernetes_namespace="default",
         kubernetes_client_jobs=create_autospec(kubernetes.client.BatchV1Api),
         kubernetes_client_pods=create_autospec(kubernetes.client.CoreV1Api),
+        kubernetes_client_crds=create_autospec(kubernetes.client.CustomObjectsApi),
     )
     return watcher
 
