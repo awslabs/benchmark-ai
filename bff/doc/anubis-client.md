@@ -4,7 +4,7 @@
 
 The Anubis client allows you to interact with Anubis system to submit Anubis benchmark descriptor files, watch progress and fetch results.  The surface area of this client is small to keep things simple and easy.
 
-
+[[Download](https://w.amazon.com/bin/download/MXNet_Berlin/WebHome/anubis)]
 
 The client speaks over HTTP to the Anubis "service_endpoint".  The Anubis tool itself has a RESTful-ish API that the client adheres to.
 
