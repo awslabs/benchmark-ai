@@ -35,5 +35,5 @@ phases:
             sleep 30s
             # Describe to have some info in case of errors.
             kubectl describe pods
-            make integration_tests STAGE=local LOCAL_DEPLOY="kind load docker-image "
+            make integration_tests STAGE=local LOCAL_PUBLISH="kind load docker-image "
         fi
