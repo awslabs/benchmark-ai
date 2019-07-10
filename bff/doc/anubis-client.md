@@ -1,28 +1,14 @@
-<<<<<<< HEAD
 # Anubis
-=======
-# Anubis
->>>>>>> [bff] Anubis documentation
 
 (**The Client**)
 
 The Anubis client allows you to interact with Anubis system to submit Anubis benchmark descriptor files, watch progress and fetch results.  The surface area of this client is small to keep things simple and easy.
 
-<<<<<<< HEAD
-[[Download](https://w.amazon.com/bin/download/MXNet_Berlin/WebHome/anubis)]
-=======
-
->>>>>>> [bff] Anubis documentation
-
 The client speaks over HTTP to the Anubis "service_endpoint".  The Anubis tool itself has a RESTful-ish API that the client adheres to.
 
 First thing, download the Anubis client from here.
 
-<<<<<<< HEAD
 Second thing: The prerequisites.
-=======
-Second thing: The prerequisites.
->>>>>>> [bff] Anubis documentation
 
 * Bash v5+
 
@@ -30,36 +16,19 @@ Second thing: The prerequisites.
 
 * A Unix-like machine
 
-<<<<<<< HEAD
   (This is an executable script so don't forget to chmod it appropriately.  We recommend putting this program in your $PATH)
-=======
-  (This is an executable script so don't forget to chmod it appropriately.  We recommend putting this programin your $PATH)
->>>>>>> [bff] Anubis documentation
-
-
 
 ```shell
 %> chmod 755 anubis
 ```
 
-
-
-<<<<<<< HEAD
 Next setup your environment.  As mentioned, the Anubis client uses [Conda](https://docs.conda.io/en/latest/miniconda.html) to provide a suitable and predictable environment in which to run.  You only have to do the following command once (per new release).
-=======
-Next setup your environment.  And mentioned, the Anubis client uses [Conda](https://docs.conda.io/en/latest/miniconda.html) to provide a suitable and predictable environement in which to run.  You only have to do the following command once (per new release).
->>>>>>> [bff] Anubis documentation
 
 ```shell
 %> anubis --env-setup
 ```
 
-<<<<<<< HEAD
 At this point Conda will initialize and begin pulling down the necessary tools for the environment.  This may take a few moments as it fetches and installs these packages.
-=======
-At this point Conda will initialize and begin pulling down the necessary tools for the enviroment.  This may take a few moments as it fetches and installs these packages.
->>>>>>> [bff] Anubis documentation
-
 
 
 Now let's take a look at the help options.
