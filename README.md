@@ -1,5 +1,7 @@
 A "framework" that enables to periodically generate performance benchmarks of Machine Learning systems in order to evaluate new functionalities and detect regressions.
 
+![how_good_is_uour_ml](docs/images/anubis.scales.jpg "Anubis")
+
 # A "framework" ?
 
 Anubis provides a simple, self service solution for teams to schedule and run benchmarks for Machine Learning systems.
