@@ -2,7 +2,7 @@
 
 The service interface for BenchmarkAI
 
-The `bai-bff` is the only user-facing, service-side, service through which all interactions with the Benchmark AI platform takes place.  The client tool, `baictl`, interacts with this service and helps you make requests and launch commands.
+The `bai-bff` is the only user-facing, service-side, service through which all interactions with the Benchmark AI platform takes place.  The client tool, `anubis`, interacts with this service and helps you make requests and launch commands.
 
 ## Usage
 
@@ -12,18 +12,18 @@ The `bai-bff` is the only user-facing, service-side, service through which all i
 
 ### What do I need before I get started?
 
-* `make`  
+* `make`
 
   ```shell
   GNU Make 3.81
   Copyright (C) 2006  Free Software Foundation, Inc
   ```
 
-  
+
 
   The items below are required for running *local*,  *bare-metal* builds...
 
-* `java` 
+* `java`
 
   ```shell
   openjdk 11.0.2 2019-01-15
@@ -46,14 +46,14 @@ The `bai-bff` is the only user-facing, service-side, service through which all i
   ```
 
 * Kubernetes
-  * `kubctrl` 
+  * `kubctrl`
   * Minikube
 
 ---
 
 ### How do I build and run this project?
 
-To compile the code locally run `make` 
+To compile the code locally run `make`
 (below is the full set of make targets and what they do)
 
 ```bash
