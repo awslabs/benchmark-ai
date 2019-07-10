@@ -17,6 +17,40 @@ conda_usage() {
     exit 9
 }
 
+#TODO - add the dependencies that cover some of the other tools this script needs:
+#  uuidgen
+#  hostname
+#  tar
+env_setup() {
+    if ! conda --version; then conda_usage; fi;
+    local tmp_environment_file=$(mktemp -t "${0##*/}-XXXXXXXXX.yml")
+    ((DEDBUG)) && echo "${tmp_environment_file}"
+    cat <<EOF > "${tmp_environment_file}"
+name: anubis
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - sed 4.7
+  - jq 1.6
+  - curl 7.54.1
+  - coreutils 8.31
+EOF
+    cmd="conda env update -f ${tmp_environment_file}"
+    ${cmd}
+    rm "${tmp_environment_file}"
+
+    printf "
+  Please proceed with your %s shenanigans
+
+" "${0##*/}"
+}
+
+if [ $1 = "--env-setup" ]; then
+    env_setup
+    exit $?
+fi
+
 if ! source "${CONDA_EXE%/*}"/activate anubis >& /dev/null; then
     printf "
   Oops, there seems to be a problem with Conda...
@@ -609,34 +643,7 @@ get_history() {
     cat "${BAI_ACTION_IDS}"
 }
 
-#TODO - add the dependencies that cover some of the other tools this script needs:
-#  uuidgen
-#  hostname
-#  tar
-env_setup() {
-    if ! conda --version && conda_usage; then conda_usage; fi;
-    local tmp_environment_file=$(mktemp -t "${0##*/}-XXXXXXXXX.yml")
-    ((DEDBUG)) && echo "${tmp_environment_file}"
-    cat <<EOF > "${tmp_environment_file}"
-name: anubis
-channels:
-  - conda-forge
-  - defaults
-dependencies:
-  - sed 4.7
-  - jq 1.6
-  - curl 7.54.1
-  - coreutils 8.31
-EOF
-    cmd="conda env update -f ${tmp_environment_file}"
-    ${cmd}
-    rm "${tmp_environment_file}"
 
-    printf "
-  Please proceed with your %s shenanigans
-
-" "${0##*/}"
-}
 #---------------------------------------
 
 
@@ -716,10 +723,6 @@ main() {
                 --abort|--cancel)
                     shift
                     abort_submission ${@} ; shift
-                    exit $?
-                    ;;
-                --env-setup)
-                    env_setup
                     exit $?
                     ;;
                 --check-prerequisites) # hidden option
