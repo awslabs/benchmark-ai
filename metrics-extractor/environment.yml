@@ -1,0 +1,12 @@
+name: metrics-extractor
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python 3.7.*
+  - python-kubernetes 8.0.*
+  - pip
+  - pip:
+      - dataclasses-json==0.2.11
+      - ConfigArgParse==0.14.0
+      - benchmarkai-client-lib

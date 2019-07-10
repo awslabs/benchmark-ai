@@ -18,22 +18,22 @@ strategy = "single_node"
 
 # 2. Environment
 [env]
-# Docker hub <hub-user>/<repo-name>:<tag> 
+# Docker hub <hub-user>/<repo-name>:<tag>
 docker_image = "benchmarkai/single-node-gpu:180619"
 
-# 3. Machine learning related settings: 
+# 3. Machine learning related settings:
 # dataset, benchmark code and parameters it takes
 [ml]
 benchmark_code = "python3 /home/benchmark/image_classification.py --model=resnet50_v2 --batch-size=32 --gpus=4"
 
-# [Opt] 4. Dataset 
+# [Opt] 4. Dataset
 [data]
 # Dataset ID
 id = "mnist"
 # md5 = "rddytftyfrdr75657fftrtrt11"
 
 # [Opt] Data sources
-# List all required data sources below. 
+# List all required data sources below.
 # Make an entry for each with the same format as the ones below.
 [[data.sources]]
 # Data download URI.
@@ -61,7 +61,27 @@ path = "/data/mnist/t10k-labels-idx1-ubyte.gz"
 
 # ...
 
-# 4. Output
+# 5. Output
 [output]
-# Define which metrics will be tracked in this benchmark
-metrics = ["accuracy"]
+
+# [Opt] Custom metrics descriptions
+# List all required metrics descriptions below.
+# Make an entry in same format as the one below.
+[[output.metrics]]
+# Name of the metric that will appear in the dashboards.
+name = "accuracy"
+# Pattern for log parsing for this metric.
+pattern = "accuracy=[0-9\.]+"
+# [Opt] Units for the metric (can be used in the dashboard as well)
+units = "%"
+
+# [Opt] Custom metrics descriptions
+# List all required metrics descriptions below.
+# Make an entry in same format as the one below.
+[[output.metrics]]
+# Name of the metric that will appear in the dashboards.
+name = "throughput"
+# Pattern for log parsing for this metric.
+pattern = "throughput=[0-9\.]+"
+# [Opt] Units for the metric (can be used in the dashboard as well)
+units = "img/sec"

@@ -16,6 +16,7 @@ LOCAL_PUBLISH = echo "Skipping local publishing step - use local docker repo"
 # package is a high level command while docker_package can be executed separately
 package: build docker_package
 
+
 _pre_docker_package::
 	echo "Pre docker actions"
 
