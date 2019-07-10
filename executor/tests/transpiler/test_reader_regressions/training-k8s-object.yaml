@@ -2,6 +2,11 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: benchmark-job-id
+  labels:
+    app: benchmark-ai
+    action-id: ACTION_ID
+    client-id: CLIENT_ID
+    created-by: executor
 spec:
   template:
     metadata:
