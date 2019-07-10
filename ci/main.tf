@@ -178,7 +178,7 @@ resource "aws_codebuild_project" "ci-unit-tests" {
 }
 
 resource "aws_codebuild_webhook" "ci-unit-tests" {
-  count        = length(aws_codebuild_project.ci-unit-tests)
+  count        = local.is_official_ci_account ? length(aws_codebuild_project.ci-unit-tests) : 0
   project_name = aws_codebuild_project.ci-unit-tests.*.name[count.index]
 
   filter_group {
