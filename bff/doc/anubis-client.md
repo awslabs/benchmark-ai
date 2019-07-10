@@ -1,4 +1,4 @@
-# Anubis 
+# Anubis
 
 (**The Client**)
 
@@ -10,7 +10,7 @@ The client speaks over HTTP to the Anubis "service_endpoint".  The Anubis tool i
 
 First thing, download the Anubis client from here.
 
-Second thing: The prerequisites.  
+Second thing: The prerequisites.
 
 * Bash v5+
 
@@ -236,9 +236,15 @@ You can see that some runs have been issued using a direct TOML descriptor file 
 
 #### Simplicity:
 
-At the end of the day Anubis is a measuring tool, like a ruler or scale ;-).  The affordances of the client tool should be limited and simple so that you don't have to "learn" Anubis, you simply run it and get utility from it.  It measures the "goodness" of machine learning algorithms / frameworks / hardware and provides empirical results that can be used within a larger problem solving scope.  Simply; describe, submit, inspect.
+At the end of the day Anubis is a measuring tool, like a ruler or
+scale ;-).  The affordances of the client tool should be limited and
+simple so that you don't have to "learn" Anubis, you simply run it and
+get utility from it.  It measures the "goodness" of machine learning
+algorithms / frameworks / hardware and provides empirical results that
+can be used within a larger problem solving scope.  Simply; describe,
+submit, inspect.
 
-All you bring to the table is your container or code.  We leverage the 
+All you bring to the table is your container or code and TOML descriptor that codifies the relationship between algorithms, frameworks and hardware; Anubis does the rest.
 
 The most typical command line would be:
 
@@ -293,4 +299,3 @@ You can also write that file out explicitly with:
 
 
 Enjoy!
-
