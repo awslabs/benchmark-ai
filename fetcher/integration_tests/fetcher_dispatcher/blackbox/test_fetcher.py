@@ -3,8 +3,7 @@ import dataclasses
 import pytest
 from kafka import KafkaProducer, KafkaConsumer
 from time import time
-from timeout_decorator import timeout
-from typing import Callable, List
+from typing import Callable
 
 from bai_kafka_utils.cmd_callback import KafkaCommandCallback
 from bai_kafka_utils.events import (
@@ -19,10 +18,9 @@ from bai_kafka_utils.events import (
     CommandResponsePayload,
     CommandRequestEvent,
 )
+from bai_kafka_utils.integration_tests.test_loop import CombinedFilter, wait_for_response, EventFilter
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
-from utils.test_utils import get_test_timeout
 
-EventFilter = Callable[[BenchmarkEvent], bool]
 DataSetFilter = Callable[[DataSet], bool]
 
 
@@ -100,23 +98,6 @@ def get_is_command_return_filter(
     return filter_command_event
 
 
-class CombinedFilter(EventFilter):
-    def __init__(self, filters: List[EventFilter]):
-        self.set_filters = set(filters)
-
-    # Returns true after all filters are satisfied
-    def __call__(self, event: BenchmarkEvent) -> bool:
-        for event_filter in self.set_filters:
-            if event_filter(event):
-                self.set_filters.remove(event_filter)
-                print(f"Hit condition {event_filter.__name__}. {len(self.set_filters)} to hit.")
-                break
-        return not self.set_filters
-
-
-POLL_TIMEOUT_MS = 500
-
-
 @pytest.mark.parametrize(
     "src,expected_status",
     [(EXISTING_DATASET_WITH_DELAY, Status.SUCCEEDED), (FAILING_DATASET_WITH_DELAY, Status.FAILED)],
@@ -177,20 +158,3 @@ def send_salted_fetch_request(benchmark_event_dummy_payload, kafka_producer_to_c
     print(f"Sending event {benchmark_event}")
     kafka_producer_to_consume.send(topic, value=benchmark_event, key=benchmark_event.client_id)
     return benchmark_event
-
-
-WAIT_TIMEOUT = get_test_timeout()
-
-
-@timeout(WAIT_TIMEOUT)
-def wait_for_response(filter_event, kafka_consumer_of_produced):
-    while True:
-        records = kafka_consumer_of_produced.poll(POLL_TIMEOUT_MS)
-        print("Got this:")
-        print(records)
-        kafka_consumer_of_produced.commit()
-        for topic, recs in records.items():
-            for msg in recs:
-                print(f"Got event {msg.value}")
-                if filter_event(msg.value):
-                    return
