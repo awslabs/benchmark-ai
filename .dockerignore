@@ -11,3 +11,4 @@ baictl/baictl-infrastructure.py
 **/build
 **/dist
 **/.*
+**/htmlcov
