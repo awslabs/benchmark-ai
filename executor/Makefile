@@ -25,5 +25,16 @@ deploy.yml: _deploy_venv
 	$(KUBECTL) kustomize deploy > deploy.yml
 	rm -f deploy/kustomization.yml
 
+ifeq ($(STAGE),local)
+#Pass special label designed for local integration tests
+  JOB_DOCKER_IMAGE_LABEL=local-latest
+  TEST_LABEL=DOCKER_IMAGE_LABEL=$(JOB_DOCKER_IMAGE_LABEL)
+else
+  TEST_LABEL=
+endif
+
+.PHONY: integration_tests
+
 integration_tests:
-	echo "Integration tests will be here"
+	echo $(TEST_LABEL)
+	cd $(INTEGRATION_TEST_FOLDERS) && $(MAKE) run $(TEST_LABEL)

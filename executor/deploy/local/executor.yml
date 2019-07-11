@@ -8,6 +8,11 @@ spec:
       containers:
         - name: executor
           imagePullPolicy: Never
+          env:
+            - name: NUM_PARTITIONS
+              value: "1"
+            - name: REPLICATION_FACTOR
+              value: "1"
       affinity:
       #--
       nodeSelector:

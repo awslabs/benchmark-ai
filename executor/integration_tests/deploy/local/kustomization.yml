@@ -1,0 +1,9 @@
+bases:
+  - ../base
+configMapGenerator:
+  - name: pytest
+    literals:
+      - timeout=30
+    behavior: merge
+patchesStrategicMerge:
+  - executor-it-job.yml
