@@ -9,7 +9,7 @@ from bai_zk_utils.zk_locker import DistributedRWLockManager
 from fetcher_dispatcher.args import FetcherServiceConfig
 from fetcher_dispatcher.data_set_manager import DataSetManager
 from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
-from utils.test_utils import get_test_timeout
+from bai_kafka_utils.integration_tests.test_utils import get_test_timeout
 
 EXISTING_DATASET = "http://files.grouplens.org/datasets/movielens/ml-1m.zip"
 
