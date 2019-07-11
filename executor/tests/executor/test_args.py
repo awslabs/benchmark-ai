@@ -34,6 +34,7 @@ def test_create_bai_config(config_args, config_env):
         puller_docker_image=args.puller_docker_image,
         puller_mount_chmod=args.puller_mount_chmod,
         metrics_pusher_docker_image=args.metrics_pusher_docker_image,
+        metrics_extractor_docker_image=args.metrics_extractor_docker_image,
         cron_job_docker_image=args.cron_job_docker_image,
     )
     bai_config = create_bai_config(args)
@@ -52,6 +53,7 @@ def test_create_executor_config(config_args, config_env, mock_availability_zones
         puller_docker_image=args.puller_docker_image,
         puller_mount_chmod=args.puller_mount_chmod,
         metrics_pusher_docker_image=args.metrics_pusher_docker_image,
+        metrics_extractor_docker_image=args.metrics_extractor_docker_image,
         cron_job_docker_image=args.cron_job_docker_image,
     )
     expected_environment_info = EnvironmentInfo(mock_availability_zones)

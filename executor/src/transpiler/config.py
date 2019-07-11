@@ -12,6 +12,7 @@ class BaiConfig:
     puller_docker_image: str
     cron_job_docker_image: str
     metrics_pusher_docker_image: str
+    metrics_extractor_docker_image: str
     suppress_job_affinity: bool = False
 
 

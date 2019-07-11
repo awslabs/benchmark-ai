@@ -1,18 +1,19 @@
+import base64
+import json
 import random
-
-import pytest
-from bai_kafka_utils.executors.descriptor import DescriptorError, Descriptor
 from unittest.mock import create_autospec
 
+import pytest
 from pytest import fixture
 
+from bai_kafka_utils.executors.descriptor import Descriptor, DescriptorError
 from transpiler.bai_knowledge import (
-    create_single_run_benchmark_bai_k8s_builder,
-    create_bai_data_sources,
+    BaiKubernetesObjectBuilder,
     SingleRunBenchmarkKubernetesObjectBuilder,
+    create_bai_data_sources,
+    create_single_run_benchmark_bai_k8s_builder,
 )
 from transpiler.config import EnvironmentInfo
-
 
 WHITELISTED_ZONE = "us-east-1a"
 
@@ -110,6 +111,19 @@ def test_choose_zone_id_invalid(
         SingleRunBenchmarkKubernetesObjectBuilder.choose_availability_zone(
             descriptor, bai_environment_info, mock_random
         )
+
+
+def test_metrics(descriptor):
+    metrics = BaiKubernetesObjectBuilder.get_metrics_from_descriptor(descriptor)
+    assert metrics is not None
+    json_object = json.loads(metrics)
+    assert len(json_object) == 2
+    m = json_object[0]
+    assert m["name"] == "accuracy"
+    assert base64.b64decode(m["pattern"]).decode("utf-8") == "accuracy=([-+]?\\d*\\.\\d+|\\d+)"
+    m = json_object[1]
+    assert m["name"] == "throughput"
+    assert base64.b64decode(m["pattern"]).decode("utf-8") == "throughput=([-+]?\\d*\\.\\d+|\\d+)"
 
 
 @fixture

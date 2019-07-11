@@ -1,4 +1,5 @@
 import abc
+import base64
 import json
 import logging
 import os
@@ -66,6 +67,15 @@ class BaiKubernetesObjectBuilder(metaclass=abc.ABCMeta):
         self.config_template.feed({"event": event})
         self.config_template.feed({"service_name": SERVICE_NAME})
         self.config_template.feed({"job_id": self.job_id})
+        self.config_template.feed({"metrics": self.get_metrics_from_descriptor(descriptor)})
+
+    @staticmethod
+    def get_metrics_from_descriptor(descriptor: Descriptor):
+        metrics = []
+        for metric in descriptor.metrics:
+            metric["pattern"] = base64.b64encode(metric["pattern"].encode("utf-8")).decode("utf-8")
+            metrics.append(metric)
+        return json.dumps(metrics)
 
     @staticmethod
     def read_template(template_name: str) -> str:

@@ -168,6 +168,22 @@ spec:
         volumeMounts:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
+      - name: extractor-sidecar
+        image: benchmarkai/metrics-extractor:b0b9185
+        env:
+        - name: ANUBIS_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: ANUBIS_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: ANUBIS_METRICS
+          value: []
+        volumeMounts:
+        - mountPath: /tmp/benchmark-ai
+          name: benchmark-ai
       volumes:
       - name: entrypoints-volume
         configMap:
