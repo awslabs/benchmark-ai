@@ -120,7 +120,8 @@ class BaiClient:
         with requests.Session() as session:
             logger.info(f"Submitting {path}")
             logger.debug(f"Submit event for {path}: {event}")
-            response = session.post(self.endpoint + "/api/job/descriptor", data=event_to_json)
+            files = {"submit-event": (None, event_to_json)}
+            response = session.post(self.endpoint + "/api/job/descriptor", files=files)
             self._handle_response(response)
             return response.text
 
