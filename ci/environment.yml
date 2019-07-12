@@ -6,3 +6,4 @@ dependencies:
   - terraform 0.12.*
   - python 3.7.*
   - boto3
+  - requests
