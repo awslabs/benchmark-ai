@@ -48,12 +48,12 @@ def get_client_id() -> str:
 def create_submit_event(descriptor_filename) -> SubmitEvent:
     now = datetime.datetime.utcnow()
 
-    toml_contents_as_bytes = Path(descriptor_filename).read_bytes()
+    toml_file = Path(descriptor_filename)
     payload = BenchmarkPayload(
         toml=BenchmarkDoc(
             descriptor_filename=descriptor_filename,
-            sha1=_sha1sum(descriptor_filename),
-            doc=base64.b64encode(toml_contents_as_bytes).decode("utf-8"),
+            sha1=_sha1sum(toml_file.read_text()),
+            doc=base64.b64encode(toml_file.read_bytes()).decode("utf-8"),
             contents={},
         )
     )
