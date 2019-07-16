@@ -10,6 +10,11 @@ def test_wrong_descriptor(datadir, filename, descriptor_config):
         Descriptor.from_toml_file(str(datadir / filename), descriptor_config)
 
 
+@pytest.mark.parametrize("filename", ["minimal_descriptor.toml"])
+def test_minimal_descriptor(datadir, filename, descriptor_config):
+    Descriptor.from_toml_file(str(datadir / filename), descriptor_config)
+
+
 @pytest.mark.parametrize("scheduling", ["0 0 0 0", "* * ? * *", "single"])
 def test_invalid_scheduling(descriptor, scheduling):
     descriptor.scheduling = scheduling
