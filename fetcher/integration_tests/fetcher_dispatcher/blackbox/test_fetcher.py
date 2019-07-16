@@ -15,10 +15,14 @@ from bai_kafka_utils.events import (
     FetchedType,
     FetcherStatus,
     Status,
-    CommandResponsePayload,
-    CommandRequestEvent,
 )
-from bai_kafka_utils.integration_tests.test_loop import CombinedFilter, wait_for_response, EventFilter
+from bai_kafka_utils.integration_tests.test_loop import (
+    CombinedFilter,
+    wait_for_response,
+    EventFilter,
+    get_is_status_filter,
+    get_is_command_return_filter,
+)
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
 
 DataSetFilter = Callable[[DataSet], bool]
@@ -67,35 +71,6 @@ def get_is_fetch_response_filter(src_event: BenchmarkEvent, kafka_service_config
         )
 
     return filter_fetcher_event
-
-
-def get_is_status_filter(
-    src_event: BenchmarkEvent, status: Status, kafka_service_config: KafkaServiceConfig
-) -> EventFilter:
-    def filter_status_event(event: BenchmarkEvent) -> bool:
-        return (
-            event.type == kafka_service_config.status_topic
-            and event.action_id == src_event.action_id
-            and event.status == status
-        )
-
-    return filter_status_event
-
-
-def get_is_command_return_filter(
-    src_event: CommandRequestEvent, return_code: int, kafka_service_config: KafkaServiceConfig
-) -> EventFilter:
-    def filter_command_event(event: BenchmarkEvent) -> bool:
-        if event.type != kafka_service_config.cmd_return_topic or not isinstance(event.payload, CommandResponsePayload):
-            return False
-        payload: CommandResponsePayload = event.payload
-        return (
-            payload.return_code == return_code
-            and payload.cmd_submit.action_id == src_event.action_id
-            and payload.cmd_submit.payload == src_event.payload
-        )
-
-    return filter_command_event
 
 
 @pytest.mark.parametrize(

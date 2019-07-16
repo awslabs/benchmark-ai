@@ -3,8 +3,9 @@ from typing import Callable, List
 from kafka import KafkaConsumer
 from timeout_decorator import timeout
 
-from bai_kafka_utils.events import BenchmarkEvent
+from bai_kafka_utils.events import BenchmarkEvent, Status, CommandRequestEvent, CommandResponsePayload
 from bai_kafka_utils.integration_tests.test_utils import get_test_timeout
+from bai_kafka_utils.kafka_service import KafkaServiceConfig
 
 WAIT_TIMEOUT = get_test_timeout()
 POLL_TIMEOUT_MS = 500
@@ -38,3 +39,32 @@ def wait_for_response(filter_event: EventFilter, kafka_consumer_of_produced: Kaf
                 print(f"Got event {msg.value}")
                 if filter_event(msg.value):
                     return
+
+
+def get_is_status_filter(
+    src_event: BenchmarkEvent, status: Status, kafka_service_config: KafkaServiceConfig
+) -> EventFilter:
+    def filter_status_event(event: BenchmarkEvent) -> bool:
+        return (
+            event.type == kafka_service_config.status_topic
+            and event.action_id == src_event.action_id
+            and event.status == status
+        )
+
+    return filter_status_event
+
+
+def get_is_command_return_filter(
+    src_event: CommandRequestEvent, return_code: int, kafka_service_config: KafkaServiceConfig
+) -> EventFilter:
+    def filter_command_event(event: BenchmarkEvent) -> bool:
+        if event.type != kafka_service_config.cmd_return_topic or not isinstance(event.payload, CommandResponsePayload):
+            return False
+        payload: CommandResponsePayload = event.payload
+        return (
+            payload.return_code == return_code
+            and payload.cmd_submit.action_id == src_event.action_id
+            and payload.cmd_submit.payload == src_event.payload
+        )
+
+    return filter_command_event
