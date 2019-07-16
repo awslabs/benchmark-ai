@@ -67,7 +67,7 @@ class ExecutorEventHandler(KafkaServiceCallback):
         logger.info(f"Applying yaml file using command: {cmd}")
         result = subprocess.check_output(cmd, input=yaml.encode(DEFAULT_ENCODING))
         logger.info(f"Kubectl output: {result}")
-        logger.info(f"Job submitted with yaml:\n{yaml}")
+        logger.info(f"Job submitted with yaml: \n {yaml}")
 
     def _create_response_event(self, input_event: FetcherBenchmarkEvent, job_id: str, yaml: str):
         try:

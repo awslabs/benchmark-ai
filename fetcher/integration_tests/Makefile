@@ -34,11 +34,3 @@ _k8s_silent_cleanup:
 
 deploy.yml:
 	$(KUBECTL) kustomize ./deploy/$(STAGE) > deploy.yml
-
-
-
-
-
-
-
-

@@ -9,4 +9,3 @@ spec:
         - name: it
           imagePullPolicy: Never
           image: benchmarkai/executor-it:local-latest
-
