@@ -15,7 +15,8 @@ RUN conda env create -f /tmp/environment.yml -p /opt/env
 # Frequent changes #
 ####################
 
-COPY . /data/benchmark-ai
+COPY ./kafka-utils /data/benchmark-ai/kafka-utils
+COPY ./$SERVICE /data/benchmark-ai/$SERVICE
 WORKDIR /data/benchmark-ai/$SERVICE
 
 RUN /opt/env/bin/pip install -r requirements.txt
