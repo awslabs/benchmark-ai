@@ -15,6 +15,9 @@ description = """ \
 [hardware]
 instance_type = "c5.18xlarge"
 strategy = "single_node"
+# This example has to run on the us-east-1 region (comment out aws_zone_id if your anubis is in another region)
+# We target this specific availability zone (AZ) because not all AZs have c5.18xlarge instances
+aws_zone_id="use1-az2"
 
 # 2. Environment
 [env]
