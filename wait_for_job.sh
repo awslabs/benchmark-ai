@@ -19,6 +19,13 @@ _dump_log(){
     $kubectl logs ${POD_NAME}
 }
 
+_dump_state(){
+    $kubectl describe pods
+    $kubectl describe jobs
+    local SERVICE=${JOB_NAME/-it/}
+    $kubectl logs deployments/${SERVICE} || echo "No service deployment"
+
+}
 until [[ $SECONDS -gt $END ]] || \
     [[ $(_get_status $JOB_NAME "Failed") == "True" ]] || \
     [[ $(_get_status $JOB_NAME "Complete")  == "True"  ]]; do
@@ -28,8 +35,8 @@ done
 echo "Job finished"
 
 _dump_log $JOB_NAME
-[[ $(_get_status $JOB_NAME "Failed") == "True" ]] && exit 1
+[[ $(_get_status $JOB_NAME "Failed") == "True" ]] && _dump_state && exit 1
 [[ $(_get_status $JOB_NAME "Complete")  == "True"  ]] && exit 0
-echo "Timeout" && exit 2
+echo "Timeout" && _dump_state && exit 2
 
 
