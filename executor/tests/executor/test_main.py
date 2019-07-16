@@ -71,7 +71,7 @@ def test_main(mock_create_executor, mock_availability_zones, mock_env):
             puller_mount_chmod=PULLER_MOUNT_CHMOD,
             puller_docker_image=PULLER_DOCKER_IMAGE,
             metrics_pusher_docker_image=METRICS_PUSHER_DOCKER_IMAGE,
-            suppress_job_affinity=SUPPRESS_JOB_AFFINITY
+            suppress_job_affinity=SUPPRESS_JOB_AFFINITY,
         ),
         environment_info=EnvironmentInfo(availability_zones=mock_availability_zones),
     )

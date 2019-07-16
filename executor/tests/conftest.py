@@ -77,7 +77,7 @@ def bai_config():
         puller_mount_chmod="700",
         puller_docker_image="test/puller:image",
         metrics_pusher_docker_image="test/metrics_pusher:image",
-        suppress_job_affinity=True
+        suppress_job_affinity=True,
     )
 
 
