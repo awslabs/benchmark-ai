@@ -1,0 +1,74 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: executor-it
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      containers:
+      - env:
+        - name: AVAILABILITY_ZONES
+          valueFrom:
+            configMapKeyRef:
+              key: availability_zones
+              name: outputs-infrastructure
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          valueFrom:
+            configMapKeyRef:
+              key: msk_bootstrap_brokers
+              name: outputs-infrastructure
+        - name: CONSUMER_GROUP_ID
+          valueFrom:
+            configMapKeyRef:
+              key: consumer_group_id
+              name: executor
+        - name: CONSUMER_TOPIC
+          valueFrom:
+            configMapKeyRef:
+              key: consumer_topic
+              name: executor
+        - name: PRODUCER_TOPIC
+          valueFrom:
+            configMapKeyRef:
+              key: producer_topic
+              name: executor
+        - name: STATUS_TOPIC
+          valueFrom:
+            configMapKeyRef:
+              key: status_topic
+              name: executor
+        - name: TRANSPILER_PULLER_DOCKER_IMAGE
+          valueFrom:
+            configMapKeyRef:
+              key: transpiler_puller_docker_image
+              name: executor
+        - name: TRANSPILER_METRICS_PUSHER_DOCKER_IMAGE
+          valueFrom:
+            configMapKeyRef:
+              key: transpiler_metrics_pusher_docker_image
+              name: executor
+        - name: LOGGING_LEVEL
+          value: INFO
+        - name: KUBECTL
+          value: /kubectl/kubectl
+        image: benchmarkai/executor-it:local-latest
+        imagePullPolicy: Never
+        name: it
+        volumeMounts:
+        - mountPath: /kubectl
+          name: kubectl
+      initContainers:
+      - env:
+        - name: TARGET_DIR
+          value: /tmp/kubectl
+        image: mpioperator/kubectl-delivery:0.1.0
+        name: kubectl-delivery
+        volumeMounts:
+        - mountPath: /tmp
+          name: kubectl
+      restartPolicy: Never
+      serviceAccountName: executor
+      volumes:
+      - emptyDir: {}
+        name: kubectl

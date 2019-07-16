@@ -1,0 +1,11 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: executor-it
+spec:
+  template:
+    spec:
+      containers:
+        - name: it
+          imagePullPolicy: Never
+          image: benchmarkai/executor-it:local-latest

@@ -1,0 +1,80 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: executor-it
+spec:
+  template:
+    spec:
+      serviceAccountName: executor
+      initContainers:
+        - name: kubectl-delivery
+          image: mpioperator/kubectl-delivery:0.1.0
+          env:
+          - name: TARGET_DIR
+            value: /tmp/kubectl
+          volumeMounts:
+          - mountPath: /tmp
+            name: kubectl
+      containers:
+        - name: it
+          image: benchmarkai/executor-it
+          env:
+          - name: AVAILABILITY_ZONES
+            valueFrom:
+              configMapKeyRef:
+                name: outputs-infrastructure
+                key: availability_zones
+          - name: KAFKA_BOOTSTRAP_SERVERS
+            valueFrom:
+              configMapKeyRef:
+                name: outputs-infrastructure
+                key: msk_bootstrap_brokers
+          - name: CONSUMER_GROUP_ID
+            value: executor-it
+          - name: CONSUMER_TOPIC
+            valueFrom:
+              configMapKeyRef:
+                name: executor
+                key: consumer_topic
+          - name: PRODUCER_TOPIC
+            valueFrom:
+              configMapKeyRef:
+                name: executor
+                key: producer_topic
+          - name: STATUS_TOPIC
+            valueFrom:
+              configMapKeyRef:
+                name: executor
+                key: status_topic
+          - name: TRANSPILER_PULLER_DOCKER_IMAGE
+            valueFrom:
+              configMapKeyRef:
+                name: executor
+                key: transpiler_puller_docker_image
+          - name: TRANSPILER_METRICS_PUSHER_DOCKER_IMAGE
+            valueFrom:
+              configMapKeyRef:
+                name: executor
+                key: transpiler_metrics_pusher_docker_image
+          - name: LOGGING_LEVEL
+            value: INFO
+          - name: KUBECTL
+            value: /kubectl/kubectl
+          - name: PYTEST_ARGS
+            valueFrom:
+              configMapKeyRef:
+                name: pytest
+                key: args
+          - name: PYTEST_TIMEOUT
+            valueFrom:
+              configMapKeyRef:
+                name: pytest
+                key: timeout
+          volumeMounts:
+            - mountPath: /kubectl
+              name: kubectl
+      volumes:
+        - name: kubectl
+          emptyDir: {}
+      restartPolicy: Never
+  backoffLimit: 0

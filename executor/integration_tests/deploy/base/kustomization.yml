@@ -1,0 +1,7 @@
+configMapGenerator:
+  - name: pytest
+    literals:
+      - args=-o log_cli=true --log-cli-level=INFO
+      - timeout=300
+resources:
+  - executor-it-job.yml

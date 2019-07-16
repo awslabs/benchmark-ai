@@ -1,10 +1,9 @@
 bases:
   - ../base
-  - ../../../mock-infra
 configMapGenerator:
-  - name: executor
+  - name: pytest
     literals:
-      - suppress_job_affinity=true
+      - timeout=30
     behavior: merge
 patchesStrategicMerge:
-  - executor.yml
+  - executor-it-job.yml
