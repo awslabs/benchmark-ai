@@ -73,6 +73,9 @@ class BaiKubernetesObjectBuilder:
         self.root = config_template.build()
         self.add_volumes(data_sources)
 
+        if self.config.suppress_job_affinity:
+            self.root.remove_affinity()
+
         if descriptor.scheduling != "single_run":
             self.root.to_cronjob(descriptor.scheduling)
 

@@ -8,6 +8,7 @@ data:
 
   transpiler_puller_docker_image: benchmarkai/puller
   transpiler_metrics_pusher_docker_image: benchmarkai/metrics-pusher
+  suppress_job_affinity: false
 metadata:
   name: executor
   namespace: default

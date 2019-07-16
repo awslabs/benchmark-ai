@@ -79,6 +79,11 @@ spec:
               configMapKeyRef:
                 name: executor
                 key: transpiler_metrics_pusher_docker_image
+          - name: SUPPRESS_JOB_AFFINITY
+            valueFrom:
+              configMapKeyRef:
+                name: executor
+                key: suppress_job_affinity
           - name: LOGGING_LEVEL
             value: "INFO"
           - name: KUBECTL
