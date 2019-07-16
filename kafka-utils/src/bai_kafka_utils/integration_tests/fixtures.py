@@ -1,3 +1,4 @@
+from kafka import KafkaConsumer
 from pytest import fixture
 
 from bai_kafka_utils.events import BenchmarkEvent
@@ -5,6 +6,8 @@ from bai_kafka_utils.kafka_client import create_kafka_consumer, create_kafka_pro
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
 from bai_kafka_utils.kafka_service_args import get_kafka_service_config
 from bai_kafka_utils.utils import id_generator
+
+PREPOLL_TIMEOUT_MS = 10000
 
 
 @fixture
@@ -21,6 +24,13 @@ def kafka_consumer_of_produced(kafka_service_config: KafkaServiceConfig):
     # Unfortunately no __enter__/__exit__ on kafka objects yet - let's do old-school close
     print("Closing consumer...\n")
     kafka_consumer.close()
+
+
+@fixture
+def kafka_prepolled_consumer_of_produced(kafka_consumer_of_produced: KafkaConsumer):
+    print("Waiting a bit for consumer group to settle")
+    kafka_consumer_of_produced.poll(PREPOLL_TIMEOUT_MS)
+    return kafka_consumer_of_produced
 
 
 @fixture
