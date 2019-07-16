@@ -15,9 +15,9 @@ description = """ \
 [hardware]
 instance_type = "p3.8xlarge"
 strategy = "horovod"
-
-# 7/7/2019 this should do
-# aws_zone_id="use1-az6"
+# This example has to run on the us-east-1 region (comment out aws_zone_id if your anubis is in another region)
+# We target this specific availability zone (AZ) because not all AZs have p3.8xlarge instances
+aws_zone_id="use1-az2"
 
 # [Opt]
 [hardware.distributed]
