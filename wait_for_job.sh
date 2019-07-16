@@ -23,8 +23,7 @@ _dump_state(){
     $kubectl describe pods
     $kubectl describe jobs
     local SERVICE=${JOB_NAME/-it/}
-    local POD_NAME=$($kubectl get pods -l service=$SERVICE -o=jsonpath='{range .items[*]}{.metadata.name}')
-    $kubectl logs ${POD_NAME}
+    $kubectl logs deployments/${SERVICE} || echo "No service deployment"
 
 }
 until [[ $SECONDS -gt $END ]] || \
