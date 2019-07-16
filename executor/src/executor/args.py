@@ -59,6 +59,8 @@ def get_args(argv, env=None):
         help="List of valid strategies such as single_node or horovod",
     )
 
+    parser.add("--suppress-job-affinity", env_var="SUPPRESS_JOB_AFFINITY", action="store_true")
+
     parser.add("--kubectl", env_var="KUBECTL", help="Path to kubectl in the deployment pod")
 
     parsed_args, _ = parser.parse_known_args(argv, env_vars=env)
@@ -74,6 +76,7 @@ def create_bai_config(args):
         puller_mount_chmod=args.puller_mount_chmod,
         puller_docker_image=args.puller_docker_image,
         metrics_pusher_docker_image=args.metrics_pusher_docker_image,
+        suppress_job_affinity=args.suppress_job_affinity,
     )
 
 

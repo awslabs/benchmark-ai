@@ -121,6 +121,9 @@ class KubernetesRootObjectHelper:
             )
         )
 
+    def remove_affinity(self):
+        del self.get_pod_spec().affinity
+
     def remove_container(self, container_name: str):
         """
         Removes a given container (can be an initContainer)

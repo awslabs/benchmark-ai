@@ -24,6 +24,7 @@ VALID_STRATEGIES = "s1,s2"
 PULLER_MOUNT_CHMOD = "700"
 PULLER_DOCKER_IMAGE = "example/docker:img"
 METRICS_PUSHER_DOCKER_IMAGE = "metrics_pusher/docker:img"
+SUPPRESS_JOB_AFFINITY = True
 
 
 @pytest.fixture
@@ -48,6 +49,7 @@ def test_main(mock_create_executor, mock_availability_zones, mock_env):
         f" --transpiler-puller-mount-chmod {PULLER_MOUNT_CHMOD} "
         f" --transpiler-puller-docker-image {PULLER_DOCKER_IMAGE} "
         f" --transpiler-metrics-pusher-docker-image {METRICS_PUSHER_DOCKER_IMAGE} "
+        f" --suppress-job-affinity"
     )
 
     expected_common_kafka_cfg = KafkaServiceConfig(
@@ -69,6 +71,7 @@ def test_main(mock_create_executor, mock_availability_zones, mock_env):
             puller_mount_chmod=PULLER_MOUNT_CHMOD,
             puller_docker_image=PULLER_DOCKER_IMAGE,
             metrics_pusher_docker_image=METRICS_PUSHER_DOCKER_IMAGE,
+            suppress_job_affinity=SUPPRESS_JOB_AFFINITY,
         ),
         environment_info=EnvironmentInfo(availability_zones=mock_availability_zones),
     )

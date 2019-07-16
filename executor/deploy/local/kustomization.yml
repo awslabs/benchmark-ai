@@ -1,5 +1,10 @@
 bases:
   - ../base
   - ../../../mock-infra
+configMapGenerator:
+  - name: executor
+    literals:
+      - suppress_job_affinity=true
+    behavior: merge
 patchesStrategicMerge:
   - executor.yml
