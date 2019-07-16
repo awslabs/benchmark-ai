@@ -37,7 +37,7 @@ class Descriptor:
         except KeyError as e:
             raise DescriptorError(f"Required field is missing in the descriptor toml file: {e.args[0]}") from e
 
-        self.scheduling = descriptor_data["info"].get("scheduling", "single_run")
+        self.scheduling = descriptor_data.get("info", {}).get("scheduling", "single_run")
 
         self.distributed = "distributed" in descriptor_data["hardware"]
         distributed_data = descriptor_data["hardware"].get("distributed", {})
@@ -46,8 +46,11 @@ class Descriptor:
 
         self.extended_shm = descriptor_data["env"].get("extended_shm", True)
         self.privileged = descriptor_data["env"].get("privileged", False)
-        self.benchmark_code = descriptor_data["ml"].get("benchmark_code", "")
-        self.ml_args = descriptor_data["ml"].get("args", "")
+
+        ml = descriptor_data.get("ml", {})
+
+        self.benchmark_code = ml.get("benchmark_code", "")
+        self.ml_args = ml.get("args", "")
 
         self.dataset = descriptor_data.get("data", {}).get("id", "")
         self.data_sources = descriptor_data.get("data", {}).get("sources", [])
