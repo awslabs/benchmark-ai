@@ -60,11 +60,11 @@ create_infra() {
     [[ -n "$prefix_list_id" ]] && vars="${vars} -var prefix_list_ids=[\"${prefix_list_id}\"]"
     [[ -n "$ssh_access_cidr_blocks" ]] && vars="${vars} -var ssh_access_cidr_blocks=[\"${ssh_access_cidr_blocks}\"]"
 
-    echo "==> Syncing remote data directory"
-    sync_bai_datadir --aws-region=${region} --mode="pull" || return 1
-
     echo "==> Initializing terraform"
     _initialize_terraform_backend ${region} || return 1
+
+    echo "==> Syncing remote data directory"
+    sync_bai_datadir --aws-region=${region} --mode="pull" || return 1
 
     echo "==> Calling terraform plan with ${vars}"
     terraform plan --out=$terraform_plan -var data_dir=$data_dir ${vars} || return 1
