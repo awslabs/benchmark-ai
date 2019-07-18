@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sm-executor
+spec:
+  template:
+    spec:
+      containers:
+        - name: sm-executor
+          imagePullPolicy: Never
+          env:
+            - name: NUM_PARTITIONS
+              value: "1"
+            - name: REPLICATION_FACTOR
+              value: "1"
+      affinity:
+      #--
+      nodeSelector:
+      #--

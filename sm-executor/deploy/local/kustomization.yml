@@ -1,0 +1,5 @@
+bases:
+  - ../base
+  - ../../../mock-infra
+patchesStrategicMerge:
+  - sm-executor.yml

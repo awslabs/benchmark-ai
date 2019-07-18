@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sm-executor
+  labels:
+    app: benchmark-ai
+spec:
+  selector:
+    matchLabels:
+      app: benchmark-ai
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: benchmark-ai
+        service: sm-executor
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: service
+                    operator: In
+                    values:
+                      - sm-executor
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: sm-executor
+          image: "benchmarkai/sm-executor"
+          env:
+          - name: KAFKA_BOOTSTRAP_SERVERS
+            valueFrom:
+              configMapKeyRef:
+                name: outputs-infrastructure
+                key: msk_bootstrap_brokers
+          - name: CONSUMER_GROUP_ID
+            valueFrom:
+               configMapKeyRef:
+                 name: executor
+                 key: consumer_group_id
+          - name: CONSUMER_TOPIC
+            valueFrom:
+              configMapKeyRef:
+                name: executor
+                key: consumer_topic
+          - name: PRODUCER_TOPIC
+            valueFrom:
+              configMapKeyRef:
+                name: executor
+                key: producer_topic
+          - name: STATUS_TOPIC
+            valueFrom:
+              configMapKeyRef:
+                name: executor
+                key: status_topic
+          - name: LOGGING_LEVEL
+            value: "INFO"
+      nodeSelector:
+        node.type: bai-services-cheap
+      restartPolicy: Always

@@ -1,0 +1,9 @@
+name: sm-executor
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pytest
+  - mock
+  - pytest-mock
+  - timeout-decorator
