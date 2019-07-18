@@ -1,5 +1,6 @@
-import pytest
 import json
+
+import pytest
 
 from bai_kafka_utils.events import (
     DataSet,
@@ -13,6 +14,7 @@ from bai_kafka_utils.events import (
     FetcherStatus,
     FetchedType,
     CommandRequestPayload,
+    BenchmarkJob,
 )
 
 
@@ -101,15 +103,13 @@ def test_fetcher_event(base_event_as_dict):
 def test_executor_event(base_event_as_dict):
     executor_event_as_dict = base_event_as_dict
     executor_event_as_dict["payload"]["datasets"] = [{"src": "http://foo.com", "md5": "None", "dst": "None"}]
-    executor_event_as_dict["payload"]["job"] = {"id": "job_id", "k8s_yaml": "yaml_file"}
+    executor_event_as_dict["payload"]["job"] = {"id": "job_id", "extras": {"some_var": "some_val"}}
 
     event_as_json_string = json.dumps(executor_event_as_dict)
 
     event = ExecutorBenchmarkEvent.from_json(event_as_json_string)
     assert type(event.payload) == ExecutorPayload
-    assert event.payload.job.id == "job_id"
-    assert event.payload.job.k8s_yaml == "yaml_file"
-    assert event.payload.job.output is None
+    assert event.payload.job == BenchmarkJob(id="job_id", extras={"some_var": "some_val"})
 
 
 def test_benchmark_doc_all():

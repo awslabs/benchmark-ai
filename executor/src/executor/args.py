@@ -59,6 +59,15 @@ def get_args(argv, env=None):
         help="List of valid strategies such as single_node or horovod",
     )
 
+    parser.add(
+        "--valid-execution-engines",
+        type=list_str,
+        env_var="VALID_EXECUTION_ENGINES",
+        dest="valid_execution_engines",
+        help="List of valid execution engines, such as kubernetes or sagemaker",
+        default=[],
+    )
+
     parser.add("--suppress-job-affinity", env_var="SUPPRESS_JOB_AFFINITY", action="store_true")
 
     parser.add("--kubectl", env_var="KUBECTL", help="Path to kubectl in the deployment pod")
@@ -88,4 +97,5 @@ def create_executor_config(argv, env=os.environ):
         descriptor_config=create_descriptor_config(args),
         bai_config=create_bai_config(args),
         environment_info=environment_info,
+        valid_execution_engines=args.valid_execution_engines,
     )
