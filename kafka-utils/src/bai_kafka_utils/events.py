@@ -58,8 +58,8 @@ class BenchmarkDoc:
 @dataclass
 class BenchmarkJob:
     id: str
-    k8s_yaml: str
     output: Optional[str] = None
+    extras: Dict[str, Any] = dataclasses.field(default_factory=dict)
 
 
 @dataclass_json

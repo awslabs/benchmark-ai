@@ -33,7 +33,7 @@ def cmd_object():
 
 
 def test_cancel_benchmark(mocker, cmd_object):
-    mock_check_output = mocker.patch("executor.executor.subprocess.check_output")
+    mock_check_output = mocker.patch("executor.commands.subprocess.check_output")
 
     cmd_object.cancel(target_action_id=TARGET_ACTION_ID, client_id=CLIENT_ID)
 
