@@ -12,6 +12,7 @@ variable "projects" {
     "watcher",
     "bff",
     "metrics-extractor",
+    "sm-executor"
   ]
 }
 
