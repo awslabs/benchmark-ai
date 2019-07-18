@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import List
 
 from transpiler.config import BaiConfig, EnvironmentInfo
 from transpiler.descriptor import DescriptorConfig
@@ -12,3 +13,4 @@ class ExecutorConfig:
     bai_config: BaiConfig
     environment_info: EnvironmentInfo
     kubectl: str
+    valid_execution_engines: List[str] = field(default_factory=list)

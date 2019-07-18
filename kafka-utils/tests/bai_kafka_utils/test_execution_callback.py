@@ -23,6 +23,10 @@ ENGINE_2_ID = "ENG2"
 
 ENGINE_1_ID = "ENG1"
 
+REMOTE_ENGINE_ID = "REMOTE"
+
+VALID_ENGINES = [ENGINE_1_ID, ENGINE_2_ID, REMOTE_ENGINE_ID]
+
 PRODUCER_TOPIC = "TOPIC"
 
 BENCHMARK_JOB = BenchmarkJob(JOB_ID)
@@ -51,7 +55,7 @@ def execution_engines(engine1: ExecutionEngine, engine2: ExecutionEngine):
 
 @fixture
 def executor_handler(execution_engines: Dict[str, ExecutionEngine]):
-    return ExecutorEventHandler(execution_engines, PRODUCER_TOPIC)
+    return ExecutorEventHandler(execution_engines, VALID_ENGINES, PRODUCER_TOPIC)
 
 
 @fixture
@@ -111,6 +115,23 @@ def test_second_engine(
     executor_handler.handle_event(fetcher_event, kafka_service)
 
     engine2.run.assert_called_once_with(fetcher_event)
+
+
+def test_remote_engine(
+    executor_handler: ExecutorEventHandler,
+    fetcher_event: FetcherBenchmarkEvent,
+    kafka_service: KafkaService,
+    engine1: ExecutionEngine,
+    engine2: ExecutionEngine,
+):
+    given_engine(fetcher_event, REMOTE_ENGINE_ID)
+
+    executor_handler.handle_event(fetcher_event, kafka_service)
+
+    kafka_service.send_status_message_event.assert_not_called()
+    kafka_service.send_event.assert_not_called()
+    engine1.run.assert_not_called()
+    engine2.run.assert_not_called()
 
 
 def test_invalid_engine(

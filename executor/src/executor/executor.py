@@ -23,7 +23,9 @@ def create_executor(common_kafka_cfg: KafkaServiceConfig, executor_config: Execu
     cmd_object = ExecutorCommandObject(executor_config.kubectl)
 
     execution_engines = create_execution_engines(executor_config)
-    exec_handler = ExecutorEventHandler(execution_engines, common_kafka_cfg.producer_topic)
+    exec_handler = ExecutorEventHandler(
+        execution_engines, executor_config.valid_execution_engines, common_kafka_cfg.producer_topic
+    )
 
     callbacks = {
         common_kafka_cfg.consumer_topic: [exec_handler],

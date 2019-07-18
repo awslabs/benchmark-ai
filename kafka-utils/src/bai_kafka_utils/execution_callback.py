@@ -1,6 +1,6 @@
 import abc
 
-from typing import Dict
+from typing import Dict, List
 
 from bai_kafka_utils.events import (
     FetcherBenchmarkEvent,
@@ -30,9 +30,12 @@ class ExecutionEngineException(Exception):
 class ExecutorEventHandler(KafkaServiceCallback):
     DEFAULT_ENGINE = "default"
 
-    def __init__(self, execution_engines: Dict[str, ExecutionEngine], producer_topic: str):
+    def __init__(
+        self, execution_engines: Dict[str, ExecutionEngine], valid_execution_engines: List[str], producer_topic: str
+    ):
         self.producer_topic = producer_topic
         self.execution_engines = execution_engines
+        self.valid_execution_engines = valid_execution_engines
 
     def handle_event(self, event: FetcherBenchmarkEvent, kafka_service: KafkaService):
 
@@ -40,8 +43,11 @@ class ExecutorEventHandler(KafkaServiceCallback):
         engine = self.execution_engines.get(engine_id)
 
         if not engine:
-            # Ok. I've failed, but may be another service will have this engine
-            kafka_service.send_status_message_event(event, Status.ERROR, f"Unknown engine {engine_id}")
+
+            # Ok. I've failed, but may be another service can have this engine
+            if engine_id not in self.valid_execution_engines:
+                # It's really something weird
+                kafka_service.send_status_message_event(event, Status.ERROR, f"Unknown engine {engine_id}")
             return
 
         try:

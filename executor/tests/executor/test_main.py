@@ -21,6 +21,7 @@ CMD_RETURN_TOPIC = "CMD_RETURN"
 STATUS_TOPIC = "STATUS_TOPIC"
 BOOTSTRAP_SERVERS_ARG = ",".join(BOOTSTRAP_SERVERS)
 VALID_STRATEGIES = "s1,s2"
+VALID_EXECUTION_ENGINES = "e1,e2"
 PULLER_MOUNT_CHMOD = "700"
 PULLER_DOCKER_IMAGE = "example/docker:img"
 METRICS_PUSHER_DOCKER_IMAGE = "metrics_pusher/docker:img"
@@ -46,6 +47,7 @@ def test_main(mock_create_executor, mock_availability_zones, mock_env):
         f" --logging-level {LOGGING_LEVEL} "
         f" --kubectl {KUBECTL} "
         f" --transpiler-valid-strategies {VALID_STRATEGIES} "
+        f" --valid-execution-engines {VALID_EXECUTION_ENGINES} "
         f" --transpiler-puller-mount-chmod {PULLER_MOUNT_CHMOD} "
         f" --transpiler-puller-docker-image {PULLER_DOCKER_IMAGE} "
         f" --transpiler-metrics-pusher-docker-image {METRICS_PUSHER_DOCKER_IMAGE} "
@@ -66,6 +68,7 @@ def test_main(mock_create_executor, mock_availability_zones, mock_env):
 
     expected_executor_config = ExecutorConfig(
         kubectl=KUBECTL,
+        valid_execution_engines=VALID_EXECUTION_ENGINES.split(","),
         descriptor_config=DescriptorConfig(valid_strategies=VALID_STRATEGIES.split(",")),
         bai_config=BaiConfig(
             puller_mount_chmod=PULLER_MOUNT_CHMOD,
