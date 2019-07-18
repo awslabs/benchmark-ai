@@ -93,14 +93,14 @@ def test_first_engine(
     kafka_service: KafkaService,
     engine1: ExecutionEngine,
 ):
-    given_engine(fetcher_event, ENGINE_1_ID)
+    set_execution_engine(fetcher_event, ENGINE_1_ID)
 
     executor_handler.handle_event(fetcher_event, kafka_service)
 
     engine1.run.assert_called_once_with(fetcher_event)
 
 
-def given_engine(fetcher_event: FetcherBenchmarkEvent, engine_id):
+def set_execution_engine(fetcher_event: FetcherBenchmarkEvent, engine_id):
     fetcher_event.payload.toml.contents["info"] = {"execution_engine": engine_id}
 
 
@@ -110,7 +110,7 @@ def test_second_engine(
     kafka_service: KafkaService,
     engine2: ExecutionEngine,
 ):
-    given_engine(fetcher_event, ENGINE_2_ID)
+    set_execution_engine(fetcher_event, ENGINE_2_ID)
 
     executor_handler.handle_event(fetcher_event, kafka_service)
 
@@ -124,7 +124,7 @@ def test_remote_engine(
     engine1: ExecutionEngine,
     engine2: ExecutionEngine,
 ):
-    given_engine(fetcher_event, REMOTE_ENGINE_ID)
+    set_execution_engine(fetcher_event, REMOTE_ENGINE_ID)
 
     executor_handler.handle_event(fetcher_event, kafka_service)
 
@@ -141,7 +141,7 @@ def test_invalid_engine(
     engine1: ExecutionEngine,
     engine2: ExecutionEngine,
 ):
-    given_engine(fetcher_event, "INVALID")
+    set_execution_engine(fetcher_event, "INVALID")
 
     executor_handler.handle_event(fetcher_event, kafka_service)
 
