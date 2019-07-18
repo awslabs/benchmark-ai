@@ -7,8 +7,6 @@ dependencies:
   - ruamel.yaml >= 0.15
   - toml 0.9.*
   - addict 2.2.*
-  - kazoo 2.5.*
-  - boto3 1.9.*
   - python-kubernetes 9.0.*
   - ConfigArgParse >= 0.13
   - python-crontab >= 2.3
