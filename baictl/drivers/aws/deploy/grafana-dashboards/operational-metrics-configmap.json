@@ -16,7 +16,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": 15,
-  "iteration": 1563532757984,
+  "iteration": 1563548352788,
   "links": [],
   "panels": [
     {
@@ -61,6 +61,12 @@
           "hide": false,
           "intervalFactor": 1,
           "refId": "C"
+        },
+        {
+          "expr": "sum (rate(container_fs_reads_bytes_total[1m]) * \n        on (pod_name) group_left(label_action_id, label_client_id) \n        label_replace(kube_pod_labels{label_action_id=\"$action_id\",label_client_id=\"$client_id\"},\"pod_name\",\"$1\",\"pod\",\"(.*)\"))\nby (label_action_id)",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "refId": "A"
         }
       ],
       "thresholds": [],
@@ -632,8 +638,8 @@
       {
         "allValue": null,
         "current": {
-          "text": "d5fa2754-fe53-4ca3-98f7-4fce115f2e4d",
-          "value": "d5fa2754-fe53-4ca3-98f7-4fce115f2e4d"
+          "text": "fc87fe25-f606-46c0-a9b5-7a3ebb270543",
+          "value": "fc87fe25-f606-46c0-a9b5-7a3ebb270543"
         },
         "datasource": "$datasource",
         "definition": "label_values(kube_pod_labels{label_client_id=\"$client_id\"}, label_action_id)",
@@ -657,8 +663,8 @@
     ]
   },
   "time": {
-    "from": "2019-07-18T14:19:53.824Z",
-    "to": "2019-07-18T19:42:23.824Z"
+    "from": "2019-07-18T15:02:49.338Z",
+    "to": "2019-07-18T15:08:40.555Z"
   },
   "timepicker": {
     "refresh_intervals": [
@@ -686,7 +692,7 @@
     ]
   },
   "timezone": "",
-  "title": "Operational metrics",
+  "title": "Operational metrics by Action ID",
   "uid": "IpQu-SNWk",
   "version": 12
 }
