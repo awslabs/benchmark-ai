@@ -16,7 +16,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": 15,
-  "iteration": 1562059340674,
+  "iteration": 1563532757984,
   "links": [],
   "panels": [
     {
@@ -45,6 +45,7 @@
       "linewidth": 1,
       "links": [],
       "nullPointMode": "null",
+      "options": {},
       "percentage": false,
       "pointradius": 2,
       "points": false,
@@ -55,18 +56,11 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(container_fs_writes_bytes_total{pod_name=~\"$pod_names\", container_name=\"benchmark\"}[1m]))\n",
+          "expr": "sum (rate(container_fs_writes_bytes_total[1m]) * \n        on (pod_name) group_left(label_action_id, label_client_id) \n        label_replace(kube_pod_labels{label_action_id=\"$action_id\",label_client_id=\"$client_id\"},\"pod_name\",\"$1\",\"pod\",\"(.*)\"))\nby (label_action_id)",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
           "refId": "C"
-        },
-        {
-          "expr": "sum(rate(container_fs_reads_bytes_total{pod_name=~\"$pod_names\", container_name=\"benchmark\"}[1m]))\n",
-          "format": "time_series",
-          "hide": false,
-          "intervalFactor": 1,
-          "refId": "D"
         }
       ],
       "thresholds": [],
@@ -136,6 +130,7 @@
       "linewidth": 1,
       "links": [],
       "nullPointMode": "null",
+      "options": {},
       "percentage": false,
       "pointradius": 2,
       "points": false,
@@ -146,7 +141,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "dcgm_mem_copy_utilization{pod_name=~\"$pod_names\",job=\"gpu_metrics\"}\n",
+          "expr": "dcgm_mem_copy_utilization{job=\"gpu_metrics\"} * \n  on (pod_name) group_left(label_action_id, label_client_id) \n  label_replace(kube_pod_labels{label_action_id=\"$action_id\",label_client_id=\"$client_id\"},\"pod_name\",\"$1\",\"pod\",\"(.*)\")\n",
           "format": "time_series",
           "intervalFactor": 1,
           "refId": "A"
@@ -219,6 +214,7 @@
       "linewidth": 1,
       "links": [],
       "nullPointMode": "null",
+      "options": {},
       "percentage": false,
       "pointradius": 2,
       "points": false,
@@ -229,7 +225,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum (rate (container_cpu_usage_seconds_total{image!=\"\", pod_name=~\"$pod_names\"}[1m])) by (pod_name)",
+          "expr": "sum (rate(container_cpu_usage_seconds_total{image!=\"\"}[1m]) * \n        on (pod_name) group_left(label_action_id, label_client_id) \n        label_replace(kube_pod_labels{label_action_id=\"$action_id\",label_client_id=\"$client_id\"},\"pod_name\",\"$1\",\"pod\",\"(.*)\"))\nby (label_action_id)",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
@@ -303,6 +299,7 @@
       "linewidth": 1,
       "links": [],
       "nullPointMode": "null",
+      "options": {},
       "percentage": false,
       "pointradius": 2,
       "points": false,
@@ -313,7 +310,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "dcgm_fb_used{pod_name=~\"$pod_names\",job=\"gpu_metrics\"}\n",
+          "expr": "dcgm_fb_used{job=\"gpu_metrics\"} *\n  on (pod_name) group_left(label_action_id, label_client_id) \n  label_replace(kube_pod_labels{label_action_id=\"$action_id\",label_client_id=\"$client_id\"},\"pod_name\",\"$1\",\"pod\",\"(.*)\")\n",
           "format": "time_series",
           "intervalFactor": 1,
           "refId": "A"
@@ -386,6 +383,7 @@
       "linewidth": 1,
       "links": [],
       "nullPointMode": "null",
+      "options": {},
       "percentage": false,
       "pointradius": 2,
       "points": false,
@@ -396,7 +394,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "dcgm_gpu_utilization{pod_name=~\"$pod_names\",job=\"gpu_metrics\"}\n",
+          "expr": "dcgm_gpu_utilization{job=\"gpu_metrics\"} * \n        on (pod_name) group_left(label_action_id, label_client_id) \n        label_replace(kube_pod_labels{label_action_id=\"$action_id\",label_client_id=\"$client_id\"},\"pod_name\",\"$1\",\"pod\",\"(.*)\")\n",
           "format": "time_series",
           "instant": false,
           "intervalFactor": 1,
@@ -471,6 +469,7 @@
       "linewidth": 1,
       "links": [],
       "nullPointMode": "null",
+      "options": {},
       "percentage": false,
       "pointradius": 2,
       "points": false,
@@ -481,7 +480,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "container_memory_working_set_bytes{pod_name=~\"$pod_names\", container_name='benchmark'}",
+          "expr": "container_memory_working_set_bytes{container_name='benchmark'} *\n  on (pod_name) group_left(label_action_id, label_client_id) \n  label_replace(kube_pod_labels{label_action_id=\"$action_id\",label_client_id=\"$client_id\"},\"pod_name\",\"$1\",\"pod\",\"(.*)\")",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
@@ -537,25 +536,116 @@
   "templating": {
     "list": [
       {
-        "allValue": null,
         "current": {
-          "tags": [],
-          "text": "benchmark-c01d2455-4eba-402c-a5af-78626d58daf4-46245",
-          "value": [
-            "benchmark-c01d2455-4eba-402c-a5af-78626d58daf4-46245"
-          ]
+          "selected": true,
+          "text": "Prometheus",
+          "value": "Prometheus"
         },
-        "datasource": "Prometheus",
-        "definition": "dcgm_gpu_utilization",
         "hide": 0,
         "includeAll": false,
         "label": null,
-        "multi": true,
-        "name": "pod_names",
+        "multi": false,
+        "name": "datasource",
         "options": [],
-        "query": "dcgm_gpu_utilization",
+        "query": "prometheus",
         "refresh": 1,
-        "regex": ".*pod_name=\"([^\"]+)\".*",
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
+        "allValue": null,
+        "current": {
+          "isNone": true,
+          "text": "None",
+          "value": ""
+        },
+        "datasource": "$datasource",
+        "definition": "label_values(kube_pod_info, cluster)",
+        "hide": 2,
+        "includeAll": false,
+        "label": "cluster",
+        "multi": false,
+        "name": "cluster",
+        "options": [],
+        "query": "label_values(kube_pod_info, cluster)",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "allValue": null,
+        "current": {
+          "text": "default",
+          "value": "default"
+        },
+        "datasource": "$datasource",
+        "definition": "label_values(kube_pod_info{cluster=\"$cluster\"}, namespace)",
+        "hide": 0,
+        "includeAll": false,
+        "label": "namespace",
+        "multi": false,
+        "name": "namespace",
+        "options": [],
+        "query": "label_values(kube_pod_info{cluster=\"$cluster\"}, namespace)",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "allValue": null,
+        "current": {
+          "text": "17eac384b205e82e2004c9c3c53bcdfce40b2f56",
+          "value": "17eac384b205e82e2004c9c3c53bcdfce40b2f56"
+        },
+        "datasource": "$datasource",
+        "definition": "label_values(kube_pod_labels, label_client_id)",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Client ID",
+        "multi": false,
+        "name": "client_id",
+        "options": [],
+        "query": "label_values(kube_pod_labels, label_client_id)",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "allValue": null,
+        "current": {
+          "text": "d5fa2754-fe53-4ca3-98f7-4fce115f2e4d",
+          "value": "d5fa2754-fe53-4ca3-98f7-4fce115f2e4d"
+        },
+        "datasource": "$datasource",
+        "definition": "label_values(kube_pod_labels{label_client_id=\"$client_id\"}, label_action_id)",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Action ID",
+        "multi": false,
+        "name": "action_id",
+        "options": [],
+        "query": "label_values(kube_pod_labels{label_client_id=\"$client_id\"}, label_action_id)",
+        "refresh": 2,
+        "regex": "",
         "skipUrlSync": false,
         "sort": 0,
         "tagValuesQuery": "",
@@ -567,8 +657,8 @@
     ]
   },
   "time": {
-    "from": "2019-07-01T12:42:59.000Z",
-    "to": "2019-07-01T12:49:29.046Z"
+    "from": "2019-07-18T14:19:53.824Z",
+    "to": "2019-07-18T19:42:23.824Z"
   },
   "timepicker": {
     "refresh_intervals": [
@@ -597,6 +687,6 @@
   },
   "timezone": "",
   "title": "Operational metrics",
-  "uid": "I3OmPwVZk",
-  "version": 19
+  "uid": "IpQu-SNWk",
+  "version": 12
 }
