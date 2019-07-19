@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+data:
+  consumer_group_id: sm-executor
+  consumer_topic: BAI_APP_FETCHER
+  producer_topic: BAI_APP_EXECUTOR
+  status_topic: BAI_APP_STATUS
+metadata:
+  name: sm-executor
+  namespace: default

@@ -37,22 +37,22 @@ spec:
           - name: CONSUMER_GROUP_ID
             valueFrom:
                configMapKeyRef:
-                 name: executor
+                 name: sm-executor
                  key: consumer_group_id
           - name: CONSUMER_TOPIC
             valueFrom:
               configMapKeyRef:
-                name: executor
+                name: sm-executor
                 key: consumer_topic
           - name: PRODUCER_TOPIC
             valueFrom:
               configMapKeyRef:
-                name: executor
+                name: sm-executor
                 key: producer_topic
           - name: STATUS_TOPIC
             valueFrom:
               configMapKeyRef:
-                name: executor
+                name: sm-executor
                 key: status_topic
           - name: LOGGING_LEVEL
             value: "INFO"
