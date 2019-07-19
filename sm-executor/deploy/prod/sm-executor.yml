@@ -1,6 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: executor
+  name: sm-executor
 spec:
   replicas: 3
