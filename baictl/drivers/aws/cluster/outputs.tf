@@ -92,3 +92,13 @@ output "kube2iam_default_pod_role_name" {
   description = "Role that is used by PODs by default"
   value       = "${aws_iam_role.kube2iam-default-pod-role.name}"
 }
+
+output "sagemaker_role_name" {
+  description = "SageMaker role name"
+  value = "${aws_iam_role.sagemaker-role.name}"
+}
+
+output "sagemaker_output_s3" {
+  description = "SageMaker role name"
+  value = "${aws_s3_bucket.sagemaker-output.id}"
+}
