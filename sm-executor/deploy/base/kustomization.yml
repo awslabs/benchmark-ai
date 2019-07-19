@@ -1,2 +1,3 @@
 resources:
   - sm-executor.yml
+  - config.yml
