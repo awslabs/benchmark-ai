@@ -1,0 +1,5 @@
+# descriptor config
+transpiler-valid-strategies: single_node,horovod
+
+# Don't include empty string as a valid value - framework required
+transpiler-valid-frameworks: tensorflow,mxnet

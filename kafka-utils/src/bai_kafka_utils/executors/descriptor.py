@@ -92,6 +92,15 @@ class Descriptor:
 
         self._validate()
 
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.__dict__ == other.__dict__
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     @classmethod
     def from_toml_file(cls, toml_file: str, config: DescriptorConfig):
         """

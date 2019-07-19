@@ -1,0 +1,3 @@
+TENSORFLOW_FRAMEWORK = "tensorflow"
+
+MXNET_FRAMEWORK = "mxnet"
