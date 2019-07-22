@@ -22,7 +22,25 @@ resource "aws_iam_role_policy" "bai-bff-pod-role-s3-policy" {
         "${aws_s3_bucket.scripts-exchange.arn}"
       ],
       "Action": [
-        "s3:*"
+        "s3:ListBucket"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Resource": [
+        "${aws_s3_bucket.scripts-exchange.arn}/*"
+      ],
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject",
+
+        "s3:PutObjectTagging",
+        "s3:GetObjectTagging",
+
+        "s3:GetObjectVersion",
+
+        "s3:GetObjectVersionTagging",
+        "s3:PutObjectVersionTagging"
       ]
     }
   ]
