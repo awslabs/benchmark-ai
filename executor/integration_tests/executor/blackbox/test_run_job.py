@@ -25,7 +25,7 @@ def get_fetcher_benchmark_event(template_event: BenchmarkEvent) -> FetcherBenchm
             "ml": {"benchmark_code": "echo hello world"},
             "info": {"task_name": "test-2"},
             "hardware": {"instance_type": "local", "strategy": "single_node"},
-            "env": {"docker_image": "alpine"},
+            "env": {"docker_image": "alpine", "vars": {"FOO": "BAR", "IVAL": 42}},
         },
         "var = val",  # We don't care about the initial TOML
         "",

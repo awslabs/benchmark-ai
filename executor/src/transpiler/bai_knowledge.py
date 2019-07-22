@@ -72,6 +72,7 @@ class BaiKubernetesObjectBuilder:
         config_template.feed({"availability_zone": availability_zone})
         self.root = config_template.build()
         self.add_volumes(data_sources)
+        self.add_env_vars()
 
         if self.config.suppress_job_affinity:
             self.root.remove_affinity()
@@ -218,6 +219,9 @@ class BaiKubernetesObjectBuilder:
 
         puller_args = [data_sources[0].bucket, ":".join(s3_objects)]
         data_puller.args = puller_args
+
+    def add_env_vars(self):
+        self.root.add_env_vars(BENCHMARK_CONTAINER, self.descriptor.env_vars)
 
 
 def create_bai_data_sources(fetched_data_sources: List[DataSet], descriptor: Descriptor) -> List[BaiDataSource]:
