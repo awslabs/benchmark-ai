@@ -154,7 +154,7 @@
   "
   [script-map]
   (log/trace "scripts->s3 "script-map)
-  (s3/put-object (env :scripts-exchange-s3-bucket-name) (:filename script-map) (:tempfile script-map))
+  (s3/put-object (env :scripts-exchange-s3-bucket-name) (utils/generate-s3-path (:filename script-map)) (:tempfile script-map))
   (swap! stored-scripts conj (:filename script-map)))
 
 (defn has-file? [filename]
