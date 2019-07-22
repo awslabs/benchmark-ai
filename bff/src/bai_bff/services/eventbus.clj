@@ -16,6 +16,7 @@
             [amazonica.aws.s3 :as s3]
             [amazonica.aws.s3transfer :as s3tfr]
             [taoensso.timbre :as log]
+            [clojure.java.io :as io]
             [clojure.pprint :refer :all]
             [clojure.core.async :as a :refer [>! <! >!! <!! go chan buffer close! thread
                                               alts! alts!! timeout]]))
@@ -155,7 +156,8 @@
   [script-map]
   (log/trace "scripts->s3 "script-map)
   (s3/put-object (env :scripts-exchange-s3-bucket-name) (utils/generate-s3-path (:filename script-map)) (:tempfile script-map))
-  (swap! stored-scripts conj (:filename script-map)))
+  (swap! stored-scripts conj (:filename script-map))
+  (io/delete-file (:tempfile script-map)))
 
 (defn has-file? [filename]
   (contains? @stored-scripts filename))
