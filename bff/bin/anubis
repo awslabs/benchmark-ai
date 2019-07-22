@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env bash -x
 
 conda_usage() {
     printf "
@@ -416,7 +416,7 @@ submit() {
         cmd="curl -s -F submit-event='"${data}"'"
         msg="sending ${descriptor_filename}"
         if [[ -n "${script_artifact}" ]]; then
-            if [[ "true" != "$(_has_script "${script_artifact##*/}")" ]]; then
+            if ((FORCE)) || [ "true" != "$(_has_script "${script_artifact##*/}")" ] ; then
                 ((DEBUG)) && echo "Including script in curl command *new* script" 1>&2
                 cmd+=" -F script="@${script_artifact}
                 msg+=" and ${script_artifact##*/}"
@@ -674,6 +674,7 @@ main() {
 
     local SUBMIT=0;
     local STATUS=0;
+    local FORCE=0;
     local descriptor_filename=""
     local id_status_is_desired_for=""
     local script=""
@@ -682,6 +683,9 @@ main() {
             #echo "arg ${i} = $1"
             local unshift=0
             case $1 in
+                --force | -f)
+                    FORCE=1
+                    ;;
                 --verbose | -vv)
                     VERBOSE=1
                     echo "[verbose mode: on]"
