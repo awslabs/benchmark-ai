@@ -48,6 +48,14 @@ spec:
           value: /tmp/benchmark-ai/fifo
         - name: BENCHMARK_AI_FIFO_MAX_WAIT_TIME
           value: '60'
+        - name: FIST_VAL
+          value: VAR
+        - name: SECOND_VAL
+          value: VAR
+        - name: INT_VAL
+          value: '11'
+        - name: FOO
+          value: bar
         volumeMounts:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai

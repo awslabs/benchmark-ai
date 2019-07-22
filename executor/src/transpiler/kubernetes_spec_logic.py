@@ -44,6 +44,7 @@ Volume = addict.Dict
 EmptyDirVolumeSource = addict.Dict
 HostPath = addict.Dict
 ConfigMap = addict.Dict
+EnvVar = addict.Dict
 
 
 class KubernetesRootObjectHelper:
@@ -180,6 +181,16 @@ class KubernetesRootObjectHelper:
         raise ValueError(
             "ConfigMap {} not found. Available ones are: {}".format(name, [cm.metadata.name for cm in self.config_maps])
         )
+
+    def add_env_vars(self, container_name, env: Dict[str, str]):
+        if not env:
+            return
+        # Since we use python 3.7 the order of insertion is preserved in the dict
+        container = self.find_container(container_name)
+        container.env = container.env or []
+        env_old = {var.name: var.value for var in container.env}
+        env_new = {**env_old, **env}
+        container.env = [EnvVar(name=k, value=str(v)) for k, v in env_new.items()]
 
     def to_cronjob(self, scheduling: str):
         """

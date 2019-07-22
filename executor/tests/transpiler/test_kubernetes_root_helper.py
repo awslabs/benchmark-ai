@@ -1,3 +1,4 @@
+import re
 import textwrap
 
 import pytest
@@ -163,3 +164,34 @@ def test_job_to_cronjob(k8s_job):
 def test_remove_affinity(k8s_job: KubernetesRootObjectHelper):
     k8s_job.remove_affinity()
     assert "affinity" not in k8s_job.to_yaml()
+
+
+def test_empty_env(k8s_job: KubernetesRootObjectHelper):
+    k8s_job.add_env_vars("benchmark", {})
+    assert "env" not in k8s_job.to_yaml()
+
+
+FOO_ENV_VAR = r"\s*- name: FOO\n\s*value: VAL\n"
+BAR_ENV_VAR = r"\s*- name: BAR\n\s*value: OTHER\n"
+INT_ENV_VAR = r"\s*- name: FOO\n\s*value: '42'\n"
+
+
+def test_add_env(k8s_job: KubernetesRootObjectHelper):
+    k8s_job.add_env_vars("benchmark", {"FOO": "VAL"})
+    assert re.findall(rf"env:\n{FOO_ENV_VAR}", k8s_job.to_yaml())
+
+
+def test_add_env_with_multiple(k8s_job: KubernetesRootObjectHelper):
+    k8s_job.add_env_vars("benchmark", {"FOO": "VAL", "BAR": "OTHER"})
+    assert re.findall(rf"env:\n{FOO_ENV_VAR}{BAR_ENV_VAR}", k8s_job.to_yaml())
+
+
+def test_add_env_int(k8s_job: KubernetesRootObjectHelper):
+    k8s_job.add_env_vars("benchmark", {"FOO": 42})
+    assert re.findall(rf"env:\n{INT_ENV_VAR}", k8s_job.to_yaml())
+
+
+def test_add_env_multiple(k8s_job: KubernetesRootObjectHelper):
+    k8s_job.add_env_vars("benchmark", {"FOO": "VAL"})
+    k8s_job.add_env_vars("benchmark", {"BAR": "OTHER"})
+    assert re.findall(rf"env:\n{FOO_ENV_VAR}{BAR_ENV_VAR}", k8s_job.to_yaml())
