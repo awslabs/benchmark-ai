@@ -15,7 +15,7 @@ from bai_kafka_utils.events import (
     FetchedType,
     CommandRequestPayload,
     BenchmarkJob,
-    ExternalFileSystemObject,
+    FileSystemObject,
 )
 
 
@@ -110,7 +110,7 @@ def test_fetcher_event_scripts(base_event_as_dict):
     event = FetcherBenchmarkEvent.from_json(event_as_json_string)
     assert type(event.payload) == FetcherPayload
     assert event.payload.toml is not None
-    assert event.payload.scripts == [ExternalFileSystemObject(dst="s3://something/foo.tar")]
+    assert event.payload.scripts == [FileSystemObject(dst="s3://something/foo.tar")]
 
 
 def test_executor_event(base_event_as_dict):

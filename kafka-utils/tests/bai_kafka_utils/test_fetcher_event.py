@@ -4,7 +4,7 @@ from bai_kafka_utils.events import (
     FetcherBenchmarkEvent,
     DataSet,
     FetcherPayload,
-    ExternalFileSystemObject,
+    FileSystemObject,
 )
 
 BIG_FETCHER_JSON = """{
@@ -121,7 +121,7 @@ EXPECTED_FETCHER_VISITED = [
 
 EXPECTED_FETCHER_DATASETS = [DataSet("s3://bucket/imagenet/train"), DataSet("s3://bucket/imagenet/validation")]
 
-EXPECTED_FETCHER_SCRIPTS = [ExternalFileSystemObject(dst="s3://script-exchange/foo.tar")]
+EXPECTED_FETCHER_SCRIPTS = [FileSystemObject(dst="s3://script-exchange/foo.tar")]
 
 EXPECTED_FETCHER_EVENT = FetcherBenchmarkEvent(
     action_id="ffea52eb-c24b-4dd0-b32e-61230db34ad5",

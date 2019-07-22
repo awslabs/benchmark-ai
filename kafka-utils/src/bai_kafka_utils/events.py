@@ -70,7 +70,7 @@ class BenchmarkPayload:
 
 @dataclass_json
 @dataclass
-class ExternalFileSystemObject(object):
+class FileSystemObject(object):
     dst: str
 
 
@@ -78,7 +78,7 @@ class ExternalFileSystemObject(object):
 @dataclass
 class FetcherPayload(BenchmarkPayload):
     datasets: List[DataSet]
-    scripts: List[ExternalFileSystemObject] = dataclasses.field(default_factory=list)
+    scripts: List[FileSystemObject] = dataclasses.field(default_factory=list)
 
 
 @dataclass_json
@@ -90,7 +90,7 @@ class ExecutorPayload(FetcherPayload):
         toml: BenchmarkDoc,
         datasets: List[DataSet],
         job: BenchmarkJob,
-        scripts: List[ExternalFileSystemObject] = [],
+        scripts: List[FileSystemObject] = [],
     ):
         self.toml = toml
         self.datasets = datasets
