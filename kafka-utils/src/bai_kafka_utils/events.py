@@ -86,11 +86,7 @@ class FetcherPayload(BenchmarkPayload):
 class ExecutorPayload(FetcherPayload):
     # This ugly constructor enables default behaviour on FetcherPayload.scripts
     def __init__(
-        self,
-        toml: BenchmarkDoc,
-        datasets: List[DataSet],
-        job: BenchmarkJob,
-        scripts: List[FileSystemObject] = [],
+        self, toml: BenchmarkDoc, datasets: List[DataSet], job: BenchmarkJob, scripts: List[FileSystemObject] = []
     ):
         self.toml = toml
         self.datasets = datasets
