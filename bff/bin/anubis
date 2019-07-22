@@ -382,7 +382,7 @@ _prepare_script() {
 _has_script() {
     local cmd
     cmd="curl -s http://${current_service_endpoint}/api/job/script/${script_artifact##*/}"
-    if [[ "true" == "$(eval ${cmd})" ]]; then  return 0; else return 1; fi;
+    if [[ "true" == "$(eval ${cmd})" ]]; then  echo -n "true"; else echo -n "false"; fi;
 }
 
 #submit event
@@ -411,8 +411,17 @@ submit() {
 
     if [[ -n "${data}" ]]; then
         [[ -n "${script_artifact}" ]] && echo "Using Script: ${script_artifact##*/}" 1>&2
-        cmd="curl -s -F submit-event='"${data}"' "$( [[ -n "${script_artifact}" && ! $(_has_script "${script_artifact##*/}") ]] && echo -n "-F script="@${script_artifact})" http://"${current_service_endpoint}"/api/job/descriptor"
-        ((VERBOSE)) && echo ${cmd}
+
+        cmd="curl -s -F submit-event='"${data}"' "
+        if [[ -n "${script_artifact}" ]]; then
+            if [[ "true" != "$(_has_script "${script_artifact##*/}")" ]]; then
+                ((DEBUG)) && echo "Including script in curl command *new* script" 1>&2
+                cmd+="-F script="@${script_artifact}
+            fi
+        fi
+        cmd+=" http://"${current_service_endpoint}"/api/job/descriptor"
+        ((VERBOSE)) && echo "${cmd}"
+
         _print_status "sending ${descriptor_filename} "$( [[ -n "${script_artifact}" ]] && echo -n "and '"@${script_artifact##*/}"'")"to anubis service @ ${current_service_endpoint}"
         [[ ! -d "${BAI_DATABASE}/$(get_client_id)" ]] && mkdir -p "${BAI_DATABASE}/$(get_client_id)"
 
