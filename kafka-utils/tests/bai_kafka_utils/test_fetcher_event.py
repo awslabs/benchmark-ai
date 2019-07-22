@@ -1,4 +1,11 @@
-from bai_kafka_utils.events import BenchmarkDoc, VisitedService, FetcherBenchmarkEvent, DataSet, FetcherPayload
+from bai_kafka_utils.events import (
+    BenchmarkDoc,
+    VisitedService,
+    FetcherBenchmarkEvent,
+    DataSet,
+    FetcherPayload,
+    FileSystemObject,
+)
 
 BIG_FETCHER_JSON = """{
                "date": "Thu May 02 16:15:42 UTC 2019",
@@ -55,6 +62,11 @@ BIG_FETCHER_JSON = """{
                        {
                            "src": "s3://bucket/imagenet/validation"
                        }
+                   ],
+                   "scripts": [
+                        {
+                            "dst": "s3://script-exchange/foo.tar"
+                        }
                    ]
                },
                "tstamp": 1556814924121,
@@ -109,6 +121,8 @@ EXPECTED_FETCHER_VISITED = [
 
 EXPECTED_FETCHER_DATASETS = [DataSet("s3://bucket/imagenet/train"), DataSet("s3://bucket/imagenet/validation")]
 
+EXPECTED_FETCHER_SCRIPTS = [FileSystemObject(dst="s3://script-exchange/foo.tar")]
+
 EXPECTED_FETCHER_EVENT = FetcherBenchmarkEvent(
     action_id="ffea52eb-c24b-4dd0-b32e-61230db34ad5",
     message_id="007bd9f8-f564-4edb-bb48-7380ee562ffc",
@@ -119,7 +133,9 @@ EXPECTED_FETCHER_EVENT = FetcherBenchmarkEvent(
     tstamp=1556814924121,
     visited=EXPECTED_FETCHER_VISITED,
     type="BAI_APP_BFF",
-    payload=FetcherPayload(datasets=EXPECTED_FETCHER_DATASETS, toml=EXPECTED_FETCHER_DOC),
+    payload=FetcherPayload(
+        datasets=EXPECTED_FETCHER_DATASETS, scripts=EXPECTED_FETCHER_SCRIPTS, toml=EXPECTED_FETCHER_DOC
+    ),
 )
 
 

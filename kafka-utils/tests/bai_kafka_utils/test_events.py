@@ -15,6 +15,7 @@ from bai_kafka_utils.events import (
     FetchedType,
     CommandRequestPayload,
     BenchmarkJob,
+    FileSystemObject,
 )
 
 
@@ -98,6 +99,18 @@ def test_fetcher_event(base_event_as_dict):
     assert type(event.payload) == FetcherPayload
     assert event.payload.toml is not None
     assert event.payload.datasets is not None
+
+
+def test_fetcher_event_scripts(base_event_as_dict):
+    fetcher_event_as_dict = base_event_as_dict
+    fetcher_event_as_dict["payload"]["datasets"] = []
+    fetcher_event_as_dict["payload"]["scripts"] = [{"dst": "s3://something/foo.tar"}]
+    event_as_json_string = json.dumps(fetcher_event_as_dict)
+
+    event = FetcherBenchmarkEvent.from_json(event_as_json_string)
+    assert type(event.payload) == FetcherPayload
+    assert event.payload.toml is not None
+    assert event.payload.scripts == [FileSystemObject(dst="s3://something/foo.tar")]
 
 
 def test_executor_event(base_event_as_dict):
