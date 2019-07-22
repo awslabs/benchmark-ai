@@ -70,13 +70,33 @@ class BenchmarkPayload:
 
 @dataclass_json
 @dataclass
-class FetcherPayload(BenchmarkPayload):
-    datasets: List[DataSet]
+class ExternalFileSystemObject(object):
+    dst: str
 
 
 @dataclass_json
 @dataclass
+class FetcherPayload(BenchmarkPayload):
+    datasets: List[DataSet]
+    scripts: List[ExternalFileSystemObject] = dataclasses.field(default_factory=list)
+
+
+@dataclass_json
+@dataclass(init=False)
 class ExecutorPayload(FetcherPayload):
+    # This ugly constructor enables default behaviour on FetcherPayload.scripts
+    def __init__(
+        self,
+        toml: BenchmarkDoc,
+        datasets: List[DataSet],
+        job: BenchmarkJob,
+        scripts: List[ExternalFileSystemObject] = [],
+    ):
+        self.toml = toml
+        self.datasets = datasets
+        self.scripts = scripts
+        self.job = job
+
     job: BenchmarkJob
 
     @classmethod
