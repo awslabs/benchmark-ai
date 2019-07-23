@@ -8,10 +8,8 @@ resource "aws_s3_bucket" "scripts-exchange" {
   }
 }
 
-resource "aws_iam_role_policy" "bai-bff-pod-role-s3-policy" {
-  name = "s3-permissions"
-  role = "${aws_iam_role.kube2iam-bff-pod-role.name}"
-
+resource "aws_iam_policy" "script-exchange-read" {
+  name = "script-exchange-read"
   policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -31,15 +29,31 @@ resource "aws_iam_role_policy" "bai-bff-pod-role-s3-policy" {
         "${aws_s3_bucket.scripts-exchange.arn}/*"
       ],
       "Action": [
-        "s3:PutObject",
         "s3:GetObject",
-
-        "s3:PutObjectTagging",
         "s3:GetObjectTagging",
-
         "s3:GetObjectVersion",
+        "s3:GetObjectVersionTagging"
+      ]
+    }
+  ]
+}
+EOF
+}
 
-        "s3:GetObjectVersionTagging",
+resource "aws_iam_policy" "script-exchange-write" {
+  name = "script-exchange-write"
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Resource": [
+        "${aws_s3_bucket.scripts-exchange.arn}/*"
+      ],
+      "Action": [
+        "s3:PutObject",
+        "s3:PutObjectTagging",
         "s3:PutObjectVersionTagging"
       ]
     }
@@ -64,4 +78,14 @@ resource "aws_iam_role" "kube2iam-bff-pod-role" {
   ]
 }
 EOF
+}
+
+resource "aws_iam_role_policy_attachment" "bai-bff-read-script-exchange" {
+  policy_arn = "${aws_iam_policy.script-exchange-read.arn}"
+  role = "${aws_iam_role.kube2iam-bff-pod-role.name}"
+}
+
+resource "aws_iam_role_policy_attachment" "bai-bff-write-script-exchange" {
+  policy_arn = "${aws_iam_policy.script-exchange-write.arn}"
+  role = "${aws_iam_role.kube2iam-bff-pod-role.name}"
 }

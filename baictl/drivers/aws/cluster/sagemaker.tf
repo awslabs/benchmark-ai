@@ -1,5 +1,6 @@
-                                                                                resource "aws_iam_role" "sagemaker-role" {
+resource "aws_iam_role" "sagemaker-role" {
   name = "bai-sagemaker"
+  description = "Role for SageMaker service to assume to execute benchmarks"
   assume_role_policy = <<-EOF
   {
     "Version": "2012-10-17",
@@ -16,6 +17,7 @@
   EOF
 }
 
+# Bucket for SageMaker output
 resource "aws_s3_bucket" "sagemaker-output" {
   bucket        = "sagemaker-output-${random_id.s3_bucket_id.hex}"
   acl           = "private"
@@ -67,4 +69,76 @@ resource "aws_iam_role_policy_attachment" "sagemaker-data-output-attachment" {
 resource "aws_iam_role_policy_attachment" "sagemaker-full-access-attachment" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSageMakerFullAccess"
   role       = "${aws_iam_role.sagemaker-role.name}"
+}
+
+resource "aws_iam_role" "kube2iam-sagemaker-executor-role" {
+  name = "sagemaker-executor-role"
+  description = "Role for SageMaker executor to assume"
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "${module.eks.worker_iam_role_arn}"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy" "sagemaker-can-pass-job-policy" {
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iam:PassRole"
+      ],
+      "Resource": [
+        "${aws_iam_role.sagemaker-role.arn}"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "iam:PassedToService": "sagemaker.amazonaws.com"
+        }
+      }
+    }
+  ]
+}
+EOF
+  role = "${aws_iam_role.kube2iam-sagemaker-executor-role.name}"
+}
+
+resource "aws_iam_role_policy" "sagemaker-training-job-policy" {
+  name = "sagemaker-training-job-policy"
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+          "Effect": "Allow",
+          "Action": [
+              "sagemaker:ListTrainingJobs",
+              "sagemaker:DescribeTrainingJob",
+              "sagemaker:CreateTrainingJob",
+	          "sagemaker:StopTrainingJob"
+          ],
+          "Resource": "*"
+    }
+  ]
+}
+EOF
+  role = "${aws_iam_role.kube2iam-sagemaker-executor-role.name}"
+}
+
+# Access user scripts - read only
+resource "aws_iam_role_policy_attachment" "sagemaker-scripts-attachment" {
+  policy_arn = "${aws_iam_policy.script-exchange-read.arn}"
+  role       = "${aws_iam_role.kube2iam-sagemaker-executor-role.name}"
 }
