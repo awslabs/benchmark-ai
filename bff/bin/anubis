@@ -428,7 +428,7 @@ submit() {
         ((VERBOSE || DEBUG)) && echo "${cmd}" 1>&2
 
         _print_status "${msg}"
-        [[ ! -d "${BAI_DATABASE}/$(get_client_id)" ]] && mkdir -p "${BAI_DATABASE}/$(get_client_id)"
+        [[ ! -d "${ANUBIS_DATABASE}/$(get_client_id)" ]] && mkdir -p "${ANUBIS_DATABASE}/$(get_client_id)"
 
         response=$(eval $cmd)
 
