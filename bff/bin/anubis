@@ -381,7 +381,8 @@ _prepare_script() {
 # Remember for a script a return value of 0 means TRUE (everything else is false... !0)
 _has_script() {
     local cmd
-    cmd="curl -s http://${current_service_endpoint}/api/job/script/${script_artifact##*/}"
+    local my_script_artifact_name=${1:?"Must provide the script artifact you wish to check for existence on"}
+    cmd="curl -s http://${current_service_endpoint}/api/job/script/${my_script_artifact_name}"
     if [[ "true" == "$(eval ${cmd})" ]]; then  return 0 ; else return 1; fi;
 }
 
