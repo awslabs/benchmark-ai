@@ -13,16 +13,22 @@ export MAX_QUEUE_SIZE=${MAX_QUEUE_SIZE:=20}
 
 #Kafka
 export KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:="local:9092"}
+export KAFKA_DEFAULT_NUM_PARTITIONS=${KAFKA_DEFAULT_NUM_PARTITIONS:=1}
+export KAFKA_DEFAULT_REPLICATION_FACTOR=${KAFKA_DEFAULT_REPLICATION_FACTOR:=1}
 
 #Kafa Source (consumer/processor..)
-export KAFKA_SOURCE_TOPIC=${KAFKA_SOURCE_TOPIC:="test"}
+export KAFKA_SOURCE_TOPICS=${KAFKA_SOURCE_TOPICS:="test"}
 export KAFKA_CONSUMER_GROUP_ID=${KAFKA_CONSUMER_GROUP_ID:="none"}
 export KAFKA_POLL_INTERVAL_MS=${KAFKA_POLL_INTERVAL_MS:=500}
 
 #Kafka Sink (producer/sender...)
-export KAFKA_SINK_TOPIC=${KAFKA_SINK_TOPIC:="test"}
+export KAFKA_SINK_TOPICS=${KAFKA_SINK_TOPICS:="test"}
 
-export JARFILE="target/bai-bff-*-standalone.jar"
+#storage
+SCRIPTS_EXCHANGE_S3_BUCKET_NAME=${SCRIPTS_EXCHANGE_S3_BUCKET_NAME:="scripts_exchange_s3"}
+
+export JAR_FILENAME="bai-bff-*-standalone.jar"
+export JMX_PORT=${JMX_PORT:=9010}
 
 echo "ENDPOINTS_PORT = ${ENDPOINTS_PORT}"
 echo "SVC_PORT = ${SVC_PORT}"
@@ -31,11 +37,25 @@ echo "LOGGING_LEVEL = ${LOGGING_LEVEL}"
 echo "THREAD_POOL_SIZE = ${THREAD_POOL_SIZE}"
 echo "MAX_QUEUE_SIZE = ${MAX_QUEUE_SIZE}"
 echo "KAFKA_BOOTSTRAP_SERVERS = ${KAFKA_BOOTSTRAP_SERVERS}"
-echo "KAFKA_SOURCE_TOPIC = ${KAFKA_SOURCE_TOPIC}"
+echo "KAFKA_SOURCE_TOPICS = ${KAFKA_SOURCE_TOPICS}"
 echo "KAFKA_CONSUMER_GROUP_ID = ${KAFKA_CONSUMER_GROUP_ID}"
 echo "KAFKA_POLL_INTERVAL_MS = ${KAFKA_POLL_INTERVAL_MS}"
-echo "KAFKA_SINK_TOPIC = ${KAFKA_SINK_TOPIC}"
+echo "KAFKA_SINK_TOPICS = ${KAFKA_SINK_TOPICS}"
+echo "KAFKA_DEFAULT_REPLICATION_FACTOR = ${KAFKA_DEFAULT_REPLICATION_FACTOR}"
+echo "KAFKA_DEFAULT_NUM_PARTITIONS = ${KAFKA_DEFAULT_NUM_PARTITIONS}"
+echo "SCRIPTS_EXCHANGE_S3_BUCKET_NAME = ${SCRIPTS_EXCHANGE_S3_BUCKET_NAME}"
+echo "JMX_PORT = ${JMX_PORT}"
 
-cmd="java -jar ${JARFILE}"
-echo ${cmd}
-$cmd
+main() {
+    local cmd
+    cmd="java -Xms800m -mx3000m \
+         -Dcom.sun.management.jmxremote \
+         -Dcom.sun.management.jmxremote.authenticate=false \
+         -Dcom.sun.management.jmxremote.ssl=false \
+         -Dcom.sun.management.jmxremote.port=${JMX_PORT} \
+         -jar ${1:-${JAR_FILENAME}}"
+    echo ${cmd}
+    $cmd
+}
+
+main $@

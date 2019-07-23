@@ -58,6 +58,7 @@ MAIN := $(PROJECT).app
 LEIN_ROOT := true
 LEIN := ./bin/lein
 
+JMX_PORT=9010
 JAR_FILENAME := $(PROJECT)-$(VERSION)-standalone.jar
 JAR_FILE := $(TARGET_PATH)/$(JAR_FILENAME)
 TARGET := $(PROJECT)-$(VERSION)   #<- (TODO - don't seem to be used)
@@ -65,6 +66,8 @@ RELEASE_FILE := $(TARGET).tar.gz  #<- (TODO - don't seem to be used)
 CLJ_FILES := $(shell find $(SOURCE_PATHS) -name '*.clj')
 CLJ_TEST_FILES := $(shell find $(TEST_PATHS) -name '*.clj')
 MAIN_CLASS_FILE := $(COMPILE_PATH)/$(shell sed -e 's@\.@/@g' -e 's@-@_@g' <<<$(MAIN))__init.class
+RUN_SCRIPT_NAME := runit
+RUN_SCRIPT := $(BIN_PATH)/$(RUN_SCRIPT_NAME)
 
 #---
 # Continuous Delivery, Packaging and Containerization
@@ -93,13 +96,14 @@ LOGGING_LEVEL := trace
 SVC_PORT := 8080
 THREAD_POOL_SIZE := 6
 MAX_QUEUE_SIZE := 21
-#KAFKA_BOOTSTRAP_SERVERS #Here only as a note that this is a thing
+#KAFKA_BOOTSTRAP_SERVERS #Here only as a note: gotten from k8s configmap
 KAFKA_CONSUMER_GROUP_ID := $(PROJECT)
 KAFKA_POLL_INTERVAL_MS := 500
 KAFKA_SOURCE_TOPICS := BAI_APP_STATUS,CMD_RETURN
 KAFKA_SINK_TOPICS := BAI_APP_STATUS,BAI_APP_BFF,CMD_SUBMIT
 KAFKA_DEFAULT_NUM_PARTITIONS := 3
 KAFKA_DEFAULT_REPLICATION_FACTOR := 3
+#SCRIPTS_EXCHANGE_S3_BUCKET_NAME #Here only as note: gotten from k8s configmap
 
 #This project may be built in the context of a docker environment using the image: gavin/bai-bff-dev
 #docker run -it --rm -v "$PWD":/srv/app -w /srv/app gavin/bai-bff-dev <command>
@@ -257,6 +261,7 @@ build-dev-container: project.clj
 	     -e 's|@@RELEASE_NAME@@|$(RELEASE_NAME)|g' \
 	     -e 's|@@JAR_FILE@@|$(JAR_FILE)|g' \
 	     -e 's|@@JAR_FILENAME@@|$(JAR_FILENAME)|g' \
+	     -e 's|@@JMX_PORT@@|$(JMX_PORT)|g' \
 	     -e 's|@@SVC_PORT@@|$(SVC_PORT)|g' $(DOCKER_DEV_TEMPLATE) > $(shell sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(DOCKER_DEV_TEMPLATE))
 	docker build -f $(shell sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(DOCKER_DEV_TEMPLATE)) \
 			-t $(DOCKER_REGISTRY)/$(PROJECT)-dev:$(DOCKER_TAG) \
@@ -286,6 +291,9 @@ build-deploy-container: dist
 	     -e 's|@@RELEASE_NAME@@|$(RELEASE_NAME)|g' \
 	     -e 's|@@JAR_FILE@@|$(JAR_FILE)|g' \
 	     -e 's|@@JAR_FILENAME@@|$(JAR_FILENAME)|g' \
+	     -e 's|@@RUN_SCRIPT@@|$(RUN_SCRIPT)|g' \
+	     -e 's|@@RUN_SCRIPT_NAME@@|$(RUN_SCRIPT_NAME)|g' \
+	     -e 's|@@JMX_PORT@@|$(JMX_PORT)|g' \
 	     -e 's|@@SVC_PORT@@|$(SVC_PORT)|g' $(DOCKER_TEMPLATE) > $(shell sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(DOCKER_TEMPLATE))
 	docker build -t $(DOCKER_REGISTRY)/$(PROJECT):$(DOCKER_TAG) \
 		     -t $(DOCKER_REGISTRY)/$(PROJECT):latest .
@@ -320,6 +328,7 @@ deploy.yml: FORCE
 	     -e 's|@@VERSION@@|$(VERSION)|g' \
 	     -e 's|@@ENVIRONMENT@@|$(ENVIRONMENT)|g' \
 	     -e 's|@@LOGGING_LEVEL@@|$(LOGGING_LEVEL)|g' \
+	     -e 's|@@JMX_PORT@@|$(JMX_PORT)|g' \
 	     -e 's|@@SVC_PORT@@|$(SVC_PORT)|g' \
 	     -e 's|@@REPO_SITE@@|$(REPO_SITE)|g' \
 	     -e 's|@@TAG@@|$(TAG)|g' \

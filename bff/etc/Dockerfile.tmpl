@@ -1,12 +1,13 @@
 FROM clojure:lein-alpine
 RUN mkdir -p /srv/app
 WORKDIR /srv/app
-COPY @@JAR_FILE@@ /srv/app/
+COPY @@JAR_FILE@@ @@RUN_SCRIPT@@ /srv/app/
 LABEL version="@@VERSION@@" \
         vcs.tag="@@TAG@@" \
         repo="@@REPO_SITE@@" \
         organization="@@ORGANIZATION@@" \
         release.name="@@RELEASE_NAME@@" \
         maintainer="@@AUTHOR@@"
-EXPOSE @@SVC_PORT@@
-CMD ["java", "-jar", "@@JAR_FILENAME@@"]
+EXPOSE @@SVC_PORT@@ @@JMX_PORT@@
+ENTRYPOINT ["./@@RUN_SCRIPT_NAME@@"]
+CMD ["@@JAR_FILENAME@@"]

@@ -50,6 +50,9 @@ spec:
             - containerPort: @@SVC_PORT@@
               name: http
               protocol: TCP
+            - containerPort: @@JMX_PORT@@
+              name: jmx
+              protocol: TCP
           livenessProbe:
             httpGet:
               path: /lively
@@ -79,6 +82,8 @@ spec:
               value: "@@THREAD_POOL_SIZE@@"
             - name: MAX_QUEUE_SIZE
               value: "@@MAX_QUEUE_SIZE@@"
+            - name: JMX_PORT
+              value: "@@JMX_PORT@@"
             - name: KAFKA_BOOTSTRAP_SERVERS
               valueFrom:
                 configMapKeyRef:
