@@ -1,4 +1,4 @@
-#!/usr/bin/env bash -x
+#!/usr/bin/env bash
 
 conda_usage() {
     printf "
@@ -382,7 +382,7 @@ _prepare_script() {
 _has_script() {
     local cmd
     cmd="curl -s http://${current_service_endpoint}/api/job/script/${script_artifact##*/}"
-    if [[ "true" == "$(eval ${cmd})" ]]; then  echo -n "true"; else echo -n "false"; fi;
+    if [[ "true" == "$(eval ${cmd})" ]]; then  return 0 ; else return 1; fi;
 }
 
 #submit event
@@ -416,15 +416,15 @@ submit() {
         cmd="curl -s -F submit-event='"${data}"'"
         msg="sending ${descriptor_filename}"
         if [[ -n "${script_artifact}" ]]; then
-            if ((FORCE)) || [ "true" != "$(_has_script "${script_artifact##*/}")" ] ; then
-                ((DEBUG)) && echo "Including script in curl command *new* script" 1>&2
+            if ((FORCE)) || ! $(_has_script "${script_artifact##*/}") ; then
+                ((DEBUG)) && echo "Including script for upload to the Anubis service (bff)" 1>&2
                 cmd+=" -F script="@${script_artifact}
                 msg+=" and ${script_artifact##*/}"
             fi
         fi
         cmd+=" http://"${current_service_endpoint}"/api/job/descriptor"
         msg+=" to anubis service @ ${current_service_endpoint}"
-        ((VERBOSE)) && echo "${cmd}"
+        ((VERBOSE || DEBUG)) && echo "${cmd}" 1>&2
 
         _print_status "${msg}"
         [[ ! -d "${BAI_DATABASE}/$(get_client_id)" ]] && mkdir -p "${BAI_DATABASE}/$(get_client_id)"
