@@ -155,7 +155,7 @@ show_legend() {
 }
 
 check_tools() {
-    ((VERBOSE || DEBUG)) && echo "Using, bash --> BASH VERSION = ${BASH_VERSION}"
+    ((VERBOSE || DEBUG)) && echo "Using, bash --> BASH VERSION = ${BASH_VERSION}" 1>&2
     if (( $(sed -n -re 's/^([0-9]*).[0-9]*.[0-9]*.*-release.*/\1/p' <<< "${BASH_VERSION}")  < 5 )); then
         printf "\n\033[01;33mYour bash is too old, son. You need v5+, money-grip ;-)\033[0m\n\n"; exit 9;fi
 
@@ -352,12 +352,12 @@ script_artifact=""
 
 _prepare_script() {
     local script=${1:?"The script name is a manditory argument"}
-    ((DEBUG)) && echo "Preparing script ${script}"
+    ((DEBUG)) && echo "Preparing script ${script}" 1>&2
 
     #NOTE: restrict (lint) script locations... (don't want script to point to "dangerous" places etc...)
     local artifact
     if [[ -e "${script}" ]]; then
-        ((DEBUG)) && echo "Located ${script} "$([[ -d "${script}" ]] && echo -n "directory" ; [[ -f "${script}" ]] && echo -n "file")", building artifact..."
+        ((DEBUG)) && echo "Located ${script} "$([[ -d "${script}" ]] && echo -n "directory" ; [[ -f "${script}" ]] && echo -n "file")", building artifact..." 1>&2
         pushd "${script%/*}" >& /dev/null
         artifact=${BAI_SCRIPT_STAGING}/_${script##*/}.tar
         tar cf "${artifact}" "${script##*/}"
@@ -381,8 +381,9 @@ _prepare_script() {
 # Remember for a script a return value of 0 means TRUE (everything else is false... !0)
 _has_script() {
     local cmd
-    cmd="curl -s http://${current_service_endpoint}/api/job/script/${script_artifact##*/}"
-    if [[ "true" == "$(eval ${cmd})" ]]; then  return 0; else return 1; fi;
+    local my_script_artifact_name=${1:?"Must provide the script artifact you wish to check for existence on"}
+    cmd="curl -s http://${current_service_endpoint}/api/job/script/${my_script_artifact_name}"
+    if [[ "true" == "$(eval ${cmd})" ]]; then  return 0 ; else return 1; fi;
 }
 
 #submit event
@@ -407,13 +408,26 @@ submit() {
 
     local data=$(_generate_submit_event "${descriptor_filename}" "${script_artifact}")
     local cmd
+    local msg
     local response
 
     if [[ -n "${data}" ]]; then
         [[ -n "${script_artifact}" ]] && echo "Using Script: ${script_artifact##*/}" 1>&2
-        cmd="curl -s -F submit-event='"${data}"' "$( [[ -n "${script_artifact}" && ! $(_has_script "${script_artifact##*/}") ]] && echo -n "-F script="@${script_artifact})" http://"${current_service_endpoint}"/api/job/descriptor"
-        ((VERBOSE)) && echo ${cmd}
-        _print_status "sending ${descriptor_filename} "$( [[ -n "${script_artifact}" ]] && echo -n "and '"@${script_artifact##*/}"'")"to anubis service @ ${current_service_endpoint}"
+
+        cmd="curl -s -F submit-event='"${data}"'"
+        msg="sending ${descriptor_filename}"
+        if [[ -n "${script_artifact}" ]]; then
+            if ((FORCE)) || ! $(_has_script "${script_artifact##*/}") ; then
+                ((DEBUG)) && echo "Including script for upload to the Anubis service (bff)" 1>&2
+                cmd+=" -F script="@${script_artifact}
+                msg+=" and ${script_artifact##*/}"
+            fi
+        fi
+        cmd+=" http://"${current_service_endpoint}"/api/job/descriptor"
+        msg+=" to anubis service @ ${current_service_endpoint}"
+        ((VERBOSE || DEBUG)) && echo "${cmd}" 1>&2
+
+        _print_status "${msg}"
         [[ ! -d "${BAI_DATABASE}/$(get_client_id)" ]] && mkdir -p "${BAI_DATABASE}/$(get_client_id)"
 
         response=$(eval $cmd)
@@ -465,7 +479,7 @@ get_latest_event_timestamp() {
 #Local filesystem read
 _read_local_submission_status() {
     local action_id=${1:-$(use_last_action_id)}
-    ((DEBUG)) && echo "_read_local_submission_status for action: ${action_id}"
+    ((DEBUG)) && echo "_read_local_submission_status for action: ${action_id}" 1>&2
     current_action_id=$action_id
 
     local datafile=${BAI_DATABASE}/$(get_client_id)"/"${action_id}/data
@@ -479,7 +493,7 @@ _read_local_submission_status() {
 
 _read_remote_submission_status() {
     local action_id=${1:-$(use_last_action_id)}
-    ((DEBUG)) && echo "_read_remote_submission_status for action: ${action_id}"
+    ((DEBUG)) && echo "_read_remote_submission_status for action: ${action_id}" 1>&2
     current_action_id=$action_id
 
     local path=$(get_client_id)"/"${action_id}
@@ -500,7 +514,7 @@ EOF
 #REST API call
 get_submission_status() {
     local action_id=${1:-$(use_last_action_id)}
-    ((DEBUG)) && echo "[DEBUG] - get_submission_status, was passed in [${action_id}]"
+    ((DEBUG)) && echo "[DEBUG] - get_submission_status, was passed in [${action_id}]" 1>&2
     if [[ -z $(sed -rne '/[a-f0-9-]{8}-([a-f0-9-]{4}-){3}[a-f0-9-]{12}/p' <<<"${action_id}") ]]; then
         printf "\033[01;31m[ERROR] Incorrect action-id format: expecting a UUID\033[0m\n"
         exit 9
@@ -661,6 +675,7 @@ main() {
 
     local SUBMIT=0;
     local STATUS=0;
+    local FORCE=0;
     local descriptor_filename=""
     local id_status_is_desired_for=""
     local script=""
@@ -669,13 +684,16 @@ main() {
             #echo "arg ${i} = $1"
             local unshift=0
             case $1 in
+                --force | -f)
+                    FORCE=1
+                    ;;
                 --verbose | -vv)
                     VERBOSE=1
-                    echo "[verbose mode: on]"
+                    echo "[verbose mode: on]" 1>&2
                     ;;
                 --debug | -dbg)
                     DEBUG=1
-                    echo "[debug mode: on]"
+                    echo "[debug mode: on]" 1>&2
                     ;;
                 --sync-data)
                     SYNC_DATA=1
@@ -689,7 +707,7 @@ main() {
                     shift
                     SUBMIT=1
                     until [[ -n "$(echo "${1}" | sed -rn '/^\s*--/p')" || -z "${1}" ]]; do
-                        ((DEBUG)) && echo "submit looking at arg $1"
+                        ((DEBUG)) && echo "submit looking at arg $1" 1>&2
                         descriptor_filename="${1}"
                         shift
                     done
@@ -698,7 +716,7 @@ main() {
                 --script)
                     shift
                     until [[ -n "$(echo "${1}" | sed -rn '/^\s*--/p')" || -z "${1}" ]]; do
-                        ((DEBUG)) && echo "script looking at arg $1"
+                        ((DEBUG)) && echo "script looking at arg $1" 1>&2
                         script="${1}"
                         shift
                     done
@@ -708,7 +726,7 @@ main() {
                     shift
                     STATUS=1
                     until [[ -n "$(echo "${1}" | sed -rn '/^\s*--/p')" || -z "${1}" ]]; do
-                        ((DEBUG)) && echo "status looking at arg $1"
+                        ((DEBUG)) && echo "status looking at arg $1" 1>&2
                         id_status_is_desired_for="${1}"
                         shift
                     done

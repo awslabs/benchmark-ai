@@ -53,7 +53,7 @@
 (defn glean-script-info
   "Pulls out the script file information from the TOML and writes it to the \"payload\" map."
   [event]
-  (assoc-in event [:payload :scripts] (remove empty? (mapv (fn [[k filename]] {:dst (utils/generate-s3-path filename)}) (some-> event :payload :toml :contents :ml :script)))))
+  (assoc-in event [:payload :scripts] (remove empty? (mapv (fn [[k filename]] {:dst (utils/generate-s3-uri filename)}) (some-> event :payload :toml :contents :ml :script)))))
 
 (defn add-my-visited-entry
   "Adds the entry for this service at the end of the event's vector of
