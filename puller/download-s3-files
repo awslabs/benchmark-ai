@@ -5,7 +5,7 @@ BUCKET=$1
 declare -a HELP=("--help" "-h" "help")
 if [[ " ${HELP[*]} " == *" $BUCKET "* ]]; then
     echo "Usage: $0 <S3Bucket> <FILE1>:<FILE2>:..."
-    echo "  <Files> format: <S3Path>[,Permissions][,DOWNLOADPATH]"
+    echo "  <Files> format: <S3Path>[,Permissions][,DOWNLOADPATH][,unpack]"
     exit 0
 fi
 
@@ -26,6 +26,7 @@ for file in "${FILES[@]}"; do
     S3FILE=${PIECES[0]}
     PERMS=${PIECES[1]}
     TARGET=${PIECES[2]}
+    UNPACK=${PIECES[3]}
 
     echo "${file}"
 
@@ -47,5 +48,18 @@ for file in "${FILES[@]}"; do
     if [ "${PERMS}" != "" ]; then
         echo " ---> Updating permissions ${TARGET}[${PERMS}]" 
         chmod ${PERMS} ${TARGET}
+    fi
+
+    if [ "${UNPACK}" != "" ]; then
+        UNPACK_FOLDER=$(mktemp -d)
+        tar -pxvf ${TARGET} -C ${UNPACK_FOLDER}
+        rm ${TARGET}
+        mv ${UNPACK_FOLDER} ${TARGET}
+
+        if [ "${PERMS}" != "" ]; then
+            echo " ---> Updating permissions ${TARGET}[${PERMS}]"
+            chmod ${PERMS} ${TARGET}
+            chmod -R ${PERMS} ${TARGET}
+        fi
     fi
 done
