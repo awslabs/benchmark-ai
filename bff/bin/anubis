@@ -67,12 +67,12 @@ WATCH_PERIOD=5
 declare -r VERSION="0.1.0-481dad2"
 declare -r SERVICE_NAME="anubis-client"
 declare -r MY_SHA1=$(sha1sum "${0}" | awk '{print $1}')
-declare -r BAI_HOME=${HOME}/.bai
-declare -r BAI_HISTORY=${BAI_HOME}/history
-declare -r BAI_SCRIPT_STAGING=${BAI_HOME}/script_staging
-declare -r BAI_ACTION_IDS=${BAI_HOME}/action_ids
-declare -r BAI_DATABASE=${BAI_HOME}/db
-declare -r BAI_SERVICE_ENDPOINT_CONFIG=${BAI_HOME}/service_endpoint
+declare -r ANUBIS_HOME=${HOME}/.anubis
+declare -r ANUBIS_HISTORY=${ANUBIS_HOME}/history
+declare -r ANUBIS_SCRIPT_STAGING=${ANUBIS_HOME}/script_staging
+declare -r ANUBIS_ACTION_IDS=${ANUBIS_HOME}/action_ids
+declare -r ANUBIS_DATABASE=${ANUBIS_HOME}/db
+declare -r ANUBIS_SERVICE_ENDPOINT_CONFIG=${ANUBIS_HOME}/service_endpoint
 declare -r TSTAMP_FILENAME=latest_tstamp
 
 declare -r head_='^###.*begin.*anubis.*###$'
@@ -131,9 +131,9 @@ This is the command-line, client-side interface to the Bechmark AI service...
           --sync-version           : synchronized this tool with that of the service endpoint
           --sync-data              : clean local cached data and refetch from service
           --history                : lists recently returned <action id> : <descriptor path> : <date>
-          --register <hostname|IP and PORT of bai service> | Ex: bai.aws.amazon.com:7100
+          --register <hostname|IP and PORT of anubis service> | Ex: anubis.aws.amazon.com:7100
           --unregister             : clears service endpoint from configuration
-          --show-registered-service-endpoint : The hostname|IP:PORT of bai service you are using
+          --show-registered-service-endpoint : The hostname|IP:PORT of anubis service you are using
           --legend                 : displays quick legend of the emojis used
           --help                   : (this output)
 
@@ -182,12 +182,12 @@ check_tools() {
 }
 
 _setup() {
-    mkdir -p "${BAI_HOME}"
-    mkdir -p "${BAI_HOME}/db"
-    mkdir -p "${BAI_HOME}/script_staging"
-    touch "${BAI_HOME}/action_ids"
-    touch "${BAI_HOME}/history"
-    touch "${BAI_HOME}/service_endpoint"
+    mkdir -p "${ANUBIS_HOME}"
+    mkdir -p "${ANUBIS_HOME}/db"
+    mkdir -p "${ANUBIS_HOME}/script_staging"
+    touch "${ANUBIS_HOME}/action_ids"
+    touch "${ANUBIS_HOME}/history"
+    touch "${ANUBIS_HOME}/service_endpoint"
 }
 
 #---------------------------------------------------------
@@ -195,7 +195,7 @@ _setup() {
 #---------------------------------------------------------
 
 _construct_endpoint_URL() {
-    printf "http://%s" "$(cat "${BAI_SERVICE_ENDPOINT_CONFIG}")"
+    printf "http://%s" "$(cat "${ANUBIS_SERVICE_ENDPOINT_CONFIG}")"
 }
 
 get_client_id() {
@@ -216,16 +216,16 @@ register_service_endpoint() {
     local service_endpoint=${1:?"register() -> You MUST supply the service endpoint hostname|IP and PORT"}
     #TODO - Do basic sanity checking on format and then write it to file;
 
-    echo "${service_endpoint}" > "${BAI_SERVICE_ENDPOINT_CONFIG}"
+    echo "${service_endpoint}" > "${ANUBIS_SERVICE_ENDPOINT_CONFIG}"
     show_registered_service_endpoint
 }
 
 unregister_service_endpoint() {
-    cat /dev/null > "${BAI_SERVICE_ENDPOINT_CONFIG}"
+    cat /dev/null > "${ANUBIS_SERVICE_ENDPOINT_CONFIG}"
 }
 
 show_registered_service_endpoint() {
-    local current_service_endpoint=$(cat "${BAI_SERVICE_ENDPOINT_CONFIG}")
+    local current_service_endpoint=$(cat "${ANUBIS_SERVICE_ENDPOINT_CONFIG}")
     if [[ -n "${current_service_endpoint}" ]]; then
         printf "Current service endpoint is: [\033[01;33m%s\033[0m] \n\n" "$current_service_endpoint" >&2
         return 0
@@ -359,7 +359,7 @@ _prepare_script() {
     if [[ -e "${script}" ]]; then
         ((DEBUG)) && echo "Located ${script} "$([[ -d "${script}" ]] && echo -n "directory" ; [[ -f "${script}" ]] && echo -n "file")", building artifact..." 1>&2
         pushd "${script%/*}" >& /dev/null
-        artifact=${BAI_SCRIPT_STAGING}/_${script##*/}.tar
+        artifact=${ANUBIS_SCRIPT_STAGING}/_${script##*/}.tar
         tar cf "${artifact}" "${script##*/}"
         (( $? != 0 )) && popd && return 1
         artifact_hashname=$(sha1sum "${artifact}" | awk '{print $1}')
@@ -393,7 +393,7 @@ submit() {
         descriptor_filename=$(_write_descriptor "${descriptor_filename}")
     fi
     local script_filename=${2:-""}
-    local current_service_endpoint=$(cat "${BAI_SERVICE_ENDPOINT_CONFIG}" | tail -n 1)
+    local current_service_endpoint=$(cat "${ANUBIS_SERVICE_ENDPOINT_CONFIG}" | tail -n 1)
 
     if [ ! -f "${descriptor_filename}" ]; then echo "file [${descriptor_filename}], does not exist"; exit 1; fi
     if [[ -z "${current_service_endpoint}" ]]; then
@@ -428,7 +428,7 @@ submit() {
         ((VERBOSE || DEBUG)) && echo "${cmd}" 1>&2
 
         _print_status "${msg}"
-        [[ ! -d "${BAI_DATABASE}/$(get_client_id)" ]] && mkdir -p "${BAI_DATABASE}/$(get_client_id)"
+        [[ ! -d "${ANUBIS_DATABASE}/$(get_client_id)" ]] && mkdir -p "${ANUBIS_DATABASE}/$(get_client_id)"
 
         response=$(eval $cmd)
 
@@ -443,8 +443,8 @@ submit() {
         fi
 
         if [[ -n $(sed -rne '/[a-f0-9-]{8}-([a-f0-9-]{4}-){3}[a-f0-9-]{12}/p' <<<"${response}") ]]; then
-            [[ ! -d "${BAI_DATABASE}/$(get_client_id)/${response}" ]] && mkdir -p "${BAI_DATABASE}/$(get_client_id)/${response}"
-            echo "${response} : ${descriptor_filename} : $(date)" >>  "${BAI_ACTION_IDS}"
+            [[ ! -d "${ANUBIS_DATABASE}/$(get_client_id)/${response}" ]] && mkdir -p "${ANUBIS_DATABASE}/$(get_client_id)/${response}"
+            echo "${response} : ${descriptor_filename} : $(date)" >>  "${ANUBIS_ACTION_IDS}"
             echo "${response}"
         else
             printf '\033[01;31m[ERROR]\033[0m Submission was NOT successful - submission rejected by service:\n%s\n' "${response}"
@@ -458,14 +458,14 @@ submit() {
 
 #local db lookup
 use_last_action_id() {
-    local last_action_id=$(cat "${BAI_ACTION_IDS}" | tail -n 1 | awk '{print $1}')
+    local last_action_id=$(cat "${ANUBIS_ACTION_IDS}" | tail -n 1 | awk '{print $1}')
     current_action_id=${last_action_id}
     printf "%s" "$last_action_id"
 }
 
 get_latest_event_timestamp() {
     local action_id=${1:-$(use_last_action_id)}
-    local path=${BAI_DATABASE}/$(get_client_id)"/"${action_id}
+    local path=${ANUBIS_DATABASE}/$(get_client_id)"/"${action_id}
     local tstamp_file=${path}/${TSTAMP_FILENAME}
     local tstamp_file_size=$([[ -f "${tstamp_file}" ]] && stat "${tstamp_file}" | grep Size | awk '{print $2}' || echo -n "0")
 
@@ -482,7 +482,7 @@ _read_local_submission_status() {
     ((DEBUG)) && echo "_read_local_submission_status for action: ${action_id}" 1>&2
     current_action_id=$action_id
 
-    local datafile=${BAI_DATABASE}/$(get_client_id)"/"${action_id}/data
+    local datafile=${ANUBIS_DATABASE}/$(get_client_id)"/"${action_id}/data
 
     if [[ -f "${datafile}" ]]; then
         jq --compact-output '{src: .visited[-1].svc , id: .message_id[0:8], msg: .message, tstamp: .visited[-1].tstamp}' "${datafile}" | while read line; do _as_status_line $line; done;
@@ -497,16 +497,16 @@ _read_remote_submission_status() {
     current_action_id=$action_id
 
     local path=$(get_client_id)"/"${action_id}
-    local current_service_endpoint=$(cat "${BAI_SERVICE_ENDPOINT_CONFIG}")
+    local current_service_endpoint=$(cat "${ANUBIS_SERVICE_ENDPOINT_CONFIG}")
     local cmd
 
-    ((VERBOSE)) && echo "database = ${BAI_DATABASE}"
+    ((VERBOSE)) && echo "database = ${ANUBIS_DATABASE}"
 
     local since_tstamp=$(get_latest_event_timestamp "${action_id}")
 
     cmd="curl -s -X GET -H Content-Type: application/json http://"${current_service_endpoint}"/api/job/"${path}?since="${since_tstamp}"
     ((VERBOSE)) && echo ${cmd}
-    cat <<EOF | tee $( ((since_tstamp > 0)) && echo -n "-a") ${BAI_DATABASE}/${path}/data 2> /dev/null | jq --compact-output '{src: .visited[-1].svc , id: .message_id[0:8], msg: .message, tstamp: .visited[-1].tstamp} +{"new" : "1"}' | while read line; do _as_status_line $line; done;
+    cat <<EOF | tee $( ((since_tstamp > 0)) && echo -n "-a") ${ANUBIS_DATABASE}/${path}/data 2> /dev/null | jq --compact-output '{src: .visited[-1].svc , id: .message_id[0:8], msg: .message, tstamp: .visited[-1].tstamp} +{"new" : "1"}' | while read line; do _as_status_line $line; done;
 $(eval ${cmd} | jq '.[]')
 EOF
 }
@@ -526,7 +526,7 @@ get_submission_status() {
 
     if ((SYNC_DATA)); then
         since_tstamp=0
-        [[ -f "${BAI_DATABASE}/$(get_client_id)/${action_id}/data" ]] && mv "${BAI_DATABASE}/$(get_client_id)/${action_id}/data"{,.bkup}
+        [[ -f "${ANUBIS_DATABASE}/$(get_client_id)/${action_id}/data" ]] && mv "${ANUBIS_DATABASE}/$(get_client_id)/${action_id}/data"{,.bkup}
     else
         _read_local_submission_status "${action_id}"
     fi
@@ -577,7 +577,7 @@ _as_status_line() {
     _print_status "$(sed 's/^.\(.*\).$/\1/' <<<"$msg")" "$(sed 's/^.\(.*\).$/\1/' <<<"$src")" "$(sed 's/^.\(.*\).$/\1/' <<<"$id")" "$(sed 's/^.\(.*\).$/\1/' <<<"$new")"
 
     local tstamp=$(jq --compact-output '.tstamp' <<<"$line")
-    echo "$tstamp" > "${BAI_DATABASE}/$(get_client_id)/${current_action_id}/${TSTAMP_FILENAME}"
+    echo "$tstamp" > "${ANUBIS_DATABASE}/$(get_client_id)/${current_action_id}/${TSTAMP_FILENAME}"
 }
 
 #command event
@@ -591,7 +591,7 @@ get_results() {
 #command event
 abort_submission() {
     local action_id=${1:?"abort_submission() -> You MUST provide the action_id returned by the initial submission"}
-    local current_service_endpoint=$(cat "${BAI_SERVICE_ENDPOINT_CONFIG}" | tail -n 1)
+    local current_service_endpoint=$(cat "${ANUBIS_SERVICE_ENDPOINT_CONFIG}" | tail -n 1)
     shift
     ((VERBOSE)) && echo "abort submisson ${action_id}"
 
@@ -625,7 +625,7 @@ abort_submission() {
 inspect() {
     local message_id=${1:?"You must provide the message id that you want to inspect"}
     local action_id=${2:-$(use_last_action_id)}
-    local datafile=${BAI_DATABASE}/$(get_client_id)"/"${action_id}/data
+    local datafile=${ANUBIS_DATABASE}/$(get_client_id)"/"${action_id}/data
     /usr/bin/env bash <<EOF
 jq 'select(.message_id|test("${message_id}-"))' $datafile
 EOF
@@ -634,7 +634,7 @@ EOF
 show_descriptor() {
     local action_id=${1:-$(use_last_action_id)}
     ((VERBOSE)) && echo "show_descriptor [toml] for action: ${action_id}"
-    local datafile=${BAI_DATABASE}/$(get_client_id)"/"${action_id}/data
+    local datafile=${ANUBIS_DATABASE}/$(get_client_id)"/"${action_id}/data
 
     if [[ ! -f "${datafile}" ]]; then
         printf "
@@ -654,14 +654,14 @@ show_descriptor() {
 _write_descriptor() {
     local action_id=${1:-$(use_last_action_id)}
     ((VERBOSE)) && echo "write_descriptor [toml] for action: ${action_id}"
-    local datafile=${BAI_DATABASE}/$(get_client_id)"/"${action_id}/data
+    local datafile=${ANUBIS_DATABASE}/$(get_client_id)"/"${action_id}/data
 
     jq --compact-output '.payload.toml.doc' <(sed -n '/^{/,/^}/p; /^}/q' "${datafile}") | sed 's/^.\(.*\).$/\1/' | base64 -d 2> /dev/null >> "${datafile%/*}"/descriptor.toml
     printf "${datafile%/*}"/descriptor.toml
 }
 
 get_history() {
-    cat "${BAI_ACTION_IDS}"
+    cat "${ANUBIS_ACTION_IDS}"
 }
 
 

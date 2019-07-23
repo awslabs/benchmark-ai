@@ -4,8 +4,6 @@
 
 The Anubis client allows you to interact with Anubis system to submit Anubis benchmark descriptor files, watch progress and fetch results.  The surface area of this client is small to keep things simple and easy.
 
-[[Download](https://w.amazon.com/bin/download/MXNet_Berlin/WebHome/anubis)]
-
 The client speaks over HTTP to the Anubis "service_endpoint".  The Anubis tool itself has a RESTful-ish API that the client adheres to.
 
 First thing, download the Anubis client from here.
@@ -20,13 +18,9 @@ Second thing: The prerequisites.
 
   (This is an executable script so don't forget to chmod it appropriately.  We recommend putting this program in your $PATH)
 
-
-
 ```shell
 %> chmod 755 anubis
 ```
-
-
 
 Next setup your environment.  As mentioned, the Anubis client uses [Conda](https://docs.conda.io/en/latest/miniconda.html) to provide a suitable and predictable environment in which to run.  You only have to do the following command once (per new release).
 
@@ -35,8 +29,6 @@ Next setup your environment.  As mentioned, the Anubis client uses [Conda](https
 ```
 
 At this point Conda will initialize and begin pulling down the necessary tools for the environment.  This may take a few moments as it fetches and installs these packages.
-
-
 
 Now let's take a look at the help options.
 
