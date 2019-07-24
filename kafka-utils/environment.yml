@@ -10,6 +10,8 @@ dependencies:
   - timeout-decorator
   - pip
   - python-kubernetes 9.0.*
+  - python-crontab >= 2.3
+  - addict 2.2.*
   - pip:
       - ConfigArgParse
       - dataclasses-json==0.2.7

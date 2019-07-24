@@ -4,7 +4,8 @@ from dataclasses import dataclass
 
 from typing import Dict, List
 from crontab import CronSlices
-from util import ec2_instance_info
+
+from bai_kafka_utils.executors.util import ec2_instance_info
 
 
 @dataclass

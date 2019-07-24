@@ -3,7 +3,8 @@ import textwrap
 
 import toml
 import pytest
-from bai_kafka_utils.executors.descriptor import DescriptorConfig, Descriptor
+from bai_kafka_utils.executors.descriptor import Descriptor, DescriptorConfig
+
 from unittest.mock import create_autospec
 
 from bai_kafka_utils.events import DataSet, BenchmarkDoc, FetcherPayload, BenchmarkEvent
