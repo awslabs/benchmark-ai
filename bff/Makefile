@@ -352,6 +352,7 @@ service.yml: FORCE
 	@sed -e 's|@@BFF_SECURITY_GROUP_ID@@|$(shell PATH=$(PATH) kubectl get configmaps  outputs-infrastructure --output json | PATH=$(PATH) jq '.data.bff_security_group_id')|g' \
 	     -e 's|@@PROJECT@@|$(PROJECT)|g' \
 	     -e 's|@@ENVIRONMENT@@|$(ENVIRONMENT)|g' \
+	     -e 's|@@JMX_PORT@@|$(JMX_PORT)|g' \
 	     -e 's|@@SVC_PORT@@|$(SVC_PORT)|g' $(SERVICE_TEMPLATE) > $(shell PATH=$(PATH) sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(SERVICE_TEMPLATE))
 
 deploy: _deploy_venv deploy.yml service.yml
