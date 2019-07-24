@@ -1,7 +1,7 @@
 import logging
 
 from bai_kafka_utils.cmd_callback import KafkaCommandCallback
-from bai_kafka_utils.execution_callback import ExecutorEventHandler
+from bai_kafka_utils.executors.execution_callback import ExecutorEventHandler
 from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
 from bai_kafka_utils.kafka_service import KafkaService, KafkaServiceConfig
 from bai_kafka_utils.utils import get_pod_name

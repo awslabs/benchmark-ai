@@ -1,0 +1,567 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: executor
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: configmap-execution
+  namespace: default
+rules:
+- apiGroups:
+  - ""
+  - batch
+  resources:
+  - configmaps
+  verbs:
+  - create
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cronjob-execution
+  namespace: default
+rules:
+- apiGroups:
+  - ""
+  - batch
+  resources:
+  - cronjobs
+  verbs:
+  - create
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: job-execution
+  namespace: default
+rules:
+- apiGroups:
+  - ""
+  - batch
+  resources:
+  - jobs
+  verbs:
+  - create
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: delete-resources
+rules:
+- apiGroups:
+  - ""
+  - batch
+  - kubeflow.org
+  - rbac.authorization.k8s.io
+  resources:
+  - pods
+  - jobs
+  - cronjobs
+  - mpijobs
+  - configmaps
+  - rolebindings
+  verbs:
+  - list
+  - get
+  - update
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: mpijob-execution
+rules:
+- apiGroups:
+  - ""
+  - batch
+  - kubeflow.org
+  - rbac.authorization.k8s.io
+  resources:
+  - mpijobs
+  - rolebindings
+  verbs:
+  - create
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: executor-configmap-creation-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: configmap-execution
+subjects:
+- kind: ServiceAccount
+  name: executor
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: executor-cronjob-creation-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cronjob-execution
+subjects:
+- kind: ServiceAccount
+  name: executor
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: executor-job-creation-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: job-execution
+subjects:
+- kind: ServiceAccount
+  name: executor
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: executor-mpijob-creation-binding
+  namespace: null
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: mpijob-execution
+subjects:
+- kind: ServiceAccount
+  name: executor
+  namespace: null
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: executor-resource-deletion-binding
+  namespace: null
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: delete-resources
+subjects:
+- kind: ServiceAccount
+  name: executor
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: metrics-pusher-pod-status-binding
+roleRef:
+  apiGroup: ""
+  kind: Role
+  name: pod-status
+subjects:
+- kind: ServiceAccount
+  name: executor
+  namespace: default
+---
+apiVersion: v1
+data:
+  big-file: Huge file
+kind: ConfigMap
+metadata:
+  name: data
+  namespace: default
+---
+apiVersion: v1
+data:
+  consumer_group_id: executor
+  consumer_topic: BAI_APP_FETCHER
+  producer_topic: BAI_APP_EXECUTOR
+  status_topic: BAI_APP_STATUS
+  suppress_job_affinity: "true"
+  transpiler_metrics_pusher_docker_image: benchmarkai/metrics-pusher:d6446b4
+  transpiler_puller_docker_image: benchmarkai/puller:d6446b4
+kind: ConfigMap
+metadata:
+  annotations: {}
+  labels: {}
+  name: executor
+---
+apiVersion: v1
+data:
+  numPartitions: "1"
+  replicationFactor: "1"
+kind: ConfigMap
+metadata:
+  name: kafka
+  namespace: default
+---
+apiVersion: v1
+data:
+  access-key-id: mock-key
+  cli-startup: "#!/bin/sh  \nexport S3_ENDPOINT=\"--endpoint-url=$S3_ENDPOINT_URL\"\n\necho
+    \"Waiting for S3\"\ntimeout -t 15 sh -c \"until aws s3 ls $S3_ENDPOINT ; do echo
+    .; sleep 1; done\"\necho \"S3 is there\"\nfor bucket in $BUCKETS\ndo\n  echo \"Creating
+    $bucket\"\n  aws s3 mb s3://$bucket $S3_ENDPOINT\ndone\necho \"Done\"\naws s3
+    ls $S3_ENDPOINT\nsleep 365d"
+  s3-startup: |-
+    #!/bin/sh
+    #Avoid copy pasting
+    export ENDPOINT=$(hostname -f)
+    /usr/src/app/docker-entrypoint.sh npm start
+  secret-access-key: mock-access-key
+kind: ConfigMap
+metadata:
+  name: s3
+  namespace: default
+---
+apiVersion: v1
+data:
+  connect: zookeeper-0.zookeeper-service.default.svc.cluster.local:2181
+kind: ConfigMap
+metadata:
+  name: zookeeper
+  namespace: default
+---
+apiVersion: v1
+data:
+  availability_zones: '{"TEST-ZONE-1":"test-zone"}'
+  data_pull_s3: data_pull
+  es_endpoint: http://some-es-endpoint
+  msk_bootstrap_brokers: kafka-0.kafka-service.default.svc.cluster.local:9092
+  s3_endpoint: http://s3-0.s3-service.default.svc.cluster.local:8000
+kind: ConfigMap
+metadata:
+  name: outputs-infrastructure
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    run: dataserver
+  name: dataserver
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+  selector:
+    run: dataserver
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: kafka
+  name: kafka-service
+spec:
+  clusterIP: None
+  ports:
+  - name: server
+    port: 9092
+  selector:
+    app: kafka
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: s3
+  name: s3-service
+spec:
+  clusterIP: None
+  ports:
+  - name: server
+    port: 8000
+  selector:
+    app: s3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: zookeeper
+  name: zookeeper-service
+spec:
+  clusterIP: None
+  ports:
+  - name: server
+    port: 2888
+  - name: leader-election
+    port: 3888
+  selector:
+    app: zookeeper
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dataserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: dataserver
+  template:
+    metadata:
+      labels:
+        run: dataserver
+    spec:
+      containers:
+      - image: trinitronx/python-simplehttpserver
+        name: http-server
+        ports:
+        - containerPort: 8080
+          volumes: null
+        volumeMounts:
+        - mountPath: /var/www
+          name: data-volume
+          readOnly: true
+      volumes:
+      - configMap:
+          defaultMode: 448
+          name: data
+        name: data-volume
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: benchmark-ai
+  name: executor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: benchmark-ai
+  template:
+    metadata:
+      labels:
+        app: benchmark-ai
+        service: executor
+    spec:
+      containers:
+      - env:
+        - name: AVAILABILITY_ZONES
+          valueFrom:
+            configMapKeyRef:
+              key: availability_zones
+              name: outputs-infrastructure
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          valueFrom:
+            configMapKeyRef:
+              key: msk_bootstrap_brokers
+              name: outputs-infrastructure
+        - name: CONSUMER_GROUP_ID
+          valueFrom:
+            configMapKeyRef:
+              key: consumer_group_id
+              name: executor
+        - name: CONSUMER_TOPIC
+          valueFrom:
+            configMapKeyRef:
+              key: consumer_topic
+              name: executor
+        - name: PRODUCER_TOPIC
+          valueFrom:
+            configMapKeyRef:
+              key: producer_topic
+              name: executor
+        - name: STATUS_TOPIC
+          valueFrom:
+            configMapKeyRef:
+              key: status_topic
+              name: executor
+        - name: TRANSPILER_PULLER_DOCKER_IMAGE
+          valueFrom:
+            configMapKeyRef:
+              key: transpiler_puller_docker_image
+              name: executor
+        - name: TRANSPILER_METRICS_PUSHER_DOCKER_IMAGE
+          valueFrom:
+            configMapKeyRef:
+              key: transpiler_metrics_pusher_docker_image
+              name: executor
+        - name: SUPPRESS_JOB_AFFINITY
+          valueFrom:
+            configMapKeyRef:
+              key: suppress_job_affinity
+              name: executor
+        - name: LOGGING_LEVEL
+          value: INFO
+        - name: KUBECTL
+          value: /kubectl/kubectl
+        image: benchmarkai/executor:d6446b4
+        imagePullPolicy: Never
+        name: executor
+        volumeMounts:
+        - mountPath: /kubectl
+          name: kubectl
+      initContainers:
+      - env:
+        - name: TARGET_DIR
+          value: /tmp/kubectl
+        image: mpioperator/kubectl-delivery:0.1.0
+        name: kubectl-delivery
+        volumeMounts:
+        - mountPath: /tmp
+          name: kubectl
+      restartPolicy: Always
+      serviceAccountName: executor
+      volumes:
+      - emptyDir: {}
+        name: kubectl
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka
+spec:
+  podManagementPolicy: Parallel
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  serviceName: kafka-service
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      containers:
+      - env:
+        - name: KAFKA_ZOOKEEPER_CONNECT
+          valueFrom:
+            configMapKeyRef:
+              key: connect
+              name: zookeeper
+        - name: KAFKA_ADVERTISED_LISTENERS
+          value: PLAINTEXT://kafka-0.kafka-service.default.svc.cluster.local:9092
+        - name: KAFKA_LISTENERS
+          value: PLAINTEXT://:9092
+        - name: KAFKA_BROKER_ID
+          value: "1"
+        - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+          value: "1"
+        - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
+          value: "false"
+        image: confluentinc/cp-kafka
+        imagePullPolicy: Always
+        name: kubernetes-kafka
+  updateStrategy:
+    type: RollingUpdate
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: s3
+spec:
+  podManagementPolicy: Parallel
+  replicas: 1
+  selector:
+    matchLabels:
+      app: s3
+  serviceName: s3-service
+  template:
+    metadata:
+      labels:
+        app: s3
+    spec:
+      containers:
+      - command:
+        - /bin/entrypoint.sh
+        env:
+        - name: S3BACKEND
+          value: mem
+        - name: SCALITY_ACCESS_KEY_ID
+          valueFrom:
+            configMapKeyRef:
+              key: access-key-id
+              name: s3
+        - name: SCALITY_SECRET_ACCESS_KEY
+          valueFrom:
+            configMapKeyRef:
+              key: secret-access-key
+              name: s3
+        image: scality/s3server
+        imagePullPolicy: Always
+        name: kubernetes-s3
+        volumeMounts:
+        - mountPath: /bin/entrypoint.sh
+          name: entrypoints-volume
+          readOnly: true
+          subPath: s3-startup
+      - command:
+        - /bin/entrypoint.sh
+        env:
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            configMapKeyRef:
+              key: access-key-id
+              name: s3
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            configMapKeyRef:
+              key: secret-access-key
+              name: s3
+        - name: S3_ENDPOINT_URL
+          valueFrom:
+            configMapKeyRef:
+              key: s3_endpoint
+              name: outputs-infrastructure
+        - name: BUCKETS
+          value: data-pull user-bucket scripts-exchange
+        image: mesosphere/aws-cli
+        imagePullPolicy: Always
+        name: aws-cli
+        volumeMounts:
+        - mountPath: /bin/entrypoint.sh
+          name: entrypoints-volume
+          readOnly: true
+          subPath: cli-startup
+      volumes:
+      - configMap:
+          defaultMode: 448
+          name: s3
+        name: entrypoints-volume
+  updateStrategy:
+    type: RollingUpdate
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: zookeeper
+spec:
+  podManagementPolicy: Parallel
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zookeeper
+  serviceName: zookeeper-service
+  template:
+    metadata:
+      labels:
+        app: zookeeper
+    spec:
+      containers:
+      - env:
+        - name: ZOOKEEPER_CLIENT_PORT
+          value: "2181"
+        image: confluentinc/cp-zookeeper
+        imagePullPolicy: Always
+        name: kubernetes-zookeeper
+  updateStrategy:
+    type: RollingUpdate
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: zookeeper
+  name: client-zookeeper
+spec:
+  containers:
+  - image: zookeeper
+    name: zookeeper

@@ -3,10 +3,10 @@ import os
 from unittest import mock
 
 import pytest
-
+from bai_kafka_utils.executors.descriptor import DescriptorConfig
 
 from transpiler.config import BaiConfig, EnvironmentInfo
-from transpiler.descriptor import DescriptorConfig
+
 from bai_kafka_utils.kafka_service import KafkaServiceConfig, DEFAULT_NUM_PARTITIONS, DEFAULT_REPLICATION_FACTOR
 from executor.config import ExecutorConfig
 

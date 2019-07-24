@@ -1,9 +1,10 @@
 import json
 import os
 import configargparse
+from bai_kafka_utils.executors.descriptor import DescriptorConfig
 
 from transpiler.config import BaiConfig, EnvironmentInfo
-from transpiler.descriptor import DescriptorConfig
+
 from executor.config import ExecutorConfig
 
 

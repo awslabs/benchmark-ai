@@ -3,11 +3,11 @@ import textwrap
 
 import toml
 import pytest
+from bai_kafka_utils.executors.descriptor import DescriptorConfig, Descriptor
 from unittest.mock import create_autospec
 
 from bai_kafka_utils.events import DataSet, BenchmarkDoc, FetcherPayload, BenchmarkEvent
 from bai_kafka_utils.kafka_service import KafkaServiceConfig, KafkaService
-from transpiler.descriptor import Descriptor, DescriptorConfig
 from transpiler.bai_knowledge import EnvironmentInfo
 from transpiler.config import BaiConfig
 

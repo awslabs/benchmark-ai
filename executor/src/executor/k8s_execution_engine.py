@@ -1,13 +1,15 @@
 import logging
 
 from bai_kafka_utils.events import FetcherBenchmarkEvent, BenchmarkJob
-from bai_kafka_utils.execution_callback import ExecutionEngine, ExecutionEngineException
+from bai_kafka_utils.executors.descriptor import DescriptorError
+from bai_kafka_utils.executors.execution_callback import ExecutionEngine, ExecutionEngineException
+
 from bai_kafka_utils.utils import DEFAULT_ENCODING
 from subprocess import CalledProcessError, check_output
 
 from executor.config import ExecutorConfig
 from transpiler.bai_knowledge import create_job_yaml_spec
-from transpiler.descriptor import DescriptorError
+
 
 logger = logging.getLogger(__name__)
 

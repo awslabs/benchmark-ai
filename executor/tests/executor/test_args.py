@@ -1,5 +1,7 @@
+from bai_kafka_utils.executors.descriptor import DescriptorConfig
+
 from transpiler.config import BaiConfig, EnvironmentInfo
-from transpiler.descriptor import DescriptorConfig
+
 from executor.config import ExecutorConfig
 from executor.args import get_args, create_bai_config, create_descriptor_config, create_executor_config
 

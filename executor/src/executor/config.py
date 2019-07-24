@@ -1,8 +1,9 @@
 from dataclasses import dataclass, field
+
+from bai_kafka_utils.executors.descriptor import DescriptorConfig
 from typing import List
 
 from transpiler.config import BaiConfig, EnvironmentInfo
-from transpiler.descriptor import DescriptorConfig
 
 
 @dataclass

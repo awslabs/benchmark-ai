@@ -1,6 +1,6 @@
 import pytest
+from bai_kafka_utils.executors.descriptor import DescriptorError, Descriptor
 
-from transpiler.descriptor import Descriptor, DescriptorError
 import util.ec2_instance_info as ec2_instance_info
 
 

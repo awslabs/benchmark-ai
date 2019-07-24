@@ -1,6 +1,7 @@
 import pytest
 from bai_kafka_utils.events import FetcherBenchmarkEvent, BenchmarkDoc, FetcherPayload, create_from_object, BenchmarkJob
-from bai_kafka_utils.execution_callback import ExecutionEngineException
+from bai_kafka_utils.executors.descriptor import DescriptorError
+from bai_kafka_utils.executors.execution_callback import ExecutionEngineException
 from bai_kafka_utils.utils import DEFAULT_ENCODING
 from pytest import fixture
 from subprocess import CalledProcessError
@@ -8,7 +9,7 @@ from subprocess import CalledProcessError
 import executor
 from executor.config import ExecutorConfig
 from executor.k8s_execution_engine import K8SExecutionEngine
-from transpiler.descriptor import DescriptorError
+
 
 SOME_YAML = "yaml"
 SOME_YAML_ENCODED = SOME_YAML.encode(DEFAULT_ENCODING)
