@@ -102,3 +102,8 @@ output "sagemaker_output_s3" {
   description = "SageMaker role name"
   value = "${aws_s3_bucket.sagemaker-output.id}"
 }
+
+output "sagemaker_nodata_s3" {
+  description = "SageMaker dummy data set"
+  value = "s3://${aws_s3_bucket.data-pull.id}/${aws_s3_bucket_object.nodata.id}"
+}
