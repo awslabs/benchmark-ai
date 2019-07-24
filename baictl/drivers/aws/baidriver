@@ -166,7 +166,7 @@ _install_kubernetes_dashboard(){
 }
 
 _install_prometheus(){
-    ${helm} upgrade --install prometheus-operator-1 -f ${k8s_deploy_dir}/prometheus-operator.yaml stable/prometheus-operator || return 1
+    ${helm} upgrade --install prometheus-operator-1 -f ${k8s_deploy_dir}/prometheus-operator.yaml --set alertmanager.alertmanagerSpec.logFormat=logfmt --force stable/prometheus-operator || return 1
 
     # The prometheus node-exporter does not support GPU metrics by default. Thus, adding it separately
     # This also provides per-pod metrics. But this requires that a pod actually allocates a gpu. See
