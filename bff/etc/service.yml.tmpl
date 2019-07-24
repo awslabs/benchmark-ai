@@ -11,6 +11,11 @@ spec:
     env: @@ENVIRONMENT@@
   ports:
   - protocol: TCP
+    name: http
     port: 80
     targetPort: @@SVC_PORT@@
+  - protocol: TCP
+    name: jmx
+    port: @@JMX_PORT@@
+    targetPort: @@JMX_PORT@@
   type: LoadBalancer
