@@ -12,6 +12,7 @@
             [bai-bff.services :refer [RunService]]
             [bai-bff.utils.parsers :refer [parse-long]]
             [bai-bff.utils.utils :as utils]
+            [bai-bff.utils.log-index :as log-index]
             [environ.core :refer [env]]
             [amazonica.aws.s3 :as s3]
             [amazonica.aws.s3transfer :as s3tfr]
@@ -136,7 +137,8 @@
 
 (defn get-job-results [client-id action-id]
   (log/trace "get-job-results - client-id ["clientid"] action-id ["action-id"]")
-  (LogIndexQuerier. (env :es-endpoint) 9200 "kubernetes.labels.pod-template-hash" action-id 100)
+  #_(LogIndexQuerier. (env :es-endpoint) 9200 "kubernetes.labels.pod-template-hash" action-id 100)
+  (log-index/fetch-logs client-id action-id)
   )
 
 ;;----------------------------------------------------------
