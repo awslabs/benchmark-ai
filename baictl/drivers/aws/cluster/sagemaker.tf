@@ -142,3 +142,10 @@ resource "aws_iam_role_policy_attachment" "sagemaker-scripts-attachment" {
   policy_arn = "${aws_iam_policy.script-exchange-read.arn}"
   role       = "${aws_iam_role.kube2iam-sagemaker-executor-role.name}"
 }
+
+#Dummy object to serve as no-data for SageMaker
+resource "aws_s3_bucket_object" "nodata" {
+  bucket = "${aws_s3_bucket.data-pull.id}"
+  key = "no-data"
+  content = "no data"
+}
