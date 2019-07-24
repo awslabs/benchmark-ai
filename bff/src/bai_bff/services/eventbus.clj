@@ -136,10 +136,8 @@
     (filterv #(< since-tstamp (:tstamp (peek (:visited %)))) (get-in @status-db [client-key action-key] {}))))
 
 (defn get-job-results [client-id action-id]
-  (log/trace "get-job-results - client-id ["clientid"] action-id ["action-id"]")
-  #_(LogIndexQuerier. (env :es-endpoint) 9200 "kubernetes.labels.pod-template-hash" action-id 100)
-  (log-index/fetch-logs client-id action-id)
-  )
+  (log/trace "get-job-results - client-id ["client-id"] action-id ["action-id"]")
+  (log-index/fetch-logs client-id action-id))
 
 ;;----------------------------------------------------------
 ;; Scripts Persistence
