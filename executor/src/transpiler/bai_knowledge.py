@@ -5,13 +5,13 @@ import shlex
 from dataclasses import dataclass
 
 from bai_kafka_utils.events import DataSet, BenchmarkEvent
+from bai_kafka_utils.executors.descriptor import DescriptorError, Descriptor
 from ruamel import yaml
 from typing import List, Dict
 
 from executor import SERVICE_NAME
 from executor.config import ExecutorConfig
 from transpiler.config import BaiConfig, BaiDataSource, EnvironmentInfo
-from transpiler.descriptor import Descriptor, DescriptorError
 from transpiler.kubernetes_spec_logic import ConfigTemplate, VolumeMount, Volume, EmptyDirVolumeSource
 
 BENCHMARK_CONTAINER = "benchmark"

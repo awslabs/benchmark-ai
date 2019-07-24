@@ -1,13 +1,14 @@
 import random
 
 import pytest
+from bai_kafka_utils.executors.descriptor import DescriptorError, Descriptor
 from unittest.mock import create_autospec
 
 from pytest import fixture
 
 from transpiler.bai_knowledge import create_bai_k8s_builder, create_bai_data_sources, BaiKubernetesObjectBuilder
 from transpiler.config import EnvironmentInfo
-from transpiler.descriptor import Descriptor, DescriptorError
+
 
 WHITELISTED_ZONE = "us-east-1a"
 

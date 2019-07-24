@@ -1,8 +1,9 @@
 import pytest
 
 from bai_kafka_utils.events import DataSet
+from bai_kafka_utils.executors.descriptor import DescriptorError
+
 from transpiler.config import BaiDataSource
-from transpiler.descriptor import DescriptorError
 
 
 def test_bai_data_source_invalid_src():

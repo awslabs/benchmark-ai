@@ -2,9 +2,8 @@ from dataclasses import dataclass
 from urllib.parse import urlparse
 
 from bai_kafka_utils.events import DataSet
+from bai_kafka_utils.executors.descriptor import DescriptorError
 from typing import Dict
-
-from transpiler.descriptor import DescriptorError
 
 
 @dataclass

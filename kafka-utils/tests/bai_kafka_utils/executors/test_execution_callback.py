@@ -14,7 +14,7 @@ from bai_kafka_utils.events import (
     ExecutorPayload,
     Status,
 )
-from bai_kafka_utils.execution_callback import ExecutorEventHandler, ExecutionEngine, ExecutionEngineException
+from bai_kafka_utils.executors.execution_callback import ExecutorEventHandler, ExecutionEngine, ExecutionEngineException
 from bai_kafka_utils.kafka_service import KafkaService, KafkaServiceCallbackException
 
 JOB_ID = "ID"
