@@ -16,8 +16,6 @@ LINT = flake8
 FORMAT = black
 FORMAT_FLAGS = --line-length=120
 
-.DEFAULT_GOAL := default
-
 BENCHMARK_DIR ?= ..
 
 clean:

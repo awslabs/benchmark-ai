@@ -123,6 +123,7 @@ package: build-deploy-container
 publish: publish-deploy-container
 
 all: build test package #publish #deploy
+default: compile
 
 show-vars:
 	@echo "----------------------------------"
