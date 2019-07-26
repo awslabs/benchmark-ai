@@ -14,6 +14,8 @@ spec:
       labels:
         app: benchmark-ai
         service: sm-executor
+      annotations:
+        iam.amazonaws.com/role: sagemaker-executor-role
     spec:
       affinity:
         podAntiAffinity:
@@ -54,6 +56,26 @@ spec:
               configMapKeyRef:
                 name: sm-executor
                 key: status_topic
+          - name: SAGEMAKER_OUTPUT_BUCKET
+            valueFrom:
+              configMapKeyRef:
+                name: outputs-infrastructure
+                key: sagemaker_output_s3
+          - name: SAGEMAKER_NODATASET
+            valueFrom:
+              configMapKeyRef:
+                name: outputs-infrastructure
+                key: sagemaker_nodata_s3
+          - name: SAGEMAKER_ROLE
+            valueFrom:
+              configMapKeyRef:
+                name: outputs-infrastructure
+                key: sagemaker_role_name
+          - name: AWS_DEFAULT_REGION
+            valueFrom:
+              configMapKeyRef:
+                key: region
+                name: outputs-infrastructure
           - name: LOGGING_LEVEL
             value: "INFO"
       nodeSelector:
