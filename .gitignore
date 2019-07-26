@@ -112,3 +112,6 @@ venv.bak/
 .vscode
 
 *~
+
+#k8s deployment files
+*deploy.yml
