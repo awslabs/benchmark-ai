@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env bash -x
 
 conda_usage() {
     printf "
@@ -585,6 +585,7 @@ _as_status_line() {
 #command event
 get_results() {
     local action_id=${1:?"get_results() -> You MUST provide the action_id returned by the initial submission"}
+    local current_service_endpoint=$(cat "${ANUBIS_SERVICE_ENDPOINT_CONFIG}" | tail -n 1)
     ((VERBOSE)) && echo "get_results ${action_id}" >&2
 
     local cmd
