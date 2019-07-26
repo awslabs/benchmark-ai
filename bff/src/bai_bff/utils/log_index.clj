@@ -10,7 +10,7 @@
 (defn fetch-logs [client-id action-id]
   ;; performs a term query using a convenience function
   (let [conn (es/connect [[(env :es-endpoint) 443]] {"cluster.name" "logs"})
-        res  (esd/search conn "kubernetes.la*" "fluentd" :query {:match {:kubernetes.labels.action-id action-id}} :sort [{(keyword "@timestamp") {:order "asc"}}])
+        res  (esd/search conn "logstash*" "fluentd" :query {:match {:kubernetes.labels.action-id action-id}} :sort [{(keyword "@timestamp") {:order "asc"}}])
         n    (esrsp/total-hits res)
         hits (esrsp/hits-from res)]
     (log/debug (format "Total hits: %d" n))
