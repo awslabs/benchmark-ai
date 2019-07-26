@@ -108,6 +108,15 @@ resource "aws_iam_role_policy" "sagemaker-can-pass-job-policy" {
           "iam:PassedToService": "sagemaker.amazonaws.com"
         }
       }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iam:GetRole"
+      ],
+      "Resource": [
+        "${aws_iam_role.sagemaker-role.arn}"
+      ]
     }
   ]
 }
@@ -140,6 +149,11 @@ EOF
 # Access user scripts - read only
 resource "aws_iam_role_policy_attachment" "sagemaker-scripts-attachment" {
   policy_arn = "${aws_iam_policy.script-exchange-read.arn}"
+  role       = "${aws_iam_role.kube2iam-sagemaker-executor-role.name}"
+}
+
+resource "aws_iam_role_policy_attachment" "sagemaker-output-kube2iam-attachment" {
+  policy_arn = "${aws_iam_policy.sagemaker-output-policy.arn}"
   role       = "${aws_iam_role.kube2iam-sagemaker-executor-role.name}"
 }
 
