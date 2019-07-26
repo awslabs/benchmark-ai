@@ -43,7 +43,19 @@ class Descriptor:
         self.distributed = "distributed" in descriptor_data["hardware"]
         distributed_data = descriptor_data["hardware"].get("distributed", {})
         self.num_instances = distributed_data.get("num_instances", 1)
+        processes_per_instance = distributed_data.get("processes_per_instance", "1")
         self.gpus_per_instance = ec2_instance_info.get_instance_gpus(instance_type=self.instance_type)
+
+        def _parse_processes_per_instance(str_val: str, gpus_per_instance: int):
+            if str_val == "gpus":
+                if gpus_per_instance:
+                    return gpus_per_instance
+                else:
+                    raise DescriptorError("Requesting per-gpu process assignment on instance without gpus")
+            else:
+                return int(str_val)
+
+        self.processes_per_instance = _parse_processes_per_instance(processes_per_instance, self.gpus_per_instance)
 
         self.extended_shm = descriptor_data["env"].get("extended_shm", True)
         self.privileged = descriptor_data["env"].get("privileged", False)
