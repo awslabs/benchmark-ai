@@ -527,6 +527,7 @@ get_submission_status() {
     if ((SYNC_DATA)); then
         since_tstamp=0
         [[ -f "${ANUBIS_DATABASE}/$(get_client_id)/${action_id}/data" ]] && mv "${ANUBIS_DATABASE}/$(get_client_id)/${action_id}/data"{,.bkup}
+        [[ -f "${ANUBIS_DATABASE}/$(get_client_id)/${action_id}/latest_tstamp" ]] && mv "${ANUBIS_DATABASE}/$(get_client_id)/${action_id}/latest_tstamp"{,.bkup}
     else
         _read_local_submission_status "${action_id}"
     fi
