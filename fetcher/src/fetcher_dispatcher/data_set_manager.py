@@ -7,11 +7,11 @@ from kazoo.exceptions import NoNodeError, BadVersionError
 from kazoo.protocol.states import WatchedEvent, EventType
 from typing import Callable, Optional
 
-from bai_kafka_utils.events import DataSet, BenchmarkEvent, FetcherStatus
+from bai_kafka_utils.events import DataSet, BenchmarkEvent, FetcherStatus, DataSetSizeInfo
 from bai_kafka_utils.utils import md5sum
 from bai_zk_utils.states import FetcherResult
 from bai_zk_utils.zk_locker import RWLockManager, RWLock
-from preflight.data_set_size import DataSetSizeInfo
+
 from preflight.estimator import estimate_fetch_size
 
 DataSetDispatcher = Callable[[DataSet, BenchmarkEvent, str], None]
@@ -19,7 +19,7 @@ DataSetDispatcher = Callable[[DataSet, BenchmarkEvent, str], None]
 
 class DataSetDispatcher(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def dispatch_fetch(self, task: DataSet, size_info: DataSetSizeInfo, event: BenchmarkEvent, zk_node_path: str):
+    def dispatch_fetch(self, task: DataSet, event: BenchmarkEvent, zk_node_path: str):
         pass
 
     @abc.abstractmethod
@@ -93,9 +93,9 @@ class DataSetManager:
 
             self.__handle_node_state(zk_node_path, _on_done_and_unlock, data_set)
 
-            size_info = self._size_estimator(data_set.src)
+            data_set.size_info = self._size_estimator(data_set.src)
 
-            self._data_set_dispatcher.dispatch_fetch(data_set, size_info, event, zk_node_path)
+            self._data_set_dispatcher.dispatch_fetch(data_set, event, zk_node_path)
 
         self._lock_manager.acquire_write_lock(data_set, on_data_set_locked)
 

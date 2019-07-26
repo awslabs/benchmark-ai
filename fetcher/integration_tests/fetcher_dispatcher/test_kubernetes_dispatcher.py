@@ -1,6 +1,6 @@
 import pytest
 
-from bai_kafka_utils.events import DataSet, BenchmarkEvent
+from bai_kafka_utils.events import DataSet, BenchmarkEvent, DataSetSizeInfo
 from fetcher_dispatcher.args import FetcherJobConfig
 from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
 
@@ -9,8 +9,6 @@ from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
 
 # API boundary test - should just not fail starting the job - the job itself can fail
 from bai_k8s_utils.kubernetes_tests_client import KubernetesTestUtilsClient
-
-from preflight.data_set_size import DataSetSizeInfo
 
 
 S3_DST = "s3://dst"
@@ -32,9 +30,9 @@ def test_kubernetes_client(
     fetcher_job_config: FetcherJobConfig,
     size_info: DataSetSizeInfo,
 ):
-    data_set = DataSet(src=SOMEDATA_BIG, dst=S3_DST, md5=None)
+    data_set = DataSet(src=SOMEDATA_BIG, dst=S3_DST, md5=None, size_info=size_info)
 
-    k8s_dispatcher.dispatch_fetch(data_set, size_info, benchmark_event_dummy_payload, "/data/sets/fake")
+    k8s_dispatcher.dispatch_fetch(data_set, benchmark_event_dummy_payload, "/data/sets/fake")
 
     _wait_for_k8s_objects_exist(benchmark_event_dummy_payload, fetcher_job_config, k8s_test_client, size_info)
 
@@ -48,8 +46,8 @@ def test_kubernetes_cancel(
     fetcher_job_config: FetcherJobConfig,
     size_info: DataSetSizeInfo,
 ):
-    data_set = DataSet(src=SOMEDATA_BIG_WITH_DELAY, dst=S3_DST, md5=None)
-    k8s_dispatcher.dispatch_fetch(data_set, size_info, benchmark_event_dummy_payload, "/data/sets/fake")
+    data_set = DataSet(src=SOMEDATA_BIG_WITH_DELAY, dst=S3_DST, md5=None, size_info=size_info)
+    k8s_dispatcher.dispatch_fetch(data_set, benchmark_event_dummy_payload, "/data/sets/fake")
 
     _wait_for_k8s_objects_exist(benchmark_event_dummy_payload, fetcher_job_config, k8s_test_client, size_info)
 
@@ -66,8 +64,8 @@ def test_kubernetes_cleanup(
     fetcher_job_config: FetcherJobConfig,
     size_info: DataSetSizeInfo,
 ):
-    data_set = DataSet(src=SOMEDATA_BIG_WITH_DELAY, dst=S3_DST, md5=None)
-    k8s_dispatcher.dispatch_fetch(data_set, size_info, benchmark_event_dummy_payload, "/data/sets/fake")
+    data_set = DataSet(src=SOMEDATA_BIG_WITH_DELAY, dst=S3_DST, md5=None, size_info=size_info)
+    k8s_dispatcher.dispatch_fetch(data_set, benchmark_event_dummy_payload, "/data/sets/fake")
 
     _wait_for_k8s_objects_exist(benchmark_event_dummy_payload, fetcher_job_config, k8s_test_client, size_info)
 

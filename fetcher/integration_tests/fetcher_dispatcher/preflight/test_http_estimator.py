@@ -1,4 +1,4 @@
-from preflight.data_set_size import DataSetSizeInfo
+from bai_kafka_utils.events import DataSetSizeInfo
 from preflight.http_estimator import http_estimate_size
 
 BIG_FILE = "http://dataserver:8080/big-file"
