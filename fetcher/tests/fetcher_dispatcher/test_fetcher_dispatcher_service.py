@@ -156,7 +156,7 @@ def test_fetcher_event_handler_fetch(
     validate_sent_events(kafka_service, [])
 
     expected_sent_statuses_before = [call(ANY, Status.PENDING, "Start fetching datasets")] + [
-        call(ANY, Status.PENDING, f"Dataset {d} sent to fetch") for d in datasets
+        call(ANY, Status.PENDING, f"Dataset {d.src} sent to fetch") for d in datasets
     ]
 
     validate_send_status_message_calls(kafka_service, expected_sent_statuses_before)
@@ -171,7 +171,7 @@ def test_fetcher_event_handler_fetch(
     )
     validate_sent_events(kafka_service, expected_sent_events)
 
-    expected_sent_statuses_after = [call(ANY, Status.PENDING, f"Dataset {d} processed") for d in datasets] + [
+    expected_sent_statuses_after = [call(ANY, Status.PENDING, f"Dataset {d.src} processed") for d in datasets] + [
         call(ANY, expected_total_status, "All data sets processed")
     ]
 

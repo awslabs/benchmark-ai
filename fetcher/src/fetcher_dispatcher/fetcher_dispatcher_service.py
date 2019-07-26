@@ -53,7 +53,7 @@ class FetcherEventHandler(KafkaServiceCallback):
 
             task.dst = get_dataset_dst(task, self.s3_data_set_bucket)
 
-            kafka_service.send_status_message_event(event, Status.PENDING, f"Dataset {task} sent to fetch")
+            kafka_service.send_status_message_event(event, Status.PENDING, f"Dataset {task.src} sent to fetch")
 
             self.data_set_mgr.fetch(task, event, callback)
 
@@ -63,7 +63,7 @@ class FetcherEventHandler(KafkaServiceCallback):
             pending = list(tasks)
 
             def on_done(data_set: DataSet):
-                kafka_service.send_status_message_event(event, Status.PENDING, f"Dataset {data_set} processed")
+                kafka_service.send_status_message_event(event, Status.PENDING, f"Dataset {data_set.src} processed")
 
                 pending.remove(data_set)
                 if not pending:
