@@ -16,9 +16,13 @@ admin:
 # This will be publicly accessible and require InfoSec approval, thus use port-forwarding until we have approval
 # or are able to restrict the access
 # Maybe use https://stackoverflow.com/a/49301260/2393787
-# service.beta.kubernetes.io/aws-load-balancer-extra-security-groups: "sg-53fae93f,sg-42efd82e,pl-12345678"
-#service:
-#  type: LoadBalancer
+#service.beta.kubernetes.io/aws-load-balancer-extra-security-groups: "sg-53fae93f,sg-42efd82e,pl-12345678"
+grafana:
+  metadata:
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-extra-security-groups: @@SECURITY_GROUP_ID@@
+  service:
+    type: LoadBalancer
 
 prometheus:
   prometheusSpec:
