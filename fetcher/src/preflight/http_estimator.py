@@ -1,6 +1,6 @@
 import pycurl
 
-from preflight.data_set_size import DataSetSizeInfo
+from bai_kafka_utils.events import DataSetSizeInfo
 
 
 def http_estimate_size(src) -> DataSetSizeInfo:

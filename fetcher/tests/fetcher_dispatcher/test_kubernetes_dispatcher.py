@@ -1,16 +1,18 @@
 import dataclasses
 
 import kubernetes
+import pytest
+
 from bai_kafka_utils.utils import md5sum
 from kubernetes.client import V1Job
 from pytest import fixture, mark
 
 from bai_k8s_utils.service_labels import ServiceLabels
-from bai_kafka_utils.events import DataSet, BenchmarkEvent
+from bai_kafka_utils.events import DataSet, BenchmarkEvent, DataSetSizeInfo
 from fetcher_dispatcher import kubernetes_dispatcher, SERVICE_NAME
 from fetcher_dispatcher.args import FetcherJobConfig, FetcherVolumeConfig
 from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
-from preflight.data_set_size import DataSetSizeInfo
+
 
 MB = 1024 * 1024
 
@@ -214,7 +216,9 @@ def test_call_dispatcher(
     data_set: DataSet,
     size_info: DataSetSizeInfo,
 ):
-    k8s_dispatcher.dispatch_fetch(data_set, size_info, BENCHMARK_EVENT, ZK_NODE_PATH)
+    data_set_with_size = dataclasses.replace(data_set, size_info=size_info)
+
+    k8s_dispatcher.dispatch_fetch(data_set_with_size, BENCHMARK_EVENT, ZK_NODE_PATH)
 
     mock_batch_api_instance.create_namespaced_job.assert_called_once()
 
@@ -222,6 +226,11 @@ def test_call_dispatcher(
 
     namespace, job = job_args
     validate_namespaced_job(namespace, job, data_set)
+
+
+def test_call_dispatcher_no_size_infodef(k8s_dispatcher: KubernetesDispatcher):
+    with pytest.raises(ValueError):
+        k8s_dispatcher.dispatch_fetch(DATA_SET, BENCHMARK_EVENT, ZK_NODE_PATH)
 
 
 def test_cancel_single_action(

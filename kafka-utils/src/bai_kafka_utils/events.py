@@ -35,6 +35,14 @@ class FetchedType(Enum):
 
 @dataclass_json
 @dataclass
+class DataSetSizeInfo:
+    total_size: int
+    file_count: int
+    max_size: int
+
+
+@dataclass_json
+@dataclass
 class DataSet:
     src: str
     md5: Optional[str] = None
@@ -42,6 +50,7 @@ class DataSet:
     status: Optional[FetcherStatus] = None
     type: Optional[FetchedType] = None
     message: Optional[str] = None
+    size_info: Optional[DataSetSizeInfo] = None
 
 
 @dataclass_json

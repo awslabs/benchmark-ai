@@ -8,11 +8,11 @@ from pytest import fixture
 from typing import Any
 from unittest.mock import create_autospec
 
-from bai_kafka_utils.events import DataSet, BenchmarkEvent, FetcherStatus
+from bai_kafka_utils.events import DataSet, BenchmarkEvent, FetcherStatus, DataSetSizeInfo
 from bai_zk_utils.states import FetcherResult
 from bai_zk_utils.zk_locker import RWLockManager, OnLockCallback, RWLock
 from fetcher_dispatcher.data_set_manager import DataSetManager, DataSetDispatcher, DataSetOnDone
-from preflight.data_set_size import DataSetSizeInfo
+
 
 FILE_SIZE = 42
 
@@ -128,7 +128,7 @@ def data_set_manager(
 
 @fixture
 def some_data_set() -> DataSet:
-    return DataSet("http://imagenet.org/bigdata.zip")
+    return DataSet("http://imagenet.org/bigdata.zip", size_info=SOME_SIZE_INFO)
 
 
 @fixture
@@ -231,7 +231,7 @@ def _verify_fetch(
     some_data_set: DataSet,
     lock_manager: RWLockManager,
 ):
-    kubernetes_job_starter.dispatch_fetch.assert_called_with(some_data_set, SOME_SIZE_INFO, enclosing_event, SOME_PATH)
+    kubernetes_job_starter.dispatch_fetch.assert_called_with(some_data_set, enclosing_event, SOME_PATH)
     lock_manager.acquire_write_lock.assert_called_once()
 
 

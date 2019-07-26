@@ -5,8 +5,7 @@ from urllib.parse import urlparse
 import boto3
 from botocore.exceptions import ClientError
 
-
-from preflight.data_set_size import DataSetSizeInfo
+from bai_kafka_utils.events import DataSetSizeInfo
 
 logger = logging.getLogger(__name__)
 

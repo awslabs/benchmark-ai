@@ -6,11 +6,11 @@ import kubernetes
 from typing import Dict, List, Optional
 
 from bai_k8s_utils.service_labels import ServiceLabels
-from bai_kafka_utils.events import DataSet, BenchmarkEvent
+from bai_kafka_utils.events import DataSet, BenchmarkEvent, DataSetSizeInfo
 from bai_kafka_utils.utils import id_generator, md5sum
 from fetcher_dispatcher.args import FetcherJobConfig
 from fetcher_dispatcher.data_set_manager import DataSetDispatcher
-from preflight.data_set_size import DataSetSizeInfo
+
 
 BYTES_IN_MB = 1024 * 1024
 
@@ -174,11 +174,14 @@ class KubernetesDispatcher(DataSetDispatcher):
     def _get_label_selector(self, client_id: str, action_id: str = None, data_set: DataSet = None):
         return KubernetesDispatcher.get_label_selector(self.service_name, client_id, action_id, data_set)
 
-    def dispatch_fetch(self, task: DataSet, size_info: DataSetSizeInfo, event: BenchmarkEvent, zk_node_path: str):
+    def dispatch_fetch(self, task: DataSet, event: BenchmarkEvent, zk_node_path: str):
         try:
             volume_claim: str = None
 
-            volume_size = KubernetesDispatcher._get_volume_size(size_info)
+            if not task.size_info:
+                raise ValueError("Missing size_info data")
+
+            volume_size = KubernetesDispatcher._get_volume_size(task.size_info)
 
             # Do we need a volume?
             if volume_size >= self.fetcher_job.volume.min_size:

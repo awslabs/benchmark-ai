@@ -5,8 +5,9 @@ from unittest.mock import call
 from mock import create_autospec
 from pytest import fixture
 
+from bai_kafka_utils.events import DataSetSizeInfo
 from preflight import http_estimator
-from preflight.data_set_size import DataSetSizeInfo
+
 from preflight.http_estimator import http_estimate_size
 
 DATA_SIZE = 42

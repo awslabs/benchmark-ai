@@ -3,7 +3,7 @@ import os
 import boto3
 from pytest import fixture
 
-from preflight.data_set_size import DataSetSizeInfo
+from bai_kafka_utils.events import DataSetSizeInfo
 from preflight.s3_estimator import s3_estimate_size
 
 SINGLE_FILE_KEY = "single-file"
