@@ -42,7 +42,7 @@ class Descriptor:
 
         self.distributed = "distributed" in descriptor_data["hardware"]
         distributed_data = descriptor_data["hardware"].get("distributed", {})
-        self.num_instances = distributed_data.get("num_instances", 1)
+        self.num_instances = int(distributed_data.get("num_instances", 1))
         processes_per_instance = distributed_data.get("processes_per_instance", "1")
         self.gpus_per_instance = ec2_instance_info.get_instance_gpus(instance_type=self.instance_type)
 
