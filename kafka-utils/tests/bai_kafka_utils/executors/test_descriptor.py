@@ -64,3 +64,16 @@ def test_distributed_gpus_on_cpu(descriptor_as_dict, descriptor_config):
 
     with pytest.raises(DescriptorError):
         Descriptor(descriptor_as_dict, descriptor_config)
+
+
+def test_distributed_num_instances_str(descriptor_as_dict, descriptor_config):
+    descriptor_as_dict["hardware"]["distributed"]["num_instances"] = "4"
+    descriptor = Descriptor(descriptor_as_dict, descriptor_config)
+
+    assert descriptor.num_instances == 4
+
+
+def test_distributed_num_instances_default(descriptor_as_dict, descriptor_config):
+    descriptor = Descriptor(descriptor_as_dict, descriptor_config)
+
+    assert descriptor.num_instances == 1
