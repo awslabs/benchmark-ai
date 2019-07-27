@@ -6,7 +6,7 @@ from bai_kafka_utils.executors.descriptor import Descriptor, DescriptorConfig
 
 @pytest.fixture
 def descriptor_config():
-    return DescriptorConfig(valid_strategies=["single_node", "horovod"])
+    return DescriptorConfig(valid_strategies=["single_node", "horovod"], valid_frameworks=["", "mxnet", "tensorflow"])
 
 
 @pytest.fixture

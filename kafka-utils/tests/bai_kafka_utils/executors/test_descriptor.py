@@ -77,3 +77,52 @@ def test_distributed_num_instances_default(descriptor_as_dict, descriptor_config
     descriptor = Descriptor(descriptor_as_dict, descriptor_config)
 
     assert descriptor.num_instances == 1
+
+
+def test_framework_optional(descriptor_as_dict, descriptor_config):
+    assert "" in descriptor_config.valid_frameworks
+    descriptor_as_dict["ml"]["framework"] = ""
+
+    descriptor = Descriptor(descriptor_as_dict, descriptor_config)
+
+    assert not descriptor.framework
+
+
+def test_framework_explicite(descriptor_as_dict, descriptor_config):
+    descriptor_as_dict["ml"]["framework"] = "mxnet"
+
+    descriptor = Descriptor(descriptor_as_dict, descriptor_config)
+
+    assert descriptor.framework == "mxnet"
+
+
+def test_framework_required(descriptor_as_dict, descriptor_config):
+    descriptor_config.valid_frameworks = ["foo"]
+
+    with pytest.raises(DescriptorError):
+        Descriptor(descriptor_as_dict, descriptor_config)
+
+
+def test_framework_invalid(descriptor_as_dict, descriptor_config):
+    descriptor_config.valid_frameworks = ["foo"]
+    descriptor_as_dict["ml"]["framework"] = "bar"
+
+    with pytest.raises(DescriptorError):
+        Descriptor(descriptor_as_dict, descriptor_config)
+
+
+def test_framework_version(descriptor_as_dict, descriptor_config):
+    descriptor_as_dict["ml"]["framework"] = "mxnet"
+    descriptor_as_dict["ml"]["framework_version"] = "1.0"
+
+    descriptor = Descriptor(descriptor_as_dict, descriptor_config)
+
+    assert descriptor.framework_version == "1.0"
+
+
+def test_framework_version_no_framework(descriptor_as_dict, descriptor_config):
+    descriptor_as_dict["ml"]["framework"] = ""
+    descriptor_as_dict["ml"]["framework_version"] = "1.0"
+
+    with pytest.raises(DescriptorError):
+        Descriptor(descriptor_as_dict, descriptor_config)

@@ -68,7 +68,7 @@ def config_env():
 
 @pytest.fixture
 def descriptor_config():
-    config_values = {"valid_strategies": ["single_node", "horovod"]}
+    config_values = {"valid_strategies": ["single_node", "horovod"], "valid_frameworks": ["", "mxnet", "tensorflow"]}
     return DescriptorConfig(**config_values)
 
 
