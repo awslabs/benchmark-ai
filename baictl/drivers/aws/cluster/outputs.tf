@@ -107,3 +107,8 @@ output "sagemaker_nodata_s3" {
   description = "SageMaker dummy data set"
   value = "s3://${aws_s3_bucket.data-pull.id}/${aws_s3_bucket_object.nodata.id}"
 }
+
+output "loopback_security_group_id" {
+  description = "Security group id to allow corp access to bff loadbalancer"
+  value       = "${aws_security_group.loopback.id}"
+}
