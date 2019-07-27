@@ -1,4 +1,4 @@
-from bai_kafka_utils.executors.descriptor import DescriptorConfig
+from bai_kafka_utils.executors.descriptor import DescriptorConfig, DistributedStrategy
 
 from transpiler.config import BaiConfig, EnvironmentInfo
 
@@ -13,7 +13,7 @@ def test_args_azs(config_args, config_env, mock_availability_zones):
 
 def test_list_arg(config_args, config_env):
     args = get_args(config_args, config_env)
-    assert args.valid_strategies == ["single_node", "horovod"]
+    assert args.valid_strategies == [e.value for e in DistributedStrategy]
 
 
 def test_default_frameworks(config_args, config_env):

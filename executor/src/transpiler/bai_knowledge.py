@@ -252,7 +252,10 @@ def create_bai_k8s_builder(
     :param extra_bai_config_args: An optional Dict which will be forwarded to the `BaiConfig` object created.
     :return:
     """
-    template_files = {"single_node": "job_single_node.yaml", "horovod": "mpi_job_horovod.yaml"}
+    template_files = {
+        DistributedStrategy.SINGLE_NODE: "job_single_node.yaml",
+        DistributedStrategy.HOROVOD: "mpi_job_horovod.yaml",
+    }
 
     if extra_bai_config_args is None:
         extra_bai_config_args = {}

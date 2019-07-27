@@ -3,7 +3,7 @@ import textwrap
 
 import toml
 import pytest
-from bai_kafka_utils.executors.descriptor import Descriptor, DescriptorConfig
+from bai_kafka_utils.executors.descriptor import Descriptor, DescriptorConfig, DistributedStrategy
 
 from unittest.mock import create_autospec
 
@@ -68,7 +68,10 @@ def config_env():
 
 @pytest.fixture
 def descriptor_config():
-    config_values = {"valid_strategies": ["single_node", "horovod"], "valid_frameworks": ["", "mxnet", "tensorflow"]}
+    config_values = {
+        "valid_strategies": [e.value for e in DistributedStrategy],
+        "valid_frameworks": ["", "mxnet", "tensorflow"],
+    }
     return DescriptorConfig(**config_values)
 
 
