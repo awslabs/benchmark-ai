@@ -40,4 +40,4 @@ def s3_estimate_size(src: str, s3: Any = None) -> DataSetSizeInfo:
         total_size += sub_obj.size
         max_size = max(max_size, sub_obj.size)
 
-    return DataSetSizeInfo(total_size, cnt, max_size)
+    return DataSetSizeInfo(int(total_size), cnt, int(max_size))

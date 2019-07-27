@@ -17,4 +17,4 @@ def http_estimate_size(src) -> DataSetSizeInfo:
 
     content_length = curl.getinfo(pycurl.CONTENT_LENGTH_DOWNLOAD)
 
-    return DataSetSizeInfo(content_length, 1, content_length)
+    return DataSetSizeInfo(int(content_length), 1, int(content_length))
