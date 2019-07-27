@@ -51,6 +51,7 @@ class DataSet:
     type: Optional[FetchedType] = None
     message: Optional[str] = None
     size_info: Optional[DataSetSizeInfo] = None
+    id: Optional[str] = None
 
 
 @dataclass_json
