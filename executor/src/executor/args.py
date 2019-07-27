@@ -61,6 +61,14 @@ def get_args(argv, env=None):
     )
 
     parser.add(
+        "--transpiler-valid-frameworks",
+        type=list_str,
+        env_var="TRANSPILER_VALID_FRAMEWORKS",
+        dest="valid_frameworks",
+        help="List of valid frameworks such as tensorflow or mxnet",
+    )
+
+    parser.add(
         "--valid-execution-engines",
         type=list_str,
         env_var="VALID_EXECUTION_ENGINES",
@@ -78,7 +86,7 @@ def get_args(argv, env=None):
 
 
 def create_descriptor_config(args):
-    return DescriptorConfig(valid_strategies=args.valid_strategies)
+    return DescriptorConfig(valid_strategies=args.valid_strategies, valid_frameworks=args.valid_frameworks)
 
 
 def create_bai_config(args):

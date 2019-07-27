@@ -16,9 +16,14 @@ def test_list_arg(config_args, config_env):
     assert args.valid_strategies == ["single_node", "horovod"]
 
 
+def test_default_frameworks(config_args, config_env):
+    args = get_args(config_args, config_env)
+    assert set(args.valid_frameworks) == {"", "mxnet", "tensorflow"}
+
+
 def test_create_descriptor_config(config_args, config_env):
     args = get_args(config_args, config_env)
-    expected_config = DescriptorConfig(valid_strategies=args.valid_strategies)
+    expected_config = DescriptorConfig(valid_strategies=args.valid_strategies, valid_frameworks=args.valid_frameworks)
     descriptor_config = create_descriptor_config(args)
     assert descriptor_config == expected_config
 
@@ -39,7 +44,9 @@ def test_create_executor_config(config_args, config_env, mock_availability_zones
     executor_config = create_executor_config(config_args, config_env)
 
     args = get_args(config_args, config_env)
-    expected_descriptor_config = DescriptorConfig(valid_strategies=args.valid_strategies)
+    expected_descriptor_config = DescriptorConfig(
+        valid_strategies=args.valid_strategies, valid_frameworks=args.valid_frameworks
+    )
     expected_bai_config = BaiConfig(
         puller_docker_image=args.puller_docker_image,
         puller_mount_chmod=args.puller_mount_chmod,

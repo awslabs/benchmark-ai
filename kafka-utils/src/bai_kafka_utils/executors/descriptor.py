@@ -11,6 +11,7 @@ from bai_kafka_utils.executors.util import ec2_instance_info
 @dataclass
 class DescriptorConfig:
     valid_strategies: List[str]
+    valid_frameworks: List[str]
 
 
 class DescriptorError(Exception):
@@ -64,6 +65,8 @@ class Descriptor:
 
         self.benchmark_code = ml.get("benchmark_code", "")
         self.ml_args = ml.get("args", "")
+        self.framework = ml.get("framework", "")
+        self.framework_version = ml.get("framework_version", "")
 
         self.dataset = descriptor_data.get("data", {}).get("id", "")
         self.data_sources = descriptor_data.get("data", {}).get("sources", [])
@@ -91,6 +94,12 @@ class Descriptor:
         """
         if self.strategy.lower() not in self.config.valid_strategies:
             raise DescriptorError(f"Invalid strategy: {self.strategy} (must be one of {self.config.valid_strategies})")
+
+        if self.framework not in self.config.valid_frameworks:
+            raise DescriptorError(f"Invalid framework  {self.framework} (must be one of {self.config.valid_frameworks}")
+
+        if self.framework_version and not self.framework:
+            raise DescriptorError("Framework version is present, but not framework")
 
         if self.distributed:
             if self.num_instances <= 1:
