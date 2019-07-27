@@ -1,12 +1,14 @@
 import pytest
 from addict import addict
 
-from bai_kafka_utils.executors.descriptor import Descriptor, DescriptorConfig
+from bai_kafka_utils.executors.descriptor import Descriptor, DescriptorConfig, DistributedStrategy
 
 
 @pytest.fixture
 def descriptor_config():
-    return DescriptorConfig(valid_strategies=["single_node", "horovod"], valid_frameworks=["", "mxnet", "tensorflow"])
+    return DescriptorConfig(
+        valid_strategies=[e.value for e in DistributedStrategy], valid_frameworks=["", "mxnet", "tensorflow"]
+    )
 
 
 @pytest.fixture

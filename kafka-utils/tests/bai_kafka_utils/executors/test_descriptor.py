@@ -1,6 +1,6 @@
 import pytest
 
-from bai_kafka_utils.executors.descriptor import DescriptorError, Descriptor
+from bai_kafka_utils.executors.descriptor import DescriptorError, Descriptor, ONE_PER_GPU, DistributedStrategy
 
 
 @pytest.mark.parametrize("filename", ["missing_keys_descriptor.toml", "missing_section_descriptor.toml"])
@@ -22,7 +22,7 @@ def test_invalid_scheduling(descriptor, scheduling):
 
 
 def test_descriptor_config(descriptor_config):
-    strategies = ["single_node", "horovod"]
+    strategies = [e.value for e in DistributedStrategy]
     assert descriptor_config.valid_strategies == strategies
 
 
@@ -52,7 +52,7 @@ def test_distributed_default(descriptor_as_dict, descriptor_config):
 
 def test_distributed_gpus(descriptor_as_dict, descriptor_config):
     descriptor_as_dict["hardware"]["instance_type"] = "p3.8xlarge"
-    descriptor_as_dict["hardware"]["distributed"]["processes_per_instance"] = "gpus"
+    descriptor_as_dict["hardware"]["distributed"]["processes_per_instance"] = ONE_PER_GPU
     descriptor = Descriptor(descriptor_as_dict, descriptor_config)
 
     assert descriptor.processes_per_instance == 4
@@ -60,7 +60,7 @@ def test_distributed_gpus(descriptor_as_dict, descriptor_config):
 
 def test_distributed_gpus_on_cpu(descriptor_as_dict, descriptor_config):
     descriptor_as_dict["hardware"]["instance_type"] = "t2.small"
-    descriptor_as_dict["hardware"]["distributed"]["processes_per_instance"] = "gpus"
+    descriptor_as_dict["hardware"]["distributed"]["processes_per_instance"] = ONE_PER_GPU
 
     with pytest.raises(DescriptorError):
         Descriptor(descriptor_as_dict, descriptor_config)
@@ -126,3 +126,16 @@ def test_framework_version_no_framework(descriptor_as_dict, descriptor_config):
 
     with pytest.raises(DescriptorError):
         Descriptor(descriptor_as_dict, descriptor_config)
+
+
+def test_invalid_strategy(descriptor_as_dict, descriptor_config):
+    descriptor_as_dict["hardware"]["strategy"] = "foo"
+    with pytest.raises(DescriptorError):
+        Descriptor(descriptor_as_dict, descriptor_config)
+
+
+def test_valid_strategy(descriptor_as_dict, descriptor_config):
+    descriptor_as_dict["hardware"]["strategy"] = "horovod"
+
+    descriptor = Descriptor(descriptor_as_dict, descriptor_config)
+    assert descriptor.strategy == DistributedStrategy.HOROVOD

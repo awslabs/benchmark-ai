@@ -5,7 +5,7 @@ import shlex
 from dataclasses import dataclass
 
 from bai_kafka_utils.events import DataSet, BenchmarkEvent
-from bai_kafka_utils.executors.descriptor import DescriptorError, Descriptor
+from bai_kafka_utils.executors.descriptor import DescriptorError, Descriptor, SINGLE_RUN_SCHEDULING, DistributedStrategy
 from ruamel import yaml
 from typing import List, Dict
 
@@ -77,7 +77,7 @@ class BaiKubernetesObjectBuilder:
         if self.config.suppress_job_affinity:
             self.root.remove_affinity()
 
-        if descriptor.scheduling != "single_run":
+        if descriptor.scheduling != SINGLE_RUN_SCHEDULING:
             self.root.to_cronjob(descriptor.scheduling)
 
     @staticmethod
@@ -252,7 +252,10 @@ def create_bai_k8s_builder(
     :param extra_bai_config_args: An optional Dict which will be forwarded to the `BaiConfig` object created.
     :return:
     """
-    template_files = {"single_node": "job_single_node.yaml", "horovod": "mpi_job_horovod.yaml"}
+    template_files = {
+        DistributedStrategy.SINGLE_NODE: "job_single_node.yaml",
+        DistributedStrategy.HOROVOD: "mpi_job_horovod.yaml",
+    }
 
     if extra_bai_config_args is None:
         extra_bai_config_args = {}
@@ -276,9 +279,9 @@ def create_bai_k8s_builder(
         **extra_bai_config_args,
     )
 
-    if descriptor.strategy == "single_node":
+    if descriptor.strategy == DistributedStrategy.SINGLE_NODE:
         bai_k8s_builder.add_benchmark_cmd_to_container()
-    elif descriptor.strategy == "horovod":
+    elif descriptor.strategy == DistributedStrategy.HOROVOD:
         bai_k8s_builder.add_benchmark_cmd_to_config_map()
     else:
         raise ValueError("Unsupported configuration in descriptor file")
