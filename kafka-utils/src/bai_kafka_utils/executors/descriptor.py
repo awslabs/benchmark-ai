@@ -1,4 +1,6 @@
 import logging
+from enum import Enum
+
 import toml
 from dataclasses import dataclass
 
@@ -18,6 +20,16 @@ class DescriptorError(Exception):
     pass
 
 
+class DistributedStrategy(Enum):
+    SINGLE_NODE = "single_node"
+    HOROVOD = "horovod"
+
+
+SINGLE_RUN_SCHEDULING = "single_run"
+
+ONE_PER_GPU = "gpus"
+
+
 class Descriptor:
     """
     The model class for a Descriptor.
@@ -34,12 +46,14 @@ class Descriptor:
 
         try:
             self.instance_type = descriptor_data["hardware"]["instance_type"]
-            self.strategy = descriptor_data["hardware"]["strategy"]
+            self.strategy = DistributedStrategy(descriptor_data["hardware"]["strategy"])
             self.docker_image = descriptor_data["env"]["docker_image"]
+        except ValueError as e:
+            raise DescriptorError(f"Invalid value of the field") from e
         except KeyError as e:
             raise DescriptorError(f"Required field is missing in the descriptor toml file: {e.args[0]}") from e
 
-        self.scheduling = descriptor_data.get("info", {}).get("scheduling", "single_run")
+        self.scheduling = descriptor_data.get("info", {}).get("scheduling", SINGLE_RUN_SCHEDULING)
 
         self.distributed = "distributed" in descriptor_data["hardware"]
         distributed_data = descriptor_data["hardware"].get("distributed", {})
@@ -48,7 +62,7 @@ class Descriptor:
         self.gpus_per_instance = ec2_instance_info.get_instance_gpus(instance_type=self.instance_type)
 
         def _parse_processes_per_instance(str_val: str, gpus_per_instance: int):
-            if str_val == "gpus":
+            if str_val == ONE_PER_GPU:
                 if gpus_per_instance:
                     return gpus_per_instance
                 else:
@@ -92,7 +106,7 @@ class Descriptor:
         """
         Validates that this descriptor is valid
         """
-        if self.strategy.lower() not in self.config.valid_strategies:
+        if self.strategy.value not in self.config.valid_strategies:
             raise DescriptorError(f"Invalid strategy: {self.strategy} (must be one of {self.config.valid_strategies})")
 
         if self.framework not in self.config.valid_frameworks:
@@ -105,7 +119,7 @@ class Descriptor:
             if self.num_instances <= 1:
                 logging.warning(f"Specified a distributed strategy but using {self.num_instances} nodes")
 
-        if self.scheduling != "single_run":
+        if self.scheduling != SINGLE_RUN_SCHEDULING:
             if not CronSlices.is_valid(self.scheduling):
                 raise DescriptorError(
                     f"Invalid cron expression in scheduling field: {self.scheduling}. "
