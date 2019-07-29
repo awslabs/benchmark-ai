@@ -7,6 +7,9 @@ from bai_watcher import SERVICE_NAME
 
 @dataclass
 class WatcherServiceConfig:
+    grafana_endpoint: str
+    grafana_results_url: str
+    grafana_op_metrics_dashboard_uid: str
     kubernetes_namespace_of_running_jobs: str = "default"
     kubeconfig: str = None
     logging_level: str = "INFO"
@@ -20,10 +23,16 @@ def get_watcher_service_config(args) -> WatcherServiceConfig:
     )
     parser.add_argument("--kubeconfig", env_var="KUBECONFIG")
     parser.add_argument("--service-logging-level", env_var="SERVICE_LOGGING_LEVEL", default="INFO")
+    parser.add_argument("--grafana-endpoint", env_var="GRAFANA_ENDPOINT")
+    parser.add_argument("--grafana-results-url", env_var="GRAFANA_RESULTS_URL")
+    parser.add_argument("--grafana-op-metrics-dashboard-uid", env_var="GRAFANA_OP_METRICS_DASHBOARD_UID")
 
     parsed_args, _ = parser.parse_known_args(args)
     return WatcherServiceConfig(
         kubernetes_namespace_of_running_jobs=parsed_args.kubernetes_namespace_of_running_jobs,
         kubeconfig=parsed_args.kubeconfig,
         logging_level=parsed_args.service_logging_level,
+        grafana_endpoint=parsed_args.grafana_endpoint,
+        grafana_results_url=parsed_args.grafana_results_url,
+        grafana_op_metrics_dashboard_uid=parsed_args.grafana_op_metrics_dashboard_uid,
     )

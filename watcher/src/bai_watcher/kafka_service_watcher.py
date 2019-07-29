@@ -44,6 +44,8 @@ def choose_status_from_benchmark_status(job_status: BenchmarkJobStatus) -> Tuple
 
 
 class WatchJobsEventHandler(KafkaServiceCallback):
+    MESSAGE_METRICS_AVAILABLE = "Metrics available for job %s at %s"
+
     def __init__(self, config: WatcherServiceConfig):
         self.config = config
         self.watchers = {}
@@ -64,6 +66,10 @@ class WatchJobsEventHandler(KafkaServiceCallback):
             logger.info(f"Benchmark job '{job_id}'' has status '{benchmark_job_status}'")
             status, message = choose_status_from_benchmark_status(benchmark_job_status)
             kafka_service.send_status_message_event(event, status, message)
+            if benchmark_job_status == Status.SUCCEEDED:
+                kafka_service.send_status_message_event(
+                    event, status.METRICS_AVAILABLE, self._get_metrics_available_message(event)
+                )
             if benchmark_job_status is not None and benchmark_job_status.is_final():
                 del self.watchers[job_id]
                 logger.info(f"Job {job_id} is not being watched anymore")
@@ -82,6 +88,17 @@ class WatchJobsEventHandler(KafkaServiceCallback):
 
     def cleanup(self):
         pass
+
+    def _get_metrics_available_message(self, event: ExecutorBenchmarkEvent):
+        client_id = event.client_id
+        action_id = event.action_id
+        grafana_url = self.config.grafana_results_url.format(
+            grafana_endpoint=self.config.grafana_endpoint,
+            dashboard_id=self.config.grafana_op_metrics_dashboard_uid,
+            client_id=client_id,
+            action_id=action_id,
+        )
+        return self.MESSAGE_METRICS_AVAILABLE.format(action_id, grafana_url)
 
 
 def create_service(common_kafka_cfg: KafkaServiceConfig, service_cfg: WatcherServiceConfig) -> KafkaService:

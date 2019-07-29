@@ -47,6 +47,21 @@ spec:
               value: INFO
             - name: SERVICE_LOGGING_LEVEL
               value: DEBUG
+            - name: GRAFANA_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: grafana
+                  key: grafana_endpoint
+            - name: GRAFANA_OP_METRICS_DASHBOARD_UID
+              valueFrom:
+                configMapKeyRef:
+                  name: grafana
+                  key: op_metrics_dashboard_uid
+            - name: GRAFANA_RESULTS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: watcher
+                  key: grafana_results_url
       nodeSelector:
         node.type: bai-services-cheap
       restartPolicy: Always
