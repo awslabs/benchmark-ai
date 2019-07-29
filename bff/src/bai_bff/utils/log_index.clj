@@ -16,4 +16,4 @@
         hits (esrsp/hits-from res)]
     (log/debug (format "Total hits: %d" n))
     (log/debug (pp/pprint hits))
-    (str hits)))
+    hits))

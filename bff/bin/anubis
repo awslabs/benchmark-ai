@@ -592,7 +592,7 @@ get_results() {
     local returned
     cmd="curl -s -X GET -H Content-Type: application/json http://"${current_service_endpoint}"/api/job/results/$(get_client_id)/${action_id}"
     ((VERBOSE)) && echo ${cmd} >&2
-    returned=$(eval "${cmd}")
+    returned=$(eval "${cmd}" | jq '.[]')
     echo "${returned}"
 }
 
