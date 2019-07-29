@@ -23,7 +23,7 @@ conda_usage() {
 #  tar
 env_setup() {
     if ! conda --version; then conda_usage; fi;
-    local tmp_environment_file=$(mktemp -t "${0##*/}-XXXXXXXXX.yml")
+    local tmp_environment_file=$(mktemp -t "${0##*/}-XXXXXXXXX").yml
     ((DEDBUG)) && echo "${tmp_environment_file}"
     cat <<EOF > "${tmp_environment_file}"
 name: anubis
