@@ -6,6 +6,8 @@ SHELL :=/bin/bash
 ENV_NAME = bff
 ifneq (, $(shell which conda))
 # If doing `deploy`, then we use conda to grab the dependencies
+include ../base-common.mk
+include ../deploy-common.mk
 CONDA_DEPLOY_ENV_BIN = $(CONDA_ROOT)/envs/$(DEPLOY_ENV_NAME)/bin
 export PATH := $(CONDA_DEPLOY_ENV_BIN):$(PATH)
 else
@@ -120,9 +122,6 @@ $(MAIN_CLASS_FILE): project.clj $(CLJ_FILES)
 	$(shell chmod 755 $(LEIN))
 	$(LEIN) compile
 	@touch $@
-
-include ../base-common.mk
-include ../deploy-common.mk
 
 build: compile
 test: unit-test integration-test docs

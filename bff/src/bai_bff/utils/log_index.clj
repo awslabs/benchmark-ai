@@ -3,7 +3,6 @@
             [taoensso.timbre :as log]
             [clojurewerkz.elastisch.rest          :as esr]
             [clojurewerkz.elastisch.rest.document :as esd]
-            [clojurewerkz.elastisch.query         :as q]
             [clojurewerkz.elastisch.rest.response :as esrsp]
             [clojure.pprint :as pp]))
 
@@ -11,7 +10,13 @@
   ;; performs a term query using a convenience function
   (log/trace "get-fetch-logs - client-id ["client-id"] action-id ["action-id"]")
   (let [conn (esr/connect (str "http://"(env :elasticsearch-endpoint)":80") {:content-type :json})
-        res  (esd/search conn "logstash*" "fluentd" {:_source ["log"] :query {:bool {:must [ {:match {:kubernetes.labels.action-id action-id}}, {:match {:kubernetes.labels.client-id client-id}},{:match {:kubernetes.container_name "benchmark"}}]}} :sort [{(keyword "@timestamp") {:order "asc"}}] :size 500})
+        res  (esd/search conn "logstash*" "fluentd" {:_source ["log"]
+                                                     :query {:bool
+                                                             {:must [{:match {:kubernetes.labels.client-id client-id}}
+                                                                     {:match {:kubernetes.labels.action-id action-id}}
+                                                                     {:match {:kubernetes.container_name "benchmark"}}]}}
+                                                     :sort [{(keyword "@timestamp") {:order "asc"}}]
+                                                     :size 500})
         n    (esrsp/total-hits res)
         hits (esrsp/hits-from res)]
     (log/debug (format "Total hits: %d" n))
