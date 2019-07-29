@@ -12,11 +12,6 @@ admin:
 # I'd recommend disabling password-based (admin) access and instead use OAuth
 # https://grafana.com/docs/installation/configuration/#auth
 
-# Uncomment to switch from ClusterIP to public LoadBalancer
-# This will be publicly accessible and require InfoSec approval, thus use port-forwarding until we have approval
-# or are able to restrict the access
-# Maybe use https://stackoverflow.com/a/49301260/2393787
-#service.beta.kubernetes.io/aws-load-balancer-extra-security-groups: "sg-53fae93f,sg-42efd82e,pl-12345678"
 grafana:
   metadata:
     annotations:

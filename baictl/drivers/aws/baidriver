@@ -167,11 +167,14 @@ _install_kubernetes_dashboard(){
 
 _install_prometheus(){
     local prometheus_operator_values=$(mktemp /tmp/prometheus-operator-values.XXXXXX.yaml)
-    local security_group=$(kubectl get configmaps  outputs-infrastructure --output json | jq '.data.bff_security_group_id')
+    local security_group=$(${kubectl} get configmaps  outputs-infrastructure --output json | jq '.data.bff_security_group_id')
     cat ${k8s_deploy_dir}/prometheus-operator.yaml | sed -e "s|@@SECURITY_GROUP_ID@@|${security_group}|g" > ${prometheus_operator_values}
     # See the "trap" trick: https://stackoverflow.com/questions/687014/removing-created-temp-files-in-unexpected-bash-exit
     trap "{ rm -f $prometheus_operator_values; }" EXIT
     ${helm} upgrade --install prometheus-operator-1 -f ${prometheus_operator_values} --set alertmanager.alertmanagerSpec.logFormat=logfmt --force stable/prometheus-operator || return 1
+
+    local grafana_endpoint=$(${kubectl} get service prometheus-operator-1-grafana --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+    ${kubectl} patch configmap outputs-infrastructure --patch '{"data": {"grafana_endpoint": "'${grafana_endpoint}'"}}'
 
     # The prometheus node-exporter does not support GPU metrics by default. Thus, adding it separately
     # This also provides per-pod metrics. But this requires that a pod actually allocates a gpu. See
