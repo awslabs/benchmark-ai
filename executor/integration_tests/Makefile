@@ -27,8 +27,7 @@ _k8s_silent_undeploy:
 	-$(KUBECTL) delete -k ./deploy/$(STAGE) $(KUBECTL_FLAGS)
 
 _k8s_cleanup:
-	echo nix
-	#$(KUBECTL) delete jobs,persistentvolumeclaims --selector action-id $(KUBECTL_FLAGS)
+	$(KUBECTL) delete jobs,persistentvolumeclaims --selector action-id $(KUBECTL_FLAGS)
 
 _k8s_silent_cleanup:
 	-$(KUBECTL) delete jobs,persistentvolumeclaims --selector action-id $(KUBECTL_FLAGS)
