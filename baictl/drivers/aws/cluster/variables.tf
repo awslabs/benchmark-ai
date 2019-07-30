@@ -4,13 +4,13 @@ variable "region" {
 variable "data_dir" {}
 
 variable "prefix_list_ids" {
-  type        = "list"
+  type = "list"
 
   default = []
 }
 
 variable "ssh_access_cidr_blocks" {
-  type = "list"
+  type    = "list"
   default = []
 }
 
@@ -60,12 +60,12 @@ variable "map_users_count" {
 
 variable "k8s_version" {
   description = "Version of Kubernetes"
-  default = "1.13"
+  default     = "1.13"
 }
 
 variable "benchmark_workers_instance_types" {
   description = "The instance types that the EKS cluster can launch workers."
-  type = "list"
+  type        = "list"
   default = [
     # Be mindful to the number of instance types that need to be supported because number of ASGs created is:
     #
@@ -89,7 +89,7 @@ variable "benchmark_workers_instance_types" {
 }
 
 variable "gpu_instance_type_prefixes" {
-  type = "list"
+  type    = "list"
   default = ["p3", "p3dn", "p2", "g3", "g3s"]
 }
 
@@ -98,22 +98,22 @@ variable "gpu_instance_type_prefixes" {
 ##########################################################################################
 variable "eks_cpu_ami_version" {
   description = "Version of the AMI used by the worker nodes. See https://github.com/awslabs/amazon-eks-ami/releases"
-  default = "v20190614"
+  default     = "v20190701"
 }
 
 variable "eks_gpu_ami_version" {
   description = "Version of the AMI used by the worker nodes. See https://github.com/awslabs/amazon-eks-ami/releases"
-  default = "v20190614"
+  default     = "v20190701"
 }
 
 variable "eks_cpu_ami_id" {
   description = "AMI id to launch workers that need CPU. Overrides the version specified by `eks_cpu_ami_version`."
-  default = "" # Empty because this must be a choice of the BAI administrator, wether he wants to override the AMI.
+  default     = "" # Empty because this must be a choice of the BAI administrator, wether he wants to override the AMI.
 }
 
 variable "eks_gpu_ami_id" {
   description = "AMI id to launch workers that need GPU. Overrides the version specified by `eks_gpu_ami_version`."
-  default = "" # Empty because this must be a choice of the BAI administrator, wether he wants to override the AMI.
+  default     = "" # Empty because this must be a choice of the BAI administrator, wether he wants to override the AMI.
 }
 
 variable "msk_brokers_per_az" {
