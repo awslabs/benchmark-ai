@@ -2,6 +2,7 @@ import pytest
 from addict import addict
 
 from bai_kafka_utils.executors.descriptor import Descriptor, DescriptorConfig, DistributedStrategy
+from bai_kafka_utils.kafka_service import KafkaServiceConfig
 
 
 @pytest.fixture
@@ -25,3 +26,17 @@ def descriptor_as_dict(descriptor_config):
 @pytest.fixture
 def descriptor(descriptor_config, descriptor_as_dict):
     return Descriptor(descriptor_as_dict, descriptor_config)
+
+
+@pytest.fixture
+def kafka_service_config() -> KafkaServiceConfig:
+    return KafkaServiceConfig(
+        bootstrap_servers=["K1", "K2"],
+        consumer_topic="CONSUMER_TOPIC",
+        producer_topic="PRODUCER_TOPIC",
+        status_topic="STATUS_TOPIC",
+        logging_level="INFO",
+        cmd_return_topic="CMD_RETURN",
+        cmd_submit_topic="CMD_SUBMIT",
+        consumer_group_id="GROUP_ID",
+    )
