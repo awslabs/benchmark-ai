@@ -1,6 +1,8 @@
 #NOTE: Requires: sed, git, docker, kubectl
 SHELL :=/bin/bash
 
+.DEFAULT_GOAL := build
+
 ENV_NAME = bff
 ifneq (, $(shell which conda))
 # If doing `deploy`, then we use conda to grab the dependencies
@@ -111,7 +113,7 @@ KAFKA_DEFAULT_REPLICATION_FACTOR := 3
 #HACK!!!!
 K8S_KUBECTL_ARGS := --kubeconfig=${KUBECONFIG} #--kubeconfig=/Users/bellgav/.devo/kubeconfig
 #----------------------------------------------------------------
-# The pipeline: clean-all -> build -> test -> package -> publish -> deploy
+# The pipeline: clean-all -> [build -> test] -> [package -> publish] -> deploy
 #----------------------------------------------------------------
 
 compile: $(MAIN_CLASS_FILE)
@@ -121,7 +123,7 @@ $(MAIN_CLASS_FILE): project.clj $(CLJ_FILES)
 	$(LEIN) compile
 	@touch $@
 
-build: compile dist
+build: compile
 test: unit-test integration-test docs
 package: build-deploy-container
 publish: publish-deploy-container

@@ -12,6 +12,7 @@
             [bai-bff.services :refer [RunService]]
             [bai-bff.utils.parsers :refer [parse-long]]
             [bai-bff.utils.utils :as utils]
+            [bai-bff.utils.log-index :as log-index]
             [environ.core :refer [env]]
             [amazonica.aws.s3 :as s3]
             [amazonica.aws.s3transfer :as s3tfr]
@@ -133,6 +134,10 @@
         since-tstamp (or (parse-long since) 0)]
     (log/trace (str "since... "since-tstamp))
     (filterv #(< since-tstamp (:tstamp (peek (:visited %)))) (get-in @status-db [client-key action-key] {}))))
+
+(defn get-job-results [client-id action-id]
+  (log/trace "get-job-results - client-id ["client-id"] action-id ["action-id"]")
+  (log-index/fetch-logs client-id action-id))
 
 ;;----------------------------------------------------------
 ;; Scripts Persistence
