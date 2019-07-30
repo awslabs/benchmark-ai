@@ -61,6 +61,7 @@ fi
 
 DEBUG=${DEBUG:-0}
 VERBOSE=${VERBOSE:-0}
+TAIL_STATUS=0
 SYNC_DATA=${SYNC_DATA:-0}
 WATCH=0
 WATCH_PERIOD=5
@@ -122,7 +123,7 @@ This is the command-line, client-side interface to the Bechmark AI service...
 
  > %s --submit <descriptor file | action id> [ --script <path to script>] : Returns an \"action id\" if submission successful
           --status   <action id>   : displays a report of the current status
-          --results  <action id>   : displays results report of completed jobs
+          --results [<action id>]  : displays output of the benchmark output (stdout from model)
           --inspect  <message id> [<action-id>] : displays full details of specified message object
           --show-descriptor [<action-id>]       : shows the descriptor acknowledged by Anubis
           --last-action-id         : displays the last action id from a valid submission
@@ -130,6 +131,7 @@ This is the command-line, client-side interface to the Bechmark AI service...
           --check-version          : checks to see if the version you are running is the latest posted
           --upgrade                : fetches latest version of this tool [%s]
           --sync-version           : synchronized this tool with that of the service endpoint
+          --tail                   : when showing status, only show the latest from the service
           --sync-data              : clean local cached data and refetch from service
           --history                : lists recently returned <action id> : <descriptor path> : <date>
           --register <hostname|IP and PORT of anubis service> | Ex: anubis.aws.amazon.com:7100
@@ -525,12 +527,14 @@ get_submission_status() {
     current_action_id=$action_id
     echo "Status: [${action_id}]"
 
-    if ((SYNC_DATA)); then
-        since_tstamp=0
-        [[ -f "${ANUBIS_DATABASE}/$(get_client_id)/${action_id}/data" ]] && mv "${ANUBIS_DATABASE}/$(get_client_id)/${action_id}/data"{,.bkup}
-        [[ -f "${ANUBIS_DATABASE}/$(get_client_id)/${action_id}/latest_tstamp" ]] && mv "${ANUBIS_DATABASE}/$(get_client_id)/${action_id}/latest_tstamp"{,.bkup}
-    else
-        _read_local_submission_status "${action_id}"
+    if ((TAIL_STATUS == 0)); then
+        if ((SYNC_DATA)); then
+            since_tstamp=0
+            [[ -f "${ANUBIS_DATABASE}/$(get_client_id)/${action_id}/data" ]] && mv "${ANUBIS_DATABASE}/$(get_client_id)/${action_id}/data"{,.bkup}
+            [[ -f "${ANUBIS_DATABASE}/$(get_client_id)/${action_id}/latest_tstamp" ]] && mv "${ANUBIS_DATABASE}/$(get_client_id)/${action_id}/latest_tstamp"{,.bkup}
+        else
+            _read_local_submission_status "${action_id}"
+        fi
     fi
 
     if ((WATCH)); then
@@ -584,12 +588,13 @@ _as_status_line() {
 
 #command event
 get_results() {
-    local action_id=${1:?"get_results() -> You MUST provide the action_id returned by the initial submission"}
+    local action_id=${1:-$(use_last_action_id)}
     local current_service_endpoint=$(cat "${ANUBIS_SERVICE_ENDPOINT_CONFIG}" | tail -n 1)
     ((VERBOSE)) && echo "get_results ${action_id}" >&2
 
     local cmd
     local returned
+    result
     cmd="curl -s -X GET -H Content-Type: application/json http://"${current_service_endpoint}"/api/job/results/$(get_client_id)/${action_id}"
     ((VERBOSE)) && echo ${cmd} >&2
     returned=$(eval "${cmd}" | jq '.[]._source.log' | sed 's/^.\(.*\).$/\1/' | sed 's/\\n//')
@@ -702,6 +707,9 @@ main() {
                 --debug | -dbg)
                     DEBUG=1
                     echo "[debug mode: on]" 1>&2
+                    ;;
+                --tail)
+                    TAIL_STATUS=1
                     ;;
                 --sync-data)
                     SYNC_DATA=1
