@@ -1,9 +1,17 @@
+import dataclasses
+
 from typing import Callable, List
 
 from kafka import KafkaConsumer
 from timeout_decorator import timeout
 
-from bai_kafka_utils.events import BenchmarkEvent, Status, CommandRequestEvent, CommandResponsePayload
+from bai_kafka_utils.events import (
+    BenchmarkEvent,
+    Status,
+    CommandRequestEvent,
+    CommandResponsePayload,
+    CommandRequestPayload,
+)
 from bai_kafka_utils.integration_tests.test_utils import get_test_timeout
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
 
@@ -68,3 +76,10 @@ def get_is_command_return_filter(
         )
 
     return filter_command_event
+
+
+def get_cancel_event(template_event: BenchmarkEvent, cmd_submit_topic: str):
+    cancel_payload = CommandRequestPayload(command="cancel", args={"target_action_id": template_event.action_id})
+    return dataclasses.replace(
+        template_event, payload=cancel_payload, action_id=template_event.action_id + "_cancel", type=cmd_submit_topic
+    )

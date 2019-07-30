@@ -2,12 +2,14 @@ import logging
 
 from bai_kafka_utils.cmd_callback import KafkaCommandCallback
 from bai_kafka_utils.executors.execution_callback import ExecutorEventHandler
+from bai_kafka_utils.executors.execution_cmd_object import ExecutorCommandObject
 from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
 from bai_kafka_utils.kafka_service import KafkaService, KafkaServiceConfig
 from bai_kafka_utils.utils import get_pod_name
 
+
 from executor import SERVICE_NAME, __version__
-from executor.commands import ExecutorCommandObject
+
 from executor.config import ExecutorConfig
 from executor.k8s_execution_engine import K8SExecutionEngine
 
@@ -20,9 +22,9 @@ def create_execution_engines(executor_config: ExecutorConfig):
 
 
 def create_executor(common_kafka_cfg: KafkaServiceConfig, executor_config: ExecutorConfig) -> KafkaService:
-    cmd_object = ExecutorCommandObject(executor_config.kubectl)
-
     execution_engines = create_execution_engines(executor_config)
+
+    cmd_object = ExecutorCommandObject(execution_engines)
     exec_handler = ExecutorEventHandler(
         execution_engines, executor_config.valid_execution_engines, common_kafka_cfg.producer_topic
     )

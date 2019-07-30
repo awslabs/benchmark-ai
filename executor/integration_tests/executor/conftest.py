@@ -1,5 +1,12 @@
 import kubernetes
 from bai_k8s_utils.kubernetes_tests_client import KubernetesTestUtilsClient
+from bai_kafka_utils.events import (
+    BenchmarkEvent,
+    FetcherBenchmarkEvent,
+    BenchmarkDoc,
+    FetcherPayload,
+    create_from_object,
+)
 from pytest import fixture
 
 from bai_kafka_utils.integration_tests.fixtures import (
@@ -29,3 +36,24 @@ def k8s_api_client() -> kubernetes.client.ApiClient:
 
     configuration = kubernetes.client.Configuration()
     return kubernetes.client.ApiClient(configuration)
+
+
+@fixture
+def fetcher_benchmark_event(benchmark_event_dummy_payload: BenchmarkEvent) -> FetcherBenchmarkEvent:
+    doc = BenchmarkDoc(
+        {
+            "ml": {"benchmark_code": "echo hello world"},
+            "info": {"task_name": "test-2"},
+            "hardware": {"instance_type": "local", "strategy": "single_node"},
+            "env": {"docker_image": "alpine", "vars": {"FOO": "BAR", "IVAL": 42}},
+        },
+        "var = val",  # We don't care about the initial TOML
+        "",
+    )
+    fetch_payload = FetcherPayload(toml=doc, datasets=[])
+    return create_from_object(
+        FetcherBenchmarkEvent,
+        benchmark_event_dummy_payload,
+        payload=fetch_payload,
+        action_id=benchmark_event_dummy_payload.action_id.replace("_", "-"),
+    )

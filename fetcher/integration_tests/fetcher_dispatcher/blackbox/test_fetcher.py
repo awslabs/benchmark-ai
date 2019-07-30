@@ -8,7 +8,6 @@ from typing import Callable
 from bai_kafka_utils.cmd_callback import KafkaCommandCallback
 from bai_kafka_utils.events import (
     BenchmarkEvent,
-    CommandRequestPayload,
     DataSet,
     BenchmarkDoc,
     FetcherPayload,
@@ -22,6 +21,7 @@ from bai_kafka_utils.integration_tests.test_loop import (
     EventFilter,
     get_is_status_filter,
     get_is_command_return_filter,
+    get_cancel_event,
 )
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
 
@@ -44,13 +44,6 @@ def get_fetcher_benchmark_event(template_event: BenchmarkEvent, src: str):
     doc = BenchmarkDoc({"var": "val"}, "var = val", "")
     fetch_payload = FetcherPayload(toml=doc, datasets=[DataSet(src=get_salted_src(src))])
     return dataclasses.replace(template_event, payload=fetch_payload)
-
-
-def get_cancel_event(template_event: BenchmarkEvent, cmd_submit_topic: str):
-    cancel_payload = CommandRequestPayload(command="cancel", args={"target_action_id": template_event.action_id})
-    return dataclasses.replace(
-        template_event, payload=cancel_payload, action_id=template_event.action_id + "_cancel", type=cmd_submit_topic
-    )
 
 
 def is_dataset_successful(data_set: DataSet) -> bool:
