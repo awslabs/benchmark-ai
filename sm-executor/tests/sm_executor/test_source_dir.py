@@ -7,7 +7,7 @@ from bai_kafka_utils.executors.descriptor import Descriptor
 from botocore.stub import Stubber
 from io import BytesIO, StringIO, IOBase
 from pytest import fixture
-from typing import NamedTuple, Any, List, Callable
+from typing import NamedTuple, List, Callable
 from unittest.mock import call
 
 from sm_executor import source_dir
@@ -32,7 +32,6 @@ DST_PATH = "/tmp/mysrc-dir"
 
 SCRIPTS = [FileSystemObject(FIRST_SCRIPT_TAR), FileSystemObject(SECOND_SCRIPT_TAR)]
 
-StubedS3 = NamedTuple("x", fields=[("s3", Any), ("stub", Stubber)])
 PatchedOpen = NamedTuple("y", fields=[("open", Callable[[str, str], IOBase]), ("files", List[IOBase])])
 
 
@@ -77,7 +76,7 @@ def mock_file(stub, key, name, content):
 
 
 @fixture
-def mock_s3() -> StubedS3:
+def mock_s3():
     s3client = boto3.client("s3")
     stub = Stubber(s3client)
 
@@ -85,7 +84,7 @@ def mock_s3() -> StubedS3:
     mock_file(stub, SECOND_KEY, SECOND_FILE_NAME, SECOND_CONTENT)
 
     stub.activate()
-    return StubedS3(s3client, stub)
+    return s3client
 
 
 def validate_unpacked_script(file: BytesIO, content):
@@ -93,9 +92,9 @@ def validate_unpacked_script(file: BytesIO, content):
 
 
 def test_create_dir_download_files(
-    descriptor: Descriptor, mock_open: PatchedOpen, mock_bltn_open: PatchedOpen, mock_s3: StubedS3
+    descriptor: Descriptor, mock_open: PatchedOpen, mock_bltn_open: PatchedOpen, mock_s3
 ):
-    ScriptSourceDirectory.create(descriptor, DST_PATH, SCRIPTS, mock_s3.s3)
+    ScriptSourceDirectory.create(descriptor, DST_PATH, SCRIPTS, mock_s3)
 
     assert mock_bltn_open.open.call_args_list == [
         call(DST_PATH + "/" + FIRST_FILE_NAME, "wb"),
