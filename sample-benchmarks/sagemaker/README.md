@@ -1,3 +1,5 @@
 ```shell
-anubis --submit horovod.toml --script horovod
+git clone https://github.com/horovod/horovod.git
+
+anubis --submit horovod.toml --script <PATH-TO-SOURCES>/horovod
 ```
