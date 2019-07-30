@@ -4,3 +4,4 @@ resources:
   - s3.yml
   - mock-outputs-infra.yml
   - internet.yml
+  - mock-kubeflow.yml
