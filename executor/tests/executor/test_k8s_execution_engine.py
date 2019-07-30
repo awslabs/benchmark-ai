@@ -10,6 +10,9 @@ import executor
 from executor.config import ExecutorConfig
 from executor.k8s_execution_engine import K8SExecutionEngine
 
+ACTION_ID = "ACTION_ID"
+
+CLIENT_ID = "CLIENT_ID"
 
 SOME_YAML = "yaml"
 SOME_YAML_ENCODED = SOME_YAML.encode(DEFAULT_ENCODING)
@@ -100,3 +103,31 @@ def test_raise_yaml_exception(
 ):
     with pytest.raises(ExecutionEngineException):
         k8s_execution_engine.run(valid_fetcher_event)
+
+
+@fixture
+def mock_check_output(mocker):
+    return mocker.patch.object(executor.k8s_execution_engine.subprocess, "check_output")
+
+
+JOINED_RESOURCE_TYPES = ",".join(K8SExecutionEngine.ALL_K8S_RESOURCE_TYPES)
+
+
+def test_cancel_benchmark(k8s_execution_engine: K8SExecutionEngine, mock_check_output):
+    k8s_execution_engine.cancel(CLIENT_ID, ACTION_ID)
+
+    expected_call = [
+        KUBECTL,
+        "delete",
+        JOINED_RESOURCE_TYPES,
+        "--selector",
+        K8SExecutionEngine._create_label_selector(CLIENT_ID, ACTION_ID),
+    ]
+    mock_check_output.assert_called_with(expected_call)
+
+
+def test_cancel_fails(k8s_execution_engine: K8SExecutionEngine, mock_check_output):
+    mock_check_output.return_value = b"No resources found"
+
+    with pytest.raises(ValueError):
+        k8s_execution_engine.cancel(CLIENT_ID, ACTION_ID)
