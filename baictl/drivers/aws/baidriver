@@ -176,7 +176,7 @@ _install_prometheus(){
     local grafana_endpoint=$(${kubectl} get service prometheus-operator-1-grafana --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
     local dashboard_uid=$(cat ${k8s_deploy_dir}/grafana-dashboards/operational-metrics-configmap.json | jq --raw-output '.uid')
 
-    ${kubectl} create configmap grafana --from-literal "grafana_endpoint=${grafana_endpoint}" --from-literal "op-metrics-dashboard-uid=${dashboard_uid}" --dry-run --output yaml | ${kubectl} apply -f - || return 1
+    ${kubectl} create configmap grafana --from-literal "grafana_endpoint=${grafana_endpoint}" --from-literal "op_metrics_dashboard_uid=${dashboard_uid}" --dry-run --output yaml | ${kubectl} apply -f - || return 1
 
     # The prometheus node-exporter does not support GPU metrics by default. Thus, adding it separately
     # This also provides per-pod metrics. But this requires that a pod actually allocates a gpu. See
