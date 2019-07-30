@@ -1,4 +1,5 @@
 import abc
+import logging
 
 from typing import Dict, List
 
@@ -11,6 +12,8 @@ from bai_kafka_utils.events import (
     BenchmarkJob,
 )
 from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService, KafkaServiceCallbackException
+
+logger = logging.getLogger(__name__)
 
 
 class ExecutionEngine(metaclass=abc.ABCMeta):
@@ -53,6 +56,7 @@ class ExecutorEventHandler(KafkaServiceCallback):
         try:
             job = engine.run(event)
         except ExecutionEngineException as e:
+            logger.exception("Engine throws exception")
             kafka_service.send_status_message_event(event, Status.ERROR, str(e))
             raise KafkaServiceCallbackException from e
 
@@ -61,7 +65,7 @@ class ExecutorEventHandler(KafkaServiceCallback):
         response_event = create_from_object(ExecutorBenchmarkEvent, event, payload=payload)
 
         kafka_service.send_status_message_event(
-            response_event, Status.SUCCEEDED, f"Benchmark successfully submitted with job id {event.action_id}"
+            response_event, Status.SUCCEEDED, f"Benchmark successfully submitted with job id {job.id}"
         )
         kafka_service.send_event(response_event, topic=self.producer_topic)
 

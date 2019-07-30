@@ -9,7 +9,9 @@ dependencies:
   - python-crontab >= 2.3
   - flake8
   - kafka-python 1.4.6
+  - boto3 1.9.*
   - pip
+  - toml 0.9.*
   - pip:
     - dataclasses-json==0.2.7
     - dacite
