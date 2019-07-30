@@ -77,10 +77,10 @@ spec:
                 name: outputs-infrastructure
                 key: private_subnets
           - name: SAGEMAKER_SECURITY_GROUP_IDS
-              valueFrom:
-                configMapKeyRef:
-                  name: outputs-infrastructure
-                  key: loopback_security_group_id
+            valueFrom:
+              configMapKeyRef:
+                name: outputs-infrastructure
+                key: loopback_security_group_id
           - name: AWS_DEFAULT_REGION
             valueFrom:
               configMapKeyRef:
