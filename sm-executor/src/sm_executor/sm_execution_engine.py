@@ -1,12 +1,13 @@
 import logging
 import tempfile
-from math import ceil
 
+import boto3
 import botocore
 import sagemaker
 from bai_kafka_utils.events import FetcherBenchmarkEvent, BenchmarkJob
 from bai_kafka_utils.executors.descriptor import DescriptorConfig, Descriptor, DescriptorError
 from bai_kafka_utils.executors.execution_callback import ExecutionEngine, ExecutionEngineException
+from math import ceil
 from typing import Callable
 
 from sm_executor.args import SageMakerExecutorConfig
@@ -31,10 +32,17 @@ class SageMakerExecutionEngine(ExecutionEngine):
         session_factory: SageMakerSessionFactory,
         estimator_factory: EstimatorFactory,
         config: SageMakerExecutorConfig,
+        sagemaker_client=None,
     ):
         self.session_factory = session_factory
         self.estimator_factory = estimator_factory
         self.config = config
+
+        self.sagemaker_client = sagemaker_client or boto3.client("sagemaker")
+
+    @staticmethod
+    def _get_job_name(action_id: str):
+        return action_id
 
     def run(self, event: FetcherBenchmarkEvent) -> BenchmarkJob:
         try:
@@ -59,7 +67,7 @@ class SageMakerExecutionEngine(ExecutionEngine):
             data = self._get_estimator_data(event)
 
             try:
-                job_name = event.action_id
+                job_name = SageMakerExecutionEngine._get_job_name(event.action_id)
                 estimator.fit(data, wait=False, logs=False, job_name=job_name)
             except botocore.exceptions.ClientError as e:
                 raise ExecutionEngineException("Cannot execute the requested benchmark") from e
@@ -81,4 +89,5 @@ class SageMakerExecutionEngine(ExecutionEngine):
         return total_size_gb
 
     def cancel(self, client_id: str, action_id: str):
-        pass
+        job_name = SageMakerExecutionEngine._get_job_name(action_id)
+        self.sagemaker_client.stop_training_job(TrainingJobName=job_name)

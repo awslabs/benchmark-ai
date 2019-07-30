@@ -1,4 +1,5 @@
 import addict
+import boto3
 import botocore
 import pytest
 from bai_kafka_utils.events import (
@@ -13,6 +14,7 @@ from bai_kafka_utils.events import (
 )
 from bai_kafka_utils.executors.descriptor import Descriptor, DescriptorError
 from bai_kafka_utils.executors.execution_callback import ExecutionEngineException
+from botocore.stub import Stubber
 from pytest import fixture
 from sagemaker import Session
 from sagemaker.estimator import EstimatorBase, Framework
@@ -33,6 +35,8 @@ HUGE_DATASET_SIZE_BYTES = HUGE_DATASET_GB * 1024 ** 3
 SCRIPTS = [FileSystemObject(dst="s3://exchange/script.tar")]
 
 ACTION_ID = "ACTION_ID"
+
+CLIENT_ID = "CLIENT_ID"
 
 DATASET_ID = "some_data"
 
@@ -79,11 +83,25 @@ def mock_session_factory(mock_session):
 
 
 @fixture
+def mock_sagemaker_client():
+    sagemaker_client = boto3.client("sagemaker")
+    stub = Stubber(sagemaker_client)
+
+    stub.add_response("stop_training_job", service_response={}, expected_params={"TrainingJobName": ACTION_ID})
+
+    stub.activate()
+    return sagemaker_client
+
+
+@fixture
 def sm_execution_engine_to_test(
-    mock_session_factory, mock_estimator_factory, sagemaker_config: SageMakerExecutorConfig
+    mock_session_factory, mock_estimator_factory, sagemaker_config: SageMakerExecutorConfig, mock_sagemaker_client
 ):
     return SageMakerExecutionEngine(
-        session_factory=mock_session_factory, estimator_factory=mock_estimator_factory, config=sagemaker_config
+        session_factory=mock_session_factory,
+        estimator_factory=mock_estimator_factory,
+        config=sagemaker_config,
+        sagemaker_client=mock_sagemaker_client,
     )
 
 
@@ -201,3 +219,7 @@ def test_run_fail_from_sagemaker(
     mock_estimator.fit.side_effect = botocore.exceptions.ClientError(MOCK_ERROR_RESPONSE, "start job")
     with pytest.raises(ExecutionEngineException):
         sm_execution_engine_to_test.run(fetcher_event)
+
+
+def test_cancel(sm_execution_engine_to_test: SageMakerExecutionEngine):
+    sm_execution_engine_to_test.cancel(CLIENT_ID, ACTION_ID)
