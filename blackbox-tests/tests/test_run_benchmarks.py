@@ -1,12 +1,6 @@
 import dataclasses
-import os
 import sys
 from builtins import TimeoutError
-from contextlib import contextmanager
-
-import subprocess
-import tempfile
-
 from bai_kafka_utils.events import Status, StatusMessageBenchmarkEvent
 from typing import Iterable, Iterator
 from collections import namedtuple
@@ -24,36 +18,9 @@ logger = logging.getLogger(__name__)
 logger.setLevel(level="DEBUG")
 
 
-@contextmanager
-def create_client():
-    # HACK: Port forwarding because BFF is not currently exposed to the world as a service
-    #       https://github.com/MXNetEdge/benchmark-ai/issues/454
-    dirname = os.path.dirname(sys.executable)
-    with tempfile.NamedTemporaryFile("w+", prefix="bai-blackbox-", suffix=".kubeconfig") as kubeconfig_file:
-        eks_update_kubeconfig_command = (
-            f"{dirname}/aws eks update-kubeconfig --name benchmark-cluster --kubeconfig {kubeconfig_file.name}"
-        )
-        print(f"Executing: {eks_update_kubeconfig_command}")
-        subprocess.check_output(eks_update_kubeconfig_command.split(" "))
-        port_forward_command = (
-            f"{dirname}/kubectl --kubeconfig={kubeconfig_file.name} port-forward deployment/bai-bff 8080"
-        )
-        print(f"Executing: {port_forward_command}")
-        with subprocess.Popen(port_forward_command.split(" "), stdout=subprocess.PIPE) as port_forward_process:
-            try:
-                while True:
-                    retcode = port_forward_process.poll()
-                    if retcode:
-                        print("Output of `kubectl port-forward`: '%s'" % port_forward_process.stdout.read())
-                        raise ValueError(f"Port-forward command returned with exitcode: {retcode}")
-                    line = port_forward_process.stdout.readline()
-                    line = line.decode("utf-8")
-                    print(line)
-                    if "Forwarding from 127.0.0.1:8080 -> 8080" in line:
-                        break
-                yield BaiClient(endpoint="http://localhost:8080")
-            finally:
-                port_forward_process.kill()
+@pytest.fixture(scope="module")
+def client(bff_endpoint):
+    yield BaiClient(endpoint=bff_endpoint)
 
 
 def generator_status_messages(
@@ -148,14 +115,13 @@ def get_sample_benchmark_descriptor_filepath(benchmark) -> Path:
         # ("single-node", "descriptor_gpu.toml"),
     ],
 )
-def test_sample_benchmarks(descriptor_filename):
+def test_sample_benchmarks(client, descriptor_filename):
     print(f"Starting test for {descriptor_filename}")
     full_path = str(get_sample_benchmark_descriptor_filepath(descriptor_filename))
-    with create_client() as client:
-        action_id = client.submit(full_path)
-        print(f"action_id={action_id}")
-        wait_for_benchmark_completion(client, action_id)
-        status_messages = client.status(action_id)
+    action_id = client.submit(full_path)
+    print(f"action-id={action_id}")
+    wait_for_benchmark_completion(client, action_id)
+    status_messages = client.status(action_id)
     print("#" * 120)
     print("# Status messages (for debugging)")
     print("#" * 120)

@@ -36,6 +36,11 @@ resource "aws_codebuild_project" "ci-create-infra" {
       name = "AWS_PREFIX_LIST_ID"
       value = var.prefix_list_id
     }
+
+    environment_variable {
+      name = "EXTRA_CIDR_BLOCK"
+      value = "${module.blackbox-tests-vpc.nat_public_ips[0]}/32"
+    }
   }
 
   source {
