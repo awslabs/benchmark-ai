@@ -68,7 +68,7 @@ You are now ready to create the environment to use the tool:
 
 ```bash
 git clone https://github.com/MXNetEdge/benchmark-ai.git
-cd benchmark-ai/baictl
+cd benchmark-ai
 ```
 
 ## Step 1 - Create the infrastructure
@@ -78,7 +78,7 @@ cd benchmark-ai/baictl
 You will now create a Codebuild pipeline that deploys Anubis infrastructure and services in your AWS account using the default region us-east-1 (this can be changed from benchmark-ai/ci/variables.tf):
 
 ```bash
-# Assuming PWD is `benchmark-ai/`
+# Assuming PWD is `benchmark-ai`
 cd ci
 conda env update && conda activate ci
 ./terraform-init.py
