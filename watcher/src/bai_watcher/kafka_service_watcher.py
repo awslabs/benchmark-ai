@@ -44,7 +44,7 @@ def choose_status_from_benchmark_status(job_status: BenchmarkJobStatus) -> Tuple
 
 
 class WatchJobsEventHandler(KafkaServiceCallback):
-    MESSAGE_METRICS_AVAILABLE = "Metrics available for job %s at %s"
+    MESSAGE_METRICS_AVAILABLE = "Metrics available for job {action_id} at {results_url}"
 
     def __init__(self, config: WatcherServiceConfig):
         self.config = config
@@ -98,7 +98,7 @@ class WatchJobsEventHandler(KafkaServiceCallback):
             client_id=client_id,
             action_id=action_id,
         )
-        return self.MESSAGE_METRICS_AVAILABLE.format(action_id, grafana_url)
+        return self.MESSAGE_METRICS_AVAILABLE.format(action_id=action_id, results_url=grafana_url)
 
 
 def create_service(common_kafka_cfg: KafkaServiceConfig, service_cfg: WatcherServiceConfig) -> KafkaService:
