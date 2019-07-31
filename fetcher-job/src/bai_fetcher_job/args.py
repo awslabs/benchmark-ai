@@ -3,11 +3,11 @@ from dataclasses import dataclass, field
 from configargparse import ArgParser
 from typing import Optional
 
-EXP_MULTIPLIER = 1000
+EXP_MULTIPLIER_MS = 1000
 
 MAX_ATTEMPTS = 5
 
-MAX_WAIT = 60 * 5
+MAX_WAIT_MS = 60 * 5 * 1000
 
 
 @dataclass
@@ -38,8 +38,8 @@ def get_fetcher_job_args(args, env_vars):
     parser.add_argument("--zookeeper-ensemble-hosts", env_var="ZOOKEEPER_ENSEMBLE_HOSTS", default="localhost:2181")
     parser.add_argument("--logging-level", env_var="LOGGING_LEVEL", default="INFO")
     parser.add_argument("--retry-max-attempts", env_var="RETRY_MAX_ATTEMPTS", type=int, default=MAX_ATTEMPTS)
-    parser.add_argument("--retry-exp-max", env_var="RETRY_EXP_MAX", type=int, default=MAX_WAIT)
-    parser.add_argument("--retry-exp-multiplier", env_var="RETRY_EXP_MULTIPLIER", type=int, default=EXP_MULTIPLIER)
+    parser.add_argument("--retry-exp-max", env_var="RETRY_EXP_MAX", type=int, default=MAX_WAIT_MS)
+    parser.add_argument("--retry-exp-multiplier", env_var="RETRY_EXP_MULTIPLIER", type=int, default=EXP_MULTIPLIER_MS)
     parser.add_argument("--tmp-dir", env_var="TMP_DIR", type=str)
     parsed_args = parser.parse_args(args, env_vars=env_vars)
 
