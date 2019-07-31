@@ -19,6 +19,14 @@ class HTTPFamily(IntEnum):
     def from_status(cls, status_code: int):
         return HTTPFamily(status_code - status_code % 100)
 
+    @classmethod
+    def check_status(cls, status_code: int):
+        family = HTTPFamily.from_status(status_code)
+        if family == HTTPFamily.CLIENT_ERROR:
+            raise HttpClientError()
+        if family == HTTPFamily.SERVER_ERROR:
+            raise HttpServerError()
+
 
 class ProgressTracker:
     reported = 0
@@ -36,6 +44,17 @@ class ProgressTracker:
             self.reported = downloaded
 
 
+def http_perform(curl: pycurl.Curl):
+    # Utility function for curl - just do our usual stuff
+    try:
+        curl.perform()
+    except pycurl.error as e:
+        raise CurlError from e
+
+    status = curl.getinfo(pycurl.HTTP_CODE)
+    HTTPFamily.check_status(status)
+
+
 def http_download(fp: TextIO, src: str):
     curl = pycurl.Curl()
     curl.setopt(pycurl.URL, src)
@@ -48,16 +67,7 @@ def http_download(fp: TextIO, src: str):
     progress = ProgressTracker()
     curl.setopt(pycurl.XFERINFOFUNCTION, progress)
     curl.setopt(pycurl.WRITEDATA, fp)
-    logger.info(f"Start download {src}")
-    try:
-        curl.perform()
-    except pycurl.error as e:
-        raise CurlError from e
 
-    status = curl.getinfo(pycurl.HTTP_CODE)
-    family = HTTPFamily.from_status(status)
-    if family == HTTPFamily.CLIENT_ERROR:
-        raise HttpClientError()
-    if family == HTTPFamily.SERVER_ERROR:
-        raise HttpServerError()
+    logger.info(f"Start download {src}")
+    http_perform(curl)
     logger.info(f"End download {src}")

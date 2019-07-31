@@ -8,7 +8,7 @@ from unittest.mock import create_autospec
 
 from bai_io_utils import http_utils
 from bai_io_utils.failures import HttpServerError, HttpClientError, CurlError
-from bai_io_utils.http_utils import http_download
+from bai_io_utils.http_utils import http_download, http_perform
 
 SRC = "http://someserver.com/somefile.zip"
 
@@ -43,6 +43,7 @@ def mock_curl_with_server_error(mock_curl):
 @fixture
 def mock_curl_not_http_error(mock_curl):
     mock_curl.perform.side_effect = pycurl.error()
+    return mock_curl
 
 
 @fixture
@@ -50,19 +51,23 @@ def mock_temp_file():
     return create_autospec(TextIO)
 
 
-def test_server_error(mock_temp_file, mock_curl_with_server_error):
+def test_http_perform_success(mock_curl_with_success):
+    http_perform(mock_curl_with_success)
+
+
+def test_http_perform_server_error(mock_curl_with_server_error):
     with pytest.raises(HttpServerError):
-        http_download(mock_temp_file, SRC)
+        http_perform(mock_curl_with_server_error)
 
 
-def test_client_error(mock_temp_file, mock_curl_with_client_error):
+def test_http_perform_client_error(mock_curl_with_client_error):
     with pytest.raises(HttpClientError):
-        http_download(mock_temp_file, SRC)
+        http_perform(mock_curl_with_client_error)
 
 
-def test_not_http_error(mock_temp_file, mock_curl_not_http_error):
+def test_http_perform_not_http_error(mock_curl_not_http_error):
     with pytest.raises(CurlError):
-        http_download(mock_temp_file, SRC)
+        http_perform(mock_curl_not_http_error)
 
 
 def test_curl_passthrough(mock_temp_file, mock_curl_with_success):
