@@ -1,0 +1,25 @@
+[info]
+execution_engine = "aws.sagemaker"
+
+[ml]
+benchmark_code = "python -W ignore horovod/examples/tensorflow_synthetic_benchmark.py --no-cuda --num-warmup-batche 10 --num-iters 10 --model ResNet50"
+framework = "tensorflow"
+
+[env]
+docker_image = "567984581488.dkr.ecr.us-east-1.amazonaws.com/beta-tensorflow-training:1.13-py3-cpu-with-horovod-build-2019-05-25-00-41-18"
+
+[env.vars]
+TENSORFLOW_INTER_OP_PARALLELISM = "2"
+TENSORFLOW_INTRA_OP_PARALLELISM = "72"
+OMP_NUM_THREADS = "36"
+KMP_AFFINITY = "granularity=fine,verbose,compact,1,0"
+TENSORFLOW_SESSION_PARALLELISM = "9"
+KMP_BLOCKTIME = "1"
+KMP_SETTINGS = "0"
+
+[hardware]
+instance_type="ml.c5.18xlarge"
+strategy = "horovod"
+
+[hardware.distributed]
+num_instances="4"
