@@ -1,7 +1,10 @@
 import pytest
+from pytest import fixture
 
-from bai_kafka_utils.events import FetcherStatus, FetchedType
+from bai_kafka_utils.events import FetcherStatus, FetchedType, DataSet
 from bai_zk_utils.states import FetcherResult
+
+ERROR = "Error"
 
 FETCHER_DONE_RESULT = FetcherResult(FetcherStatus.DONE, FetchedType.FILE, "Success")
 
@@ -33,3 +36,24 @@ def test_deserialize_state_not_final():
 def test_deserialize_state_strange():
     with pytest.raises(Exception):
         FetcherResult.from_binary(STATE_STRANGE_BIN)
+
+
+@fixture
+def some_data_set():
+    return DataSet(src="http://something.com/dataset.zip", dst="s3://something/dataset.zip")
+
+
+def test_update_success(some_data_set: DataSet):
+    FETCHER_DONE_RESULT.update(some_data_set)
+
+    assert some_data_set.dst
+    assert some_data_set.type == FetchedType.FILE
+    assert not some_data_set.message
+
+
+def test_update_failed(some_data_set: DataSet):
+    FetcherResult(FetcherStatus.FAILED, FetchedType.FILE, ERROR).update(some_data_set)
+
+    assert not some_data_set.dst
+    assert some_data_set.type == FetchedType.FILE
+    assert some_data_set.message == ERROR

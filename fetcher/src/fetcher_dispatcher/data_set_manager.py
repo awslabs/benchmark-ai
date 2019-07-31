@@ -59,6 +59,12 @@ class DataSetManager:
 
     INITIAL_DATA = FetcherResult(FetcherStatus.PENDING).to_binary()
 
+    @staticmethod
+    def _set_failed(data_set: DataSet, message: str):
+        data_set.message = message
+        data_set.status = FetcherStatus.FAILED
+        data_set.dst = None
+
     def __init__(
         self,
         zk: KazooClient,
@@ -86,6 +92,15 @@ class DataSetManager:
                 on_done(data_set)
                 self._data_set_dispatcher.cleanup(data_set, event)
                 lock.release()
+
+            try:
+                data_set.size_info = self._size_estimator(data_set.src)
+            except Exception as e:
+                logger.exception(f"Failed to estimate the size of the dataset {data_set.src}.")
+                FetcherResult(FetcherStatus.FAILED, None, str(e)).update(data_set)
+                on_done(data_set)
+                lock.release()
+                return
 
             # This node will be killed if I die
             zk_node_path = self._get_node_path(event.client_id, event.action_id, data_set)
@@ -119,12 +134,7 @@ class DataSetManager:
         logger.info("Fetch request %s result = %s", data_set, result)
 
         if result.status.final:
-            data_set.status = result.status
-            data_set.type = result.type
-
-            if not result.status.success:
-                data_set.message = result.message
-                data_set.dst = None
+            result.update(data_set)
 
             # We clean up
             self._zk.delete(zk_node_path)

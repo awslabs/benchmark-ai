@@ -5,6 +5,7 @@ from urllib.parse import urlparse
 import boto3
 from botocore.exceptions import ClientError
 
+from bai_io_utils.failures import S3Error
 from bai_kafka_utils.events import DataSetSizeInfo
 
 logger = logging.getLogger(__name__)
@@ -32,12 +33,14 @@ def s3_estimate_size(src: str, s3: Any = None) -> DataSetSizeInfo:
     total_size = 0
     max_size = 0
 
-    for sub_obj in bucket.objects.filter(Prefix=obj.key):
-        if not sub_obj.size:
-            continue
+    try:
+        for sub_obj in bucket.objects.filter(Prefix=obj.key):
+            if not sub_obj.size:
+                continue
 
-        cnt = cnt + 1
-        total_size += sub_obj.size
-        max_size = max(max_size, sub_obj.size)
-
+            cnt = cnt + 1
+            total_size += sub_obj.size
+            max_size = max(max_size, sub_obj.size)
+    except ClientError as e:
+        raise S3Error from e
     return DataSetSizeInfo(int(total_size), cnt, int(max_size))
