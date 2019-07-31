@@ -1,0 +1,13 @@
+name: cron-job
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python 3.7.*
+  - kafka-python 1.4.6
+  - pip
+  - pip:
+    - dacite
+    - ConfigArgParse
+    - dataclasses-json==0.2.7
+    - flake8-black
