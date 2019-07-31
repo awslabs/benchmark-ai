@@ -1,0 +1,57 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {job_id}
+  labels:
+    app: benchmark-ai
+    action-id: {event.action_id}
+    client-id: {event.client_id}
+    created-by: {service_name}
+spec:
+  schedule: "{descriptor.scheduling}"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: benchmark-ai
+            action-id: {event.action_id}
+            client-id: {event.client_id}
+            created-by: {service_name}
+          annotations:
+            iam.amazonaws.com/role: data-puller
+        spec:
+          serviceAccountName: metrics-pusher
+#          affinity:
+#            podAntiAffinity:
+#              requiredDuringSchedulingIgnoredDuringExecution:
+#              - labelSelector:
+#                  matchExpressions:
+#                  - key: app
+#                    operator: In
+#                    values:
+#                    - benchmark-ai
+#                topologyKey: kubernetes.io/hostname
+          containers:
+          - name: benchmark-starter
+            image: "benchmarkai/cron-job"
+            command: []
+            args: []
+            securityContext:
+              privileged: false
+            env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: outputs-infrastructure
+                  key: msk_bootstrap_brokers
+            - name: PRODUCER_TOPIC
+              value: "BAI_APP_FETCHER"
+            - name: BENCHMARK_EVENT
+              value: "{source_benchmark_event}"
+#           nodeSelector:
+#            beta.kubernetes.io/instance-type: descriptor.instance_type
+#            node.type: bai-worker
+#            failure-domain.beta.kubernetes.io/zone: availability_zone
+          restartPolicy: Never
+#      backoffLimit: 4

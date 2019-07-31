@@ -74,6 +74,8 @@ class KubernetesRootObjectHelper:
                 self._root = addict.Dict(d)
             elif kind == "RoleBinding":
                 self.role_bindings.append(addict.Dict(d))
+            elif kind == "CronJob":
+                pass
             else:
                 raise ValueError("Kubernetes yaml object is of an unsupported kind type: {}".format(d["kind"]))
 

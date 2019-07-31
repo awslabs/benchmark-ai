@@ -30,8 +30,10 @@ class K8SExecutionEngine(ExecutionEngine):
         self.config = config
 
     def run(self, event: FetcherBenchmarkEvent) -> BenchmarkJob:
+        job_id = K8SExecutionEngine.JOB_ID_PREFIX + event.action_id
         descriptor_contents = event.payload.toml.contents
         fetched_data_sources = event.payload.datasets
+
         scripts = event.payload.scripts
         job_id = K8SExecutionEngine.JOB_ID_PREFIX + event.action_id
 
