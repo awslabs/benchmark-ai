@@ -66,7 +66,7 @@ class WatchJobsEventHandler(KafkaServiceCallback):
             logger.info(f"Benchmark job '{job_id}'' has status '{benchmark_job_status}'")
             status, message = choose_status_from_benchmark_status(benchmark_job_status)
             kafka_service.send_status_message_event(event, status, message)
-            if benchmark_job_status == Status.SUCCEEDED:
+            if benchmark_job_status == BenchmarkJobStatus.SUCCEEDED:
                 kafka_service.send_status_message_event(
                     event, status.METRICS_AVAILABLE, self._get_metrics_available_message(event)
                 )
