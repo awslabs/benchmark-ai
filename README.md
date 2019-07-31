@@ -78,7 +78,7 @@ cd benchmark-ai/baictl
 You will now create a Codebuild pipeline that deploys Anubis infrastructure and services in your AWS account using the default region us-east-1 (this can be changed from benchmark-ai/ci/variables.tf):
 
 ```bash
-# Assuming PWD is `benchmark-ai/baictl`
+# Assuming PWD is `benchmark-ai/`
 cd ci
 conda env update && conda activate ci
 ./terraform-init.py
