@@ -15,13 +15,20 @@ DATA_SIZE = 42
 SOME_DATASET_SRC = "http://someserver.com/somedata.zip"
 
 
+def mock_curl_getinfo(var: int):
+    if var == pycurl.CONTENT_LENGTH_DOWNLOAD:
+        return DATA_SIZE
+    elif var == pycurl.HTTP_CODE:
+        return 200
+
+
 @fixture
 def mock_curl(mocker):
     mock_Curl = mocker.patch.object(http_estimator.pycurl, "Curl")
     mock_curl = create_autospec(Curl)
     mock_Curl.return_value = mock_curl
 
-    mock_curl.getinfo.return_value = DATA_SIZE
+    mock_curl.getinfo.side_effect = mock_curl_getinfo
 
     return mock_curl
 

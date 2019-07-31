@@ -12,8 +12,8 @@ from bai_k8s_utils.kubernetes_tests_client import KubernetesTestUtilsClient
 
 
 S3_DST = "s3://dst"
-SOMEDATA_BIG = "http://somedata.big"
-SOMEDATA_BIG_WITH_DELAY = "http://somedata.big?delay=120"
+SOMEDATA_BIG = "http://dataserver:8080/big-file"
+SOMEDATA_BIG_WITH_DELAY = "http://dataserver:8080/big-file?delay=120"
 
 BIG_FILE_SIZE = 64 * 1024 * 1024
 SMALL_FILE_SIZE = 1024
