@@ -41,13 +41,13 @@ resource "aws_iam_role_policy" "codepipeline-start-builds" {
 }
 
 resource "aws_iam_role_policy_attachment" "codepipeline-attachment" {
-  role = aws_iam_role.codepipeline.name
+  role       = aws_iam_role.codepipeline.name
   policy_arn = aws_iam_policy.build-artifacts.arn
 }
 
 
 resource "aws_codepipeline" "codepipeline" {
-  name     = "master"
+  name     = "Anubis"
   role_arn = aws_iam_role.codepipeline.arn
 
   artifact_store {
@@ -67,9 +67,9 @@ resource "aws_codepipeline" "codepipeline" {
       output_artifacts = ["source_output"]
 
       configuration = {
-        Owner  = var.github_organization
-        Repo   = "benchmark-ai"
-        Branch = var.github_branch
+        Owner                = var.github_organization
+        Repo                 = "benchmark-ai"
+        Branch               = var.github_branch
         PollForSourceChanges = true
       }
     }
@@ -83,13 +83,13 @@ resource "aws_codepipeline" "codepipeline" {
       iterator = project
 
       content {
-        name = project.value
-        category = "Build"
-        owner = "AWS"
-        provider = "CodeBuild"
-        input_artifacts = ["source_output"]
+        name             = project.value
+        category         = "Build"
+        owner            = "AWS"
+        provider         = "CodeBuild"
+        input_artifacts  = ["source_output"]
         output_artifacts = [replace("build_output_${project.value}", "-", "_")]
-        version = "1"
+        version          = "1"
 
         configuration = {
           ProjectName = "${project.value}-master"
@@ -106,13 +106,13 @@ resource "aws_codepipeline" "codepipeline" {
       iterator = project
 
       content {
-        name = project.value
-        category = "Build"
-        owner = "AWS"
-        provider = "CodeBuild"
-        input_artifacts = ["source_output"]
+        name             = project.value
+        category         = "Build"
+        owner            = "AWS"
+        provider         = "CodeBuild"
+        input_artifacts  = ["source_output"]
         output_artifacts = [replace("publish_output_${project.value}", "-", "_")]
-        version = "1"
+        version          = "1"
 
         configuration = {
           ProjectName = "${project.value}-publish"
@@ -125,13 +125,13 @@ resource "aws_codepipeline" "codepipeline" {
     name = "CreateInfra"
 
     action {
-      name = "CreateInfra"
-      category = "Build"
-      owner = "AWS"
-      provider = "CodeBuild"
-      input_artifacts = ["source_output"]  # To obtain the buildspec
+      name             = "CreateInfra"
+      category         = "Build"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      input_artifacts  = ["source_output"] # To obtain the buildspec
       output_artifacts = ["infra_output"]
-      version = "1"
+      version          = "1"
 
       configuration = {
         ProjectName = aws_codebuild_project.ci-create-infra.name
@@ -147,16 +147,16 @@ resource "aws_codepipeline" "codepipeline" {
       iterator = project
 
       content {
-        name = project.value
-        category = "Build"
-        owner = "AWS"
-        provider = "CodeBuild"
-        input_artifacts = ["source_output", "infra_output"]
+        name             = project.value
+        category         = "Build"
+        owner            = "AWS"
+        provider         = "CodeBuild"
+        input_artifacts  = ["source_output", "infra_output"]
         output_artifacts = []
-        version = "1"
+        version          = "1"
 
         configuration = {
-          ProjectName = "${project.value}-deploy"
+          ProjectName   = "${project.value}-deploy"
           PrimarySource = "source_output"
         }
       }
@@ -167,13 +167,13 @@ resource "aws_codepipeline" "codepipeline" {
     name = "blackbox-tests"
 
     action {
-      name = "RunBlackboxTests"
-      category = "Build"
-      owner = "AWS"
-      provider = "CodeBuild"
-      input_artifacts = ["source_output"]
+      name             = "RunBlackboxTests"
+      category         = "Build"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      input_artifacts  = ["source_output"]
       output_artifacts = []
-      version = "1"
+      version          = "1"
 
       configuration = {
         ProjectName = aws_codebuild_project.ci-blackbox-tests.name
@@ -186,10 +186,10 @@ resource "aws_codepipeline" "codepipeline" {
 
 locals {
   common_environment_variables = {
-    for project in var.projects:
+    for project in var.projects :
     project => {
-      ACCOUNT_ID = data.aws_caller_identity.current.account_id
-      PROJECT_NAME = project
+      ACCOUNT_ID      = data.aws_caller_identity.current.account_id
+      PROJECT_NAME    = project
       DOCKER_REGISTRY = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.region}.amazonaws.com"
     }
   }
@@ -217,25 +217,25 @@ resource "aws_codebuild_project" "ci-unit-tests-master" {
       var.projects[count.index],
       var.ci_docker_image["default"]
     )
-    type = "LINUX_CONTAINER"
+    type            = "LINUX_CONTAINER"
     privileged_mode = true
 
     environment_variable {
-      name = "RUN_INTEGRATION_TESTS"
+      name  = "RUN_INTEGRATION_TESTS"
       value = tostring(var.run_integration_tests)
     }
 
     dynamic "environment_variable" {
       for_each = local.common_environment_variables[var.projects[count.index]]
       content {
-        name = environment_variable.key
+        name  = environment_variable.key
         value = environment_variable.value
       }
     }
   }
 
   source {
-    type = "CODEPIPELINE"
+    type      = "CODEPIPELINE"
     buildspec = "${var.projects[count.index]}/buildspec.yml"
   }
 }
@@ -256,22 +256,22 @@ resource "aws_codebuild_project" "ci-publish-master" {
   }
 
   environment {
-    compute_type = "BUILD_GENERAL1_SMALL"
-    image = "aws/codebuild/standard:2.0"
-    type = "LINUX_CONTAINER"
+    compute_type    = "BUILD_GENERAL1_SMALL"
+    image           = "aws/codebuild/standard:2.0"
+    type            = "LINUX_CONTAINER"
     privileged_mode = true
 
     dynamic "environment_variable" {
       for_each = local.common_environment_variables[var.projects[count.index]]
       content {
-        name = environment_variable.key
+        name  = environment_variable.key
         value = environment_variable.value
       }
     }
   }
 
   source {
-    type = "CODEPIPELINE"
+    type      = "CODEPIPELINE"
     buildspec = "ci/buildspec-publish.yml"
   }
 }
@@ -294,20 +294,20 @@ resource "aws_codebuild_project" "ci-deploy-master" {
 
   environment {
     compute_type = "BUILD_GENERAL1_SMALL"
-    image = var.ci_docker_image["default"]
-    type = "LINUX_CONTAINER"
+    image        = var.ci_docker_image["default"]
+    type         = "LINUX_CONTAINER"
 
     dynamic "environment_variable" {
       for_each = local.common_environment_variables[var.projects[count.index]]
       content {
-        name = environment_variable.key
+        name  = environment_variable.key
         value = environment_variable.value
       }
     }
   }
 
   source {
-    type = "CODEPIPELINE"
+    type      = "CODEPIPELINE"
     buildspec = "ci/buildspec-deploy.yml"
   }
 }
@@ -355,10 +355,10 @@ data "aws_subnet_ids" "blackbox-tests-security-group" {
 }
 
 resource "aws_codebuild_project" "ci-blackbox-tests" {
-  name          = "blackbox-tests"
-  description   = "Runs blackbox tests"
+  name = "blackbox-tests"
+  description = "Runs blackbox tests"
   build_timeout = "120"
-  service_role  = aws_iam_role.code-build-role.arn
+  service_role = aws_iam_role.code-build-role.arn
   badge_enabled = false
 
   artifacts {
@@ -372,7 +372,7 @@ resource "aws_codebuild_project" "ci-blackbox-tests" {
   }
 
   source {
-    type            = "CODEPIPELINE"
+    type = "CODEPIPELINE"
     buildspec = "blackbox-tests/buildspec.yml"
   }
 

@@ -69,51 +69,44 @@ You are now ready to create the environment to use the tool:
 ```bash
 git clone https://github.com/MXNetEdge/benchmark-ai.git
 cd benchmark-ai/baictl
-./baictl-infrastructure.py --help
 ```
 
 ## Step 1 - Create the infrastructure
 
-You will now create the whole BAI infrastructure in your AWS account using the default region us-west-2 (this can be changed from benchmark-ai/baictl/config.yml):
+**NOTE**: These steps will soon be replaced by a wrapper script to make your life easier! 
+
+You will now create a Codebuild pipeline that deploys Anubis infrastructure and services in your AWS account using the default region us-east-1 (this can be changed from benchmark-ai/ci/variables.tf):
 
 ```bash
 # Assuming PWD is `benchmark-ai/baictl`
-./baictl-infrastructure.py create
+cd ci
+conda env update && conda activate ci
+./terraform-init.py
+terraform apply
 ```
 
-After approximately 10 minutes the infrastructure should be created in your account. An example of output is:
+Type 'yes' when prompted and terraform will create the Codebuild pipeline and its dependencies.  When terraform finishes navigate to the AWS console -> Codebuild -> Pipeline -> Pipelines -> Anubis on the console to see the status of the installation
 
-```
-Please enter the AWS_PROFILE name [Default: None]:
-2019-07-02 13:24:01,958- INFO - Found credentials in shared credentials file: ~/.aws/credentials
-2019-07-02 13:24:04,935- INFO - Building Docker image
-2019-07-02 13:26:34,849- INFO - Updating CloudFormation stack: baictl-ecs
-2019-07-02 13:26:35,267- INFO - No CloudFormation changes
-2019-07-02 13:26:38,847- INFO - Publishing docker image, this might take ~15 minutes
-2019-07-02 13:40:55,140- INFO - Executing infrastructure build on AWS Elastic Container Service
-2019-07-02 13:40:55,954- INFO - Running ECS Task to create infrastructure
-2019-07-02 13:40:56,880- INFO - Waiting for logs, this should take less than 60 seconds
-2019-07-02 13:42:02,928- INFO - Cloudwatch log for run here: https://console.aws.amazon.com/cloudwatch/home?region=us-west-2#logEventViewer:group=baictl-ecs-baictl;stream=baictl/baictl/a3571780-fc1d-47fa-92b8-187bd130fa66
-2019-07-02 13:42:03,654- INFO - Waiting for ECS task to finish...
-2019-07-02 14:08:42,317- INFO - Complete!  Anubis infrastructure is ready
-2019-07-02 14:08:42,319- INFO - Syncing ~/.bai directory with infrastructure details
-```
-
-As you probably guessed, under the hood, `baictl` is:
+As you probably guessed, under the hood, the CreateInfra stage is using `baictl` which is:
 
 - Using [terraform](https://www.terraform.io/) to create all of the AWS infrastructure:
     - an [EKS](https://aws.amazon.com/eks) cluster
     - an [Elasticsearch](https://aws.amazon.com/elasticsearch-service/) cluster
-    - an [MSK](http://aws.amazon.com/msk)
+    - a [MSK](http://aws.amazon.com/msk) cluster
     - a  [Prometheus](https://prometheus.io/) broker and Alert Manager
 - Adding some Pods to Kubernetes. Some of them are:
     - FluentD
     - Autoscaler
     - NVIDIA device plugin
 
-**Advanced usage**: The directory `$HOME/.bai` is created with everything related to the infrastructure (terraform output, kubeconfig, etc.).  You can optionally specify $ANUBIS_HOME with your preferred path
+And the Deploy stage is running `make deploy` on the various services:
+ - Executor
+ - Fetcher
+ - Watcher
+ - BFF
+ - ...
 
-Put bff/bin/anubis in your $PATH
+**Advanced usage**: The directory `baictl/drivers/aws/cluster/.terraform/bai` is created with everything related to the infrastructure (kubeconfig, bastion_private.pem, etc.).
 
 ## Step 2 - Run benchmarks
 
@@ -135,6 +128,8 @@ and the following will be done:
     - ElasticSearch
 - Metrics are collected into:
     - Prometheus
+
+Optional: Put bff/bin/anubis in your $PATH
 
 ## Step 3 - Collect the results of your run
 
