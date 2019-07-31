@@ -12,6 +12,9 @@ STATUS_TOPIC = "STATUS_TOPIC"
 CMD_RETURN_TOPIC = "CMD_RETURN"
 CMD_SUBMIT_TOPIC = "CMD_SUBMIT"
 BOOTSTRAP_SERVERS_ARG = ",".join(BOOTSTRAP_SERVERS)
+GRAFANA_ENDPOINT = "grafana-endpoint"
+GRAFANA_RESULTS_URL = "grafana-results"
+GRAFANA_OP_METRICS_DASHBOARD_UID = "op-metrics-uid"
 
 
 def test_main(mocker):
@@ -30,6 +33,9 @@ def test_main(mocker):
         f" --logging-level {LOGGING_LEVEL} "
         f" --kubeconfig kubeconfig "
         f" --kubernetes-namespace-of-running-jobs kubernetes-namespace "
+        f" --grafana-endpoint={GRAFANA_ENDPOINT}"
+        f" --grafana-results-url={GRAFANA_RESULTS_URL}"
+        f" --grafana-op-metrics-dashboard-uid={GRAFANA_OP_METRICS_DASHBOARD_UID}"
     )
 
     expected_common_kafka_cfg = KafkaServiceConfig(
@@ -45,7 +51,11 @@ def test_main(mocker):
     )
 
     expected_watcher_config = WatcherServiceConfig(
-        kubernetes_namespace_of_running_jobs="kubernetes-namespace", kubeconfig="kubeconfig"
+        kubernetes_namespace_of_running_jobs="kubernetes-namespace",
+        kubeconfig="kubeconfig",
+        grafana_endpoint=GRAFANA_ENDPOINT,
+        grafana_results_url=GRAFANA_RESULTS_URL,
+        grafana_op_metrics_dashboard_uid=GRAFANA_OP_METRICS_DASHBOARD_UID,
     )
 
     mock_create_service.assert_called_with(expected_common_kafka_cfg, expected_watcher_config)

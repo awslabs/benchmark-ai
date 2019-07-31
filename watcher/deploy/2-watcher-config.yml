@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+data:
+  grafana_results_url: "{grafana_endpoint}/d/{dashboard_id}/operational-metrics-by-action-id?orgId=1&from=now%2Fd&to=now%2Fd&var-datasource=Prometheus&var-cluster=&var-namespace=default&var-client_id={client_id}&var-action_id={action_id}"
+metadata:
+  name: watcher
+  namespace: default
