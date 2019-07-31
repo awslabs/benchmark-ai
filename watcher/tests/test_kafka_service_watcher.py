@@ -113,6 +113,6 @@ def test_get_metrics_available_message(watcher_config, benchmark_event):
         client_id=CLIENT_ID,
         action_id=ACTION_ID,
     )
-    expected_message = watcher.MESSAGE_METRICS_AVAILABLE.format(ACTION_ID, expected_grafana_url)
+    expected_message = watcher.MESSAGE_METRICS_AVAILABLE.format(action_id=ACTION_ID, results_url=expected_grafana_url)
 
     assert message == expected_message
