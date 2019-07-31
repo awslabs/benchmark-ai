@@ -39,6 +39,7 @@ def _create_callbacks(
 ) -> Dict[str, List[KafkaServiceCallback]]:
 
     exec_handler = ExecutorEventHandler(engines, valid_engines, common_kafka_cfg.producer_topic)
+
     cmd_object = ExecutorCommandObject(engines)
     callbacks = {
         common_kafka_cfg.consumer_topic: [exec_handler],

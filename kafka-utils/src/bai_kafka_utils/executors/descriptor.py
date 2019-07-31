@@ -101,6 +101,9 @@ class Descriptor:
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def is_single_run(self):
+        return self.scheduling is SINGLE_RUN_SCHEDULING
+
     @classmethod
     def from_toml_file(cls, toml_file: str, config: DescriptorConfig):
         """
