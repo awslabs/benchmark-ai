@@ -32,10 +32,11 @@ class K8SExecutionEngine(ExecutionEngine):
     def run(self, event: FetcherBenchmarkEvent) -> BenchmarkJob:
         descriptor_contents = event.payload.toml.contents
         fetched_data_sources = event.payload.datasets
+        scripts = event.payload.scripts
         job_id = K8SExecutionEngine.JOB_ID_PREFIX + event.action_id
 
         try:
-            yaml = create_job_yaml_spec(descriptor_contents, self.config, fetched_data_sources, job_id, event=event)
+            yaml = create_job_yaml_spec(descriptor_contents, self.config, fetched_data_sources, scripts, job_id, event=event)
             self._kubernetes_apply(yaml)
         except DescriptorError as e:
             logger.exception(f"Error parsing descriptor file")

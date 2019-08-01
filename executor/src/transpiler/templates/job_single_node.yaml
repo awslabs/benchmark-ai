@@ -35,6 +35,11 @@ spec:
         volumeMounts:
         - name: datasets-volume
           mountPath: /data
+      - name: script-puller
+        image: {config.puller_docker_image}
+        volumeMounts:
+          - name: scripts-volume
+            mountPath: /bai/scripts
       containers:
       - name: benchmark
         image: {descriptor.docker_image}
@@ -55,6 +60,8 @@ spec:
         volumeMounts:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
+        - mountPath: /bai/scripts
+          name: scripts-volume
       - name: sidecar
         image: {config.metrics_pusher_docker_image}
         env:
@@ -91,7 +98,6 @@ spec:
           value: {event.client_id}
         - name: BACKEND_ARG_TOPIC
           value: BAI_METRICS
-
         - name: POD_NAME
           valueFrom:
             fieldRef:
@@ -112,5 +118,7 @@ spec:
       - name: benchmark-ai
         emptyDir: {{}}
       - name: datasets-volume
+        emptyDir: {{}}
+      - name: scripts-volume
         emptyDir: {{}}
   backoffLimit: 4

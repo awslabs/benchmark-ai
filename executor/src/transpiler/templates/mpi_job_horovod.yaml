@@ -89,6 +89,22 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.labels['mpi_role_type']
+      - name: script-puller
+        image: {config.puller_docker_image}
+        command:
+          - /bin/puller_entrypoint.sh
+        volumeMounts:
+          - name: entrypoints-volume
+            mountPath: /bin/puller_entrypoint.sh
+            readOnly: true
+            subPath: puller_entrypoint.sh
+          - name: scripts-volume
+            mountPath: /bai/scripts
+        env:
+          - name: ROLE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.labels['mpi_role_type']
       containers:
       - image: {descriptor.docker_image}
         name: benchmark
@@ -160,6 +176,8 @@ spec:
         volumeMounts:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
+        - mountPath: /bai/scipts
+          name: scripts-volume
       volumes:
       - name: entrypoints-volume
         configMap:
@@ -168,6 +186,8 @@ spec:
       - name: benchmark-ai
         emptyDir: {{}}
       - name: datasets-volume
+        emptyDir: {{}}
+      - name: scripts-volume
         emptyDir: {{}}
       nodeSelector:
         beta.kubernetes.io/instance-type: {descriptor.instance_type}

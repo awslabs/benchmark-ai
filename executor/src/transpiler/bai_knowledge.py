@@ -4,19 +4,28 @@ import random
 import shlex
 from dataclasses import dataclass
 
-from bai_kafka_utils.events import DataSet, BenchmarkEvent
+from bai_kafka_utils.events import DataSet, BenchmarkEvent, FileSystemObject
 from bai_kafka_utils.executors.descriptor import DescriptorError, Descriptor, SINGLE_RUN_SCHEDULING, DistributedStrategy
 from ruamel import yaml
 from typing import List, Dict
 
 from executor import SERVICE_NAME
 from executor.config import ExecutorConfig
-from transpiler.config import BaiConfig, BaiDataSource, EnvironmentInfo
+from transpiler.config import BaiConfig, BaiDataSource, EnvironmentInfo, BaiScriptSource
 from transpiler.kubernetes_spec_logic import ConfigTemplate, VolumeMount, Volume, EmptyDirVolumeSource
+
+SCRIPT_UNPACK_MODIFICATOR = "unpack_in_place"
+
+SCRIPT_PULLER_CHMOD = 777
 
 BENCHMARK_CONTAINER = "benchmark"
 DATA_PULLER_CONTAINER = "data-puller"
 DATASETS_VOLUME_NAME = "datasets-volume"
+SCRIPTS_VOLUME_NAME = "scripts-volume"
+SCRIPTS_PULLER_CONTAINER = "script-puller"
+
+# To make things easier it's the same path in puller and benchmark
+SCRIPTS_MOUNT_PATH = "/bai/scripts"
 
 SHARED_MEMORY_VOLUME = "dshm"
 SHARED_MEMORY_VOLUME_MOUNT = "/dev/shm"
@@ -42,6 +51,7 @@ class BaiKubernetesObjectBuilder:
         descriptor: Descriptor,
         config: BaiConfig,
         data_sources: List[BaiDataSource],
+        scripts: List[BaiScriptSource],
         config_template: ConfigTemplate,
         job_id: str,
         *,
@@ -70,8 +80,13 @@ class BaiKubernetesObjectBuilder:
         config_template.feed({"service_name": SERVICE_NAME})
         config_template.feed({"job_id": self.job_id})
         config_template.feed({"availability_zone": availability_zone})
+
+        self.internal_env_vars = {}
+
         self.root = config_template.build()
-        self.add_volumes(data_sources)
+        self.add_data_volume_mounts(data_sources)
+        self.add_scripts(scripts)
+        self.add_shared_memory()
         self.add_env_vars()
 
         if self.config.suppress_job_affinity:
@@ -99,14 +114,13 @@ class BaiKubernetesObjectBuilder:
 
         return random_object.choice(list(environment_info.availability_zones.values()))
 
-    def add_volumes(self, data_sources: List[BaiDataSource]):
+    def add_data_volume_mounts(self, data_sources):
         benchmark_container = self.root.find_container(BENCHMARK_CONTAINER)
+        data_mounts = self._get_data_mounts(data_sources)
+        self._update_data_puller(data_mounts, data_sources)
+        benchmark_container.volumeMounts.extend(self._get_container_volume_mounts(data_mounts))
 
-        data_volumes = self._get_data_volumes(data_sources)
-        self._update_data_puller(data_volumes, data_sources)
-
-        benchmark_container.volumeMounts.extend(self._get_container_volume_mounts(data_volumes))
-
+    def add_shared_memory(self):
         if self.descriptor.extended_shm:
             self._add_extended_shm()
 
@@ -173,7 +187,7 @@ class BaiKubernetesObjectBuilder:
         else:
             self.add_benchmark_cmd_to_container()
 
-    def _get_data_volumes(self, data_sources: List[BaiDataSource]) -> Dict[str, PullerDataSource]:
+    def _get_data_mounts(self, data_sources: List[BaiDataSource]) -> Dict[str, PullerDataSource]:
         """
         Processes the input data sources to get a dict with the required data volumes
         :param data_sources:
@@ -222,6 +236,30 @@ class BaiKubernetesObjectBuilder:
 
     def add_env_vars(self):
         self.root.add_env_vars(BENCHMARK_CONTAINER, self.descriptor.env_vars)
+        self.root.add_env_vars(BENCHMARK_CONTAINER, self.internal_env_vars)
+
+    def add_scripts(self, scripts: List[BaiScriptSource]):
+        if not scripts:
+            self.root.remove_container(SCRIPTS_PULLER_CONTAINER)
+            self.root.remove_volume(SCRIPTS_VOLUME_NAME)
+            return
+        script_puller = self.root.find_container(SCRIPTS_PULLER_CONTAINER)
+        s3_objects = []
+
+        for inx, s in enumerate(scripts):
+            s3_objects.append(
+                "{object},{chmod},{path_name},{unpack}".format(
+                    object=s.object,
+                    chmod=SCRIPT_PULLER_CHMOD,
+                    path_name=f"{SCRIPTS_MOUNT_PATH}/s{inx}",
+                    unpack=SCRIPT_UNPACK_MODIFICATOR,
+                )
+            )
+
+        puller_args = [scripts[0].bucket, ":".join(s3_objects)]
+        script_puller.args = puller_args
+
+        self.internal_env_vars["BAI_SCRIPTS_PATH"] = SCRIPTS_MOUNT_PATH
 
 
 def create_bai_data_sources(fetched_data_sources: List[DataSet], descriptor: Descriptor) -> List[BaiDataSource]:
@@ -231,10 +269,15 @@ def create_bai_data_sources(fetched_data_sources: List[DataSet], descriptor: Des
     return [BaiDataSource(fetched, find_destination_path(fetched)) for fetched in fetched_data_sources]
 
 
+def create_scripts(scripts: List[FileSystemObject]) -> List[BaiScriptSource]:
+    return list(map(BaiScriptSource, scripts)) if scripts else []
+
+
 def create_bai_k8s_builder(
     descriptor: Descriptor,
     bai_config: BaiConfig,
     fetched_data_sources: List[DataSet],
+    scripts: List[FileSystemObject],
     job_id: str,
     *,
     event: BenchmarkEvent,
@@ -267,11 +310,13 @@ def create_bai_k8s_builder(
         contents = f.read()
     config_template = ConfigTemplate(contents)
     bai_data_sources = create_bai_data_sources(fetched_data_sources, descriptor)
+    bai_scripts = create_scripts(scripts)
 
     bai_k8s_builder = BaiKubernetesObjectBuilder(
         descriptor,
         bai_config,
         bai_data_sources,
+        bai_scripts,
         config_template,
         job_id,
         event=event,
@@ -293,6 +338,7 @@ def create_job_yaml_spec(
     descriptor_contents: Dict,
     executor_config: ExecutorConfig,
     fetched_data_sources: List[DataSet],
+    scripts: List[FileSystemObject],
     job_id: str,
     *,
     event: BenchmarkEvent,
@@ -304,6 +350,7 @@ def create_job_yaml_spec(
     :param descriptor_contents: dict containing the parsed descriptor
     :param executor_config: configuration for the transpiler
     :param fetched_data_sources: list of fetched data sources, as generated by the fetcher
+    :param scripts: list of supplied scripts
     :param job_id: str
     :param extra_bai_config_args: An optional Dict which will be forwarded to the `BaiConfig` object created
     :return: Tuple with (yaml string for the given descriptor, job_id)
@@ -313,6 +360,7 @@ def create_job_yaml_spec(
         descriptor,
         executor_config.bai_config,
         fetched_data_sources,
+        scripts,
         job_id,
         event=event,
         environment_info=executor_config.environment_info,

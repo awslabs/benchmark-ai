@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from urllib.parse import urlparse
 
-from bai_kafka_utils.events import DataSet
+from bai_kafka_utils.events import DataSet, FileSystemObject
 from bai_kafka_utils.executors.descriptor import DescriptorError
 from typing import Dict
 
@@ -42,4 +42,22 @@ class BaiDataSource:
         if self.scheme.lower() != "s3":
             raise DescriptorError(
                 f"Unexpected scheme in data source src: {self.scheme}." f" Fetched dataset is {fetched_data_source}"
+            )
+
+
+@dataclass(init=False)
+class BaiScriptSource:
+    scheme: str
+    bucket: str
+    object: str
+
+    def __init__(self, fetched_script: FileSystemObject):
+        parsed_uri = urlparse(fetched_script.dst)
+        self.scheme = parsed_uri.scheme
+        self.bucket = parsed_uri.netloc
+        self.object = parsed_uri.path[1:]
+
+        if self.scheme.lower() != "s3":
+            raise DescriptorError(
+                f"Unexpected scheme in script src: {self.scheme}." f" Fetched script is {fetched_script}"
             )

@@ -3,7 +3,7 @@ import random
 
 import pytest
 import toml
-from bai_kafka_utils.events import DataSet, FetchedType
+from bai_kafka_utils.events import DataSet, FetchedType, FileSystemObject
 from pytest_regressions.file_regression import FileRegressionFixture
 from typing import List
 
@@ -14,14 +14,30 @@ PULLER_S3_URI = "s3://puller-data/object-name/dir"
 JOB_ID = "benchmark-JOB-ID"
 
 
-@pytest.mark.parametrize("filename", ["hello-world.toml", "training.toml", "horovod.toml", "cronjob.toml"])
+@pytest.mark.parametrize(
+    ["descriptor_filename", "expected_yaml", "scripts"],
+    [
+        ("hello-world.toml", "hello-world", []),
+        ("training.toml", "training", []),
+        ("training.toml", "training-with-script", [FileSystemObject(dst="s3://script-exchange/anubis/my.tar")]),
+        ("horovod.toml", "horovod", []),
+        ("cronjob.toml", "cronjob", []),
+    ],
+)
 def test_regressions(
-    filename, shared_datadir, config_args, config_env, file_regression: FileRegressionFixture, benchmark_event
+    descriptor_filename,
+    expected_yaml,
+    shared_datadir,
+    config_args,
+    config_env,
+    file_regression: FileRegressionFixture,
+    benchmark_event,
+    scripts,
 ):
     random_object = random.Random()
     random_object.seed(1)
 
-    descriptor_data = toml.load(str(shared_datadir / filename))
+    descriptor_data = toml.load(str(shared_datadir / descriptor_filename))
     fetched_data_sources = generate_fetched_data_sources(descriptor_data)
     transpiler_config = create_executor_config(config_args, config_env)
 
@@ -29,13 +45,12 @@ def test_regressions(
         descriptor_data,
         transpiler_config,
         fetched_data_sources,
+        scripts,
         JOB_ID,
         extra_bai_config_args=dict(random_object=random_object),
         event=benchmark_event,
     )
-
-    basename = os.path.splitext(filename)[0] + "-k8s-object"
-    file_regression.check(yaml_spec, basename=basename, extension=".yaml")
+    file_regression.check(yaml_spec, basename=expected_yaml, extension=".yaml")
 
 
 def generate_fetched_data_sources(descriptor_data) -> List[DataSet]:
