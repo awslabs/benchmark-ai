@@ -22,16 +22,6 @@ spec:
             iam.amazonaws.com/role: data-puller
         spec:
           serviceAccountName: metrics-pusher
-#          affinity:
-#            podAntiAffinity:
-#              requiredDuringSchedulingIgnoredDuringExecution:
-#              - labelSelector:
-#                  matchExpressions:
-#                  - key: app
-#                    operator: In
-#                    values:
-#                    - benchmark-ai
-#                topologyKey: kubernetes.io/hostname
           containers:
           - name: benchmark-starter
             image: {config.cron_job_docker_image}
@@ -52,9 +42,6 @@ spec:
                   key: consumer_topic
             - name: BENCHMARK_EVENT
               value: "{source_benchmark_event}"
-#           nodeSelector:
-#            beta.kubernetes.io/instance-type: descriptor.instance_type
-#            node.type: bai-worker
-#            failure-domain.beta.kubernetes.io/zone: availability_zone
+          nodeSelector:
+            node.type: bai-services-cheap
           restartPolicy: Never
-#      backoffLimit: 4
