@@ -79,6 +79,11 @@ spec:
               configMapKeyRef:
                 name: executor
                 key: transpiler_metrics_pusher_docker_image
+          - name: TRANSPILER_CRON_JOB_DOCKER_IMAGE
+            valueFrom:
+              configMapKeyRef:
+                name: executor
+                key: transpiler_cron_job_docker_image
           - name: SUPPRESS_JOB_AFFINITY
             valueFrom:
               configMapKeyRef:
