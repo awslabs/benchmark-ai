@@ -64,7 +64,7 @@ spec:
       - name: sidecar
         image: benchmarkai/metrics-pusher:ffed580
         env:
-        - name: BENCHMARK_AI_FIFO_FILEPATH
+        - name: FIFO_FILENAMES
           value: /tmp/benchmark-ai/fifo
         - name: BACKEND
           value: kafka

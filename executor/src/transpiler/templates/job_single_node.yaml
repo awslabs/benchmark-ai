@@ -58,7 +58,7 @@ spec:
       - name: sidecar
         image: {config.metrics_pusher_docker_image}
         env:
-        - name: BENCHMARK_AI_FIFO_FILEPATH
+        - name: FIFO_FILENAMES
           value: /tmp/benchmark-ai/fifo
         ##################################
         # Sidecar backend: Elasticsearch #

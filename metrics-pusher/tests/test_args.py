@@ -3,11 +3,17 @@ from typing import List
 
 from bai_metrics_pusher.args import get_input, InputValue, create_dict_of_parameter_values_for_callable
 
-ALL_ARGS = f"--pod-namespace pod-namespace --pod-name pod-name "
+ALL_ARGS = f"--pod-namespace pod-namespace --pod-name pod-name"
 
 
 def test_get_input_with_stdout():
-    expected_cfg = InputValue(backend="stdout", pod_name="pod-name", pod_namespace="pod-namespace", backend_args={})
+    expected_cfg = InputValue(
+        backend="stdout",
+        pod_name="pod-name",
+        pod_namespace="pod-namespace",
+        fifo_filenames=["/tmp/benchmarkai/fifo"],
+        backend_args={},
+    )
     cfg = get_input(ALL_ARGS + " --backend stdout", environ={})
     assert cfg == expected_cfg
 
@@ -16,6 +22,7 @@ def test_get_input_with_kafka():
     expected_cfg = InputValue(
         backend="kafka",
         pod_name="pod-name",
+        fifo_filenames=["/tmp/benchmarkai/fifo"],
         pod_namespace="pod-namespace",
         backend_args={
             "job_id": "123",
@@ -41,6 +48,7 @@ def test_get_input_with_elasticsearch():
         backend="elasticsearch",
         pod_name="pod-name",
         pod_namespace="pod-namespace",
+        fifo_filenames=["/tmp/benchmarkai/fifo"],
         backend_args={"job_id": "123", "hostname": "es-hostname", "port": 9200},
     )
     cfg = get_input(
@@ -48,6 +56,19 @@ def test_get_input_with_elasticsearch():
         environ={"BACKEND_ARG_JOB_ID": "123", "BACKEND_ARG_HOSTNAME": "es-hostname", "BACKEND_ARG_PORT": "9200"},
     )
     assert cfg == expected_cfg
+
+
+def test_get_input_with_multiple_fifo_files(monkeypatch):
+    expected_cfg = InputValue(
+        backend="stdout",
+        pod_name="pod-name",
+        pod_namespace="pod-namespace",
+        fifo_filenames=["fifo1", "fifo2"],
+        backend_args={},
+    )
+    assert get_input(ALL_ARGS + " --backend stdout --fifo-filenames fifo1 fifo2") == expected_cfg
+    monkeypatch.setenv("FIFO_FILENAMES", "fifo1 fifo2")
+    assert get_input(ALL_ARGS + " --backend stdout") == expected_cfg
 
 
 def test_method_receiving_extra_parameter():
