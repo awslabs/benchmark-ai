@@ -46,7 +46,10 @@ spec:
                   name: outputs-infrastructure
                   key: msk_bootstrap_brokers
             - name: PRODUCER_TOPIC
-              value: "BAI_APP_FETCHER"
+              valueFrom:
+                configMapKeyRef:
+                  name: {service_name}
+                  key: consumer_topic
             - name: BENCHMARK_EVENT
               value: "{source_benchmark_event}"
 #           nodeSelector:
