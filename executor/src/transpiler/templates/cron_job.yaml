@@ -34,7 +34,7 @@ spec:
 #                topologyKey: kubernetes.io/hostname
           containers:
           - name: benchmark-starter
-            image: "benchmarkai/cron-job"
+            image: {config.cron_job_docker_image}
             command: []
             args: []
             securityContext:

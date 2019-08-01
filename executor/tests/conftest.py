@@ -81,6 +81,7 @@ def bai_config():
         puller_mount_chmod="700",
         puller_docker_image="test/puller:image",
         metrics_pusher_docker_image="test/metrics_pusher:image",
+        cron_job_docker_image="test/cron_job:image",
         suppress_job_affinity=True,
     )
 
