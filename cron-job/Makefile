@@ -1,4 +1,4 @@
-ENV_NAME = cron-job
+ENV_NAME = anubis-cron-job
 
 include ../base-common.mk
 include ../python-common.mk
