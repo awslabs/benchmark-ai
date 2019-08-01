@@ -1,14 +1,15 @@
+import dacite
 import json
-import kafka
 import logging
 import os
 import sys
-import uuid
-
 from typing import Dict
 
-from bai_kafka_utils.kafka_client import MAX_IDLE_TIME_MS
-from bai_kafka_utils.utils import DEFAULT_ENCODING
+from bai_kafka_utils.events import FetcherBenchmarkEvent
+from bai_kafka_utils.kafka_client import create_kafka_producer
+from bai_kafka_utils.utils import generate_uuid
+
+from bai_cron_job.args import get_args
 
 logger = logging.getLogger("BAI_CRON_JOB")
 
@@ -35,32 +36,26 @@ def get_cron_benchmark_event() -> Dict[str, str]:
     return benchmark_event
 
 
-def main():
-    logger.info("Attempting to submit cron benchmark")
-    logger.debug("Loading configuration")
-    kafka_bootstrap_servers = env_get_or_fail(KAFKA_BOOTSTRAP_SERVERS).split(",")
-    producer_topic = env_get_or_fail(PRODUCER_TOPIC)
-    benchmark_event = get_cron_benchmark_event()
+def main(argv=None):
+    logger.info(f"Loading configuration {argv} {os.environ}")
+    args = get_args(argv, os.environ)
 
     logging.info("Updating benchmark event's message and action id")
-    benchmark_event["message_id"] = str(uuid.uuid4())
-    benchmark_event["action_id"] = str(uuid.uuid4())
+    benchmark_event = dacite.from_dict(data_class=FetcherBenchmarkEvent, data=args.benchmark_event)
+
+    benchmark_event.message_id = generate_uuid()
+    benchmark_event.action_id = generate_uuid()
 
     # Remove scheduling attribute from toml
-    info = benchmark_event.get("payload", {}).get("toml", {}).get("contents", {}).get("info", {})
+    info = benchmark_event.payload.toml.contents.get("info", {})
     if "scheduling" in info:
         info.pop("scheduling")
 
     logging.info("Creating Kafka producer")
-    kafka_producer = kafka.KafkaProducer(
-        bootstrap_servers=kafka_bootstrap_servers,
-        value_serializer=lambda x: json.dumps(x).encode(DEFAULT_ENCODING),
-        connections_max_idle_ms=MAX_IDLE_TIME_MS,
-        key_serializer=lambda x: x.encode(DEFAULT_ENCODING),
-    )
+    kafka_producer = create_kafka_producer(args.kafka_bootstrap_servers)
 
     logging.info("Submitting benchmark")
-    kafka_producer.send(producer_topic, value=benchmark_event, key=benchmark_event["client_id"])
+    kafka_producer.send(args.producer_topic, value=benchmark_event, key=benchmark_event["client_id"])
 
     logging.debug("Closing producer")
     kafka_producer.close()
@@ -70,7 +65,7 @@ def main():
 
 if __name__ == "__main__":
     try:
-        main()
+        main(sys.argv)
     except Exception as err:
         logger.error(f"Fatal error submitting benchmark job: {err}")
         sys.exit(1)

@@ -13,14 +13,14 @@ def get_args(argv, env=None):
         type=lambda x: x.split(","),
         env_var="KAFKA_BOOTSTRAP_SERVERS",
         help="Comma separated list of kafka bootstrap servers",
-        required=True
+        required=True,
     )
 
     parser.add(
         "--producer-topic",
         env_var="PRODUCER_TOPIC",
         help="The topic the executor listens to to spawn single-run jobs",
-        required=True
+        required=True,
     )
 
     parser.add(
@@ -28,8 +28,8 @@ def get_args(argv, env=None):
         type=json.loads,
         env_var="BENCHMARK_EVENT",
         help="A string containing the original event containing the periodic benchmark",
-        required=True
+        required=True,
     )
 
-    parsed_args, _ = parser.parse_args(argv, env_vars=env)
+    parsed_args, _ = parser.parse_known_args(argv, env_vars=env)
     return parsed_args

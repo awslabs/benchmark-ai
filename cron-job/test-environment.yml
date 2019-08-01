@@ -1,4 +1,4 @@
-name: anubis-cron-job
+name: bai-cron-job
 channels:
   - conda-forge
   - defaults
@@ -6,6 +6,3 @@ dependencies:
   - pytest
   - mock
   - pytest-mock
-  - pytest-datadir
-  - pytest-regressions
-  - timeout-decorator
