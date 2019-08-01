@@ -53,13 +53,20 @@ for file in "${FILES[@]}"; do
     if [ "${UNPACK}" != "" ]; then
         UNPACK_FOLDER=$(mktemp -d)
         tar -pxvf ${TARGET} -C ${UNPACK_FOLDER}
-        rm ${TARGET}
-        mv ${UNPACK_FOLDER} ${TARGET}
 
         if [ "${PERMS}" != "" ]; then
-            echo " ---> Updating permissions ${TARGET}[${PERMS}]"
-            chmod ${PERMS} ${TARGET}
-            chmod -R ${PERMS} ${TARGET}
+            echo " ---> Updating permissions ${UNPACK_FOLDER}[${PERMS}]"
+            chmod ${PERMS} ${UNPACK_FOLDER}
+            chmod -R ${PERMS} ${UNPACK_FOLDER}
         fi
+
+        rm ${TARGET}
+
+        if [ "${UNPACK}" == "unpack" ]; then
+            mv ${UNPACK_FOLDER} ${TARGET}
+        elif [ "${UNPACK}" == "unpack_in_place" ]; then
+            mv -f ${UNPACK_FOLDER}/* $(dirname ${TARGET})
+        fi
+
     fi
 done
