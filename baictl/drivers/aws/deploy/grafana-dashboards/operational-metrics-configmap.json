@@ -15,8 +15,8 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 15,
-  "iteration": 1563548352788,
+  "id": 10,
+  "iteration": 1564576421804,
   "links": [],
   "panels": [
     {
@@ -543,11 +543,10 @@
     "list": [
       {
         "current": {
-          "selected": true,
           "text": "Prometheus",
           "value": "Prometheus"
         },
-        "hide": 0,
+        "hide": 2,
         "includeAll": false,
         "label": null,
         "multi": false,
@@ -593,7 +592,7 @@
         },
         "datasource": "$datasource",
         "definition": "label_values(kube_pod_info{cluster=\"$cluster\"}, namespace)",
-        "hide": 0,
+        "hide": 2,
         "includeAll": false,
         "label": "namespace",
         "multi": false,
@@ -638,8 +637,8 @@
       {
         "allValue": null,
         "current": {
-          "text": "fc87fe25-f606-46c0-a9b5-7a3ebb270543",
-          "value": "fc87fe25-f606-46c0-a9b5-7a3ebb270543"
+          "text": "0c329d6b-1b3e-4ee5-902f-21c47d677c12",
+          "value": "0c329d6b-1b3e-4ee5-902f-21c47d677c12"
         },
         "datasource": "$datasource",
         "definition": "label_values(kube_pod_labels{label_client_id=\"$client_id\"}, label_action_id)",
@@ -663,8 +662,8 @@
     ]
   },
   "time": {
-    "from": "2019-07-18T15:02:49.338Z",
-    "to": "2019-07-18T15:08:40.555Z"
+    "from": "now/d",
+    "to": "now/d"
   },
   "timepicker": {
     "refresh_intervals": [
@@ -694,5 +693,5 @@
   "timezone": "",
   "title": "Operational metrics by Action ID",
   "uid": "IpQu-SNWk",
-  "version": 12
+  "version": 1
 }
