@@ -46,6 +46,11 @@ def main():
     benchmark_event["message_id"] = str(uuid.uuid4())
     benchmark_event["action_id"] = str(uuid.uuid4())
 
+    # Remove scheduling attribute from toml
+    info = benchmark_event.get("payload", {}).get("toml", {}).get("contents", {}).get("info", {})
+    if "scheduling" in info:
+        info.pop("scheduling")
+
     logging.info("Creating Kafka producer")
     kafka_producer = kafka.KafkaProducer(
         bootstrap_servers=kafka_bootstrap_servers,
