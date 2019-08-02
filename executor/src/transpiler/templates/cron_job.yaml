@@ -41,7 +41,7 @@ spec:
                   name: {service_name}
                   key: consumer_topic
             - name: BENCHMARK_EVENT
-              value: "{source_benchmark_event}"
+              value: {event_json_str}
           nodeSelector:
             node.type: bai-services-cheap
           restartPolicy: Never

@@ -1,14 +1,14 @@
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
-  name: benchmark-JOB-ID
+  name: benchmark-job-id
   labels:
     app: benchmark-ai
     action-id: ACTION_ID
     client-id: CLIENT_ID
     created-by: executor
 spec:
-  schedule: "*/1 * * * *"
+  schedule: '*/1 * * * *'
   jobTemplate:
     spec:
       template:
@@ -41,7 +41,21 @@ spec:
                   name: executor
                   key: consumer_topic
             - name: BENCHMARK_EVENT
-              value: "{\"action_id\": \"ACTION_ID\", \"message_id\": \"MESSAGE_ID\", \"client_id\": \"CLIENT_ID\", \"client_version\": \"CLIENT_VERSION\", \"client_username\": \"client_username\", \"authenticated\": false, \"tstamp\": 42, \"visited\": [], \"type\": \"BAI_APP_FETCHER\", \"payload\": {\"toml\": {\"contents\": {\"spec_version\": \"0.1.0\", \"info\": {\"task_name\": \"Hello world\", \"description\": \" A hello world example of using Benchmark AI\"}, \"hardware\": {\"instance_type\": \"t2.small\", \"strategy\": \"single_node\"}, \"env\": {\"docker_image\": \"edisongustavo/bai-benchmarks-hello-world:latest\", \"vars\": {\"FIST_VAL\": \"VAR\", \"SECOND_VAL\": \"VAR\", \"INT_VAL\": 11, \"FOO\": \"bar\"}}, \"ml\": {\"benchmark_code\": \"python3 hello-world.py\"}, \"output\": {\"metrics\": [\"throughput\", \"time\"]}}, \"doc\": \"doc\", \"sha1\": \"SHA1\", \"descriptor_filename\": null, \"verified\": false}, \"datasets\": [], \"scripts\": []}}"
+              value: '{"action_id": "ACTION_ID", "message_id": "MESSAGE_ID", "client_id":
+                "CLIENT_ID", "client_version": "CLIENT_VERSION", "client_username":
+                "client_username", "authenticated": false, "tstamp": 42, "visited":
+                [], "type": "BAI_APP_FETCHER", "payload": {"toml": {"contents": {"spec_version":
+                "0.1.0", "info": {"task_name": "Hello world", "description": " A hello
+                world example of using Benchmark AI"}, "hardware": {"instance_type":
+                "t2.small", "strategy": "single_node"}, "env": {"docker_image": "edisongustavo/bai-benchmarks-hello-world:latest",
+                "vars": {"FIST_VAL": "VAR", "SECOND_VAL": "VAR", "INT_VAL": 11, "FOO":
+                "bar"}}, "ml": {"benchmark_code": "python3 hello-world.py"}, "output":
+                {"metrics": ["throughput", "time"]}}, "doc": "doc", "sha1": "SHA1",
+                "descriptor_filename": null, "verified": false}, "datasets": [], "scripts":
+                []}}'
+            volumeMounts: []
           nodeSelector:
             node.type: bai-services-cheap
           restartPolicy: Never
+          initContainers: []
+          volumes: []

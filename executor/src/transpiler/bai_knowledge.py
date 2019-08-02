@@ -1,13 +1,15 @@
+import json
 import logging
 import os
 import random
 import shlex
 from dataclasses import dataclass
-
-from bai_kafka_utils.events import DataSet, BenchmarkEvent, FileSystemObject
-from bai_kafka_utils.executors.descriptor import DescriptorError, Descriptor, SINGLE_RUN_SCHEDULING, DistributedStrategy
-from ruamel import yaml
 from typing import List, Dict
+
+from bai_kafka_utils.events import DataSet, BenchmarkEvent
+from bai_kafka_utils.events import FileSystemObject
+from bai_kafka_utils.executors.descriptor import DescriptorError, Descriptor, DistributedStrategy
+from ruamel import yaml
 
 from executor import SERVICE_NAME
 from executor.config import ExecutorConfig
@@ -80,20 +82,20 @@ class BaiKubernetesObjectBuilder:
         config_template.feed({"service_name": SERVICE_NAME})
         config_template.feed({"job_id": self.job_id})
         config_template.feed({"availability_zone": availability_zone})
+        config_template.feed({"event_json_str": json.dumps(event.to_json())})
 
         self.internal_env_vars = {}
 
         self.root = config_template.build()
-        self.add_data_volume_mounts(data_sources)
-        self.add_scripts(scripts)
-        self.add_shared_memory()
-        self.add_env_vars()
+
+        if self.descriptor.is_single_run():
+            self.add_data_volume_mounts(data_sources)
+            self.add_scripts(scripts)
+            self.add_shared_memory()
+            self.add_env_vars()
 
         if self.config.suppress_job_affinity:
             self.root.remove_affinity()
-
-        if descriptor.scheduling != SINGLE_RUN_SCHEDULING:
-            self.root.to_cronjob(descriptor.scheduling)
 
     @staticmethod
     def choose_availability_zone(
@@ -311,7 +313,11 @@ def create_bai_k8s_builder(
     if extra_bai_config_args is None:
         extra_bai_config_args = {}
 
-    contents = read_template(template_files[descriptor.strategy])
+    if descriptor.is_single_run():
+        contents = read_template(template_files[descriptor.strategy])
+    else:
+        contents = read_template("cron_job.yaml")
+
     config_template = ConfigTemplate(contents)
     bai_data_sources = create_bai_data_sources(fetched_data_sources, descriptor)
     bai_scripts = create_scripts(scripts)
@@ -328,12 +334,13 @@ def create_bai_k8s_builder(
         **extra_bai_config_args,
     )
 
-    if descriptor.strategy == DistributedStrategy.SINGLE_NODE:
-        bai_k8s_builder.add_benchmark_cmd_to_container()
-    elif descriptor.strategy == DistributedStrategy.HOROVOD:
-        bai_k8s_builder.add_benchmark_cmd_to_config_map()
-    else:
-        raise ValueError("Unsupported configuration in descriptor file")
+    if descriptor.is_single_run():
+        if descriptor.strategy == DistributedStrategy.SINGLE_NODE:
+            bai_k8s_builder.add_benchmark_cmd_to_container()
+        elif descriptor.strategy == DistributedStrategy.HOROVOD:
+            bai_k8s_builder.add_benchmark_cmd_to_config_map()
+        else:
+            raise ValueError("Unsupported configuration in descriptor file")
 
     return bai_k8s_builder
 
