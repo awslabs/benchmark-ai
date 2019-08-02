@@ -3,7 +3,6 @@ import dataclasses
 import itertools
 import logging
 import time
-import uuid
 from dataclasses import dataclass
 from signal import signal, SIGTERM
 from typing import List, Optional, Dict
@@ -168,6 +167,7 @@ class KafkaService:
                             f"Message received but not processed: {msg} \n" f"(No callbacks assigned to topic {topic})"
                         )
                     else:
+                        logger.info("Processing message over {} callbacks".format(len(self._callbacks[topic])))
                         for callback in self._callbacks[topic]:
                             self.safe_handle_msg(msg, callback)
 

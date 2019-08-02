@@ -18,8 +18,6 @@ spec:
             action-id: ACTION_ID
             client-id: CLIENT_ID
             created-by: executor
-          annotations:
-            iam.amazonaws.com/role: data-puller
         spec:
           serviceAccountName: metrics-pusher
           containers:

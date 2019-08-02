@@ -1,15 +1,12 @@
 import logging
 from typing import List, Dict
 
-
 from bai_kafka_utils.cmd_callback import KafkaCommandCallback
 from bai_kafka_utils.executors.execution_callback import ExecutorEventHandler, ExecutionEngine
 from bai_kafka_utils.executors.execution_cmd_object import ExecutorCommandObject
-
 from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
 from bai_kafka_utils.kafka_service import KafkaService, KafkaServiceConfig, KafkaServiceCallback
 from bai_kafka_utils.utils import get_pod_name
-
 
 logger = logging.getLogger(__name__)
 
