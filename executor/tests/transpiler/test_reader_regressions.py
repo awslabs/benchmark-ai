@@ -1,4 +1,3 @@
-import os
 import random
 
 import pytest
@@ -10,6 +9,11 @@ from typing import List
 from executor.args import create_executor_config
 from transpiler.bai_knowledge import create_job_yaml_spec
 
+ANUBIS_SCRIPTS = [
+    FileSystemObject(dst="s3://script-exchange/anubis/scripts1.tar"),
+    FileSystemObject(dst="s3://script-exchange/anubis/scripts2.tar"),
+]
+
 PULLER_S3_URI = "s3://puller-data/object-name/dir"
 JOB_ID = "benchmark-JOB-ID"
 
@@ -19,8 +23,11 @@ JOB_ID = "benchmark-JOB-ID"
     [
         ("hello-world.toml", "hello-world", []),
         ("training.toml", "training", []),
-        ("training.toml", "training-with-script", [FileSystemObject(dst="s3://script-exchange/anubis/my.tar")]),
+        # None should be handled properly as well
+        ("training.toml", "training", None),
+        ("training.toml", "training-with-script", ANUBIS_SCRIPTS),
         ("horovod.toml", "horovod", []),
+        ("horovod.toml", "horovod-with-script", ANUBIS_SCRIPTS),
         ("cronjob.toml", "cronjob", []),
     ],
 )

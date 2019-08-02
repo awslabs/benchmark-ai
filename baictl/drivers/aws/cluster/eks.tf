@@ -293,8 +293,14 @@ resource "aws_iam_role" "kube2iam-fetcher-pod-role" {
   }
   EOF
 }
-resource "aws_iam_role_policy_attachment" "kube2iam-fetcher-pod-role-data-puller" {
-  policy_arn = "${aws_iam_policy.data-pull-policy.arn}"
+
+# Fetcher can read and write
+resource "aws_iam_role_policy_attachment" "kube2iam-fetcher-pod-role-data-read" {
+  policy_arn = "${aws_iam_policy.data-pull-read.arn}"
+  role       = "${aws_iam_role.kube2iam-fetcher-pod-role.name}"
+}
+resource "aws_iam_role_policy_attachment" "kube2iam-fetcher-pod-role-data-write" {
+  policy_arn = "${aws_iam_policy.data-pull-write.arn}"
   role       = "${aws_iam_role.kube2iam-fetcher-pod-role.name}"
 }
 resource "aws_iam_role_policy_attachment" "kube2iam-fetcher-pod-role-s3-read-only" {

@@ -92,6 +92,25 @@ spec:
         args:
         - puller-data
         - object-name/dir0,777,p0:object-name/dir1,777,p1
+      - name: script-puller
+        image: benchmarkai/puller:3115770
+        command:
+        - /bin/puller_entrypoint.sh
+        volumeMounts:
+        - name: entrypoints-volume
+          mountPath: /bin/puller_entrypoint.sh
+          readOnly: true
+          subPath: puller_entrypoint.sh
+        - name: scripts-volume
+          mountPath: /bai/scripts
+        env:
+        - name: ROLE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['mpi_role_type']
+        args:
+        - script-exchange
+        - anubis/scripts1.tar,777,/bai/scripts/s0,unpack_in_place:anubis/scripts2.tar,777,/bai/scripts/s1,unpack_in_place
       containers:
       - image: user/repo:tag
         name: benchmark
@@ -107,6 +126,8 @@ spec:
           subPath: entrypoint.sh
         - name: benchmark-ai
           mountPath: /tmp/benchmark-ai
+        - mountPath: /bai/scipts
+          name: scripts-volume
         - name: datasets-volume
           mountPath: ~/data/tf-imagenet/train
           subPath: p0
@@ -122,6 +143,8 @@ spec:
           value: /tmp/benchmark-ai/fifo
         - name: BENCHMARK_AI_FIFO_MAX_WAIT_TIME
           value: '60'
+        - name: BAI_SCRIPTS_PATH
+          value: /bai/scripts
       - name: sidecar
         image: benchmarkai/metrics-pusher:ffed580
         env:
@@ -159,6 +182,8 @@ spec:
       - name: benchmark-ai
         emptyDir: {}
       - name: datasets-volume
+        emptyDir: {}
+      - name: scripts-volume
         emptyDir: {}
       - name: dshm
         emptyDir:

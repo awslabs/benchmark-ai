@@ -18,7 +18,7 @@ spec:
         client-id: CLIENT_ID
         created-by: executor
       annotations:
-        iam.amazonaws.com/role: data-puller
+        iam.amazonaws.com/role: benchmark-host
     spec:
       serviceAccountName: metrics-pusher
       affinity:

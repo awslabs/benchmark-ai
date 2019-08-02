@@ -54,7 +54,7 @@ spec:
   template:
     metadata:
       annotations:
-        iam.amazonaws.com/role: data-puller
+        iam.amazonaws.com/role: benchmark-host
       labels:
         app: benchmark-ai
         action-id: {event.action_id}
@@ -120,6 +120,8 @@ spec:
           subPath: entrypoint.sh
         - name: benchmark-ai
           mountPath: /tmp/benchmark-ai
+        - mountPath: /bai/scipts
+          name: scripts-volume
         env:
         - name: BENCHMARK_AI
           value: "fifo"
@@ -176,8 +178,6 @@ spec:
         volumeMounts:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
-        - mountPath: /bai/scipts
-          name: scripts-volume
       volumes:
       - name: entrypoints-volume
         configMap:
