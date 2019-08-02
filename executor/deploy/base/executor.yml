@@ -28,7 +28,7 @@ spec:
               topologyKey: kubernetes.io/hostname
       initContainers:
         - name: kubectl-delivery
-          image: mpioperator/kubectl-delivery:0.1.0
+          image: mpioperator/kubectl-delivery:0.2.0
           env:
           - name: TARGET_DIR
             value: "/tmp/kubectl"
