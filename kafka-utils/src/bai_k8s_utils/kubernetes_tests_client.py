@@ -1,4 +1,7 @@
 import logging
+from functools import wraps
+
+from typing import Callable
 
 import kubernetes
 from kubernetes.client import V1PodList, V1PersistentVolumeClaimList
@@ -8,6 +11,16 @@ from timeout_decorator import timeout
 from bai_k8s_utils.service_labels import ServiceLabels
 
 logger = logging.getLogger(__name__)
+
+K8SBaiPredicate = Callable[[str, str, str], bool]
+
+
+def negate(f):
+    @wraps(f)
+    def g(*args, **kwargs):
+        return not f(*args, **kwargs)
+
+    return g
 
 
 class KubernetesTestUtilsClient:
@@ -43,37 +56,27 @@ class KubernetesTestUtilsClient:
         return bool(pods.items)
 
     @timeout(DEFAULT_TIMEOUT_SECONDS)
+    def _wait_loop(self, predicate: K8SBaiPredicate, msg: str, namespace: str, client_id: str, action_id: str):
+        while predicate(namespace, client_id, action_id):
+            logger.info(msg)
+            sleep(1)
+
     def wait_for_volume_claim_exists(self, namespace: str, client_id: str, action_id: str):
-        while not self.is_volume_claim_present(namespace, client_id, action_id):
-            logger.info("volume claim doesn't exist yet")
-            sleep(1)
+        self._wait_loop(
+            negate(self.is_volume_claim_present), "volume claim doesn't exist yet", namespace, client_id, action_id
+        )
 
-    @timeout(DEFAULT_TIMEOUT_SECONDS)
     def wait_for_volume_claim_not_exists(self, namespace: str, client_id: str, action_id: str):
-        while self.is_volume_claim_present(namespace, client_id, action_id):
-            logger.info("volume claim still exists")
-            sleep(1)
+        self._wait_loop(self.is_volume_claim_present, "volume claim still exists", namespace, client_id, action_id)
 
-    @timeout(DEFAULT_TIMEOUT_SECONDS)
     def wait_for_pod_exists(self, namespace: str, client_id: str, action_id: str):
-        while not self.is_pod_present(namespace, client_id, action_id):
-            logger.info("pod doesn't exist yet")
-            sleep(1)
+        self._wait_loop(negate(self.is_pod_present), "pod doesn't exist yet", namespace, client_id, action_id)
 
-    @timeout(DEFAULT_TIMEOUT_SECONDS)
     def wait_for_pod_not_exists(self, namespace: str, client_id: str, action_id: str):
-        while self.is_pod_present(namespace, client_id, action_id):
-            logger.info("pod still exists")
-            sleep(1)
+        self._wait_loop(self.is_pod_present, "pod still exists", namespace, client_id, action_id)
 
-    @timeout(DEFAULT_TIMEOUT_SECONDS)
     def wait_for_job_exists(self, namespace: str, client_id: str, action_id: str):
-        while not self.is_job_present(namespace, client_id, action_id):
-            logger.info("job doesn't exist yet")
-            sleep(1)
+        self._wait_loop(negate(self.is_job_present), "job doesn't exist yet", namespace, client_id, action_id)
 
-    @timeout(DEFAULT_TIMEOUT_SECONDS)
     def wait_for_job_not_exists(self, namespace: str, client_id: str, action_id: str):
-        while self.is_job_present(namespace, client_id, action_id):
-            logger.info("job still exists")
-            sleep(1)
+        self._wait_loop(self.is_job_present, "job still exists", namespace, client_id, action_id)
