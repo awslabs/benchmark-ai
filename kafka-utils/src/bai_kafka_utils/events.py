@@ -74,12 +74,6 @@ class BenchmarkJob:
 
 @dataclass_json
 @dataclass
-class PeriodicBenchmarkJob(BenchmarkJob):
-    pass
-
-
-@dataclass_json
-@dataclass
 class BenchmarkPayload:
     toml: BenchmarkDoc
 
