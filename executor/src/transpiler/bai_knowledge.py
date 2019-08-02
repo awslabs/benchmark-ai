@@ -271,9 +271,9 @@ def create_bai_data_sources(fetched_data_sources: List[DataSet], descriptor: Des
     return [BaiDataSource(fetched, find_destination_path(fetched)) for fetched in fetched_data_sources]
 
 
-
 def create_scripts(scripts: List[FileSystemObject]) -> List[BaiScriptSource]:
     return list(map(BaiScriptSource, scripts)) if scripts else []
+
 
 def read_template(template_name: str) -> str:
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -282,6 +282,7 @@ def read_template(template_name: str) -> str:
     with open(os.path.join(templates_dir, template_name), "r") as f:
         contents = f.read()
     return contents
+
 
 def create_bai_k8s_builder(
     descriptor: Descriptor,
@@ -378,4 +379,3 @@ def create_job_yaml_spec(
         extra_bai_config_args=extra_bai_config_args,
     )
     return bai_k8s_builder.dump_yaml_string()
-
