@@ -3,7 +3,7 @@ ENV_NAME = anubis-cron-job
 include ../base-common.mk
 include ../python-common.mk
 
-PROJECT=cron-job
+PROJECT=anubis-cron-job
 
 include ../docker-common.mk
 

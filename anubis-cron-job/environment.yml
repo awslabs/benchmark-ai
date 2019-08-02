@@ -1,4 +1,4 @@
-name: bai-cron-job
+name: bai-anubis-cron-job
 channels:
   - conda-forge
   - defaults
