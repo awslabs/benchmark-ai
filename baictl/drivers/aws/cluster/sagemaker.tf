@@ -57,7 +57,7 @@ EOF
 }
 
 resource "aws_iam_role_policy_attachment" "sagemaker-data-pull-policy-attachment" {
-  policy_arn = "${aws_iam_policy.data-pull-policy.arn}"
+  policy_arn = "${aws_iam_policy.data-pull-read.arn}"
   role       = "${aws_iam_role.sagemaker-role.name}"
 }
 

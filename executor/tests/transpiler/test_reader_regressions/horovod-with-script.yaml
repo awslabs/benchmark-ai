@@ -1,15 +1,37 @@
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: metrics-pusher-benchmark-job-id
+  namespace: default
+  labels:
+    benchmark: benchmark-job-id
+    action-id: ACTION_ID
+    client-id: CLIENT_ID
+    created-by: executor
+subjects:
+- kind: ServiceAccount
+  name: benchmark-job-id-launcher
+  namespace: default
+roleRef:
+  kind: Role
+  name: pod-status
+  apiGroup: ''
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: entrypoint-{job_id}
+  name: entrypoint-benchmark-job-id
   namespace: default
   labels:
-    benchmark: {job_id}
-    action-id: {event.action_id}
-    client-id: {event.client_id}
-    created-by: {service_name}
+    benchmark: benchmark-job-id
+    action-id: ACTION_ID
+    client-id: CLIENT_ID
+    created-by: executor
 data:
-  entrypoint.sh: echo "Entrypoint"
+  entrypoint.sh: |
+    #!/bin/bash
+    echo 'Horovod test descriptor'
+    ./deep-learning-models/models/resnet/tensorflow/train.sh 3
   puller_entrypoint.sh: |-
     #!/bin/bash
     if [ "$ROLE" == "worker" ]; then
@@ -18,48 +40,26 @@ data:
       echo "Not a worker - no data necessary"
     fi
 ---
-
-kind: RoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: metrics-pusher-{job_id}
-  namespace: default
-  labels:
-    benchmark: {job_id}
-    action-id: {event.action_id}
-    client-id: {event.client_id}
-    created-by: {service_name}
-subjects:
-- kind: ServiceAccount
-  name: {job_id}-launcher
-  namespace: default
-roleRef:
-  kind: Role
-  name: pod-status
-  apiGroup: ""
-
----
-
 apiVersion: kubeflow.org/v1alpha1
 kind: MPIJob
 metadata:
-  name: {job_id}
+  name: benchmark-job-id
   labels:
     app: benchmark-ai
-    action-id: {event.action_id}
-    client-id: {event.client_id}
-    created-by: {service_name}
+    action-id: ACTION_ID
+    client-id: CLIENT_ID
+    created-by: executor
 spec:
-  replicas: {descriptor.num_instances}
+  replicas: 2
   template:
     metadata:
       annotations:
         iam.amazonaws.com/role: benchmark-host
       labels:
         app: benchmark-ai
-        action-id: {event.action_id}
-        client-id: {event.client_id}
-        created-by: {service_name}
+        action-id: ACTION_ID
+        client-id: CLIENT_ID
+        created-by: executor
     spec:
       serviceAccountName: metrics-pusher
       affinity:
@@ -74,8 +74,8 @@ spec:
             topologyKey: kubernetes.io/hostname
       initContainers:
       - name: data-puller
-        image: {config.puller_docker_image}
-        command: 
+        image: benchmarkai/puller:3115770
+        command:
         - /bin/puller_entrypoint.sh
         volumeMounts:
         - name: entrypoints-volume
@@ -89,29 +89,35 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.labels['mpi_role_type']
+        args:
+        - puller-data
+        - object-name/dir0,777,p0:object-name/dir1,777,p1
       - name: script-puller
-        image: {config.puller_docker_image}
+        image: benchmarkai/puller:3115770
         command:
-          - /bin/puller_entrypoint.sh
+        - /bin/puller_entrypoint.sh
         volumeMounts:
-          - name: entrypoints-volume
-            mountPath: /bin/puller_entrypoint.sh
-            readOnly: true
-            subPath: puller_entrypoint.sh
-          - name: scripts-volume
-            mountPath: /bai/scripts
+        - name: entrypoints-volume
+          mountPath: /bin/puller_entrypoint.sh
+          readOnly: true
+          subPath: puller_entrypoint.sh
+        - name: scripts-volume
+          mountPath: /bai/scripts
         env:
-          - name: ROLE
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.labels['mpi_role_type']
+        - name: ROLE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['mpi_role_type']
+        args:
+        - script-exchange
+        - anubis/scripts1.tar,777,/bai/scripts/s0,unpack_in_place:anubis/scripts2.tar,777,/bai/scripts/s1,unpack_in_place
       containers:
-      - image: {descriptor.docker_image}
+      - image: user/repo:tag
         name: benchmark
         resources:
           limits:
-            nvidia.com/gpu: {descriptor.gpus_per_instance}
-        command: 
+            nvidia.com/gpu: 4
+        command:
         - /bin/entrypoint.sh
         volumeMounts:
         - name: entrypoints-volume
@@ -122,51 +128,41 @@ spec:
           mountPath: /tmp/benchmark-ai
         - mountPath: /bai/scipts
           name: scripts-volume
+        - name: datasets-volume
+          mountPath: ~/data/tf-imagenet/train
+          subPath: p0
+        - name: datasets-volume
+          mountPath: ~/data/tf-imagenet/validation
+          subPath: p1
+        - name: dshm
+          mountPath: /dev/shm
         env:
         - name: BENCHMARK_AI
-          value: "fifo"
+          value: fifo
         - name: BENCHMARK_AI_FIFO_FILEPATH
-          value: "/tmp/benchmark-ai/fifo"
+          value: /tmp/benchmark-ai/fifo
         - name: BENCHMARK_AI_FIFO_MAX_WAIT_TIME
-          value: "60"
+          value: '60'
+        - name: BAI_SCRIPTS_PATH
+          value: /bai/scripts
       - name: sidecar
-        image: {config.metrics_pusher_docker_image}
+        image: benchmarkai/metrics-pusher:ffed580
         env:
         - name: BENCHMARK_AI_FIFO_FILEPATH
           value: /tmp/benchmark-ai/fifo
-        ##################################
-        # Sidecar backend: Elasticsearch #
-        ##################################
-#        - name: BACKEND
-#          value: elasticsearch
-#        - name: BACKEND_ARG_JOB_ID
-#          value: {job_id}
-#        - name: BACKEND_ARG_HOSTNAME
-#          valueFrom:
-#            configMapKeyRef:
-#              name: outputs-infrastructure
-#              key: es_endpoint
-#        - name: BACKEND_ARG_PORT
-#          value: "443"
-
-        ##########################
-        # Sidecar backend: Kafka #
-        ##########################
         - name: BACKEND
           value: kafka
         - name: BACKEND_ARG_JOB_ID
-          value: {job_id}
+          value: benchmark-job-id
         - name: BACKEND_ARG_BOOTSTRAP_SERVERS
           valueFrom:
             configMapKeyRef:
               name: outputs-infrastructure
               key: msk_bootstrap_brokers
         - name: BACKEND_ARG_KEY
-          value: {event.client_id}
+          value: CLIENT_ID
         - name: BACKEND_ARG_TOPIC
           value: BAI_METRICS
-
-
         - name: POD_NAME
           valueFrom:
             fieldRef:
@@ -182,14 +178,17 @@ spec:
       - name: entrypoints-volume
         configMap:
           defaultMode: 0700
-          name: entrypoint-{job_id}
+          name: entrypoint-benchmark-job-id
       - name: benchmark-ai
-        emptyDir: {{}}
+        emptyDir: {}
       - name: datasets-volume
-        emptyDir: {{}}
+        emptyDir: {}
       - name: scripts-volume
-        emptyDir: {{}}
+        emptyDir: {}
+      - name: dshm
+        emptyDir:
+          medium: Memory
       nodeSelector:
-        beta.kubernetes.io/instance-type: {descriptor.instance_type}
+        beta.kubernetes.io/instance-type: p3.8xlarge
         node.type: bai-worker
-        failure-domain.beta.kubernetes.io/zone: {availability_zone}
+        failure-domain.beta.kubernetes.io/zone: us-east-1a

@@ -1,5 +1,5 @@
-apiVersion: batch/v1
-kind: Job
+apiVersion: batch/v1beta1
+kind: CronJob
 metadata:
   name: benchmark-job-id
   labels:
@@ -8,7 +8,9 @@ metadata:
     client-id: CLIENT_ID
     created-by: executor
 spec:
-  template:
+  backoffLimit: 4
+  schedule: '*/1 * * * *'
+  jobTemplate:
     metadata:
       labels:
         app: benchmark-ai
@@ -16,7 +18,7 @@ spec:
         client-id: CLIENT_ID
         created-by: executor
       annotations:
-        iam.amazonaws.com/role: data-puller
+        iam.amazonaws.com/role: benchmark-host
     spec:
       serviceAccountName: metrics-pusher
       affinity:
@@ -32,13 +34,13 @@ spec:
       initContainers: []
       containers:
       - name: benchmark
-        image: edisongustavo/bai-benchmarks-hello-world:latest
+        image: test/example:latest
         resources:
           limits:
-            nvidia.com/gpu: 0
+            nvidia.com/gpu: 4
         command:
-        - python3
-        - hello-world.py
+        - python
+        - /home/benchmark/image_classification.py
         securityContext:
           privileged: false
         env:
@@ -48,14 +50,6 @@ spec:
           value: /tmp/benchmark-ai/fifo
         - name: BENCHMARK_AI_FIFO_MAX_WAIT_TIME
           value: '60'
-        - name: FIST_VAL
-          value: VAR
-        - name: SECOND_VAL
-          value: VAR
-        - name: INT_VAL
-          value: '11'
-        - name: FOO
-          value: bar
         volumeMounts:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
@@ -91,7 +85,7 @@ spec:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
       nodeSelector:
-        beta.kubernetes.io/instance-type: t2.small
+        beta.kubernetes.io/instance-type: p3.8xlarge
         node.type: bai-worker
         failure-domain.beta.kubernetes.io/zone: us-east-1a
       restartPolicy: Never
@@ -101,4 +95,3 @@ spec:
       - name: dshm
         emptyDir:
           medium: Memory
-  backoffLimit: 4
