@@ -1,0 +1,31 @@
+# BenchmarkAI meta
+spec_version = "0.1.0"
+
+# These fields don't have any impact on the job to run, they contain
+# merely informative data so the benchmark can be categorized when displayed
+# in the dashboard.
+[info]
+task_name = "Hello world"
+description = """ \
+    A hello world example of using Benchmark AI with script mode\
+    """
+
+# 1. Hardware
+[hardware]
+instance_type = "t3.small"
+strategy = "single_node"
+
+# 2. Environment
+[env]
+# Docker hub <hub-user>/<repo-name>:<tag> 
+docker_image = "python:3-alpine"
+
+# 3. Machine learning related settings: 
+# dataset, benchmark code and parameters it takes
+[ml]
+benchmark_code = "$(BAI_SCRIPTS_PATH)/src/entrypoint.sh"
+
+# 4. Output
+[output]
+# Define which metrics will be tracked in this benchmark
+metrics = ["epoch", "train_loss", "loss", "accuracy"]
