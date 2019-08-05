@@ -89,6 +89,23 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.labels['mpi_role_type']
+        - name: S3_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: outputs-infrastructure
+              key: s3_endpoint
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            configMapKeyRef:
+              name: s3
+              key: access-key-id
+              optional: true
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: s3
+              key: secret-access-key
+              optional: true
         args:
         - puller-data
         - object-name/dir0,777,p0:object-name/dir1,777,p1
@@ -108,8 +125,25 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.labels['mpi_role_type']
+        - name: S3_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: outputs-infrastructure
+              key: s3_endpoint
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            configMapKeyRef:
+              name: s3
+              key: access-key-id
+              optional: true
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: s3
+              key: secret-access-key
+              optional: true
         args:
-        - script-exchange
+        - scripts-exchange
         - anubis/scripts1.tar,777,/bai/scripts/s0,unpack_in_place:anubis/scripts2.tar,777,/bai/scripts/s1,unpack_in_place
       containers:
       - image: user/repo:tag

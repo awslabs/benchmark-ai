@@ -25,6 +25,9 @@ _dump_state(){
     local SERVICE=${JOB_NAME/-it/}
     $kubectl logs deployments/${SERVICE} || echo "No service deployment"
 
+    echo "Dumping created jobs"
+    $kubectl logs --selector=created-by=${SERVICE} --all-containers || echo "Failing to dump created containers"
+
 }
 until [[ $SECONDS -gt $END ]] || \
     [[ $(_get_status $JOB_NAME "Failed") == "True" ]] || \

@@ -89,6 +89,23 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.labels['mpi_role_type']
+        - name: S3_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: outputs-infrastructure
+              key: s3_endpoint
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            configMapKeyRef:
+              name: s3
+              key: access-key-id
+              optional: true
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: s3
+              key: secret-access-key
+              optional: true
         args:
         - puller-data
         - object-name/dir0,777,p0:object-name/dir1,777,p1

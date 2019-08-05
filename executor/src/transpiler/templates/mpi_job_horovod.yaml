@@ -89,6 +89,26 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.labels['mpi_role_type']
+        - name: S3_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: outputs-infrastructure
+              key: s3_endpoint
+        # This environment variables are optional.
+        # They reference a config map missing in DEVO/PROD.
+        # Enable the integration tests
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            configMapKeyRef:
+              name: s3
+              key: access-key-id
+              optional: true
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: s3
+              key: secret-access-key
+              optional: true
       - name: script-puller
         image: {config.puller_docker_image}
         command:
@@ -105,6 +125,26 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.labels['mpi_role_type']
+          - name: S3_ENDPOINT
+            valueFrom:
+              configMapKeyRef:
+                name: outputs-infrastructure
+                key: s3_endpoint
+          # This environment variables are optional.
+          # They reference a config map missing in DEVO/PROD.
+          # Enable the integration tests
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              configMapKeyRef:
+                name: s3
+                key: access-key-id
+                optional: true
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              configMapKeyRef:
+                name: s3
+                key: secret-access-key
+                optional: true
       containers:
       - image: {descriptor.docker_image}
         name: benchmark

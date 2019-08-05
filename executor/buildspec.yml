@@ -44,6 +44,11 @@ phases:
             cd ../executor
             make docker_package COMMIT_SHORT_HASH="local-latest"
             make publish STAGE=local LOCAL_PUBLISH="kind load docker-image " COMMIT_SHORT_HASH="local-latest"
+
+            # Make images we depend on
+            (cd ../metrics-pusher && make publish STAGE=local LOCAL_PUBLISH="kind load docker-image " COMMIT_SHORT_HASH="local-latest")
+            (cd ../puller && make publish STAGE=local LOCAL_PUBLISH="kind load docker-image " COMMIT_SHORT_HASH="local-latest")
+
             make deploy STAGE=local COMMIT_SHORT_HASH="local-latest"
 
             # All the containers are probably just creating
