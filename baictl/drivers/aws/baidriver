@@ -72,6 +72,9 @@ create_infra() {
 
     terraform output kubectl_config > $kubeconfig || return 1
 
+    echo "==> Syncing remote data directory"
+    sync_bai_datadir --aws-region=${region} --mode="push" || return 1
+
     echo "==> Creating Kubernetes objects"
     ${kubectl} apply -f $data_dir/fluentd-daemonset.yaml
     ${kubectl} -n kube-system rollout status ds/fluentd
