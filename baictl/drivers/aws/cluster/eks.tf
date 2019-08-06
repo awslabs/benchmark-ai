@@ -166,6 +166,8 @@ resource "null_resource" "bai-worker-nodes-cluster-autoscaler-az-tag" {
   triggers {
     workers_asg_names = "${element(module.eks.workers_asg_names, count.index + local.other_groups_count)}"
   }
+
+  depends_on = ["module.eks"]
 }
 
 data "aws_ami" "eks-cpu-optimized" {
