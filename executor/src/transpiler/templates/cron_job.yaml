@@ -23,8 +23,6 @@ spec:
           containers:
           - name: benchmark-starter
             image: {config.cron_job_docker_image}
-            securityContext:
-              privileged: false
             env:
             - name: KAFKA_BOOTSTRAP_SERVERS
               valueFrom:

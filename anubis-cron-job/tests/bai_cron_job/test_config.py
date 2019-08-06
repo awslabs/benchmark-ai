@@ -1,4 +1,4 @@
-from bai_cron_job.args import get_args
+from bai_cron_job.config import get_args
 
 
 def test_env_var_config():
