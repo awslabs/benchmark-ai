@@ -150,7 +150,7 @@ END
 }
 
 _install_tiller(){
-    ${kubectl} get serviceaccount -n ${tiller_namespace} tiller -o yaml || ${kubectl} create serviceaccount tiller --namespace ${tiller_namespace} || return 1
+    ${kubectl} get serviceaccount -n ${tiller_namespace} tiller -o yaml || $kubectl create serviceaccount --namespace ${tiller_namespace} tiller || return 1
     ${kubectl} get clusterrolebinding tiller-cluster-rule -o yaml || $kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=${tiller_namespace}:tiller || return 1
 
     ${helm} init --wait --service-account tiller || return 1
