@@ -45,6 +45,7 @@ class ExecutorEventHandler(KafkaServiceCallback):
 
         # Only handle single run benchmarks
         if not ExecutorEventHandler.is_single_run(event):
+            logging.debug(f"Ignoring event non single run event: {event}")
             return
 
         engine_id = ExecutorEventHandler.get_engine_id(event)
