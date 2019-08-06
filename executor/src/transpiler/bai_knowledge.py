@@ -1,3 +1,4 @@
+import abc
 import json
 import logging
 import os
@@ -14,7 +15,13 @@ from ruamel import yaml
 from executor import SERVICE_NAME
 from executor.config import ExecutorConfig
 from transpiler.config import BaiConfig, BaiDataSource, EnvironmentInfo, BaiScriptSource
-from transpiler.kubernetes_spec_logic import ConfigTemplate, VolumeMount, Volume, EmptyDirVolumeSource
+from transpiler.kubernetes_spec_logic import (
+    ConfigTemplate,
+    VolumeMount,
+    Volume,
+    EmptyDirVolumeSource,
+    KubernetesRootObjectHelper,
+)
 
 SCRIPT_UNPACK_MODIFICATOR = "unpack_in_place"
 
@@ -42,7 +49,63 @@ class PullerDataSource:
 logger = logging.getLogger(__name__)
 
 
-class BaiKubernetesObjectBuilder:
+class BaiKubernetesObjectBuilder(metaclass=abc.ABCMeta):
+    def __init__(
+        self, job_id: str, descriptor: Descriptor, config: BaiConfig, template_name: str, event: BenchmarkEvent
+    ):
+        self.job_id = job_id.lower()
+        self.descriptor = descriptor
+        self.config_template = ConfigTemplate(read_template(template_name))
+        self.config = config
+        self.event = event
+
+        self.root: KubernetesRootObjectHelper = None
+
+        self.config_template.feed({"descriptor": descriptor})
+        self.config_template.feed({"config": config})
+        self.config_template.feed({"event": event})
+        self.config_template.feed({"service_name": SERVICE_NAME})
+        self.config_template.feed({"job_id": self.job_id})
+
+    @staticmethod
+    def read_template(template_name: str) -> str:
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        templates_dir = os.path.join(current_dir, "templates")
+
+        with open(os.path.join(templates_dir, template_name), "r") as f:
+            contents = f.read()
+        return contents
+
+    @abc.abstractmethod
+    def _pre_build(self):
+        pass
+
+    @abc.abstractmethod
+    def _post_build(self):
+        pass
+
+    def build(self):
+        self._pre_build()
+        self.root = self.config_template.build()
+        self._post_build()
+        return self
+
+    def dump_yaml_string(self):
+        return self.root.to_yaml()
+
+
+class ScheduledBenchmarkKubernetedObjectBuilder(BaiKubernetesObjectBuilder):
+    def __init__(self, descriptor: Descriptor, config: BaiConfig, job_id: str, event: BenchmarkEvent):
+        super().__init__(job_id, descriptor, config, "cron_job.yaml", event)
+
+    def _pre_build(self):
+        self.config_template.feed({"event_json_str": json.dumps(self.event.to_json())})
+
+    def _post_build(self):
+        pass
+
+
+class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
     """
     Adds the logic required from BAI into the Kubernetes root object that represents
     launching a benchmark.
@@ -54,7 +117,6 @@ class BaiKubernetesObjectBuilder:
         config: BaiConfig,
         data_sources: List[BaiDataSource],
         scripts: List[BaiScriptSource],
-        config_template: ConfigTemplate,
         job_id: str,
         *,
         event: BenchmarkEvent,
@@ -64,38 +126,48 @@ class BaiKubernetesObjectBuilder:
         """
         Reads the values from the descriptor file into a settings dictionary
         :param descriptor: Descriptor object with the information from the TOML
-        :param config_template: The YAML template
         :param random_object: An instance of random.Random [optional].
                               This field exists mostly to facilitate testing so that predictable random data is
                               generated.
         """
-        self.descriptor = descriptor
-        self.config = config
-        self.job_id = job_id.lower()  # Let's make it lower case - k8s complains about upper case chars
+        template_files = {
+            DistributedStrategy.SINGLE_NODE: "job_single_node.yaml",
+            DistributedStrategy.HOROVOD: "mpi_job_horovod.yaml",
+        }
 
-        # Using a random AZ is good enough for now
-        availability_zone = self.choose_availability_zone(descriptor, environment_info, random_object)
+        template_name = template_files.get(descriptor.strategy)
 
-        config_template.feed({"descriptor": descriptor})
-        config_template.feed({"config": config})
-        config_template.feed({"event": event})
-        config_template.feed({"service_name": SERVICE_NAME})
-        config_template.feed({"job_id": self.job_id})
-        config_template.feed({"availability_zone": availability_zone})
-        config_template.feed({"event_json_str": json.dumps(event.to_json())})
+        if not template_name:
+            raise ValueError(f"Unsupported distributed strategy in descriptor file: '{descriptor.strategy}'")
 
+        super().__init__(job_id, descriptor, config, template_name, event=event)
+
+        self.data_sources = data_sources
+        self.scripts = scripts
+        self.environment_info = environment_info
+        self.random_object = random_object
         self.internal_env_vars = {}
 
-        self.root = config_template.build()
+    def _pre_build(self):
+        # Using a random AZ is good enough for now
+        availability_zone = self.choose_availability_zone(self.descriptor, self.environment_info, self.random_object)
+        self.config_template.feed({"availability_zone": availability_zone})
 
-        if self.descriptor.is_single_run():
-            self.add_data_volume_mounts(data_sources)
-            self.add_scripts(scripts)
-            self.add_shared_memory()
-            self.add_env_vars()
+    def _post_build(self):
+        self.add_data_volume_mounts(self.data_sources)
+        self.add_scripts(self.scripts)
+        self.add_shared_memory()
+        self.add_env_vars()
 
         if self.config.suppress_job_affinity:
             self.root.remove_affinity()
+
+        if self.descriptor.strategy == DistributedStrategy.SINGLE_NODE:
+            self.add_benchmark_cmd_to_container()
+        elif self.descriptor.strategy == DistributedStrategy.HOROVOD:
+            self.add_benchmark_cmd_to_config_map()
+        else:
+            raise ValueError("Unsupported configuration in descriptor file")
 
     @staticmethod
     def choose_availability_zone(
@@ -284,7 +356,7 @@ def read_template(template_name: str) -> str:
     return contents
 
 
-def create_bai_k8s_builder(
+def create_single_run_benchmark_bai_k8s_builder(
     descriptor: Descriptor,
     bai_config: BaiConfig,
     fetched_data_sources: List[DataSet],
@@ -306,44 +378,39 @@ def create_bai_k8s_builder(
     :param extra_bai_config_args: An optional Dict which will be forwarded to the `BaiConfig` object created.
     :return:
     """
-    template_files = {
-        DistributedStrategy.SINGLE_NODE: "job_single_node.yaml",
-        DistributedStrategy.HOROVOD: "mpi_job_horovod.yaml",
-    }
-
     if extra_bai_config_args is None:
         extra_bai_config_args = {}
 
-    if descriptor.is_single_run():
-        contents = read_template(template_files[descriptor.strategy])
-    else:
-        contents = read_template("cron_job.yaml")
-
-    config_template = ConfigTemplate(contents)
     bai_data_sources = create_bai_data_sources(fetched_data_sources, descriptor)
     bai_scripts = create_scripts(scripts)
 
-    bai_k8s_builder = BaiKubernetesObjectBuilder(
+    bai_k8s_builder = SingleRunBenchmarkKubernetesObjectBuilder(
         descriptor,
         bai_config,
         bai_data_sources,
         bai_scripts,
-        config_template,
         job_id,
         event=event,
         environment_info=environment_info,
         **extra_bai_config_args,
     )
 
-    if descriptor.is_single_run():
-        if descriptor.strategy == DistributedStrategy.SINGLE_NODE:
-            bai_k8s_builder.add_benchmark_cmd_to_container()
-        elif descriptor.strategy == DistributedStrategy.HOROVOD:
-            bai_k8s_builder.add_benchmark_cmd_to_config_map()
-        else:
-            raise ValueError("Unsupported configuration in descriptor file")
+    return bai_k8s_builder.build()
 
-    return bai_k8s_builder
+
+def create_scheduled_benchmark_bai_k8s_builder(
+    descriptor: Descriptor, bai_config: BaiConfig, job_id: str, event: BenchmarkEvent
+) -> ScheduledBenchmarkKubernetedObjectBuilder:
+    """
+    Builds a BaiKubernetesObjectBuilder object
+    :param event: The event that triggered this execution
+    :param descriptor: The descriptor.
+    :param bai_config: Configuration values.
+    :param job_id: str
+    :return:
+    """
+    bai_k8s_builder = ScheduledBenchmarkKubernetedObjectBuilder(descriptor, bai_config, job_id, event)
+    return bai_k8s_builder.build()
 
 
 def create_job_yaml_spec(
@@ -368,7 +435,7 @@ def create_job_yaml_spec(
     :return: Tuple with (yaml string for the given descriptor, job_id)
     """
     descriptor = Descriptor(descriptor_contents, executor_config.descriptor_config)
-    bai_k8s_builder = create_bai_k8s_builder(
+    bai_k8s_builder = create_single_run_benchmark_bai_k8s_builder(
         descriptor,
         executor_config.bai_config,
         fetched_data_sources,
@@ -377,5 +444,23 @@ def create_job_yaml_spec(
         event=event,
         environment_info=executor_config.environment_info,
         extra_bai_config_args=extra_bai_config_args,
+    )
+    return bai_k8s_builder.dump_yaml_string()
+
+
+def create_scheduled_job_yaml_spec(
+    descriptor_contents: Dict, executor_config: ExecutorConfig, job_id: str, event: BenchmarkEvent
+) -> str:
+    """
+    Creates the YAML spec file corresponding to a descriptor passed as parameter
+    :param event: event that triggered this execution
+    :param descriptor_contents: dict containing the parsed descriptor
+    :param executor_config: configuration for the transpiler
+    :param job_id: str
+    :return: Tuple with (yaml string for the given descriptor, job_id)
+    """
+    descriptor = Descriptor(descriptor_contents, executor_config.descriptor_config)
+    bai_k8s_builder = create_scheduled_benchmark_bai_k8s_builder(
+        descriptor, executor_config.bai_config, job_id, event=event
     )
     return bai_k8s_builder.dump_yaml_string()

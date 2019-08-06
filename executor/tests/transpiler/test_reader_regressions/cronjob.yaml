@@ -23,8 +23,6 @@ spec:
           containers:
           - name: benchmark-starter
             image: benchmarkai/cron-job
-            command: []
-            args: []
             securityContext:
               privileged: false
             env:

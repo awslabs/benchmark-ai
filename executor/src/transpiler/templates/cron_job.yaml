@@ -23,8 +23,6 @@ spec:
           containers:
           - name: benchmark-starter
             image: {config.cron_job_docker_image}
-            command: []
-            args: []
             securityContext:
               privileged: false
             env:

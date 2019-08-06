@@ -1,12 +1,6 @@
 import logging
 
-from bai_kafka_utils.events import (
-    FetcherBenchmarkEvent,
-    ExecutorPayload,
-    ExecutorBenchmarkEvent,
-    create_from_object,
-    Status,
-)
+from bai_kafka_utils.events import FetcherBenchmarkEvent, Status
 from bai_kafka_utils.executors.descriptor import SINGLE_RUN_SCHEDULING
 from bai_kafka_utils.executors.execution_callback import ExecutorEventHandler, ExecutionEngineException
 from bai_kafka_utils.executors.executor_service import create_executor_service
@@ -30,24 +24,18 @@ class ScheduledBenchmarkExecutorEventHandler(KafkaServiceCallback):
     def handle_event(self, event: FetcherBenchmarkEvent, kafka_service: KafkaService):
         # Only handle scheduled benchmarks
         if ScheduledBenchmarkExecutorEventHandler.is_single_run(event):
-            logging.info("")
             return
 
         try:
-            job = self.k8s_execution_engine.run(event)
+            job = self.k8s_execution_engine.schedule(event)
         except ExecutionEngineException as e:
             logger.exception("Engine throws exception")
             kafka_service.send_status_message_event(event, Status.ERROR, str(e))
             raise KafkaServiceCallbackException from e
 
-        payload = ExecutorPayload.create_from_fetcher_payload(event.payload, job)
-
-        response_event = create_from_object(ExecutorBenchmarkEvent, event, payload=payload)
-
         kafka_service.send_status_message_event(
-            response_event, Status.SUCCEEDED, f"Scheduled benchmark successfully submitted with job id {job.id}"
+            event, Status.SUCCEEDED, f"Scheduled benchmark successfully submitted with job id {job.id}"
         )
-        kafka_service.send_event(response_event, topic=self.producer_topic)
 
     @staticmethod
     def is_single_run(event):

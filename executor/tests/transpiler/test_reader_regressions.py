@@ -7,7 +7,7 @@ from pytest_regressions.file_regression import FileRegressionFixture
 from typing import List
 
 from executor.args import create_executor_config
-from transpiler.bai_knowledge import create_job_yaml_spec
+from transpiler.bai_knowledge import create_job_yaml_spec, create_scheduled_job_yaml_spec
 
 ANUBIS_SCRIPTS = [
     FileSystemObject(dst="s3://script-exchange/anubis/scripts1.tar"),
@@ -28,10 +28,9 @@ JOB_ID = "benchmark-JOB-ID"
         ("training.toml", "training-with-script", ANUBIS_SCRIPTS),
         ("horovod.toml", "horovod", []),
         ("horovod.toml", "horovod-with-script", ANUBIS_SCRIPTS),
-        ("cronjob.toml", "cronjob", []),
     ],
 )
-def test_regressions(
+def test_single_job_regressions(
     descriptor_filename,
     expected_yaml,
     shared_datadir,
@@ -57,6 +56,27 @@ def test_regressions(
         extra_bai_config_args=dict(random_object=random_object),
         event=benchmark_event,
     )
+    file_regression.check(yaml_spec, basename=expected_yaml, extension=".yaml")
+
+
+@pytest.mark.parametrize(["descriptor_filename", "expected_yaml", "scripts"], [("cronjob.toml", "cronjob", [])])
+def test_scheduled_job_regressions(
+    descriptor_filename,
+    expected_yaml,
+    shared_datadir,
+    config_args,
+    config_env,
+    file_regression: FileRegressionFixture,
+    benchmark_event,
+    scripts,
+):
+    random_object = random.Random()
+    random_object.seed(1)
+
+    descriptor_data = toml.load(str(shared_datadir / descriptor_filename))
+    transpiler_config = create_executor_config(config_args, config_env)
+
+    yaml_spec = create_scheduled_job_yaml_spec(descriptor_data, transpiler_config, JOB_ID, event=benchmark_event)
     file_regression.check(yaml_spec, basename=expected_yaml, extension=".yaml")
 
 
