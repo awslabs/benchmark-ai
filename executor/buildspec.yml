@@ -28,7 +28,7 @@ phases:
             make docker_package COMMIT_SHORT_HASH="local-latest"
             # Now we need the cluster
             export KUBECONFIG=$(kind get kubeconfig-path)
-            kubectl wait --for=condition=ready --timeout=120s
+            kubectl wait --for=condition=ready --timeout=120s node/kind-control-plane
             kubectl label node kind-control-plane failure-domain.beta.kubernetes.io/zone=test-zone node.type=bai-worker beta.kubernetes.io/instance-type=local
             kubectl apply -f ../metrics-pusher/metrics-pusher-roles.yaml
 
