@@ -8,6 +8,9 @@ from bai_watcher.status_inferrers.status import BenchmarkJobStatus
 from bai_watcher.status_inferrers.single_node import SingleNodeStrategyKubernetesStatusInferrer
 
 
+JOB_START_TIME = 1000
+
+
 def mock_loop_dependencies(mocker, *, iterations, kubernetes_job_status):
     mocker.patch("itertools.count", return_value=[0] * iterations)
     mock_time_sleep = mocker.patch("time.sleep")
@@ -35,6 +38,7 @@ def k8s_job_watcher(mocker):
         kubernetes_client_jobs=create_autospec(kubernetes.client.BatchV1Api),
         kubernetes_client_pods=create_autospec(kubernetes.client.CoreV1Api),
     )
+    watcher.job_start_time = JOB_START_TIME
     return watcher
 
 
@@ -67,7 +71,7 @@ def test_thread_run_loop_when_callback_returns_true_will_end_loop(k8s_job_watche
 
     # assertions
     assert k8s_job_watcher.callback.call_args_list == [
-        call("job-id-1234", BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS)
+        call("job-id-1234", BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS, JOB_START_TIME)
     ]
     assert mock_time_sleep.call_args_list == []
 
@@ -83,8 +87,8 @@ def test_thread_run_loop_when_callback_returns_false_will_not_end_loop(k8s_job_w
     k8s_job_watcher._thread_run_loop()
 
     assert k8s_job_watcher.callback.call_args_list == [
-        call("job-id-1234", BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS),
-        call("job-id-1234", BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS),
+        call("job-id-1234", BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS, JOB_START_TIME),
+        call("job-id-1234", BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS, JOB_START_TIME),
     ]
     assert mock_time_sleep.call_args_list == [
         call(SLEEP_TIME_BETWEEN_CHECKING_K8S_STATUS),

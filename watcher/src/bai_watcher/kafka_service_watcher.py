@@ -1,3 +1,4 @@
+import time
 from typing import Tuple
 
 import kubernetes
@@ -61,14 +62,17 @@ class WatchJobsEventHandler(KafkaServiceCallback):
 
         logger.info("Starting to watch the job '%s'", job_id)
 
-        def callback(job_id, benchmark_job_status: BenchmarkJobStatus):
+        def callback(job_id, benchmark_job_status: BenchmarkJobStatus, job_start_time: int):
             # This method is called at each thread (not the Main Thread)
             logger.info(f"Benchmark job '{job_id}'' has status '{benchmark_job_status}'")
             status, message = choose_status_from_benchmark_status(benchmark_job_status)
             kafka_service.send_status_message_event(event, status, message)
             if benchmark_job_status == BenchmarkJobStatus.SUCCEEDED:
+                tstamp_now = int(time.time() * 1000)
                 kafka_service.send_status_message_event(
-                    event, status.METRICS_AVAILABLE, self._get_metrics_available_message(event)
+                    event,
+                    status.METRICS_AVAILABLE,
+                    self._get_metrics_available_message(event, job_start_time, tstamp_now),
                 )
             if benchmark_job_status is not None and benchmark_job_status.is_final():
                 del self.watchers[job_id]
@@ -89,7 +93,7 @@ class WatchJobsEventHandler(KafkaServiceCallback):
     def cleanup(self):
         pass
 
-    def _get_metrics_available_message(self, event: ExecutorBenchmarkEvent):
+    def _get_metrics_available_message(self, event: ExecutorBenchmarkEvent, job_start_time: int, job_end_time: int):
         client_id = event.client_id
         action_id = event.action_id
         grafana_url = self.config.grafana_results_url.format(
@@ -97,6 +101,8 @@ class WatchJobsEventHandler(KafkaServiceCallback):
             dashboard_id=self.config.grafana_op_metrics_dashboard_uid,
             client_id=client_id,
             action_id=action_id,
+            start_tstamp=job_start_time,
+            end_tstamp=job_end_time,
         )
         return self.MESSAGE_METRICS_AVAILABLE.format(action_id=action_id, results_url=grafana_url)
 

@@ -17,6 +17,8 @@ KUBERNETES_NAMESPACE = "kubernetes-namespace"
 GRAFANA_ENDPOINT = "grafana-endpoint"
 GRAFANA_RESULTS_URL = "{grafana_endpoint}/{dashboard_id}/client_id={client_id}/action_id={action_id}"
 GRAFANA_OP_METRICS_DASHBOARD_UID = "op-metrics-uid"
+JOB_START_TIME = 1000
+JOB_END_TIME = 2000
 
 
 @pytest.fixture
@@ -105,13 +107,15 @@ def benchmark_event():
 
 def test_get_metrics_available_message(watcher_config, benchmark_event):
     watcher = WatchJobsEventHandler(watcher_config)
-    message = watcher._get_metrics_available_message(benchmark_event)
+    message = watcher._get_metrics_available_message(benchmark_event, JOB_START_TIME, JOB_END_TIME)
 
     expected_grafana_url = GRAFANA_RESULTS_URL.format(
         grafana_endpoint=GRAFANA_ENDPOINT,
         dashboard_id=GRAFANA_OP_METRICS_DASHBOARD_UID,
         client_id=CLIENT_ID,
         action_id=ACTION_ID,
+        start_tstamp=JOB_START_TIME,
+        end_tstamp=JOB_END_TIME,
     )
     expected_message = watcher.MESSAGE_METRICS_AVAILABLE.format(action_id=ACTION_ID, results_url=expected_grafana_url)
 
