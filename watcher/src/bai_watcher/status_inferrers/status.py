@@ -33,3 +33,6 @@ class BenchmarkJobStatus(Enum):
             BenchmarkJobStatus.FAILED_AT_BENCHMARK_CONTAINER,
             BenchmarkJobStatus.FAILED_AT_SIDECAR_CONTAINER,
         )
+
+    def is_running(self):
+        return self in (BenchmarkJobStatus.RUNNING_AT_INIT_CONTAINERS, BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS)

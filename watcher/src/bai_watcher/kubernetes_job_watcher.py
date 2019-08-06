@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Callable
 
 import itertools
@@ -10,6 +11,7 @@ from threading import Thread
 from bai_watcher import service_logger
 from bai_watcher.status_inferrers.single_node import SingleNodeStrategyKubernetesStatusInferrer
 from bai_watcher.status_inferrers.status import BenchmarkJobStatus
+
 
 logger = service_logger.getChild(__name__)
 
@@ -35,7 +37,7 @@ class KubernetesJobWatcher:
     def __init__(
         self,
         job_id: str,
-        callback: Callable[[str, BenchmarkJobStatus, int], bool],
+        callback: Callable[[str, BenchmarkJobStatus, KubernetesJobWatcher], bool],
         *,
         kubernetes_namespace: str,
         kubernetes_client_jobs: BatchV1Api,
@@ -48,6 +50,7 @@ class KubernetesJobWatcher:
         self.pod_client = kubernetes_client_pods
         self.thread = Thread(target=self._thread_run_loop, daemon=True, name=f"k8s-job-watcher-{job_id}")
         self.job_start_time = None
+        self.metrics_available_message_sent = False
 
     def start(self):
         self.thread.start()
@@ -80,10 +83,7 @@ class KubernetesJobWatcher:
         inferrer = SingleNodeStrategyKubernetesStatusInferrer(k8s_job_status, pods.items)
         status = inferrer.status()
 
-        if (
-            status in [BenchmarkJobStatus.RUNNING_AT_INIT_CONTAINERS, BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS]
-            and self.job_start_time is None
-        ):
+        if status.is_running() and self.job_start_time is None:
             self.job_start_time = int(time.time() * 1000)
 
         return status
@@ -92,7 +92,7 @@ class KubernetesJobWatcher:
         # Use itertools.count() so that tests can mock the infinite loop
         for _ in itertools.count():
             status = self.get_status()
-            stop_watching = self.callback(self.job_id, status, self.job_start_time)
+            stop_watching = self.callback(self.job_id, status, self)
             if stop_watching:
                 return
             time.sleep(SLEEP_TIME_BETWEEN_CHECKING_K8S_STATUS)

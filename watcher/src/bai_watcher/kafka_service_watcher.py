@@ -62,17 +62,26 @@ class WatchJobsEventHandler(KafkaServiceCallback):
 
         logger.info("Starting to watch the job '%s'", job_id)
 
-        def callback(job_id, benchmark_job_status: BenchmarkJobStatus, job_start_time: int):
+        def callback(job_id, benchmark_job_status: BenchmarkJobStatus, watcher: KubernetesJobWatcher):
             # This method is called at each thread (not the Main Thread)
             logger.info(f"Benchmark job '{job_id}'' has status '{benchmark_job_status}'")
             status, message = choose_status_from_benchmark_status(benchmark_job_status)
             kafka_service.send_status_message_event(event, status, message)
+            if benchmark_job_status.is_running() and not watcher.metrics_available_message_sent:
+                kafka_service.send_status_message_event(
+                    event,
+                    status.METRICS_AVAILABLE,
+                    self._get_metrics_available_message(event, job_start_time=watcher.job_start_time),
+                )
+                watcher.metrics_available_message_sent = True
             if benchmark_job_status == BenchmarkJobStatus.SUCCEEDED:
                 tstamp_now = int(time.time() * 1000)
                 kafka_service.send_status_message_event(
                     event,
                     status.METRICS_AVAILABLE,
-                    self._get_metrics_available_message(event, job_start_time, tstamp_now),
+                    self._get_metrics_available_message(
+                        event, job_start_time=watcher.job_start_time, job_end_time=tstamp_now
+                    ),
                 )
             if benchmark_job_status is not None and benchmark_job_status.is_final():
                 del self.watchers[job_id]
@@ -93,9 +102,16 @@ class WatchJobsEventHandler(KafkaServiceCallback):
     def cleanup(self):
         pass
 
-    def _get_metrics_available_message(self, event: ExecutorBenchmarkEvent, job_start_time: int, job_end_time: int):
+    def _get_metrics_available_message(
+        self, event: ExecutorBenchmarkEvent, job_start_time: int, job_end_time: int = None
+    ):
         client_id = event.client_id
         action_id = event.action_id
+
+        if job_end_time is None:
+            # If no end timestamp is provided, adjust the X-axis to 1h by default
+            job_end_time = job_start_time + (60 * 60 * 1000)
+
         grafana_url = self.config.grafana_results_url.format(
             grafana_endpoint=self.config.grafana_endpoint,
             dashboard_id=self.config.grafana_op_metrics_dashboard_uid,
