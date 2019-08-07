@@ -5,10 +5,23 @@ A "framework" that enables to periodically generate performance benchmarks of Ma
 
 # A "framework" ?
 
-Anubis provides a simple, self service solution for teams to schedule and run benchmarks for Machine Learning systems.
-It allows teams to spin-up the required infrastructure and automation needed to perform benchmarks. Using Anubis,
-users can monitor the evolution of their benchmarks over time to detect anomalies or regressions. Alarms can be
-configured to notify the corresponding teams when certain metrics exceed given thresholds.
+Anubis provides a simple, self service solution for teams to schedule and run benchmarks for Machine Learning workloads.  Abubis lets teams to easily spin-up the required infrastructure and automation to perform benchmarks. Consider Anubis a measuring tool, a "ruler", that lets you measure the efficacy of your machine learning model, framework and/or computing infrastructure.  Anubis provides operational and user metrics, with the ability to provide sophisticated alerts for detecting regressions.  Logs are stored and indexed for deeper inspection for effective root cause investigation. 
+
+# Features
+
+* Simple _declarative_ _document-based_ input that gives user full control of Model / Framework / Hardware 
+* Simple command-line interface 
+* Strong Reproducibility 
+* Efficient Dataset Caching 
+* Ease of use and deployment 
+* Enables self-service model (anyone can spin up Anubis) 
+* Designed to be future proof 
+* Built around open standards
+* Cloud native, cloud ready and cloud scalable*
+
+*Takes advantage of your cloud provider or datacenter's available resources - currently supports AWS out-of-the-box"
+
+
 
 # Usage
 
