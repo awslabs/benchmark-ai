@@ -1,12 +1,11 @@
 import os
 from unittest.mock import MagicMock
 
-
-import anubis_cron_job
 import kafka
 import pytest
 from pytest_cases import pytest_parametrize_plus, fixture_ref
 
+from anubis_cron_job import __main__
 
 BENCHMARK_EVENT = (
     '{"action_id": "2b31d067-8d37-4287-9944-aa794468bc9f", "message_id":'
@@ -100,7 +99,7 @@ def mock_no_bootstrap_servers_env(mocker, mock_producer_topic, mock_benchmark_ev
 
 @pytest.fixture
 def mock_generate_uuid(mocker):
-    return mocker.patch.object(anubis_cron_job.__main__, "generate_uuid", side_effect=["new_uuid_1", "new_uuid_2"])
+    return mocker.patch.object(__main__, "generate_uuid", side_effect=["new_uuid_1", "new_uuid_2"])
 
 
 @pytest.fixture
@@ -110,12 +109,12 @@ def mock_kafka_producer():
 
 @pytest.fixture
 def mock_create_kafka_producer(mocker, mock_kafka_producer):
-    return mocker.patch.object(anubis_cron_job.__main__, "create_kafka_producer", return_value=mock_kafka_producer)
+    return mocker.patch.object(__main__, "create_kafka_producer", return_value=mock_kafka_producer)
 
 
 @pytest.fixture
 def mock_fail_create_kafka_producer(mocker):
-    return mocker.patch.object(anubis_cron_job.__main__, "create_kafka_producer", side_effect=Exception("some error"))
+    return mocker.patch.object(__main__, "create_kafka_producer", side_effect=Exception("some error"))
 
 
 @pytest.fixture
@@ -156,17 +155,15 @@ def test_main(mock_create_kafka_producer, mock_kafka_producer, mock_generate_uui
     mock_kafka_producer.close.assert_called()
 
 
-@pytest.fixture
-def x(request):
-    return request.getfixturevalue(request.param)
-
-
-@pytest_parametrize_plus("env", [
-    fixture_ref(mock_empty_env),
-    fixture_ref(mock_no_bootstrap_servers_env),
-    fixture_ref(mock_no_producer_env),
-    fixture_ref(mock_no_event_env)
-])
+@pytest_parametrize_plus(
+    "env",
+    [
+        fixture_ref(mock_empty_env),
+        fixture_ref(mock_no_bootstrap_servers_env),
+        fixture_ref(mock_no_producer_env),
+        fixture_ref(mock_no_event_env),
+    ],
+)
 def test_config_error_exit(env):
     """
     Test main fails if the environment does not contain the required parameters
@@ -178,14 +175,11 @@ def test_config_error_exit(env):
 
 
 @pytest_parametrize_plus(
-    "failure", [
-        fixture_ref(mock_fail_create_kafka_producer),
-        fixture_ref(mock_kafka_producer_send_failure)
-    ]
+    "failure", [fixture_ref(mock_fail_create_kafka_producer), fixture_ref(mock_kafka_producer_send_failure)]
 )
 def test_main_error_exit(failure, mock_env):
     """
-    Test script exists on failures
+    Test script exists when exceptions are thrown
     """
     from anubis_cron_job.__main__ import main
 
