@@ -8,7 +8,7 @@ from bai_kafka_utils.kafka_client import create_kafka_producer
 from bai_kafka_utils.logging import configure_logging
 from bai_kafka_utils.utils import generate_uuid
 
-from bai_cron_job.config import get_config
+from anubis_cron_job.config import get_config
 
 
 def main(argv=None):
@@ -25,8 +25,8 @@ def main(argv=None):
         benchmark_event = dacite.from_dict(data_class=FetcherBenchmarkEvent, data=config.benchmark_event)
 
         # Create new message and action ids
-        benchmark_event.message_id = generate_uuid()
         benchmark_event.action_id = generate_uuid()
+        benchmark_event.message_id = generate_uuid()
 
         # Remove scheduling attribute from toml
         info = benchmark_event.payload.toml.contents.get("info", {})
