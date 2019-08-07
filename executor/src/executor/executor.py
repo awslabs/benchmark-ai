@@ -39,8 +39,6 @@ class ScheduledBenchmarkExecutorEventHandler(KafkaServiceCallback):
 
     @staticmethod
     def is_single_run(event):
-        print("trying to find out if scheduled benchmark")
-        print(event.payload.toml.contents)
         scheduling = event.payload.toml.contents.get("info", {}).get("scheduling", SINGLE_RUN_SCHEDULING)
         return scheduling == SINGLE_RUN_SCHEDULING
 
