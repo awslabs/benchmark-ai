@@ -163,7 +163,16 @@ Other interesting features:
 
 # Design and architecture
 
-TODO
+The system is built to embody a few guiding tenets:
+
+<ul>
+  <li>Self Service</li>
+  <li>"Push Button" Installation</li>
+  <li>Complete Delivery</li>
+  <li>Use best of breed technology that has significant mind share</li>
+</ul>
+
+![Anubis design](docs/images/anubis_architecture_diagram.png "Anubis Design")
 
 # Supported cloud providers
 
