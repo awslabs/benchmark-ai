@@ -22,7 +22,7 @@ spec:
           serviceAccountName: metrics-pusher
           containers:
           - name: benchmark-starter
-            image: benchmarkai/cron-job
+            image: benchmarkai/anubis-cron-job
             env:
             - name: KAFKA_BOOTSTRAP_SERVERS
               valueFrom:
