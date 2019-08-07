@@ -1,8 +1,10 @@
 import logging
 import subprocess
 
+from bai_kafka_utils.kafka_service import KafkaService
+
 from bai_k8s_utils.service_labels import ServiceLabels
-from bai_kafka_utils.events import FetcherBenchmarkEvent, BenchmarkJob
+from bai_kafka_utils.events import FetcherBenchmarkEvent, BenchmarkJob, CommandRequestEvent, Status
 from bai_kafka_utils.executors.descriptor import DescriptorError
 from bai_kafka_utils.executors.execution_callback import ExecutionEngine, ExecutionEngineException
 
@@ -19,10 +21,10 @@ logger = logging.getLogger(__name__)
 
 class K8SExecutionEngine(ExecutionEngine):
     EXTRA_K8S_YAML = "k8s_yaml"
-
     ENGINE_ID = "kubernetes"
-
     JOB_ID_PREFIX = "b-"
+
+    SUCCESS_MESSAGE = "Succesfully cancelled benchmark with id {action_id}"
 
     ALL_K8S_RESOURCE_TYPES = ["jobs", "cronjobs", "mpijobs", "configmaps", "rolebindings"]
 
@@ -60,7 +62,9 @@ class K8SExecutionEngine(ExecutionEngine):
         logger.info(f"Kubectl output: {result}")
         logger.info(f"Job submitted with yaml:\n{yaml}")
 
-    def cancel(self, client_id: str, action_id: str):
+    def cancel(
+        self, client_id: str, action_id: str, kafka_service: KafkaService = None, event: CommandRequestEvent = None
+    ):
         label_selector = self._create_label_selector(client_id, action_id)
         resource_types = ",".join(self.ALL_K8S_RESOURCE_TYPES)
 
@@ -73,8 +77,11 @@ class K8SExecutionEngine(ExecutionEngine):
         if "No resources found" in result:
             raise ValueError(f"No resources found matching selector {label_selector}")
 
-        logging.info(f"Succesfully cancelled benchmark with id {action_id}")
+        success_message = self.SUCCESS_MESSAGE.format(action_id=action_id)
+        logging.info(success_message)
         logger.info(f"Kubectl output: {result}")
+
+        kafka_service.send_status_message_event(event, Status.CANCELED, success_message)
         return result
 
     @staticmethod

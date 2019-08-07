@@ -21,7 +21,7 @@ class KafkaCommandCallback(KafkaServiceCallback):
     CODE_COMMAND_ERROR = 1
     CODE_CLIENT_ERROR = 2
 
-    OK = "Command was executed successfully"
+    OK = "{command} command was executed successfully"
     INVALID_ARGS = "Invalid args %s"
 
     def __init__(self, cmd_object: Any, cmd_return_topic: str):
@@ -51,7 +51,7 @@ class KafkaCommandCallback(KafkaServiceCallback):
 
             result = None
             code = KafkaCommandCallback.CODE_SUCCESS
-            msg = KafkaCommandCallback.OK
+            msg = KafkaCommandCallback.OK.format(command=command.capitalize())
 
             pos_args = []
             kw_args = {}

@@ -1,4 +1,9 @@
 import addict
+from bai_kafka_utils.kafka_service import KafkaService
+from unittest.mock import create_autospec
+
+from bai_kafka_utils.events import BenchmarkEvent
+
 from bai_kafka_utils.executors.descriptor import DescriptorConfig, Descriptor
 from pytest import fixture
 
@@ -44,3 +49,24 @@ def descriptor_as_dict(descriptor_config):
 @fixture
 def descriptor(descriptor_config, descriptor_as_dict):
     return Descriptor(descriptor_as_dict, descriptor_config)
+
+
+@fixture
+def benchmark_event():
+    return BenchmarkEvent(
+        action_id="ACTION_ID",
+        message_id="MESSAGE_ID",
+        client_id="CLIENT_ID",
+        client_version="DONTCARE",
+        client_username="DONTCARE",
+        authenticated=False,
+        tstamp=1556814924121,
+        visited=[],
+        type="DONTCARE",
+        payload=None,
+    )
+
+
+@fixture
+def mock_kafka_service():
+    return create_autospec(KafkaService)

@@ -113,8 +113,8 @@ def mock_check_output(mocker):
 JOINED_RESOURCE_TYPES = ",".join(K8SExecutionEngine.ALL_K8S_RESOURCE_TYPES)
 
 
-def test_cancel_benchmark(k8s_execution_engine: K8SExecutionEngine, mock_check_output):
-    k8s_execution_engine.cancel(CLIENT_ID, ACTION_ID)
+def test_cancel_benchmark(k8s_execution_engine: K8SExecutionEngine, mock_check_output, kafka_service, benchmark_event):
+    k8s_execution_engine.cancel(CLIENT_ID, ACTION_ID, kafka_service=kafka_service, event=benchmark_event)
 
     expected_call = [
         KUBECTL,
@@ -126,8 +126,8 @@ def test_cancel_benchmark(k8s_execution_engine: K8SExecutionEngine, mock_check_o
     mock_check_output.assert_called_with(expected_call)
 
 
-def test_cancel_fails(k8s_execution_engine: K8SExecutionEngine, mock_check_output):
+def test_cancel_fails(k8s_execution_engine: K8SExecutionEngine, mock_check_output, kafka_service, benchmark_event):
     mock_check_output.return_value = b"No resources found"
 
     with pytest.raises(ValueError):
-        k8s_execution_engine.cancel(CLIENT_ID, ACTION_ID)
+        k8s_execution_engine.cancel(CLIENT_ID, ACTION_ID, kafka_service=kafka_service, event=benchmark_event)

@@ -4,7 +4,9 @@ import tempfile
 import boto3
 import botocore
 import sagemaker
-from bai_kafka_utils.events import FetcherBenchmarkEvent, BenchmarkJob
+from bai_kafka_utils.kafka_service import KafkaService
+
+from bai_kafka_utils.events import FetcherBenchmarkEvent, BenchmarkJob, Status, CommandRequestEvent
 from bai_kafka_utils.executors.descriptor import DescriptorConfig, Descriptor, DescriptorError
 from bai_kafka_utils.executors.execution_callback import ExecutionEngine, ExecutionEngineException
 from math import ceil
@@ -88,6 +90,10 @@ class SageMakerExecutionEngine(ExecutionEngine):
         total_size_gb = int(SageMakerExecutionEngine.SAFETY_FACTOR * ceil(total_size / 1024 ** 3))
         return total_size_gb
 
-    def cancel(self, client_id: str, action_id: str):
+    def cancel(
+        self, client_id: str, action_id: str, kafka_service: KafkaService = None, event: CommandRequestEvent = None
+    ):
         job_name = SageMakerExecutionEngine._get_job_name(action_id)
         self.sagemaker_client.stop_training_job(TrainingJobName=job_name)
+        message = f"Succesfully cancelled benchmark with id {action_id}"
+        kafka_service.send_status_message_event(event, Status.CANCELED, message)

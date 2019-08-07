@@ -221,5 +221,5 @@ def test_run_fail_from_sagemaker(
         sm_execution_engine_to_test.run(fetcher_event)
 
 
-def test_cancel(sm_execution_engine_to_test: SageMakerExecutionEngine):
-    sm_execution_engine_to_test.cancel(CLIENT_ID, ACTION_ID)
+def test_cancel(sm_execution_engine_to_test: SageMakerExecutionEngine, mock_kafka_service, benchmark_event):
+    sm_execution_engine_to_test.cancel(CLIENT_ID, ACTION_ID, kafka_service=mock_kafka_service, event=benchmark_event)
