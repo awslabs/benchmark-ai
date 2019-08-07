@@ -361,6 +361,7 @@ _prepare_script() {
     #NOTE: restrict (lint) script locations... (don't want script to point to "dangerous" places etc...)
     local artifact
     if [[ -e "${script}" ]]; then
+        script=$(realpath "${script}")
         ((DEBUG)) && echo "Located ${script} "$([[ -d "${script}" ]] && echo -n "directory" ; [[ -f "${script}" ]] && echo -n "file")", building artifact..." 1>&2
         pushd "${script%/*}" >& /dev/null
         artifact=${ANUBIS_SCRIPT_STAGING}/_${script##*/}.tar
@@ -408,7 +409,12 @@ submit() {
         current_service_endpoint="localhost:8080"
     fi
 
-    [[ -n "${script_filename}" ]] && _prepare_script "${script_filename}"
+    if [[ -n "${script_filename}" ]]; then
+        if ! _prepare_script "${script_filename}"; then
+            echo "submission aborted!"
+            exit 9
+        fi
+    fi
 
     local data=$(_generate_submit_event "${descriptor_filename}" "${script_artifact}")
     local cmd
@@ -748,7 +754,7 @@ main() {
                     done
                     unshift=1
                     ;;
-                --results)
+                --results | --result)
                     shift
                     get_results ${1} ; shift
                     ;;
