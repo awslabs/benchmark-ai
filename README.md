@@ -1,5 +1,6 @@
 A "framework" that enables to periodically generate performance benchmarks of Machine Learning systems in order to evaluate new functionalities and detect regressions.
 
+
 ![how_good_is_uour_ml](docs/images/anubis.scales.jpg "Anubis")
 
 # A "framework" ?
@@ -131,18 +132,27 @@ and the following will be done:
 
 Optional: Put bff/bin/anubis in your $PATH
 
+Anubis supports "Script Mode".  This means along with posting the descriptor file, you may also include the code that you wish to run.  See our "Hello World" [README](sample-benchmarks/hello-world) for info on that.  Also look at the `anubis` client program [document](bff/doc/anubis-client.md) located in the bff service.
+
+```bash
+#To watch the status messages showing the progress of the run
+bff/bin/anubis --watch --status
+```
+
+
+
 ## Step 3 - Collect the results of your run
 
 ```bash
 # Assuming PWD is `benchmark-ai`
-bff/bin/anubis --result <ACTION_ID>
+bff/bin/anubis --results <ACTION_ID>
 ```
 
 ## Great, what's next?
 
 Write your own benchmarks!
 
-Explore the [descriptor file format](https://github.com/MXNetEdge/benchmark-ai/tree/master/baictl/descriptor-file)
+Explore the [descriptor file format](executor/README.md)
 in order to run your benchmarks in Benchmark AI. Make sure to post metrics by integrating the [client library](https://github.com/MXNetEdge/benchmark-ai/tree/master/client-lib)
 in your code.
 
