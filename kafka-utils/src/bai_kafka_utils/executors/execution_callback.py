@@ -10,6 +10,7 @@ from bai_kafka_utils.events import (
     create_from_object,
     Status,
     BenchmarkJob,
+    CommandRequestEvent,
 )
 from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService, KafkaServiceCallbackException
 
@@ -22,7 +23,7 @@ class ExecutionEngine(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def cancel(self, client_id: str, action_id: str, **kwargs) -> bool:
+    def cancel(self, client_id: str, action_id: str, kafka_service: KafkaService, event: CommandRequestEvent) -> bool:
         pass
 
 

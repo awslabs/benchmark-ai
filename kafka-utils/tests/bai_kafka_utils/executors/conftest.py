@@ -1,8 +1,10 @@
+from unittest.mock import create_autospec
+
 import pytest
 from addict import addict
 
 from bai_kafka_utils.executors.descriptor import Descriptor, DescriptorConfig, DistributedStrategy
-from bai_kafka_utils.kafka_service import KafkaServiceConfig
+from bai_kafka_utils.kafka_service import KafkaServiceConfig, KafkaService
 
 
 @pytest.fixture
@@ -40,3 +42,8 @@ def kafka_service_config() -> KafkaServiceConfig:
         cmd_submit_topic="CMD_SUBMIT",
         consumer_group_id="GROUP_ID",
     )
+
+
+@pytest.fixture
+def kafka_service():
+    return create_autospec(KafkaService)

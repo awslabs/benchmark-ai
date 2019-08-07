@@ -90,9 +90,7 @@ class SageMakerExecutionEngine(ExecutionEngine):
         total_size_gb = int(SageMakerExecutionEngine.SAFETY_FACTOR * ceil(total_size / 1024 ** 3))
         return total_size_gb
 
-    def cancel(
-        self, client_id: str, action_id: str, kafka_service: KafkaService = None, event: CommandRequestEvent = None
-    ):
+    def cancel(self, client_id: str, action_id: str, kafka_service: KafkaService, event: CommandRequestEvent):
         job_name = SageMakerExecutionEngine._get_job_name(action_id)
         self.sagemaker_client.stop_training_job(TrainingJobName=job_name)
         message = f"Succesfully cancelled benchmark with id {action_id}"

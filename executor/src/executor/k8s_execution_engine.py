@@ -62,9 +62,7 @@ class K8SExecutionEngine(ExecutionEngine):
         logger.info(f"Kubectl output: {result}")
         logger.info(f"Job submitted with yaml:\n{yaml}")
 
-    def cancel(
-        self, client_id: str, action_id: str, kafka_service: KafkaService = None, event: CommandRequestEvent = None
-    ):
+    def cancel(self, client_id: str, action_id: str, kafka_service: KafkaService, event: CommandRequestEvent):
         label_selector = self._create_label_selector(client_id, action_id)
         resource_types = ",".join(self.ALL_K8S_RESOURCE_TYPES)
 
