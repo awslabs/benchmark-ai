@@ -17,7 +17,7 @@ from executor.k8s_execution_engine import K8SExecutionEngine
 
 
 def single_run_benchmark():
-    return {"info": {"scheduling": "single-run"}}
+    return {"info": {"scheduling": "single_run"}}
 
 
 def scheduled_run_benchmark():

@@ -25,7 +25,7 @@ class DistributedStrategy(Enum):
     HOROVOD = "horovod"
 
 
-SINGLE_RUN_SCHEDULING = "single-run"
+SINGLE_RUN_SCHEDULING = "single_run"
 
 ONE_PER_GPU = "gpus"
 

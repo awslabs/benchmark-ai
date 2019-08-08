@@ -42,7 +42,7 @@ def main(argv=None):
         logging.debug("Closing producer")
         kafka_producer.close()
     except Exception as err:
-        logger.error(f"Fatal error submitting benchmark job: {err}")
+        logger.exception(f"Fatal error submitting benchmark job: {err}")
         sys.exit(1)
 
     logging.info("Success")

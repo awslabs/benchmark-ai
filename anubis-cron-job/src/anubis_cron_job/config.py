@@ -15,7 +15,7 @@ class AnubisCronJobConfig:
 def get_config(argv, env=None) -> AnubisCronJobConfig:
 
     parser = configargparse.ArgParser(
-        description="Tool for generating single-bench mark runs from a periodic benchmark template"
+        description="Tool for generating single-benchmark runs from a periodic benchmark template"
     )
 
     parser.add(

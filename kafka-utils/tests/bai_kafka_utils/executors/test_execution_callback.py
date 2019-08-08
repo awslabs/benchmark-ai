@@ -72,7 +72,7 @@ def fetcher_event(benchmark_event: BenchmarkEvent) -> FetcherBenchmarkEvent:
 
 @fixture
 def single_run_fetcher_event(fetcher_event: FetcherBenchmarkEvent) -> FetcherBenchmarkEvent:
-    set_scheduling(fetcher_event, "single-run")
+    set_scheduling(fetcher_event, "single_run")
     return fetcher_event
 
 

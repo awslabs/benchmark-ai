@@ -22,17 +22,7 @@ BENCHMARK_EVENT = (
     '"info": {"task_name": "Hello world", "scheduling": "*/1 * * * *",'
     '"description": " A hello world example of using Benchmark AI"}, "hardware":'
     '{"strategy": "single_node", "instance_type": "t3.small"}, "ml": {"benchmark_code":'
-    '"python3 hello-world.py"}}, "doc": "IyBCZW5jaG1hcmtBSSBtZXRhCnNwZWNfdmVyc2lvbiA9ICIwLjEuMCIKCiMgVGhlc2UgZmll'
-    "bGRzIGRvbid0IGhhdmUgYW55IGltcGFjdCBvbiB0aGUgam9iIHRvIHJ1biwgdGhleSBjb250YWluCiMgbWVyZWx5IGluZm9ybWF0aXZlIGRh"
-    "dGEgc28gdGhlIGJlbmNobWFyayBjYW4gYmUgY2F0ZWdvcml6ZWQgd2hlbiBkaXNwbGF5ZWQKIyBpbiB0aGUgZGFzaGJvYXJkLgpbaW5mb10K"
-    "dGFza19uYW1lID0gIkhlbGxvIHdvcmxkIgpkZXNjcmlwdGlvbiA9ICIiIiBcCiAgICBBIGhlbGxvIHdvcmxkIGV4YW1wbGUgb2YgdXNpbmcgQ"
-    "mVuY2htYXJrIEFJXAogICAgIiIiCnNjaGVkdWxpbmcgPSAiKi8xICogKiAqICoiCgojIDEuIEhhcmR3YXJlCltoYXJkd2FyZV0KaW5zdGFuY2"
-    "VfdHlwZSA9ICJ0My5zbWFsbCIKc3RyYXRlZ3kgPSAic2luZ2xlX25vZGUiCgojIDIuIEVudmlyb25tZW50CltlbnZdCiMgRG9ja2VyIGh1YiA"
-    "8aHViLXVzZXI+LzxyZXBvLW5hbWU+Ojx0YWc+IApkb2NrZXJfaW1hZ2UgPSAiYmVuY2htYXJrYWkvaGVsbG8td29ybGQ6bGF0ZXN0IgoKIyAz"
-    "LiBNYWNoaW5lIGxlYXJuaW5nIHJlbGF0ZWQgc2V0dGluZ3M6IAojIGRhdGFzZXQsIGJlbmNobWFyayBjb2RlIGFuZCBwYXJhbWV0ZXJzIGl0I"
-    "HRha2VzClttbF0KYmVuY2htYXJrX2NvZGUgPSAicHl0aG9uMyBoZWxsby13b3JsZC5weSIKCiMgNC4gT3V0cHV0CltvdXRwdXRdCiMgRGVmaW"
-    "5lIHdoaWNoIG1ldHJpY3Mgd2lsbCBiZSB0cmFja2VkIGluIHRoaXMgYmVuY2htYXJrCm1ldHJpY3MgPSBbImVwb2NoIiwgInRyYWluX2xvc3M"
-    'iLCAibG9zcyIsICJhY2N1cmFjeSJdCg==",'
+    '"python3 hello-world.py"}}, "doc": "something",'
     '"sha1": "6e38ce3d47171fbb387237e1c61e3feaba6c3b78", "descriptor_filename":'
     '"descriptor.toml", "verified": true}, "datasets": [], "scripts": []}}'
 )
