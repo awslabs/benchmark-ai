@@ -55,7 +55,7 @@ class BaiKubernetesObjectBuilder(metaclass=abc.ABCMeta):
     ):
         self.job_id = job_id.lower()
         self.descriptor = descriptor
-        self.config_template = ConfigTemplate(read_template(template_name))
+        self.config_template = ConfigTemplate(self.read_template(template_name))
         self.config = config
         self.event = event
 
@@ -77,20 +77,25 @@ class BaiKubernetesObjectBuilder(metaclass=abc.ABCMeta):
         return contents
 
     @abc.abstractmethod
-    def _pre_build(self):
+    def _feed_additional_template_values(self):
         pass
 
     @abc.abstractmethod
-    def _post_build(self):
+    def _update_root_k8s_object(self):
         pass
 
     def build(self):
-        self._pre_build()
+        # if the root object has already been built don't build it again
+        if self.root:
+            return
+
+        self._feed_additional_template_values()
         self.root = self.config_template.build()
-        self._post_build()
+        self._update_root_k8s_object()
         return self
 
     def dump_yaml_string(self):
+        self.build()
         return self.root.to_yaml()
 
 
@@ -98,10 +103,10 @@ class ScheduledBenchmarkKubernetedObjectBuilder(BaiKubernetesObjectBuilder):
     def __init__(self, descriptor: Descriptor, config: BaiConfig, job_id: str, event: BenchmarkEvent):
         super().__init__(job_id, descriptor, config, "cron_job.yaml", event)
 
-    def _pre_build(self):
+    def _feed_additional_template_values(self):
         self.config_template.feed({"event_json_str": json.dumps(self.event.to_json())})
 
-    def _post_build(self):
+    def _update_root_k8s_object(self):
         pass
 
 
@@ -110,6 +115,18 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
     Adds the logic required from BAI into the Kubernetes root object that represents
     launching a benchmark.
     """
+
+    @staticmethod
+    def _get_template_name(descriptor: Descriptor):
+        template_files = {
+            DistributedStrategy.SINGLE_NODE: "job_single_node.yaml",
+            DistributedStrategy.HOROVOD: "mpi_job_horovod.yaml",
+        }
+
+        template_name = template_files.get(descriptor.strategy)
+        if not template_name:
+            raise ValueError(f"Unsupported distributed strategy in descriptor file: '{descriptor.strategy}'")
+        return template_name
 
     def __init__(
         self,
@@ -130,17 +147,7 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
                               This field exists mostly to facilitate testing so that predictable random data is
                               generated.
         """
-        template_files = {
-            DistributedStrategy.SINGLE_NODE: "job_single_node.yaml",
-            DistributedStrategy.HOROVOD: "mpi_job_horovod.yaml",
-        }
-
-        template_name = template_files.get(descriptor.strategy)
-
-        if not template_name:
-            raise ValueError(f"Unsupported distributed strategy in descriptor file: '{descriptor.strategy}'")
-
-        super().__init__(job_id, descriptor, config, template_name, event=event)
+        super().__init__(job_id, descriptor, config, self._get_template_name(descriptor), event=event)
 
         self.data_sources = data_sources
         self.scripts = scripts
@@ -148,26 +155,20 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         self.random_object = random_object
         self.internal_env_vars = {}
 
-    def _pre_build(self):
+    def _feed_additional_template_values(self):
         # Using a random AZ is good enough for now
         availability_zone = self.choose_availability_zone(self.descriptor, self.environment_info, self.random_object)
         self.config_template.feed({"availability_zone": availability_zone})
 
-    def _post_build(self):
+    def _update_root_k8s_object(self):
         self.add_data_volume_mounts(self.data_sources)
         self.add_scripts(self.scripts)
         self.add_shared_memory()
         self.add_env_vars()
+        self.add_benchmark_cmd()
 
         if self.config.suppress_job_affinity:
             self.root.remove_affinity()
-
-        if self.descriptor.strategy == DistributedStrategy.SINGLE_NODE:
-            self.add_benchmark_cmd_to_container()
-        elif self.descriptor.strategy == DistributedStrategy.HOROVOD:
-            self.add_benchmark_cmd_to_config_map()
-        else:
-            raise ValueError("Unsupported configuration in descriptor file")
 
     @staticmethod
     def choose_availability_zone(
@@ -187,6 +188,14 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
             random_object = random.Random()
 
         return random_object.choice(list(environment_info.availability_zones.values()))
+
+    def add_benchmark_cmd(self):
+        if self.descriptor.strategy == DistributedStrategy.SINGLE_NODE:
+            self.add_benchmark_cmd_to_container()
+        elif self.descriptor.strategy == DistributedStrategy.HOROVOD:
+            self.add_benchmark_cmd_to_config_map()
+        else:
+            raise ValueError("Unsupported configuration in descriptor file")
 
     def add_data_volume_mounts(self, data_sources):
         benchmark_container = self.root.find_container(BENCHMARK_CONTAINER)
@@ -345,15 +354,6 @@ def create_bai_data_sources(fetched_data_sources: List[DataSet], descriptor: Des
 
 def create_scripts(scripts: List[FileSystemObject]) -> List[BaiScriptSource]:
     return list(map(BaiScriptSource, scripts)) if scripts else []
-
-
-def read_template(template_name: str) -> str:
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    templates_dir = os.path.join(current_dir, "templates")
-
-    with open(os.path.join(templates_dir, template_name), "r") as f:
-        contents = f.read()
-    return contents
 
 
 def create_single_run_benchmark_bai_k8s_builder(
