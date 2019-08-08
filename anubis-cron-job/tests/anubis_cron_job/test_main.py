@@ -1,14 +1,21 @@
+import json
 import os
 from unittest.mock import MagicMock
 
+import dacite
 import kafka
 import pytest
+from bai_kafka_utils.events import FetcherBenchmarkEvent, Status
+from bai_kafka_utils.executors.descriptor import SINGLE_RUN_SCHEDULING
 from pytest_cases import pytest_parametrize_plus, fixture_ref
 
 from anubis_cron_job import __main__
+from anubis_cron_job.__main__ import create_benchmark_event
+
+ACTION_ID = ""
 
 BENCHMARK_EVENT = (
-    '{"action_id": "2b31d067-8d37-4287-9944-aa794468bc9f", "message_id":'
+    '{"action_id": "@@ACTION_ID@@", "message_id":'
     '"5b137a70-cbf1-4d52-9c5c-e208e4f3cbb1", "client_id": "19c104987141a846c0bbd688678c23fed19a5742",'
     '"client_version": "0.1.0-481dad2", "client_username": "bob",'
     '"authenticated": false, "tstamp": 1565094802391, "visited": [{"svc":'
@@ -29,6 +36,12 @@ BENCHMARK_EVENT = (
 
 KAFKA_BOOTSTRAP_SERVERS = ["a", "b", "c"]
 PRODUCER_TOPIC = "topic"
+STATUS_TOPIC = "status"
+
+
+@pytest.fixture
+def mock_action_id():
+    return ACTION_ID
 
 
 @pytest.fixture
@@ -37,8 +50,8 @@ def mock_bootstrap_servers():
 
 
 @pytest.fixture
-def mock_benchmark_event():
-    return BENCHMARK_EVENT
+def mock_benchmark_event(mock_action_id):
+    return BENCHMARK_EVENT.replace("@@ACTION_ID@@", mock_action_id)
 
 
 @pytest.fixture
@@ -47,15 +60,23 @@ def mock_producer_topic():
 
 
 @pytest.fixture
-def mock_env(mocker, mock_bootstrap_servers, mock_producer_topic, mock_benchmark_event):
+def mock_status_topic():
+    return STATUS_TOPIC
 
-    env = {
+
+@pytest.fixture
+def mock_env(mock_bootstrap_servers, mock_producer_topic, mock_benchmark_event, mock_status_topic):
+    return {
         "KAFKA_BOOTSTRAP_SERVERS": mock_bootstrap_servers,
         "PRODUCER_TOPIC": mock_producer_topic,
         "BENCHMARK_EVENT": mock_benchmark_event,
+        "STATUS_TOPIC": mock_status_topic,
     }
 
-    mocker.patch.object(os, "environ", env)
+
+@pytest.fixture
+def mock_good_env(mocker, mock_env):
+    mocker.patch.object(os, "environ", mock_env)
 
 
 @pytest.fixture
@@ -64,32 +85,38 @@ def mock_empty_env(mocker):
 
 
 @pytest.fixture
-def mock_no_event_env(mocker, mock_bootstrap_servers, mock_producer_topic):
-
-    env = {"KAFKA_BOOTSTRAP_SERVERS": mock_bootstrap_servers, "PRODUCER_TOPIC": mock_producer_topic}
-
-    mocker.patch.object(os, "environ", env)
+def mock_no_event_env(mocker, mock_env):
+    del mock_env["BENCHMARK_EVENT"]
+    mocker.patch.object(os, "environ", mock_env)
 
 
 @pytest.fixture
-def mock_no_producer_env(mocker, mock_bootstrap_servers, mock_benchmark_event):
-
-    env = {"KAFKA_BOOTSTRAP_SERVERS": mock_bootstrap_servers, "BENCHMARK_EVENT": mock_benchmark_event}
-
-    mocker.patch.object(os, "environ", env)
+def mock_no_producer_env(mocker, mock_env):
+    del mock_env["PRODUCER_TOPIC"]
+    mocker.patch.object(os, "environ", mock_env)
 
 
 @pytest.fixture
-def mock_no_bootstrap_servers_env(mocker, mock_producer_topic, mock_benchmark_event):
+def mock_no_status_env(mocker, mock_env):
+    del mock_env["STATUS_TOPIC"]
+    mocker.patch.object(os, "environ", mock_env)
 
-    env = {"PRODUCER_TOPIC": mock_producer_topic, "BENCHMARK_EVENT": mock_benchmark_event}
 
-    mocker.patch.object(os, "environ", env)
+@pytest.fixture
+def mock_no_bootstrap_servers_env(mocker, mock_env):
+    del mock_env["KAFKA_BOOTSTRAP_SERVERS"]
+    mocker.patch.object(os, "environ", mock_env)
 
 
 @pytest.fixture
 def mock_generate_uuid(mocker):
-    return mocker.patch.object(__main__, "generate_uuid", side_effect=["new_uuid_1", "new_uuid_2"])
+    return mocker.patch.object(__main__, "generate_uuid", side_effect=["new_uuid_1", "new_uuid_2", "new_uuid_3"])
+
+
+@pytest.fixture
+def mock_event_emitter(mocker):
+    mock_emitter = mocker.patch("anubis_cron_job.__main__.EventEmitter", autospec=True)
+    return mock_emitter.return_value
 
 
 @pytest.fixture
@@ -112,7 +139,34 @@ def mock_kafka_producer_send_failure(mocker, mock_kafka_producer):
     return mocker.patch.object(mock_kafka_producer, "send", return_value={})
 
 
-def test_main(mock_create_kafka_producer, mock_kafka_producer, mock_generate_uuid, mock_env):
+@pytest.fixture
+def mock_scheduled_benchmark_event(mock_benchmark_event):
+    return dacite.from_dict(data_class=FetcherBenchmarkEvent, data=json.loads(mock_benchmark_event))
+
+
+def test_create_benchmark_event(mock_generate_uuid, mock_scheduled_benchmark_event):
+    """
+    Tests single run benchmark event is appropriately created from the scheduled benchmark event
+    """
+    event = create_benchmark_event(mock_scheduled_benchmark_event)
+
+    assert event.action_id == "new_uuid_1"
+    assert event.payload.toml.contents["info"].get("scheduling") == SINGLE_RUN_SCHEDULING
+
+
+def test_create_benchmark_event_fails_on_no_info(mock_scheduled_benchmark_event):
+    """
+    Test benchmark event creation fails if scheduled event does not have an 'info' section in the payload
+    """
+    # Remove info section
+    mock_scheduled_benchmark_event.payload.toml.contents.pop("info")
+    with pytest.raises(RuntimeError) as err:
+        create_benchmark_event(mock_scheduled_benchmark_event)
+
+    assert str(err.value) == "Event does not contain valid benchmark descriptor: 'info' section is missing."
+
+
+def test_main(mock_create_kafka_producer, mock_event_emitter, mock_kafka_producer, mock_generate_uuid, mock_good_env):
     """
     Test main happy path
     """
@@ -123,23 +177,23 @@ def test_main(mock_create_kafka_producer, mock_kafka_producer, mock_generate_uui
     # check kafka producer is created with the bootstrap servers
     mock_create_kafka_producer.assert_called_with(KAFKA_BOOTSTRAP_SERVERS)
 
-    # check an event is sent
-    mock_kafka_producer.send.assert_called()
+    # check an event is sent correctly
+    mock_event_emitter.send_event.assert_called_once()
 
-    topic = mock_kafka_producer.send.call_args[0][0]
-    event = mock_kafka_producer.send.call_args[1]["value"]
-    key = mock_kafka_producer.send.call_args[1]["key"]
-
-    # check event is sent to the right topic
+    topic = mock_event_emitter.send_event.call_args[1]["topic"]
+    event = mock_event_emitter.send_event.call_args[1]["event"]
     assert topic == PRODUCER_TOPIC
-
-    # check new action and message ids are generated
     assert event.action_id == "new_uuid_1"
-    assert event.message_id == "new_uuid_2"
-    assert key == "19c104987141a846c0bbd688678c23fed19a5742"
 
-    # check that the scheduling attribute is removed
-    assert None is event.payload.toml.contents.get("info").get("scheduling", None)
+    # check status event is sent correctly
+    mock_event_emitter.send_status_message_event.assert_called_once()
+
+    event = mock_event_emitter.send_status_message_event.call_args[1]["handled_event"]
+    status = mock_event_emitter.send_status_message_event.call_args[1]["status"]
+
+    # check action id from scheduled benchmark is used
+    assert event.action_id == ACTION_ID
+    assert status == Status.SUCCEEDED
 
     # check the kafka producer is closed
     mock_kafka_producer.close.assert_called()
@@ -152,6 +206,7 @@ def test_main(mock_create_kafka_producer, mock_kafka_producer, mock_generate_uui
         fixture_ref(mock_no_bootstrap_servers_env),
         fixture_ref(mock_no_producer_env),
         fixture_ref(mock_no_event_env),
+        fixture_ref(mock_no_status_env),
     ],
 )
 def test_config_error_exit(env):

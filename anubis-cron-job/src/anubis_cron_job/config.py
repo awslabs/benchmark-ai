@@ -9,6 +9,7 @@ from typing import Any, Dict, List
 class AnubisCronJobConfig:
     kafka_bootstrap_servers: List[str]
     producer_topic: str
+    status_topic: str
     benchmark_event: Dict[str, Any]
 
 
@@ -33,6 +34,8 @@ def get_config(argv, env=None) -> AnubisCronJobConfig:
         required=True,
     )
 
+    parser.add("--status-topic", env_var="STATUS_TOPIC", help="The status topic", required=True)
+
     parser.add(
         "--benchmark-event",
         type=json.loads,
@@ -45,5 +48,6 @@ def get_config(argv, env=None) -> AnubisCronJobConfig:
     return AnubisCronJobConfig(
         kafka_bootstrap_servers=parsed_args.kafka_bootstrap_servers,
         producer_topic=parsed_args.producer_topic,
+        status_topic=parsed_args.status_topic,
         benchmark_event=parsed_args.benchmark_event,
     )

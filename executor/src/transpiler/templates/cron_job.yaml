@@ -34,6 +34,11 @@ spec:
                 configMapKeyRef:
                   name: {service_name}
                   key: consumer_topic
+            - name: STATUS_TOPIC
+              valueFrom:
+                configMapKeyRef:
+                  name: {service_name}
+                  key: status_topic
             - name: BENCHMARK_EVENT
               value: {event_json_str}
           nodeSelector:
