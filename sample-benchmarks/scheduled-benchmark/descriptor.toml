@@ -11,7 +11,8 @@ description = """ \
     """
 
 # Benchmark schedule in Cron format (https://en.wikipedia.org/wiki/Cron)
-scheduling = "* * */1 * *"
+# E.g. everyday at midnight
+scheduling = "0 0 * * *"
 
 # 1. Hardware
 [hardware]
