@@ -1,10 +1,11 @@
 from bai_k8s_utils.kubernetes_tests_client import KubernetesTestUtilsClient
 from bai_kafka_utils.cmd_callback import KafkaCommandCallback
-from bai_kafka_utils.events import FetcherBenchmarkEvent
+from bai_kafka_utils.events import FetcherBenchmarkEvent, Status
 from bai_kafka_utils.integration_tests.test_loop import (
     wait_for_response,
     get_is_command_return_filter,
     get_cancel_event,
+    get_is_status_filter,
 )
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
 from kafka import KafkaConsumer, KafkaProducer
@@ -36,7 +37,9 @@ def test_cancel(
     command_return_filter = get_is_command_return_filter(
         cancel_event, KafkaCommandCallback.CODE_SUCCESS, kafka_service_config
     )
+    canceled_status_filter = get_is_status_filter(cancel_event, Status.CANCELED, kafka_service_config)
 
+    wait_for_response(canceled_status_filter, kafka_prepolled_consumer_of_produced)
     wait_for_response(command_return_filter, kafka_prepolled_consumer_of_produced)
 
     k8s_test_client.wait_for_pod_not_exists(

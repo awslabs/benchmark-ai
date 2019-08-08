@@ -19,6 +19,10 @@ deploy: deploy.yml _deploy_venv
 undeploy: deploy.yml _deploy_venv
 	$(call fn_k8s_undeploy)
 
+info: _deploy_venv
+	echo $(KUBECTL)
+	which kubectl
+
 #---------------------
 # K8S deploy/undeploy
 #---------------------
