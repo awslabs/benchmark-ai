@@ -82,11 +82,12 @@ declare -r tail_='^###.*end.*anubis.*###$'
 
 ## EMOJIS ##  https://apps.timwhitlock.info/emoji/tables/unicode
 declare -A emoji
-emoji[fetcher-dispatcher]="\xF0\x9F\x90\x95 "
 emoji[anubis-client]="\xE2\x99\x8E "
+emoji[bai-bff]="\xE2\x9C\x8A "
+emoji[fetcher-dispatcher]="\xF0\x9F\x90\x95 "
+emoji[cronjob]="\xE2\x8F\xB2 "
 emoji[executor]="\xE2\x9A\xA1 "
 emoji[sm-executor]="\xF0\x9F\x94\xAE "
-emoji[bai-bff]="\xE2\x9C\x8A "
 emoji[watcher]="\xF0\x9F\x91\x80 "
 emoji[bai-bff-error]="\xF0\x9F\x92\x94 "
 emoji[FAIL]="\xE2\x9D\x8C "
