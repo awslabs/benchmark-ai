@@ -1,0 +1,211 @@
+#!/usr/bin/env bash
+
+#--------------------------------------------------------------------------------------
+# The service pipeline: clean-all -> [build -> test] -> [package -> publish] -> deploy
+#--------------------------------------------------------------------------------------
+
+# Every Makefile in this project must respect these basic targets and
+# their semantics.  With that said, this program cycles through all of
+# the projects that have Makefiles and calls the basic targets that
+# will build and publish and deploy the project.  This is our "poor
+# man's pipeline". The code-pipeline counterpart to this has the
+# identical result, because both are based on `make` and these core
+# set of make targets.
+
+
+# Before you begin using this script, you will need to have `kubectrl`
+# installed and configured for the cluster you are targeting; for
+# example, making sure that the environment variable KUBECONFIG is set
+# appropriately.  You will also need to have your docker repository
+# ready to receive docker artifacts (i.e. be sure to `docker login,`
+# first)
+
+# You can override or many Makefile variables with the
+# --<variable>=<value> syntax.  Most notably DOCKER_REGISTRY.
+
+DEBUG=${DEBUG:-0}
+
+banner() {
+    printf '
+\033[01;31m                       _      _
+                      | |    (_)
+   __ _  _ __   _   _ | |__   _  ___
+  / _  ||  _ \ | | | ||  _ \ | |/ __|\033[0m
+\033[01;33m | (_| || | | || |_| || |_) || |\__ \\\033[0m
+\033[01;32m  \__,_||_| |_| \__,_||_.__/ |_||___/\033[0m \xE2\x99\x8E
+
+-------------------------
+SERVICE BUILD AND DEPLOYMENT PIPELINE
+-------------------------
+
+Brought to you by the cool peeps of the  MXNet-Berlin Team
+'
+}
+
+
+FAIL() {
+    printf "\033[01;31m%s\033[0m \n" "${*}"
+}
+
+OK() {
+    printf "\033[01;32m%s\033[0m \n" "${*}"
+}
+
+cprintln() {
+    printf "\033[01;33m%s\033[0m \n" "${*}"
+}
+
+info() {
+    printf "
+
+    # Every Makefile in this project must respect these basic targets and
+    # their semantics.  With that said, this program cycles through all of
+    # the projects that have Makefiles and calls the basic targets that
+    # will build and publish and deploy the project.  This is our \"poor
+    # man\'s pipeline\". The code-pipeline counterpart to this has the
+    # identical result, because both are based on \`make\` and these core
+    # set of make targets.
+
+
+    # Before you begin using this script, you will need to have \`kubectl\`
+    # installed and configured for the cluster you are targeting; for
+    # example, making sure that the environment variable KUBECONFIG is set
+    # appropriately.  You will also need to have your docker repository
+    # ready to receive docker artifacts (i.e. be sure to \`docker login\`,
+    # first).
+
+    # You can override one or many Makefile variables with the
+    # --<variable>=<value> syntax.  Most notably DOCKER_REGISTRY.
+
+"
+}
+
+usage() {
+    printf "
+usage:
+
+Builds all libs and services, and publishes and deploys them.
+
+ > %s [<makefile directive>] --<makefile variable>=<value>
+
+      Directives:
+          clean
+          build
+          publish
+          deploy
+
+          You can override available makefile variables by providing new values like so,
+          --<variable>=<value>
+
+          --help                   : (this output)
+
+          Example:
+          > %s clean --DOCKER_REGISTRY=benchmarkai --STAGE=dev
+
+          (this will run only the clean target against every service passing in these Makefile variables.)
+
+          > %s
+          (this will run the full pipeline across every project serially [no parallelization])
+
+ " "${0##*/}" "${0##*/}" "${0##*/}"
+    exit 0
+}
+
+
+_execute() {
+    local selection=${1:?"You must pass a selection value as the first arg to this function"}
+    shift
+    local make_variables=(${@})
+
+    for service in $(find . -maxdepth 2 -mindepth 2 | grep Makefile); do
+        (
+            echo "-----------------------------------"
+            service_dir=${service%/*}
+            cprintln "Building, publishing and deploying [${service_dir##*/}]"
+            if ! cd "${service_dir}"; then echo "unable to enter service directory" && exit 9; fi
+            echo "Now in $(pwd) ... calling make targets..."
+            echo "loading conda enviroment..."
+            ((DEBUG)) && echo "source ${CONDA_EXE%/*}/activate ${service_dir##*/}"
+
+            if ! source "${CONDA_EXE%/*}"/activate ${service_dir##*/} >& /dev/null; then
+                printf "
+
+  Oops, there seems to be a problem with Conda...
+        (Do you have Conda installed? Is it in your \$PATH?)\n\n"
+            fi
+            if [[ $((selection & CLEAN_BIT)) != 0 ]]; then   cprintln "[clean:${service_dir##*/}]";   make clean   "${make_variables[@]}" || exit 1; fi
+            if [[ $((selection & BUILD_BIT)) != 0 ]]; then   cprintln "[build:${service_dir##*/}]";   make build   "${make_variables[@]}" || exit 2;  fi
+            if [[ $((selection & PUBLISH_BIT)) != 0 ]]; then cprintln "[publish:${service_dir##*/}]"; make publish "${make_variables[@]}" || exit 3;  fi
+            if [[ $((selection & DEPLOY_BIT)) != 0 ]]; then  cprintln "[deploy:${service_dir##*/}]";  make deploy  "${make_variables[@]}" || exit 4;  fi
+            echo "Done with service ${service_dir##*/}"
+            echo "-----------------------------------"
+            ((DEBUG)) && echo "source ${CONDA_EXE%/*}/deactivate"
+            source "${CONDA_EXE%/*}"/deactivate >& /dev/null
+        ) && OK "[SUCCESS]" || FAIL "[FAIL]"
+        echo
+    done
+}
+
+declare -r CLEAN_BIT=1
+declare -r CLEAN_ALL_BIT=2
+declare -r BUILD_BIT=4
+declare -r TEST_BIT=8
+declare -r PACKAGE_BIT=16
+declare -r PUBLISH_BIT=32
+declare -r DEPLOY_BIT=64
+
+main() {
+    banner
+    #_setup
+    local selection=0
+    local make_variables=()
+
+        while [ -n "$1" ]; do
+            #echo "arg ${i} = $1"
+            local unshift=0
+            case $1 in
+                 clean)
+                     ((selection+=CLEAN_BIT))
+                    ;;
+                clean-all)
+                    ((selection+=CLEAN_ALL_BIT))
+                    ;;
+                build)
+                    ((selection+=BUILD_BIT))
+                    ;;
+                test)
+                    ((selection+=TEST_BIT))
+                    ;;
+                package)
+                    ((selection+=PACKAGE_BIT))
+                    ;;
+                publish)
+                    ((selection+=PUBLISH_BIT))
+                    ;;
+                deploy)
+                    ((selection+=DEPLOY_BIT))
+                    ;;
+                --*=*)
+                    echo "other arg values = ${1##--}"
+                    make_variables+=("${1##--}")
+                    ;;
+                --help)
+                    info
+                    usage
+                    ;;
+                *)
+                    shift
+                    echo "Unknown flag $1"
+                    exit 1
+                    ;;
+            esac
+            ((!unshift)) && shift
+        done
+        ((selection == 0)) && selection=$((CLEAN_BIT + CLEAN_ALL_BIT + BUILD_BIT + TEST_BIT + PACKAGE_BIT + PUBLISH_BIT + DEPLOY_BIT))
+        echo "selection = [${selection}]"
+        echo "make variables = [${#make_variables[@]}] -> [${make_variables[@]}]"
+        _execute "${selection}" "${make_variables[@]}"
+
+}
+
+main $@
