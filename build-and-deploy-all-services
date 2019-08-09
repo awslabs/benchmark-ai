@@ -67,7 +67,7 @@ info() {
     # set of make targets.
 
 
-    # Before you begin using this script, you will need to have \`kubectrl\`
+    # Before you begin using this script, you will need to have \`kubectl\`
     # installed and configured for the cluster you are targeting; for
     # example, making sure that the environment variable KUBECONFIG is set
     # appropriately.  You will also need to have your docker repository
