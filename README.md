@@ -1,13 +1,27 @@
-A "framework" that enables to periodically generate performance benchmarks of Machine Learning systems in order to evaluate new functionalities and detect regressions.
+A "framework/tool/service" that enables you to perform benchmarks of your machine learning models/frameworks/hardware in order to evaluate functionality, performance and detect regressions.
+
 
 ![how_good_is_uour_ml](docs/images/anubis.scales.jpg "Anubis")
 
-# A "framework" ?
 
-Anubis provides a simple, self service solution for teams to schedule and run benchmarks for Machine Learning systems.
-It allows teams to spin-up the required infrastructure and automation needed to perform benchmarks. Using Anubis,
-users can monitor the evolution of their benchmarks over time to detect anomalies or regressions. Alarms can be
-configured to notify the corresponding teams when certain metrics exceed given thresholds.
+
+Anubis provides a simple, self service solution for teams to schedule and run benchmarks for machine learning workloads.  Abubis lets teams to easily spin-up the required infrastructure and automation to perform benchmarks. Consider Anubis a measuring tool, a "ruler" if you willl, that lets you measure the efficacy of your machine learning model, framework and/or computing infrastructure.  Anubis provides a simple, declartive, input descriptor, and produces operational and user metrics, and sophisticated alerts for detecting regressions.  Logged output from the model are stored and indexed for deeper inspection, allowing for more effective root cause investigation. 
+
+# Features
+
+* Simple _declarative_ _document-based_ input that gives user full control of Model / Framework / Hardware 
+* Simple command-line interface 
+* Strong Reproducibility 
+* Efficient Dataset Caching 
+* Ease of use and deployment 
+* Enables self-service model (anyone can spin up Anubis) 
+* Designed to be future proof 
+* Built around open standards
+* Cloud native, cloud ready and cloud scalable*
+
+*Takes advantage of your cloud provider or datacenter's available resources - currently supports AWS out-of-the-box"
+
+
 
 # Usage
 
@@ -131,18 +145,27 @@ and the following will be done:
 
 Optional: Put bff/bin/anubis in your $PATH
 
+Anubis supports "Script Mode".  This means along with posting the descriptor file, you may also include the code that you wish to run.  See our "Hello World" [README](sample-benchmarks/hello-world) for info on that.  Also look at the `anubis` client program [document](bff/doc/anubis-client.md) located in the bff service.
+
+```bash
+#To watch the status messages showing the progress of the run
+bff/bin/anubis --watch --status
+```
+
+
+
 ## Step 3 - Collect the results of your run
 
 ```bash
 # Assuming PWD is `benchmark-ai`
-bff/bin/anubis --result <ACTION_ID>
+bff/bin/anubis --results <ACTION_ID>
 ```
 
 ## Great, what's next?
 
 Write your own benchmarks!
 
-Explore the [descriptor file format](https://github.com/MXNetEdge/benchmark-ai/tree/master/baictl/descriptor-file)
+Explore the [descriptor file format](executor/README.md)
 in order to run your benchmarks in Benchmark AI. Make sure to post metrics by integrating the [client library](https://github.com/MXNetEdge/benchmark-ai/tree/master/client-lib)
 in your code.
 
@@ -153,7 +176,16 @@ Other interesting features:
 
 # Design and architecture
 
-TODO
+The system is built to embody a few guiding tenets:
+
+<ul>
+  <li>Self Service</li>
+  <li>"Push Button" Installation</li>
+  <li>Complete Delivery</li>
+  <li>Use best of breed technology that has significant mind share</li>
+</ul>
+
+![Anubis design](docs/images/anubis_architecture_diagram.png "Anubis Design")
 
 # Supported cloud providers
 
