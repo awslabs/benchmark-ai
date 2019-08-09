@@ -82,11 +82,12 @@ declare -r tail_='^###.*end.*anubis.*###$'
 
 ## EMOJIS ##  https://apps.timwhitlock.info/emoji/tables/unicode
 declare -A emoji
-emoji[fetcher-dispatcher]="\xF0\x9F\x90\x95 "
 emoji[anubis-client]="\xE2\x99\x8E "
+emoji[bai-bff]="\xE2\x9C\x8A "
+emoji[fetcher-dispatcher]="\xF0\x9F\x90\x95 "
+emoji[cronjob]="\xF0\x9F\x93\x85 "
 emoji[executor]="\xE2\x9A\xA1 "
 emoji[sm-executor]="\xF0\x9F\x94\xAE "
-emoji[bai-bff]="\xE2\x9C\x8A "
 emoji[watcher]="\xF0\x9F\x91\x80 "
 emoji[bai-bff-error]="\xF0\x9F\x92\x94 "
 emoji[FAIL]="\xE2\x9D\x8C "
@@ -590,6 +591,7 @@ _as_status_line() {
     _print_status "$(sed 's/^.\(.*\).$/\1/' <<<"$msg")" "$(sed 's/^.\(.*\).$/\1/' <<<"$src")" "$(sed 's/^.\(.*\).$/\1/' <<<"$id")" "$(sed 's/^.\(.*\).$/\1/' <<<"$new")"
 
     local tstamp=$(jq --compact-output '.tstamp' <<<"$line")
+    [[ ! -d "${ANUBIS_DATABASE}/$(get_client_id)/${current_action_id}" ]] && mkdir -p "${ANUBIS_DATABASE}/$(get_client_id)/${current_action_id}"
     echo "$tstamp" > "${ANUBIS_DATABASE}/$(get_client_id)/${current_action_id}/${TSTAMP_FILENAME}"
 }
 
