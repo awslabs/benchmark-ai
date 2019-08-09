@@ -71,7 +71,7 @@ def test_thread_run_loop_when_callback_returns_true_will_end_loop(k8s_job_watche
 
     # assertions
     assert k8s_job_watcher.callback.call_args_list == [
-        call("job-id-1234", BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS, JOB_START_TIME)
+        call("job-id-1234", BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS, k8s_job_watcher)
     ]
     assert mock_time_sleep.call_args_list == []
 
@@ -87,8 +87,8 @@ def test_thread_run_loop_when_callback_returns_false_will_not_end_loop(k8s_job_w
     k8s_job_watcher._thread_run_loop()
 
     assert k8s_job_watcher.callback.call_args_list == [
-        call("job-id-1234", BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS, JOB_START_TIME),
-        call("job-id-1234", BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS, JOB_START_TIME),
+        call("job-id-1234", BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS, k8s_job_watcher),
+        call("job-id-1234", BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS, k8s_job_watcher),
     ]
     assert mock_time_sleep.call_args_list == [
         call(SLEEP_TIME_BETWEEN_CHECKING_K8S_STATUS),
