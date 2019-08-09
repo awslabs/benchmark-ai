@@ -6,7 +6,11 @@ from unittest.mock import create_autospec
 
 from pytest import fixture
 
-from transpiler.bai_knowledge import create_bai_k8s_builder, create_bai_data_sources, BaiKubernetesObjectBuilder
+from transpiler.bai_knowledge import (
+    create_single_run_benchmark_bai_k8s_builder,
+    create_bai_data_sources,
+    SingleRunBenchmarkKubernetesObjectBuilder,
+)
 from transpiler.config import EnvironmentInfo
 
 
@@ -25,7 +29,7 @@ def test_add_container_cmd(descriptor, bai_config, fetched_data_sources, bai_env
     descriptor.benchmark_code = "cmd"
     descriptor.ml_args = "arg1 arg2"
 
-    bai_k8s_builder = create_bai_k8s_builder(
+    bai_k8s_builder = create_single_run_benchmark_bai_k8s_builder(
         descriptor,
         bai_config,
         fetched_data_sources,
@@ -43,7 +47,7 @@ def test_add_container_no_cmd(descriptor, bai_config, fetched_data_sources, bai_
     descriptor.benchmark_code = ""
     descriptor.ml_args = "arg1 arg2=abc"
 
-    bai_k8s_builder = create_bai_k8s_builder(
+    bai_k8s_builder = create_single_run_benchmark_bai_k8s_builder(
         descriptor,
         bai_config,
         fetched_data_sources,
@@ -67,19 +71,23 @@ def test_create_bai_data_sources(fetched_data_sources, descriptor):
 def test_choose_zone_passed(descriptor: Descriptor, bai_environment_info: EnvironmentInfo):
     descriptor.availability_zone = WHITELISTED_ZONE
 
-    assert WHITELISTED_ZONE == BaiKubernetesObjectBuilder.choose_availability_zone(descriptor, bai_environment_info)
+    assert WHITELISTED_ZONE == SingleRunBenchmarkKubernetesObjectBuilder.choose_availability_zone(
+        descriptor, bai_environment_info
+    )
 
 
 def test_choose_zone_id(descriptor: Descriptor, bai_environment_info: EnvironmentInfo):
     descriptor.zone_id = WHITELISTED_ZONE_ID
 
-    assert WHITELISTED_ZONE == BaiKubernetesObjectBuilder.choose_availability_zone(descriptor, bai_environment_info)
+    assert WHITELISTED_ZONE == SingleRunBenchmarkKubernetesObjectBuilder.choose_availability_zone(
+        descriptor, bai_environment_info
+    )
 
 
 def test_choose_zone_rnd(descriptor: Descriptor, bai_environment_info: EnvironmentInfo, mock_random: random.Random):
     descriptor.zone_id = None
 
-    assert WHITELISTED_ZONE == BaiKubernetesObjectBuilder.choose_availability_zone(
+    assert WHITELISTED_ZONE == SingleRunBenchmarkKubernetesObjectBuilder.choose_availability_zone(
         descriptor, bai_environment_info, mock_random
     )
 
@@ -88,7 +96,9 @@ def test_choose_zone_invalid(descriptor: Descriptor, bai_environment_info: Envir
     descriptor.availability_zone = INVALID_ZONE
 
     with pytest.raises(DescriptorError):
-        BaiKubernetesObjectBuilder.choose_availability_zone(descriptor, bai_environment_info, mock_random)
+        SingleRunBenchmarkKubernetesObjectBuilder.choose_availability_zone(
+            descriptor, bai_environment_info, mock_random
+        )
 
 
 def test_choose_zone_id_invalid(
@@ -97,7 +107,9 @@ def test_choose_zone_id_invalid(
     descriptor.zone_id = INVALID_ZONE_ID
 
     with pytest.raises(DescriptorError):
-        BaiKubernetesObjectBuilder.choose_availability_zone(descriptor, bai_environment_info, mock_random)
+        SingleRunBenchmarkKubernetesObjectBuilder.choose_availability_zone(
+            descriptor, bai_environment_info, mock_random
+        )
 
 
 @fixture

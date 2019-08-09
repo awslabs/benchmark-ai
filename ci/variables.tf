@@ -13,7 +13,8 @@ variable "projects" {
     "bff",
     "metrics-extractor",
     "prometheus-kafka-topic-exporter",
-    "sm-executor"
+    "sm-executor",
+    "cron-job"
   ]
 }
 

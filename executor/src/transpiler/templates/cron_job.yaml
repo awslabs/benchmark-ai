@@ -1,0 +1,41 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {job_id}
+  labels:
+    app: benchmark-ai
+    action-id: {event.action_id}
+    client-id: {event.client_id}
+    created-by: {service_name}
+spec:
+  schedule: "{descriptor.scheduling}"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: benchmark-ai
+            action-id: {event.action_id}
+            client-id: {event.client_id}
+            created-by: {service_name}
+        spec:
+          serviceAccountName: metrics-pusher
+          containers:
+          - name: benchmark-starter
+            image: {config.cron_job_docker_image}
+            env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: outputs-infrastructure
+                  key: msk_bootstrap_brokers
+            - name: PRODUCER_TOPIC
+              valueFrom:
+                configMapKeyRef:
+                  name: {service_name}
+                  key: consumer_topic
+            - name: BENCHMARK_EVENT
+              value: {event_json_str}
+          nodeSelector:
+            node.type: bai-services-cheap
+          restartPolicy: Never

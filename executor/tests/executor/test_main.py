@@ -26,6 +26,7 @@ VALID_EXECUTION_ENGINES = "e1,e2"
 PULLER_MOUNT_CHMOD = "700"
 PULLER_DOCKER_IMAGE = "example/docker:img"
 METRICS_PUSHER_DOCKER_IMAGE = "metrics_pusher/docker:img"
+CRON_JOB_DOCKER_IMAGE = "cron_job/docker:img"
 SUPPRESS_JOB_AFFINITY = True
 
 
@@ -53,6 +54,7 @@ def test_main(mock_create_executor, mock_availability_zones, mock_env):
         f" --transpiler-puller-mount-chmod {PULLER_MOUNT_CHMOD} "
         f" --transpiler-puller-docker-image {PULLER_DOCKER_IMAGE} "
         f" --transpiler-metrics-pusher-docker-image {METRICS_PUSHER_DOCKER_IMAGE} "
+        f" --transpiler-cron-job-docker-image {CRON_JOB_DOCKER_IMAGE} "
         f" --suppress-job-affinity"
     )
 
@@ -78,6 +80,7 @@ def test_main(mock_create_executor, mock_availability_zones, mock_env):
             puller_mount_chmod=PULLER_MOUNT_CHMOD,
             puller_docker_image=PULLER_DOCKER_IMAGE,
             metrics_pusher_docker_image=METRICS_PUSHER_DOCKER_IMAGE,
+            cron_job_docker_image=CRON_JOB_DOCKER_IMAGE,
             suppress_job_affinity=SUPPRESS_JOB_AFFINITY,
         ),
         environment_info=EnvironmentInfo(availability_zones=mock_availability_zones),

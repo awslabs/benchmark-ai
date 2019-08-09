@@ -290,7 +290,7 @@ def test_message_sent(
 
 def mock_time_and_uuid(mocker):
     mock_time = mocker.patch.object(time, "time", return_value=VISIT_TIME)
-    mock_uuid4 = mocker.patch("bai_kafka_utils.kafka_service.uuid.uuid4", return_value=uuid.UUID(hex=MOCK_UUID))
+    mock_uuid4 = mocker.patch("bai_kafka_utils.kafka_service.generate_uuid", return_value=str(uuid.UUID(hex=MOCK_UUID)))
     return mock_time, mock_uuid4
 
 

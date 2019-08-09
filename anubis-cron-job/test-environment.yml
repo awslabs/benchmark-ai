@@ -1,0 +1,10 @@
+name: anubis-cron-job
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - mock
+  - pytest
+  - pytest-mock
+  - pip:
+    - pytest-cases

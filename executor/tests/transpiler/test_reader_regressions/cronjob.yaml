@@ -8,90 +8,48 @@ metadata:
     client-id: CLIENT_ID
     created-by: executor
 spec:
-  backoffLimit: 4
   schedule: '*/1 * * * *'
   jobTemplate:
-    metadata:
-      labels:
-        app: benchmark-ai
-        action-id: ACTION_ID
-        client-id: CLIENT_ID
-        created-by: executor
-      annotations:
-        iam.amazonaws.com/role: benchmark-host
     spec:
-      serviceAccountName: metrics-pusher
-      affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-              - key: app
-                operator: In
-                values:
-                - benchmark-ai
-            topologyKey: kubernetes.io/hostname
-      initContainers: []
-      containers:
-      - name: benchmark
-        image: test/example:latest
-        resources:
-          limits:
-            nvidia.com/gpu: 4
-        command:
-        - python
-        - /home/benchmark/image_classification.py
-        securityContext:
-          privileged: false
-        env:
-        - name: BENCHMARK_AI
-          value: fifo
-        - name: BENCHMARK_AI_FIFO_FILEPATH
-          value: /tmp/benchmark-ai/fifo
-        - name: BENCHMARK_AI_FIFO_MAX_WAIT_TIME
-          value: '60'
-        volumeMounts:
-        - mountPath: /tmp/benchmark-ai
-          name: benchmark-ai
-        - name: dshm
-          mountPath: /dev/shm
-      - name: sidecar
-        image: benchmarkai/metrics-pusher:ffed580
-        env:
-        - name: BENCHMARK_AI_FIFO_FILEPATH
-          value: /tmp/benchmark-ai/fifo
-        - name: BACKEND
-          value: kafka
-        - name: BACKEND_ARG_JOB_ID
-          value: benchmark-job-id
-        - name: BACKEND_ARG_BOOTSTRAP_SERVERS
-          valueFrom:
-            configMapKeyRef:
-              name: outputs-infrastructure
-              key: msk_bootstrap_brokers
-        - name: BACKEND_ARG_KEY
-          value: CLIENT_ID
-        - name: BACKEND_ARG_TOPIC
-          value: BAI_METRICS
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        volumeMounts:
-        - mountPath: /tmp/benchmark-ai
-          name: benchmark-ai
-      nodeSelector:
-        beta.kubernetes.io/instance-type: p3.8xlarge
-        node.type: bai-worker
-        failure-domain.beta.kubernetes.io/zone: us-east-1a
-      restartPolicy: Never
-      volumes:
-      - name: benchmark-ai
-        emptyDir: {}
-      - name: dshm
-        emptyDir:
-          medium: Memory
+      template:
+        metadata:
+          labels:
+            app: benchmark-ai
+            action-id: ACTION_ID
+            client-id: CLIENT_ID
+            created-by: executor
+        spec:
+          serviceAccountName: metrics-pusher
+          containers:
+          - name: benchmark-starter
+            image: benchmarkai/anubis-cron-job
+            env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: outputs-infrastructure
+                  key: msk_bootstrap_brokers
+            - name: PRODUCER_TOPIC
+              valueFrom:
+                configMapKeyRef:
+                  name: executor
+                  key: consumer_topic
+            - name: BENCHMARK_EVENT
+              value: '{"action_id": "ACTION_ID", "message_id": "MESSAGE_ID", "client_id":
+                "CLIENT_ID", "client_version": "CLIENT_VERSION", "client_username":
+                "client_username", "authenticated": false, "tstamp": 42, "visited":
+                [], "type": "BAI_APP_FETCHER", "payload": {"toml": {"contents": {"spec_version":
+                "0.1.0", "info": {"task_name": "Hello world", "description": " A hello
+                world example of using Benchmark AI"}, "hardware": {"instance_type":
+                "t2.small", "strategy": "single_node"}, "env": {"docker_image": "edisongustavo/bai-benchmarks-hello-world:latest",
+                "vars": {"FIST_VAL": "VAR", "SECOND_VAL": "VAR", "INT_VAL": 11, "FOO":
+                "bar"}}, "ml": {"benchmark_code": "python3 hello-world.py"}, "output":
+                {"metrics": ["throughput", "time"]}}, "doc": "doc", "sha1": "SHA1",
+                "descriptor_filename": null, "verified": false}, "datasets": [], "scripts":
+                []}}'
+            volumeMounts: []
+          nodeSelector:
+            node.type: bai-services-cheap
+          restartPolicy: Never
+          initContainers: []
+          volumes: []

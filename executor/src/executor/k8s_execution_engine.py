@@ -1,18 +1,16 @@
 import logging
 import subprocess
+from subprocess import CalledProcessError, check_output
 
 from bai_k8s_utils.service_labels import ServiceLabels
 from bai_kafka_utils.events import FetcherBenchmarkEvent, BenchmarkJob
 from bai_kafka_utils.executors.descriptor import DescriptorError
 from bai_kafka_utils.executors.execution_callback import ExecutionEngine, ExecutionEngineException
-
 from bai_kafka_utils.utils import DEFAULT_ENCODING
-from subprocess import CalledProcessError, check_output
 
 from executor import SERVICE_NAME
 from executor.config import ExecutorConfig
-from transpiler.bai_knowledge import create_job_yaml_spec
-
+from transpiler.bai_knowledge import create_job_yaml_spec, create_scheduled_job_yaml_spec
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +28,11 @@ class K8SExecutionEngine(ExecutionEngine):
         self.config = config
 
     def run(self, event: FetcherBenchmarkEvent) -> BenchmarkJob:
+        """
+        Creates k8s resources for a single run benchmark
+        :param event: The fetcher benchmark event initiating the benchmark
+        :return: a Benchmark job
+        """
         descriptor_contents = event.payload.toml.contents
         fetched_data_sources = event.payload.datasets
         scripts = event.payload.scripts
@@ -45,6 +48,27 @@ class K8SExecutionEngine(ExecutionEngine):
             raise ExecutionEngineException from e
         except CalledProcessError as e:
             logger.exception(f"Error executing benchmark")
+            raise ExecutionEngineException from e
+
+        return BenchmarkJob(id=job_id, extras={K8SExecutionEngine.EXTRA_K8S_YAML: yaml})
+
+    def schedule(self, event: FetcherBenchmarkEvent) -> BenchmarkJob:
+        """
+        Creates k8s resources for a scheduled benchmark
+        :param event: The fetcher benchmark event initiating the benchmark
+        :return: a Benchmark job
+        """
+        descriptor_contents = event.payload.toml.contents
+        job_id = K8SExecutionEngine.JOB_ID_PREFIX + event.action_id
+
+        try:
+            yaml = create_scheduled_job_yaml_spec(descriptor_contents, self.config, job_id, event=event)
+            self._kubernetes_apply(yaml)
+        except DescriptorError as e:
+            logger.exception(f"Error parsing descriptor file")
+            raise ExecutionEngineException from e
+        except CalledProcessError as e:
+            logger.exception(f"Error creating scheduled benchmark")
             raise ExecutionEngineException from e
 
         return BenchmarkJob(id=job_id, extras={K8SExecutionEngine.EXTRA_K8S_YAML: yaml})

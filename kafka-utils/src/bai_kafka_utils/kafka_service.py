@@ -3,7 +3,6 @@ import dataclasses
 import itertools
 import logging
 import time
-import uuid
 from dataclasses import dataclass
 from signal import signal, SIGTERM
 from typing import List, Optional, Dict
@@ -11,6 +10,7 @@ from typing import List, Optional, Dict
 from kafka import KafkaProducer, KafkaConsumer
 
 from bai_kafka_utils.events import BenchmarkEvent, VisitedService, Status, StatusMessageBenchmarkEvent
+from bai_kafka_utils.utils import generate_uuid
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +136,7 @@ class KafkaService:
             return res
 
         event_to_send = dataclasses.replace(
-            event, message_id=str(uuid.uuid4()), type=topic, visited=add_self_to_visited(event)
+            event, message_id=generate_uuid(), type=topic, visited=add_self_to_visited(event)
         )
         event_key = event_to_send.client_id
 
@@ -167,6 +167,7 @@ class KafkaService:
                             f"Message received but not processed: {msg} \n" f"(No callbacks assigned to topic {topic})"
                         )
                     else:
+                        logger.info("Processing message over {} callbacks".format(len(self._callbacks[topic])))
                         for callback in self._callbacks[topic]:
                             self.safe_handle_msg(msg, callback)
 

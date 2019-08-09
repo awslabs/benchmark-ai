@@ -71,6 +71,18 @@ def fetcher_event(benchmark_event: BenchmarkEvent) -> FetcherBenchmarkEvent:
 
 
 @fixture
+def single_run_fetcher_event(fetcher_event: FetcherBenchmarkEvent) -> FetcherBenchmarkEvent:
+    set_scheduling(fetcher_event, "single_run")
+    return fetcher_event
+
+
+@fixture
+def scheduled_run_fetcher_event(fetcher_event: FetcherBenchmarkEvent) -> FetcherBenchmarkEvent:
+    set_scheduling(fetcher_event, "*/1 * * * *")
+    return fetcher_event
+
+
+@fixture
 def expected_executor_event(fetcher_event: FetcherBenchmarkEvent) -> ExecutorBenchmarkEvent:
     job_payload = ExecutorPayload.create_from_fetcher_payload(fetcher_event.payload, BENCHMARK_JOB)
     return create_from_object(ExecutorBenchmarkEvent, fetcher_event, payload=job_payload)
@@ -102,6 +114,10 @@ def test_first_engine(
 
 def set_execution_engine(fetcher_event: FetcherBenchmarkEvent, engine_id):
     fetcher_event.payload.toml.contents["info"] = {"execution_engine": engine_id}
+
+
+def set_scheduling(fetcher_event: FetcherBenchmarkEvent, scheduling):
+    fetcher_event.payload.toml.contents["info"] = {"scheduling": scheduling}
 
 
 def test_second_engine(
@@ -161,6 +177,29 @@ def test_handle_event(
 
     kafka_service.send_event.assert_called_once_with(expected_executor_event, PRODUCER_TOPIC)
     kafka_service.send_status_message_event.assert_called_once_with(expected_executor_event, Status.SUCCEEDED, ANY)
+
+
+def test_handle_event_processes_single_run_benchmark(
+    executor_handler: ExecutorEventHandler,
+    single_run_fetcher_event: FetcherBenchmarkEvent,
+    kafka_service: KafkaService,
+    expected_executor_event: ExecutorBenchmarkEvent,
+):
+    executor_handler.handle_event(single_run_fetcher_event, kafka_service)
+
+    kafka_service.send_event.assert_called_once_with(expected_executor_event, PRODUCER_TOPIC)
+    kafka_service.send_status_message_event.assert_called_once_with(expected_executor_event, Status.SUCCEEDED, ANY)
+
+
+def test_handle_event_ignores_scheduled_events(
+    executor_handler: ExecutorEventHandler,
+    scheduled_run_fetcher_event: FetcherBenchmarkEvent,
+    kafka_service: KafkaService,
+):
+    executor_handler.handle_event(scheduled_run_fetcher_event, kafka_service)
+
+    kafka_service.send_event.assert_not_called()
+    kafka_service.send_status_message_event.assert_not_called()
 
 
 def test_run_raises(

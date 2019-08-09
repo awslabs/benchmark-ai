@@ -11,6 +11,7 @@ from bai_kafka_utils.events import (
     Status,
     BenchmarkJob,
 )
+from bai_kafka_utils.executors.descriptor import SINGLE_RUN_SCHEDULING
 from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService, KafkaServiceCallbackException
 
 logger = logging.getLogger(__name__)
@@ -42,6 +43,11 @@ class ExecutorEventHandler(KafkaServiceCallback):
 
     def handle_event(self, event: FetcherBenchmarkEvent, kafka_service: KafkaService):
 
+        # Only handle single run benchmarks
+        if not ExecutorEventHandler.is_single_run(event):
+            logging.debug(f"Ignoring non single-run event: {event}")
+            return
+
         engine_id = ExecutorEventHandler.get_engine_id(event)
         engine = self.execution_engines.get(engine_id)
 
@@ -72,6 +78,11 @@ class ExecutorEventHandler(KafkaServiceCallback):
     @staticmethod
     def get_engine_id(event):
         return event.payload.toml.contents.get("info", {}).get("execution_engine", ExecutorEventHandler.DEFAULT_ENGINE)
+
+    @staticmethod
+    def is_single_run(event):
+        scheduling = event.payload.toml.contents.get("info", {}).get("scheduling", SINGLE_RUN_SCHEDULING)
+        return scheduling == SINGLE_RUN_SCHEDULING
 
     def cleanup(self):
         pass

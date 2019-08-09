@@ -70,7 +70,7 @@ class KubernetesRootObjectHelper:
             kind = d["kind"]
             if kind == "ConfigMap":
                 self.config_maps.append(addict.Dict(d))
-            elif kind in ["Job", "MPIJob"]:
+            elif kind in ["CronJob", "Job", "MPIJob"]:
                 self._root = addict.Dict(d)
             elif kind == "RoleBinding":
                 self.role_bindings.append(addict.Dict(d))
@@ -100,6 +100,8 @@ class KubernetesRootObjectHelper:
         if self._root.spec.template:
             return self._root.spec.template.spec
         elif self._root.spec.jobTemplate:
+            if self._root.spec.jobTemplate.spec.template:
+                return self._root.spec.jobTemplate.spec.template.spec
             return self._root.spec.jobTemplate.spec
         else:
             raise KeyError(f"Cannot find pod spec. root object is {self._root}")
@@ -191,20 +193,6 @@ class KubernetesRootObjectHelper:
         env_old = {var.name: var.value for var in container.env}
         env_new = {**env_old, **env}
         container.env = [EnvVar(name=k, value=str(v)) for k, v in env_new.items()]
-
-    def to_cronjob(self, scheduling: str):
-        """
-        Turns a Job YAML spec into a CronJob one.
-        :param scheduling: cron expression indicating when the job is supposed to run
-        """
-        if self._root.kind == "Job":
-            # TODO: move this values to config file when PR112 is merged
-            self._root.apiVersion = "batch/v1beta1"
-            self._root.kind = "CronJob"
-            self._root.spec.schedule = scheduling
-            self._root.spec.jobTemplate = self._root.spec.pop("template")
-        else:
-            raise ValueError(f"Error converting to CronJob. Root is of kind {self._root.kind} (expected 'Job')")
 
     def to_yaml(self) -> str:
         """
