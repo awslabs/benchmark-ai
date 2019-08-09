@@ -590,6 +590,7 @@ _as_status_line() {
     _print_status "$(sed 's/^.\(.*\).$/\1/' <<<"$msg")" "$(sed 's/^.\(.*\).$/\1/' <<<"$src")" "$(sed 's/^.\(.*\).$/\1/' <<<"$id")" "$(sed 's/^.\(.*\).$/\1/' <<<"$new")"
 
     local tstamp=$(jq --compact-output '.tstamp' <<<"$line")
+    [[ ! -d "${ANUBIS_DATABASE}/$(get_client_id)/${current_action_id}" ]] && mkdir -p "${ANUBIS_DATABASE}/$(get_client_id)/${current_action_id}"
     echo "$tstamp" > "${ANUBIS_DATABASE}/$(get_client_id)/${current_action_id}/${TSTAMP_FILENAME}"
 }
 
