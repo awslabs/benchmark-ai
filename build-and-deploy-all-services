@@ -74,7 +74,7 @@ info() {
     # ready to receive docker artifacts (i.e. be sure to \`docker login\`,
     # first).
 
-    # You can override or many Makefile variables with the
+    # You can override one or many Makefile variables with the
     # --<variable>=<value> syntax.  Most notably DOCKER_REGISTRY.
 
 "
