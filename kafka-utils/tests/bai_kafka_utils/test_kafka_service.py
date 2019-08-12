@@ -5,12 +5,13 @@ import time
 import uuid
 from dataclasses import dataclass
 from typing import List, Dict
-from unittest.mock import MagicMock, Mock, call
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from kafka import KafkaConsumer, KafkaProducer, TopicPartition
 from pytest import fixture
 
+import bai_kafka_utils
 from bai_kafka_utils.events import (
     BenchmarkPayload,
     BenchmarkEvent,
@@ -19,7 +20,7 @@ from bai_kafka_utils.events import (
     StatusMessageBenchmarkEvent,
     Status,
 )
-from bai_kafka_utils.kafka_service import KafkaService, KafkaServiceCallback
+from bai_kafka_utils.kafka_service import EventEmitter, KafkaService, KafkaServiceCallback
 
 CLIENT_ID = "CLIENT_ID"
 
@@ -144,6 +145,79 @@ def simple_kafka_service(kafka_consumer: KafkaConsumer, kafka_producer: KafkaPro
     return kafka_service
 
 
+@fixture
+def simple_event_emitter(kafka_producer):
+    return EventEmitter(
+        name="service_name",
+        version="1.0.0",
+        pod_name="pod_name",
+        status_topic="status_topic",
+        kakfa_producer=kafka_producer,
+    )
+
+
+@fixture
+def mock_generate_uuid(mocker):
+    return mocker.patch.object(
+        bai_kafka_utils.kafka_service, "generate_uuid", return_value=str(uuid.UUID(hex=MOCK_UUID))
+    )
+
+
+@fixture
+def mock_time(mocker):
+    mocker.patch.object(time, "time", return_value=VISIT_TIME)
+
+
+@fixture
+def mock_event_emitter(mocker) -> MagicMock:
+    mock_emitter = mocker.patch("bai_kafka_utils.kafka_service.EventEmitter", autospec=True)
+    return mock_emitter.return_value
+
+
+def test_event_emitter_sends_message(kafka_producer, benchmark_event, mock_generate_uuid, mock_time):
+    event_emitter = EventEmitter(
+        name=SERVICE_NAME, version=VERSION, pod_name=POD_NAME, status_topic=STATUS_TOPIC, kakfa_producer=kafka_producer
+    )
+
+    dest_topic = "some topic"
+
+    event_emitter.send_event(benchmark_event, topic=dest_topic)
+
+    expected_event = copy.deepcopy(benchmark_event)
+    expected_event.message_id = str(mock_generate_uuid())
+    expected_event.visited.append(VisitedService(SERVICE_NAME, tstamp=VISIT_TIME_MS, version=VERSION, node=POD_NAME))
+    expected_event.type = dest_topic
+
+    kafka_producer.send.assert_called_with(dest_topic, value=expected_event, key=CLIENT_ID)
+
+
+def test_event_emitter_sends_status_message(kafka_producer, benchmark_event, mock_generate_uuid, mock_time):
+    event_emitter = EventEmitter(
+        name=SERVICE_NAME, version=VERSION, pod_name=POD_NAME, status_topic=STATUS_TOPIC, kakfa_producer=kafka_producer
+    )
+
+    status = Status.SUCCEEDED
+    message = "some message"
+
+    event_emitter.send_status_message_event(benchmark_event, status=status, msg=message)
+
+    expected_event = StatusMessageBenchmarkEvent.create_from_event(status, message, benchmark_event)
+    expected_event.message_id = str(mock_generate_uuid())
+    expected_event.visited.append(VisitedService(SERVICE_NAME, tstamp=VISIT_TIME_MS, version=VERSION, node=POD_NAME))
+    expected_event.type = STATUS_TOPIC
+
+    kafka_producer.send.assert_called_with(STATUS_TOPIC, value=expected_event, key=CLIENT_ID)
+
+
+def test_no_status_event_sent_if_status_topic_not_set(kafka_producer, benchmark_event):
+    event_emitter = EventEmitter(
+        name=SERVICE_NAME, version=VERSION, pod_name=POD_NAME, status_topic=None, kakfa_producer=kafka_producer
+    )
+
+    event_emitter.send_status_message_event(benchmark_event, status=Status.SUCCEEDED, msg="some message")
+    kafka_producer.send.assert_not_called()
+
+
 def test_dont_add_to_running(simple_kafka_service: KafkaService):
     simple_kafka_service._running = True
     with pytest.raises(
@@ -260,7 +334,10 @@ def test_immutable_callbacks(kafka_consumer: KafkaConsumer, kafka_producer: Kafk
 
 
 def test_message_sent(
-    mocker, kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer, benchmark_event: BenchmarkEvent
+    kafka_consumer: KafkaConsumer,
+    kafka_producer: KafkaProducer,
+    benchmark_event: BenchmarkEvent,
+    mock_event_emitter: EventEmitter,
 ):
     class SendMessageCallback(KafkaServiceCallback):
         def __init__(self, topic):
@@ -272,26 +349,12 @@ def test_message_sent(
         def cleanup(self):
             pass
 
-    mock_time, mock_uuid4 = mock_time_and_uuid(mocker)
-
-    result_event = copy.deepcopy(benchmark_event)
-    expected_event = copy.deepcopy(result_event)
-
-    mock_message_before_send(expected_event, mock_uuid4, PRODUCER_TOPIC)
-
     callback = SendMessageCallback(PRODUCER_TOPIC)
 
     kafka_service = _create_kafka_service({CONSUMER_TOPIC: [callback]}, kafka_consumer, kafka_producer)
     kafka_service.run_loop()
 
-    response_call = call(PRODUCER_TOPIC, value=expected_event, key=CLIENT_ID)
-    kafka_producer.send.assert_has_calls([response_call])
-
-
-def mock_time_and_uuid(mocker):
-    mock_time = mocker.patch.object(time, "time", return_value=VISIT_TIME)
-    mock_uuid4 = mocker.patch("bai_kafka_utils.kafka_service.generate_uuid", return_value=str(uuid.UUID(hex=MOCK_UUID)))
-    return mock_time, mock_uuid4
+    mock_event_emitter.send_event.assert_called_with(benchmark_event, PRODUCER_TOPIC)
 
 
 # Helper to create a KafkaService to test
@@ -326,28 +389,20 @@ class DoNothingCallback(KafkaServiceCallback):
 
 
 def test_status_message_sent(
-    mocker, kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer, benchmark_event: BenchmarkEvent
+    kafka_consumer: KafkaConsumer,
+    kafka_producer: KafkaProducer,
+    benchmark_event: BenchmarkEvent,
+    mock_event_emitter: EventEmitter,
 ):
-    mock_time, mock_uuid4 = mock_time_and_uuid(mocker)
-
     status_callback = DoNothingCallback()
 
     kafka_service = _create_kafka_service({STATUS_TOPIC: [status_callback]}, kafka_consumer, kafka_producer)
     kafka_service.run_loop()
 
-    expected_status_event = StatusMessageBenchmarkEvent.create_from_event(
-        Status.PENDING, f"{SERVICE_NAME} service, node {POD_NAME}: Processing event...", benchmark_event
-    )
+    status = Status.PENDING
+    message = f"{SERVICE_NAME} service, node {POD_NAME}: Processing event..."
 
-    mock_message_before_send(expected_status_event, mock_uuid4, STATUS_TOPIC)
-
-    kafka_producer.send.assert_called_with(STATUS_TOPIC, value=expected_status_event, key=CLIENT_ID)
-
-
-def mock_message_before_send(status_event, mock_uuid4, topic):
-    status_event.message_id = str(mock_uuid4())
-    status_event.visited.append(VisitedService(SERVICE_NAME, tstamp=VISIT_TIME_MS, version=VERSION, node=POD_NAME))
-    status_event.type = topic
+    mock_event_emitter.send_status_message_event.assert_called_with(benchmark_event, status, message)
 
 
 # Regression prevention test - assert that we always pass timeout

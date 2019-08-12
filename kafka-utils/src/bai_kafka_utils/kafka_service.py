@@ -9,7 +9,8 @@ from typing import List, Optional, Dict
 
 from kafka import KafkaProducer, KafkaConsumer
 
-from bai_kafka_utils.events import BenchmarkEvent, VisitedService, Status, StatusMessageBenchmarkEvent
+from bai_kafka_utils.events import BenchmarkEvent, Status
+from bai_kafka_utils.events import VisitedService, StatusMessageBenchmarkEvent
 from bai_kafka_utils.utils import generate_uuid
 
 logger = logging.getLogger(__name__)
@@ -45,6 +46,59 @@ class KafkaServiceCallback(metaclass=abc.ABCMeta):
         pass
 
 
+class EventEmitter:
+    """
+    Encapsulates logic required to emit status and regular (benchmark, command, etc.) events
+    """
+
+    def __init__(
+        self, name: str, version: str, pod_name: str, status_topic: Optional[str], kakfa_producer: KafkaProducer
+    ):
+        self.name = name
+        self.version = version
+        self.pod_name = pod_name
+        self._status_topic = status_topic
+        self._kafka_producer = kakfa_producer
+
+    def send_status_message_event(self, handled_event: BenchmarkEvent, status: Status, msg: str):
+        """
+        Utility method for sending status message events.
+        :param status: status of the event
+        :param handled_event: value of the message to send
+        :param msg: Message to send
+        """
+        status_event = StatusMessageBenchmarkEvent.create_from_event(status, msg, handled_event)
+
+        if not self._status_topic:
+            logger.info(f"No status topic specified. Losing event: {status_event}")
+            return
+
+        self.send_event(status_event, self._status_topic)
+
+    def send_event(self, event: BenchmarkEvent, topic: str):
+        """
+        Base method for sending an event to Kafka.
+        Adds this service to the visited field in the event and calls the KafkaProducer.
+        :param event: value of the message to send
+        :param topic: topic to send to
+        """
+
+        def add_self_to_visited(src_event):
+            current_time_ms = int(time.time() * 1000)
+            entry = VisitedService(self.name, current_time_ms, self.version, self.pod_name)
+            res = list(src_event.visited)
+            res.append(entry)
+            return res
+
+        event_to_send = dataclasses.replace(
+            event, message_id=generate_uuid(), type=topic, visited=add_self_to_visited(event)
+        )
+        event_key = event_to_send.client_id
+
+        logger.info(f"Sending {event_to_send} -> {topic}")
+        self._kafka_producer.send(topic, value=event_to_send, key=event_key)
+
+
 class KafkaServiceCallbackException(Exception):
     pass
 
@@ -67,12 +121,13 @@ class KafkaService:
         status_topic: Optional[str] = None,
     ):
 
-        self._producer = kafka_producer
-        self._consumer = kafka_consumer
-        self._status_topic = status_topic
+        self._event_emitter = EventEmitter(
+            name=name, version=version, pod_name=pod_name, status_topic=status_topic, kakfa_producer=kafka_producer
+        )
+
         self.name = name
-        self.version = version
         self.pod_name = pod_name
+        self._consumer = kafka_consumer
 
         # Immutability helps us to avoid nasty bugs.
         self._callbacks = {topic: list(callbacks) for topic, callbacks in callbacks.items()}
@@ -100,48 +155,16 @@ class KafkaService:
         if not event:
             raise KafkaServiceCallbackException("Empty message received (no event found)")
         logger.info(f"Got event {event}")
-        self.send_status_message_event(
+        self._event_emitter.send_status_message_event(
             event, Status.PENDING, f"{self.name} service, node {self.pod_name}: Processing event..."
         )
         callback.handle_event(event, self)
 
     def send_status_message_event(self, handled_event: BenchmarkEvent, status: Status, msg: str):
-        """
-        Utility method for sending status message events.
-        :param status: status of the event
-        :param handled_event: value of the message to send
-        :param msg: Message to send
-        """
-        status_event = StatusMessageBenchmarkEvent.create_from_event(status, msg, handled_event)
-
-        if not self._status_topic:
-            logger.info(f"No status topic specified. Losing event: {status_event}")
-            return
-
-        self.send_event(status_event, self._status_topic)
+        self._event_emitter.send_status_message_event(handled_event, status, msg)
 
     def send_event(self, event: BenchmarkEvent, topic: str):
-        """
-        Base method for sending an event to Kafka.
-        Adds this service to the visited field in the event and calls the KafkaProducer.
-        :param event: value of the message to send
-        :param topic: topic to send to
-        """
-
-        def add_self_to_visited(event):
-            current_time_ms = int(time.time() * 1000)
-            entry = VisitedService(self.name, current_time_ms, self.version, self.pod_name)
-            res = list(event.visited)
-            res.append(entry)
-            return res
-
-        event_to_send = dataclasses.replace(
-            event, message_id=generate_uuid(), type=topic, visited=add_self_to_visited(event)
-        )
-        event_key = event_to_send.client_id
-
-        logger.info(f"Sending {event_to_send} -> {topic}")
-        self._producer.send(topic, value=event_to_send, key=event_key)
+        self._event_emitter.send_event(event, topic)
 
     @property
     def running(self) -> bool:
