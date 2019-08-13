@@ -1,5 +1,7 @@
 import dataclasses
 
+import pytest
+
 from bai_kafka_utils.events import (
     StatusMessageBenchmarkEvent,
     VisitedService,
@@ -13,6 +15,7 @@ FETCHER_PAYLOAD = FetcherPayload(datasets=[DataSet(src="SRC")], toml=None)
 
 FETCHER_EVENT = FetcherBenchmarkEvent(
     action_id="OTHER_ACTION_ID",
+    parent_action_id="PARENT_ACTION_ID",
     message_id="OTHER_MESSAGE_ID",
     client_id="OTHER_CLIENT_ID",
     client_version="0.1.0-481dad2",
@@ -30,6 +33,7 @@ STATUS_EVENT_JSON = (
   "message_id": "MESSAGE_ID",
   "client_id":  "CLIENT_ID",
   "action_id":  "ACTION_ID",
+  "parent_action_id": "",
   "tstamp": 1554901873677 ,
   "client_username": "vasya",
   "client_version": "1.0",
@@ -73,6 +77,9 @@ def test_serialization():
     serialized = json.loads(STATUS_EVENT.to_json())
     expected = json.loads(STATUS_EVENT_JSON)
 
+    print(serialized)
+    print(expected)
+
     assert serialized == expected
 
 
@@ -88,3 +95,22 @@ def test_create_from_event():
     assert event.tstamp == FETCHER_EVENT.tstamp
     assert event.payload == dataclasses.asdict(FETCHER_PAYLOAD)
     assert event.visited == FETCHER_EVENT.visited
+
+
+def test_status_event_required_fields():
+    fields = dict(STATUS_EVENT.__dict__)
+
+    optional_fields = ["parent_action_id"]
+
+    for field in fields:
+        init_args = dict(fields)
+        init_args.pop(field)
+
+        if field in optional_fields:
+            try:
+                StatusMessageBenchmarkEvent(**init_args)
+            except TypeError:
+                pytest.fail(f"StatusMessageBenchmarkEvent expected optional field '{field}'")
+        else:
+            with pytest.raises(TypeError):
+                StatusMessageBenchmarkEvent(**init_args)

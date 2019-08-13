@@ -209,3 +209,21 @@ def test_cmd_payload_list():
     payload = CommandRequestPayload.from_json(json)
     assert isinstance(payload.args, list)
     assert payload.args == ["foo", "bar"]
+
+
+def test_benchmark_event_required_fields(benchmark_event):
+    fields = dict(benchmark_event.__dict__)
+    optional_fields = ["parent_action_id"]
+
+    for field in fields:
+        init_args = dict(fields)
+        init_args.pop(field)
+
+        if field in optional_fields:
+            try:
+                BenchmarkEvent(**init_args)
+            except TypeError:
+                pytest.fail(f"BenchmarkEvent expected optional field '{field}'")
+        else:
+            with pytest.raises(TypeError):
+                BenchmarkEvent(**init_args)

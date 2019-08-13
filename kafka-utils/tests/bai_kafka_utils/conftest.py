@@ -16,4 +16,5 @@ def benchmark_event():
         visited=[],
         type="DONTCARE",
         payload=None,
+        parent_action_id="",
     )
