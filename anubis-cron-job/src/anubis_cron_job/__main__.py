@@ -1,14 +1,31 @@
+import dataclasses
 import logging
 import os
 import sys
 
 import dacite
-from bai_kafka_utils.events import FetcherBenchmarkEvent
+from bai_kafka_utils.events import FetcherBenchmarkEvent, Status
 from bai_kafka_utils.kafka_client import create_kafka_producer
+from bai_kafka_utils.kafka_service import EventEmitter
+from bai_kafka_utils.executors.descriptor import SINGLE_RUN_SCHEDULING
 from bai_kafka_utils.logging import configure_logging
-from bai_kafka_utils.utils import generate_uuid
+from bai_kafka_utils.utils import generate_uuid, get_pod_name
 
+from anubis_cron_job import __version__, SERVICE_NAME
 from anubis_cron_job.config import get_config
+
+
+def create_benchmark_event(scheduled_benchmark_event: FetcherBenchmarkEvent) -> FetcherBenchmarkEvent:
+    benchmark_event = dataclasses.replace(scheduled_benchmark_event, action_id=generate_uuid())
+
+    # Set scheduling to single run
+    info = benchmark_event.payload.toml.contents.get("info")
+    if info:
+        info["scheduling"] = SINGLE_RUN_SCHEDULING
+    else:
+        raise RuntimeError("Event does not contain valid benchmark descriptor: 'info' section is missing.")
+
+    return benchmark_event
 
 
 def main(argv=None):
@@ -22,23 +39,30 @@ def main(argv=None):
         config = get_config(argv, os.environ)
 
         logging.info("Updating benchmark event's message and action id")
-        benchmark_event = dacite.from_dict(data_class=FetcherBenchmarkEvent, data=config.benchmark_event)
-
-        # Create new message and action ids
-        benchmark_event.action_id = generate_uuid()
-        benchmark_event.message_id = generate_uuid()
-
-        # Remove scheduling attribute from toml
-        info = benchmark_event.payload.toml.contents.get("info", {})
-        if "scheduling" in info:
-            info.pop("scheduling")
+        scheduled_benchmark_event = dacite.from_dict(data_class=FetcherBenchmarkEvent, data=config.benchmark_event)
+        benchmark_event = create_benchmark_event(scheduled_benchmark_event)
 
         logging.info("Creating Kafka producer")
         kafka_producer = create_kafka_producer(config.kafka_bootstrap_servers)
 
-        logging.info(f"Submitting benchmark with action id {benchmark_event.action_id}")
-        kafka_producer.send(config.producer_topic, value=benchmark_event, key=benchmark_event.client_id)
+        event_emitter = EventEmitter(
+            name=SERVICE_NAME,
+            version=__version__,
+            pod_name=get_pod_name(),
+            status_topic=config.status_topic,
+            kakfa_producer=kafka_producer,
+        )
 
+        logging.info(f"Submitting benchmark with action id {benchmark_event.action_id}")
+        event_emitter.send_event(event=benchmark_event, topic=config.producer_topic)
+
+        # Send the message against the original scheduled benchmark event so it is logged
+        # against the original action_id
+        event_emitter.send_status_message_event(
+            handled_event=scheduled_benchmark_event,
+            status=Status.SUCCEEDED,
+            msg=f"Spawning benchmark with action_id: {benchmark_event.action_id}",
+        )
         logging.debug("Closing producer")
         kafka_producer.close()
     except Exception as err:

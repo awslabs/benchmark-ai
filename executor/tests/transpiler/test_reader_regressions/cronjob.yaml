@@ -34,6 +34,11 @@ spec:
                 configMapKeyRef:
                   name: executor
                   key: consumer_topic
+            - name: STATUS_TOPIC
+              valueFrom:
+                configMapKeyRef:
+                  name: executor
+                  key: status_topic
             - name: BENCHMARK_EVENT
               value: '{"action_id": "ACTION_ID", "message_id": "MESSAGE_ID", "client_id":
                 "CLIENT_ID", "client_version": "CLIENT_VERSION", "client_username":

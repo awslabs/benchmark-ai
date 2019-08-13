@@ -1,12 +1,9 @@
+from typing import List, Type
 from unittest import mock
+from unittest.mock import patch, call, ANY, create_autospec
 
 import kafka
 import pytest
-from kazoo.client import KazooClient
-from pytest import fixture
-from typing import List, Type
-from unittest.mock import patch, call, ANY, create_autospec
-
 from bai_kafka_utils.events import (
     BenchmarkDoc,
     BenchmarkEvent,
@@ -15,10 +12,12 @@ from bai_kafka_utils.events import (
     FetcherBenchmarkEvent,
     Status,
     FetcherStatus,
-    StatusMessageBenchmarkEvent,
 )
 from bai_kafka_utils.kafka_service import KafkaService, KafkaServiceConfig
 from bai_zk_utils.zk_locker import DistributedRWLockManager
+from kazoo.client import KazooClient
+from pytest import fixture
+
 from fetcher_dispatcher import fetcher_dispatcher_service, SERVICE_NAME
 from fetcher_dispatcher.args import FetcherServiceConfig, FetcherJobConfig
 from fetcher_dispatcher.data_set_manager import DataSetManager
@@ -191,16 +190,10 @@ def test_fetcher_event_handler_nothing_to_do(
     fetcher_callback: FetcherEventHandler, benchmark_event_without_datasets: BenchmarkEvent, kafka_service: KafkaService
 ):
     fetcher_callback.handle_event(benchmark_event_without_datasets, kafka_service)
-    # 1 call to notify, that nothing to do
+
     assert kafka_service.send_status_message_event.call_args_list == [call(ANY, Status.SUCCEEDED, "Nothing to fetch")]
 
     args, _ = kafka_service.send_event.call_args_list[0]
-    status_event, topic = args
-    assert isinstance(status_event, StatusMessageBenchmarkEvent)
-    assert topic == STATUS_TOPIC
-
-    # 2nd call to emit an event with the same payload to the producer topic
-    args, _ = kafka_service.send_event.call_args_list[1]
     fetcher_event, topic = args
     assert isinstance(fetcher_event, FetcherBenchmarkEvent)
     assert topic == PRODUCER_TOPIC

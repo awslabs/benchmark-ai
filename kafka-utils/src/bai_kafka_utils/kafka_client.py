@@ -1,13 +1,14 @@
 import logging
+from typing import List
+from typing import Tuple
 
 import kafka
 from kafka import KafkaConsumer, KafkaProducer
 from kafka.admin import KafkaAdminClient, NewTopic
-from typing import List, Tuple
-
 from kafka.errors import TopicAlreadyExistsError
 
-from bai_kafka_utils.events import BenchmarkEvent, get_topic_event_type
+from bai_kafka_utils.events import BenchmarkEvent
+from bai_kafka_utils.events import get_topic_event_type
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
 from bai_kafka_utils.utils import DEFAULT_ENCODING
 
