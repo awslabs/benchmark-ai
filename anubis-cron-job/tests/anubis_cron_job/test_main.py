@@ -151,6 +151,7 @@ def test_create_benchmark_event(mock_generate_uuid, mock_scheduled_benchmark_eve
     event = create_benchmark_event(mock_scheduled_benchmark_event)
 
     assert event.action_id == "new_uuid_1"
+    assert event.parent_action_id == mock_scheduled_benchmark_event.action_id
     assert event.payload.toml.contents["info"].get("scheduling") == SINGLE_RUN_SCHEDULING
 
 
