@@ -105,7 +105,7 @@ class BaiClient:
         if endpoint is None:
             # Copy codebuild artifact to Anubis home dir
             artifact_output_file = Path(os.environ["CODEBUILD_SRC_DIR_service_endpoint_bff"] + "/bff/service_endpoint")
-            anubis_home_dir = Path(os.environ["HOME"] + "/.anubis")
+            anubis_home_dir = Path(os.environ["HOME"]).joinpath(".anubis")
             if not os.path.exists(anubis_home_dir):
                 os.makedirs(anubis_home_dir)
             service_endpoint_file = copy2(artifact_output_file, Path(str(anubis_home_dir) + "/service_endpoint"))

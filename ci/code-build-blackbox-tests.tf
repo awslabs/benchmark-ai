@@ -37,7 +37,7 @@ module "blackbox-tests-vpc" {
 
 resource "aws_security_group" "blackbox_public" {
   name = "blackbox_public"
-  description = "Bridge between blackbox private and public subnets"
+  description = "Blackbox public subnet"
   vpc_id = "${module.blackbox-tests-vpc.vpc_id}"
 
   ingress {
