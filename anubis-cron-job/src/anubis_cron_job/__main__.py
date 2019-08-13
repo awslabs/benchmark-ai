@@ -63,7 +63,7 @@ def main(argv=None):
         event_emitter.send_status_message_event(
             handled_event=scheduled_benchmark_event,
             status=Status.SUCCEEDED,
-            msg=f"Spawning benchmark with action_id: {benchmark_event.action_id}",
+            msg=f"Spawning benchmark with action_id: [{benchmark_event.action_id}]",
         )
         logging.debug("Closing producer")
         kafka_producer.close()
