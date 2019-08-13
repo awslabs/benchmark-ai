@@ -39,6 +39,20 @@ resource "aws_security_group" "blackbox_public" {
   name = "blackbox_public"
   description = "Bridge between blackbox private and public subnets"
   vpc_id = "${module.blackbox-tests-vpc.vpc_id}"
+
+  ingress {
+    protocol = -1
+    self = true
+    from_port = 0
+    to_port = 0
+  }
+
+  egress {
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
 resource "aws_default_security_group" "default" {
