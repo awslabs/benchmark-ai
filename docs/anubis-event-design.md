@@ -4,9 +4,9 @@ https://quip-amazon.com/JGHsAukyNFOs/BenchmarkAI-Descriptor-file
 
 This document describes each of the main events that are pushed through the Benchmark AI system.
 
-#---------
-EVERY event must have...
-#---------
+#---------<br>
+EVERY event must have...<br>
+#---------<br>
 
 UUID = UUID created from the initial ingress point of the system
 CLIENT_VERSION = The version of the client
@@ -18,7 +18,7 @@ VISITED = array of ids of nodes visited
 
 [UUID format: "728ff542-b332-4520-bb2e-51d5e32cfc0a"](https://en.wikipedia.org/wiki/Universally_unique_identifier)
 
-**Aside:**_ Kafka Topics..._
+**Aside:** _ Kafka Topics..._<br>
 **BAI_APP_BFF, BAI_APP_FETCHER, BAI_APP_EXECUTOR**
 **BAI_SYS_BFF, BAI_SYS_FETCHER, BAI_SYS_EXECUTOR**
 **CMD_SUBMIT, CMD_RETURN**
