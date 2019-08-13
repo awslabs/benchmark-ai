@@ -5,17 +5,17 @@ A "framework/tool/service" that enables you to perform benchmarks of your machin
 
 
 
-Anubis provides a simple, self service solution for teams to schedule and run benchmarks for machine learning workloads.  Abubis lets teams to easily spin-up the required infrastructure and automation to perform benchmarks. Consider Anubis a measuring tool, a "ruler" if you willl, that lets you measure the efficacy of your machine learning model, framework and/or computing infrastructure.  Anubis provides a simple, declartive, input descriptor, and produces operational and user metrics, and sophisticated alerts for detecting regressions.  Logged output from the model are stored and indexed for deeper inspection, allowing for more effective root cause investigation. 
+Anubis provides a simple, self service solution for teams to schedule and run benchmarks for machine learning workloads.  Abubis lets teams to easily spin-up the required infrastructure and automation to perform benchmarks. Consider Anubis a measuring tool, a "ruler" if you willl, that lets you measure the efficacy of your machine learning model, framework and/or computing infrastructure.  Anubis provides a simple, declartive, input descriptor, and produces operational and user metrics, and sophisticated alerts for detecting regressions.  Logged output from the model are stored and indexed for deeper inspection, allowing for more effective root cause investigation.
 
 # Features
 
-* Simple _declarative_ _document-based_ input that gives user full control of Model / Framework / Hardware 
-* Simple command-line interface 
-* Strong Reproducibility 
-* Efficient Dataset Caching 
-* Ease of use and deployment 
-* Enables self-service model (anyone can spin up Anubis) 
-* Designed to be future proof 
+* Simple _declarative_ _document-based_ input that gives user full control of Model / Framework / Hardware
+* Simple command-line interface
+* Strong Reproducibility
+* Efficient Dataset Caching
+* Ease of use and deployment
+* Enables self-service model (anyone can spin up Anubis)
+* Designed to be future proof
 * Built around open standards
 * Cloud native, cloud ready and cloud scalable*
 
@@ -41,7 +41,7 @@ The other is the `anubis` client tool that allows users to...
 The envisioned use-case is that a team or group or org instantiates the service infrastructure to support its constituents.  As such only the "admin" needs to run `baictl`.  While all users of the service interact with it using the Anubis client tool (or via the direct HTTP API, for the adventurous)
 
 For more information on all commands, please see the [full documentation]() of `baictl`.<br>
-For more information on the `anubis` client, please see its [starter document](bff/doc/anubis-client.md).
+For more information on the `anubis` client, please see its [starter document](bff/docs/anubis-client.md).
 
 <hr>
 <i>
@@ -87,7 +87,7 @@ cd benchmark-ai
 
 ## Step 1 - Create the infrastructure
 
-**NOTE**: These steps will soon be replaced by a wrapper script to make your life easier! 
+**NOTE**: These steps will soon be replaced by a wrapper script to make your life easier!
 
 You will now create a Codebuild pipeline that deploys Anubis infrastructure and services in your AWS account using the default region us-east-1 (this can be changed from benchmark-ai/ci/variables.tf):
 
@@ -145,7 +145,7 @@ and the following will be done:
 
 Optional: Put bff/bin/anubis in your $PATH
 
-Anubis supports "Script Mode".  This means along with posting the descriptor file, you may also include the code that you wish to run.  See our "Hello World" [README](sample-benchmarks/hello-world) for info on that.  Also look at the `anubis` client program [document](bff/doc/anubis-client.md) located in the bff service.
+Anubis supports "Script Mode".  This means along with posting the descriptor file, you may also include the code that you wish to run.  See our "Hello World" [README](sample-benchmarks/hello-world) for info on that.  Also look at the `anubis` client program [document](bff/docs/anubis-client.md) located in the bff service.
 
 ```bash
 #To watch the status messages showing the progress of the run
