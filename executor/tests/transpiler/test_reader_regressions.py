@@ -30,6 +30,7 @@ JOB_ID = "benchmark-JOB-ID"
         ("horovod.toml", "horovod-with-script", ANUBIS_SCRIPTS),
     ],
 )
+@pytest.mark.parametrize("parent_action_id", ["parentactionid", None])
 def test_single_job_regressions(
     descriptor_filename,
     expected_yaml,
@@ -39,9 +40,14 @@ def test_single_job_regressions(
     file_regression: FileRegressionFixture,
     benchmark_event,
     scripts,
+    parent_action_id,
 ):
     random_object = random.Random()
     random_object.seed(1)
+
+    if parent_action_id:
+        benchmark_event.parent_action_id = parent_action_id
+        expected_yaml = expected_yaml + f"-{parent_action_id}"
 
     descriptor_data = toml.load(str(shared_datadir / descriptor_filename))
     fetched_data_sources = generate_fetched_data_sources(descriptor_data)
@@ -56,10 +62,11 @@ def test_single_job_regressions(
         extra_bai_config_args=dict(random_object=random_object),
         event=benchmark_event,
     )
+
     file_regression.check(yaml_spec, basename=expected_yaml, extension=".yaml")
 
 
-@pytest.mark.parametrize(["descriptor_filename", "expected_yaml", "scripts"], [("cronjob.toml", "cronjob", [])])
+@pytest.mark.parametrize(["descriptor_filename", "expected_yaml"], [("cronjob.toml", "cronjob")])
 def test_scheduled_job_regressions(
     descriptor_filename,
     expected_yaml,
@@ -68,7 +75,6 @@ def test_scheduled_job_regressions(
     config_env,
     file_regression: FileRegressionFixture,
     benchmark_event,
-    scripts,
 ):
     random_object = random.Random()
     random_object.seed(1)

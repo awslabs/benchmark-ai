@@ -5,7 +5,7 @@ metadata:
   labels:
     app: benchmark-ai
     action-id: ACTION_ID
-    parent-action-id: ''
+    parent-action-id: parentactionid
     client-id: CLIENT_ID
     created-by: executor
 spec:
@@ -14,7 +14,7 @@ spec:
       labels:
         app: benchmark-ai
         action-id: ACTION_ID
-        parent-action-id: ''
+        parent-action-id: parentactionid
         client-id: CLIENT_ID
         created-by: executor
       annotations:

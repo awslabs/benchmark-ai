@@ -5,7 +5,7 @@ metadata:
   labels:
     app: benchmark-ai
     action-id: ACTION_ID
-    parent-action-id: ''
+    parent-action-id: parentactionid
     client-id: CLIENT_ID
     created-by: executor
 spec:
@@ -14,7 +14,7 @@ spec:
       labels:
         app: benchmark-ai
         action-id: ACTION_ID
-        parent-action-id: ''
+        parent-action-id: parentactionid
         client-id: CLIENT_ID
         created-by: executor
       annotations:
@@ -31,16 +31,26 @@ spec:
                 values:
                 - benchmark-ai
             topologyKey: kubernetes.io/hostname
-      initContainers: []
+      initContainers:
+      - name: data-puller
+        image: benchmarkai/puller:3115770
+        volumeMounts:
+        - name: datasets-volume
+          mountPath: /data
+        args:
+        - puller-data
+        - object-name/dir0,777,p0:object-name/dir1,777,p1
       containers:
       - name: benchmark
-        image: edisongustavo/bai-benchmarks-hello-world:latest
+        image: jlcont/benchmarking:270219
         resources:
           limits:
-            nvidia.com/gpu: 0
+            nvidia.com/gpu: 4
         command:
-        - python3
-        - hello-world.py
+        - python
+        - /home/benchmark/image_classification.py
+        - --model=resnet50_v2
+        - --batch-size=32
         securityContext:
           privileged: false
         env:
@@ -50,17 +60,15 @@ spec:
           value: /tmp/benchmark-ai/fifo
         - name: BENCHMARK_AI_FIFO_MAX_WAIT_TIME
           value: '60'
-        - name: FIST_VAL
-          value: VAR
-        - name: SECOND_VAL
-          value: VAR
-        - name: INT_VAL
-          value: '11'
-        - name: FOO
-          value: bar
         volumeMounts:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
+        - name: datasets-volume
+          mountPath: ~/data/tf-imagenet/train
+          subPath: p0
+        - name: datasets-volume
+          mountPath: ~/data/tf-imagenet/validation
+          subPath: p1
         - name: dshm
           mountPath: /dev/shm
       - name: sidecar
@@ -93,12 +101,14 @@ spec:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
       nodeSelector:
-        beta.kubernetes.io/instance-type: t2.small
+        beta.kubernetes.io/instance-type: p3.8xlarge
         node.type: bai-worker
         failure-domain.beta.kubernetes.io/zone: us-east-1a
       restartPolicy: Never
       volumes:
       - name: benchmark-ai
+        emptyDir: {}
+      - name: datasets-volume
         emptyDir: {}
       - name: dshm
         emptyDir:
