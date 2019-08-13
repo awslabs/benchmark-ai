@@ -27,7 +27,7 @@ _create-infra:
 
 destroy-infra: check-parameter-region venv _destroy-infra
 _destroy-infra:
-	./baictl create infra --aws-region=$(AWS_REGION)
+	./baictl destroy infra --aws-region=$(AWS_REGION)
 
 publish:
 	echo "Nothing to publish"

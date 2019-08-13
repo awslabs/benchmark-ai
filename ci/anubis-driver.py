@@ -1,20 +1,19 @@
 #!/usr/bin/env python3
 import json
 import os
-
 import requests
-from pathlib import Path
-
+import urllib3
 import shutil
 import textwrap
-from collections import namedtuple
-from time import time
-
-from typing import Dict
-
 import subprocess
 import argparse
 import boto3
+import sys
+from pyfiglet import Figlet
+from pathlib import Path
+from collections import namedtuple
+from time import time
+from typing import Dict
 
 
 def open_terraform_vars_file(filename) -> Dict[str, str]:
@@ -48,7 +47,7 @@ class Config:
         existing_values.update(open_terraform_vars_file(".terraform/ci-backend-config"))
         existing_values.update(open_terraform_vars_file("terraform.tfvars"))
 
-        self.variables = {"region": "us-east-1"}
+        self.variables = {}
         for var_name in Config.VARIABLE_NAMES:
             self.variables[var_name] = existing_values.get(var_name, self.variables.get(var_name, None))
 
@@ -90,16 +89,25 @@ class Config:
     @classmethod
     def add_args(cls, parser):
         for var_name in Config.VARIABLE_NAMES:
-            parser.add_argument("--{var_name}".format(var_name=var_name.replace("_", "-")))
+            if var_name == "region" or var_name == "prefix_list_id":
+                parser.add_argument("--{var_name}".format(var_name=var_name.replace("_", "-")), required=True)
+            else:
+                parser.add_argument("--{var_name}".format(var_name=var_name.replace("_", "-")))
 
 
 def s3_remote_state_bucket(config, region, session):
     # Ensure bucket exists for remote state
+    sts = session.client("sts")
+    if os.path.exists(".terraform/ci-backend-config"):
+        ci_backend_config = open(".terraform/ci-backend-config", "r").read()
+        if sts.get_caller_identity()["Account"] not in ci_backend_config:
+            os.remove(".terraform/ci-backend-config")
+            config["bucket"] = None
+            if os.path.exists(".terraform/terraform.tfstate"):
+                os.remove(".terraform/terraform.tfstate")
+
     if config["bucket"] is None:
-        sts = session.client("sts")
-        config["bucket"] = (
-            "bai-ci-terraform-remote-state-" + sts.get_caller_identity()["Account"] + "-" + session.region_name
-        )
+        config["bucket"] = "bai-ci-terraform-state-" + sts.get_caller_identity()["Account"] + "-" + session.region_name
 
     s3 = session.resource("s3")
     bucket_name = config["bucket"]
@@ -141,70 +149,11 @@ def file_replace_line(file_path, str_find, str_replace):
     shutil.move(tmp_file_path, file_path)
 
 
-def load_cookies_from_mozilla(filename):
-    """ Loads cookies from the file saved in Netscape format (e.g. curl saves in this format)
-    Returns MozillaCookieJar object
-    """
-    import tempfile
-    from http.cookiejar import MozillaCookieJar
-    from http.cookiejar import Cookie
-
-    if not os.path.isfile(filename):
-        return None
-
-    tmp_file = tempfile.NamedTemporaryFile()
-    tmp_file.close()
-    tmp_file_path = tmp_file.name
-    shutil.copy(filename, tmp_file_path)
-
-    file_replace_line(tmp_file_path, "#HttpOnly_", "")  # Cheating: just remove HttpOnly_ flag
-    file_replace_line(
-        tmp_file_path, "\r", ""
-    )  # if created on Windows, cookie value will have \r at the end on Linux which breaks SSL connection with midway-auth
-
-    ns_cookiejar = MozillaCookieJar()
-    ns_cookiejar.load(tmp_file_path, ignore_discard=True, ignore_expires=True)
-    os.remove(tmp_file_path)
-
-    for c in ns_cookiejar:
-        args = dict(vars(c).items())
-        args["rest"] = args["_rest"]
-        del args["_rest"]
-        c = Cookie(**args)
-        epoch_time = int(time())
-        if c.expires > 0 and c.expires < epoch_time:
-            raise ValueError("cookie is expired. Please run mwinit")
-        if c.expires == 0:
-            c.expires = None  # convert curl format to python cookie format
-        ns_cookiejar.set_cookie(c)
-
-    return ns_cookiejar
-
-
-def prefix_list_id(config):
-    if config["prefix_list_id"]:
-        return
-
-    region = config["region"]
-    jar = load_cookies_from_mozilla(str(Path.home() / ".midway/cookie"))
-    response = requests.get(f"https://apll.corp.amazon.com/?region={region}&format=json", cookies=jar, verify=False)
-    result = json.loads(response.text)
-    config["prefix_list_id"] = result["result"]["com.amazonaws.firewall.regional-corp-only"]
-
-
 def main():
-    description = textwrap.dedent(
-        """\
-        An utility script that is meant to replace calling `terraform init`.
-
-        It takes care of creating the S3 Bucket so that Terraform knows how to handle remote state. Also, the CI's
-        Terraform code accepts parameters (eg.: branch name), which this script writes to the `terraform.tfvars` file.
-
-        The default values are meant to reference the `master` branch of MXNetEdge/benchmark-ai.
-        """
-    )
-    parser = argparse.ArgumentParser(description=description)
+    print(Figlet().renderText("anubis setup"))
+    parser = argparse.ArgumentParser()
     parser.add_argument("--clean", action="store_true", help="Removes current state and configured values")
+    parser.add_argument("--destroy", action="store_true", help="Removes current state and configured values")
     Config.add_args(parser)
     args = parser.parse_args()
     if args.clean:
@@ -217,15 +166,24 @@ def main():
 
     chime_hook_url(config, session)
     s3_remote_state_bucket(config, region, session)
-    prefix_list_id(config)
-
     config.write()
 
     print("=> Configuration to call terraform with:")
     print(config)
-
+    mode = "destroy" if args.destroy else "create"
+    user_response = input(f"Do you want to {mode} the pipeline with this configuration? ([y]/n)?: ").lower().strip()
+    if not user_response == "y" and not user_response == "yes" and not user_response == "":
+        sys.exit()
     print("=> Calling `terraform init`")
-    ret = subprocess.call(["terraform", "init", "-backend-config=.terraform/ci-backend-config"])
+    return_code = subprocess.call(["terraform", "init", "-backend-config=.terraform/ci-backend-config"])
+    if return_code != 0:
+        raise Exception(f"Failure to init terraform: {return_code}")
+
+    # Destroy pipeline and infrastructure
+    if args.destroy:
+        destroy_pipeline(region)
+        destroy_infrastructure()
+        return
 
     if "GITHUB_TOKEN" not in os.environ:
         print("!!! ATTENTION !!!")
@@ -234,7 +192,19 @@ def main():
         print(
             "Follow this page for instructions: https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line"
         )
-    return ret
+        return 1
+
+    # Create pipeline which creates infrastructure and deploys services
+    print("=> Calling `terraform plan`")
+    return_code = subprocess.call(["terraform", "plan", "--out=terraform.plan"])
+    if return_code != 0:
+        raise Exception(f"Failure calling `terraform plan`: {return_code}")
+    print("=> Calling `terraform apply`")
+    return_code = subprocess.call(["terraform", "apply", "terraform.plan"])
+    if return_code != 0:
+        raise Exception(f"Failure calling `terraform plan`: {return_code}")
+
+    return
 
 
 def remove_terraform_config_files():
@@ -246,6 +216,39 @@ def remove_terraform_config_files():
     rm(".terraform/terraform.tfstate")
     rm(".terraform/ci-backend-config")
     rm("terraform.tfvars")
+    rm("terraform.plan")
+
+
+def destroy_pipeline(region):
+    # HACK: Rules don't get revoked causing timeout on security group destroy
+    group_id = subprocess.check_output(["terraform", "output", "blackbox_vpc_default_group_id"]).strip()
+    source_group = subprocess.check_output(["terraform", "output", "blackbox_public_group_id"]).strip()
+    return_code = subprocess.call(
+        [
+            "aws",
+            "ec2",
+            "revoke-security-group-ingress",
+            "--region",
+            region,
+            "--group-id",
+            group_id,
+            "--source-group",
+            source_group,
+            "--protocol",
+            "all",
+        ]
+    )
+    print("=> Calling `terraform destroy` to destroy pipeline")
+    return_code = subprocess.call(["terraform", "destroy", "-auto-approve"])
+    if return_code != 0:
+        raise Exception(f"Failure calling `terraform destroy`: {return_code}")
+
+
+def destroy_infrastructure():
+    print("=> Calling `make destroy` in baictl to destroy infrastructure")
+    return_code = subprocess.call(["make", "destroy"], cwd="../baictl")
+    if return_code != 0:
+        raise Exception(f"Failure calling `make destroy` in baictl: {return_code}")
 
 
 if __name__ == "__main__":

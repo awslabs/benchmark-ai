@@ -1,9 +1,12 @@
 name: ci
 channels:
-  - conda-forge
-  - defaults
+    - conda-forge
+    - defaults
 dependencies:
-  - terraform 0.12.*
-  - python 3.7.*
-  - boto3
-  - requests
+    - terraform 0.12.*
+    - python 3.7.*
+    - boto3
+    - requests
+    - pip
+    - pip:
+        - pyfiglet
