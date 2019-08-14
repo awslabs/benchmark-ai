@@ -7,12 +7,16 @@ import hashlib
 import socket
 import uuid
 import requests
+import os
 from dataclasses import dataclass
 from typing import List, Dict, Optional
 from dataclasses_json import dataclass_json
 from pathlib import Path
 from bai_kafka_utils.events import VisitedService, BenchmarkPayload, BenchmarkDoc, StatusMessageBenchmarkEvent
 from .__version__ import __version__
+from shutil import copy2
+from urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
 
 SERVICE_NAME = "bai-client-python"
 
@@ -97,15 +101,28 @@ class BaiClient:
     Each method is meant to be a 1:1 translation of the REST api provided by BAI.
     """
 
-    BAI_HOME = Path.home() / ".bai"
+    SERVICE_ENDPOINT_PORT = "80"
 
     def __init__(self, endpoint=None):
         if endpoint is None:
-            service_endpoint_file = BaiClient.BAI_HOME / "service_endpoint"
+            # Copy codebuild artifact to Anubis home dir
+            artifact_output_file = Path(os.environ["CODEBUILD_SRC_DIR_service_endpoint_bff"] + "/bff/service_endpoint")
+            anubis_home_dir = Path(os.environ["HOME"]).joinpath(".anubis")
+            if not os.path.exists(anubis_home_dir):
+                os.makedirs(anubis_home_dir)
+            service_endpoint_file = copy2(artifact_output_file, Path(str(anubis_home_dir) + "/service_endpoint"))
+
             if service_endpoint_file.exists():
-                endpoint = "http://" + service_endpoint_file.read_text("utf-8").strip()
+                endpoint = (
+                    "http://"
+                    + service_endpoint_file.read_text("utf-8").replace('"', "").replace("\n", "")
+                    + f":{BaiClient.SERVICE_ENDPOINT_PORT}"
+                )
+            elif not artifact_output_file.exists():
+                raise Exception(f"artifact_output_file not found at {artifact_output_file}")
             else:
-                endpoint = "http://localhost:8080"
+                raise Exception(f"service_endpoint not found at {service_endpoint_file}")
+        print(f"ENDPOINT: {endpoint}")
         self.endpoint = endpoint
 
     def submit(self, descriptor_filename: str) -> str:
@@ -119,7 +136,7 @@ class BaiClient:
         event_to_json = event.to_json()
         with requests.Session() as session:
             logger.info(f"Submitting {path}")
-            logger.debug(f"Submit event for {path}: {event}")
+            logger.debug(f"Submit event for {path}: {event} to {self.endpoint}")
             files = {"submit-event": (None, event_to_json)}
             response = session.post(self.endpoint + "/api/job/descriptor", files=files)
             self._handle_response(response)
@@ -134,6 +151,15 @@ class BaiClient:
                 return None
             self._handle_response(response)
             return _convert_status_json_response(response.text)
+
+    def ping(self):
+        with requests.Session() as session:
+            retries = Retry(total=30, backoff_factor=0.1)
+            session.mount("http://", HTTPAdapter(max_retries=retries))
+            print(f"session.get({self.endpoint}/ready)")
+            response = session.get(self.endpoint + "/ready")
+            self._handle_response(response)
+            return response.status_code
 
     def _handle_response(self, response):
         if response.status_code != 200:

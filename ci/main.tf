@@ -2,7 +2,7 @@ terraform {
   required_version = ">= 0.12"
 
   backend "s3" {
-    key    = "ci/terraform.tfstate"
+    key = "ci/terraform.tfstate"
   }
 }
 
@@ -15,12 +15,13 @@ data "aws_caller_identity" "current" {}
 
 # Generic role for both CodeBuild / CodePipeline to access the S3 bucket with artifacts
 resource "aws_s3_bucket" "build-artifacts" {
-  bucket = "bai-build-artifacts-${data.aws_caller_identity.current.account_id}-${var.region}"
-  acl    = "private"
+  bucket        = "bai-build-artifacts-${data.aws_caller_identity.current.account_id}-${var.region}"
+  acl           = "private"
+  force_destroy = true
 }
 
 resource "aws_iam_policy" "build-artifacts" {
-  name = "bai-build-artifacts"
+  name        = "bai-build-artifacts"
   description = "Provides permissions for CodePipeline/CodeBuild to start builds and store artifacts"
 
   policy = <<-EOF
@@ -113,12 +114,12 @@ resource "aws_iam_role_policy" "code-build-role-policy-eks-all-actions" {
 }
 
 resource "aws_iam_role_policy_attachment" "build-artifacts" {
-  role = aws_iam_role.code-build-role.name
+  role       = aws_iam_role.code-build-role.name
   policy_arn = aws_iam_policy.build-artifacts.arn
 }
 
 resource "aws_iam_role_policy_attachment" "ecr-permissions" {
-  role = aws_iam_role.code-build-role.name
+  role       = aws_iam_role.code-build-role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
 }
 
@@ -153,13 +154,13 @@ resource "aws_codebuild_project" "ci-unit-tests" {
       var.projects[count.index],
       var.ci_docker_image["default"]
     )
-    type = "LINUX_CONTAINER"
+    type            = "LINUX_CONTAINER"
     privileged_mode = true
 
     dynamic "environment_variable" {
       for_each = local.common_environment_variables[var.projects[count.index]]
       content {
-        name = environment_variable.key
+        name  = environment_variable.key
         value = environment_variable.value
       }
     }
@@ -183,7 +184,7 @@ resource "aws_codebuild_webhook" "ci-unit-tests" {
 
   filter_group {
     filter {
-      type = "EVENT"
+      type    = "EVENT"
       pattern = "PULL_REQUEST_CREATED, PULL_REQUEST_UPDATED, PULL_REQUEST_REOPENED"
     }
   }

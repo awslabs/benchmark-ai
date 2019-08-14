@@ -90,6 +90,7 @@ DEPLOY_TEMPLATE := etc/deploy.yml.tmpl
 SERVICE_TEMPLATE := etc/service.yml.tmpl
 DOCKER_TEMPLATE := etc/Dockerfile.tmpl
 DOCKER_DEV_TEMPLATE := etc/Dockerfile_dev.tmpl
+SERVICE_ENDPOINT := ./service_endpoint
 
 #Run Environment (ref: deploy template and runit script)
 #                (log levels -> #{trace debug info warn error fatal report})
@@ -357,13 +358,14 @@ service.yml: FORCE
 	     -e 's|@@JMX_PORT@@|$(JMX_PORT)|g' \
 	     -e 's|@@SVC_PORT@@|$(SVC_PORT)|g' $(SERVICE_TEMPLATE) > $(shell PATH=$(PATH) sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(SERVICE_TEMPLATE))
 
-deploy: _deploy_venv deploy.yml service.yml
+deploy: _deploy_venv deploy.yml service.yml 
 	@echo "------------------------"
 	@echo "K8S deployment..."
 	@echo "------------------------"
 	#Deploy this service to the k8s cluster
 	kubectl $(K8S_KUBECTL_ARGS) apply -f deploy.yml
-	kubectl $(K8S_KUBECTL_ARGS) apply -f service.yml
+	kubectl $(K8S_KUBECTL_ARGS) apply -f service.yml \
+		&& kubectl $(K8S_KUBECTL_ARGS) get service bai-bff -o json | jq '.status.loadBalancer.ingress[].hostname' > $(SERVICE_ENDPOINT)
 
 undeploy-deployment:
 	kubectl $(K8S_KUBECTL_ARGS) delete deployment $(PROJECT) --grace-period=60

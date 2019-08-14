@@ -19,27 +19,33 @@ resource "aws_codebuild_project" "ci-create-infra" {
   }
 
   environment {
-    compute_type = "BUILD_GENERAL1_SMALL"
-    image = var.ci_docker_image["default"]
-    type = "LINUX_CONTAINER"
+    compute_type    = "BUILD_GENERAL1_SMALL"
+    image           = var.ci_docker_image["default"]
+    type            = "LINUX_CONTAINER"
     privileged_mode = true
 
     dynamic "environment_variable" {
       for_each = local.common_environment_variables["baictl"]
       content {
-        name = environment_variable.key
+        name  = environment_variable.key
         value = environment_variable.value
       }
     }
 
     environment_variable {
-      name = "AWS_PREFIX_LIST_ID"
+      name  = "AWS_PREFIX_LIST_ID"
       value = var.prefix_list_id
+    }
+
+    # This exposes the VPC gateway of the Blackbox Tests VPC to the Anubis Infrastructure
+    environment_variable {
+      name  = "EXTRA_CIDR_BLOCK"
+      value = "${module.blackbox-tests-vpc.nat_public_ips[0]}/32"
     }
   }
 
   source {
-    type = "CODEPIPELINE"
+    type      = "CODEPIPELINE"
     buildspec = "ci/buildspec-create-infra.yml"
   }
 }
