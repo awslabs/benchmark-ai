@@ -88,6 +88,6 @@ class SageMakerExecutionEngine(ExecutionEngine):
         total_size_gb = int(SageMakerExecutionEngine.SAFETY_FACTOR * ceil(total_size / 1024 ** 3))
         return total_size_gb
 
-    def cancel(self, client_id: str, action_id: str):
+    def cancel(self, client_id: str, action_id: str, cascade: bool = False):
         job_name = SageMakerExecutionEngine._get_job_name(action_id)
         self.sagemaker_client.stop_training_job(TrainingJobName=job_name)
