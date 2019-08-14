@@ -7,12 +7,14 @@ ACTION_ID = "ACTION_ID"
 
 CLIENT_ID = "CLIENT_ID"
 
+CASCADE = True
+
 
 def test_distinct_engines():
     mock_engine: ExecutionEngine = create_autospec(ExecutionEngine)
     engines = {"FOO": mock_engine, "BAR": mock_engine}
 
     cmd_object = ExecutorCommandObject(engines)
-    cmd_object.cancel(CLIENT_ID, ACTION_ID)
+    cmd_object.cancel(CLIENT_ID, ACTION_ID, CASCADE)
 
-    mock_engine.cancel.assert_called_once_with(CLIENT_ID, ACTION_ID)
+    mock_engine.cancel.assert_called_once_with(CLIENT_ID, ACTION_ID, CASCADE)
