@@ -1,5 +1,4 @@
 import logging
-import subprocess
 from subprocess import CalledProcessError, check_output
 
 from bai_k8s_utils.service_labels import ServiceLabels
@@ -13,6 +12,10 @@ from executor.config import ExecutorConfig
 from transpiler.bai_knowledge import create_job_yaml_spec, create_scheduled_job_yaml_spec
 
 logger = logging.getLogger(__name__)
+
+
+class NoK8sResourcesFoundError(Exception):
+    pass
 
 
 class K8SExecutionEngine(ExecutionEngine):
@@ -84,23 +87,51 @@ class K8SExecutionEngine(ExecutionEngine):
         logger.info(f"Kubectl output: {result}")
         logger.info(f"Job submitted with yaml:\n{yaml}")
 
-    def cancel(self, client_id: str, action_id: str):
-        label_selector = self._create_label_selector(client_id, action_id)
+    def cancel(self, client_id: str, action_id: str, cascade: True):
+
+        results = []
+        try:
+            results.append(self._cancel(client_id, action_id, as_parent=False))
+        except NoK8sResourcesFoundError as err:
+            # Only throw no resources found error when not cascading the deletion
+            # Use-case: User deletes scheduled benchmark without cascading, and now would
+            # like to delete the spawned jobs.
+            if not cascade:
+                raise err
+
+        if cascade:
+            results.append(self._cancel(client_id, action_id, as_parent=True))
+
+        return results
+
+    def _cancel(self, client_id: str, action_id: str, as_parent: bool):
+        label_selector = self._create_label_selector(client_id, action_id, as_parent)
+        result = self._delete_k8s_resources(label_selector)
+
+        if as_parent:
+            logging.info(f"Succesfully cancelled benchmarks with parent-action-id {action_id}")
+        else:
+            logging.info(f"Succesfully cancelled benchmark with id {action_id}")
+        logger.info(f"Kubectl output: {result}")
+        return result
+
+    def _delete_k8s_resources(self, label_selector: str):
+        if not label_selector:
+            raise RuntimeError("Attempting to delete kubernetes resources without label selector")
+
         resource_types = ",".join(self.ALL_K8S_RESOURCE_TYPES)
 
         cmd = [self.config.kubectl, "delete", resource_types, "--selector", label_selector]
         logger.info(f"Deleting resources of types {resource_types} matching selector {label_selector}")
 
-        result = subprocess.check_output(cmd).decode(DEFAULT_ENCODING)
-
-        # kubectl delete exits with 0 even if there are no resources to delete, so we need to handle that case ourselves
+        result = check_output(cmd).decode(DEFAULT_ENCODING)
         if "No resources found" in result:
-            raise ValueError(f"No resources found matching selector {label_selector}")
+            raise NoK8sResourcesFoundError(f"No resources found matching selector {label_selector}")
 
-        logging.info(f"Succesfully cancelled benchmark with id {action_id}")
-        logger.info(f"Kubectl output: {result}")
         return result
 
     @staticmethod
-    def _create_label_selector(client_id: str, action_id: str):
+    def _create_label_selector(client_id: str, action_id: str, as_parent: bool):
+        if as_parent:
+            return ServiceLabels.get_label_selector_as_parent(SERVICE_NAME, client_id, action_id)
         return ServiceLabels.get_label_selector(SERVICE_NAME, client_id, action_id)
