@@ -184,7 +184,7 @@ def test_cancel_benchmark_with_cascade(k8s_execution_engine: K8SExecutionEngine,
     mock_check_output.assert_has_calls(expected_calls)
 
 
-def test_cancel_without_cascade_fails(k8s_execution_engine: K8SExecutionEngine, mock_check_output):
+def test_cancel_without_cascade_fails(k8s_execution_engine: K8SExecutionEngine, mock_check_output_no_resource_found):
     with pytest.raises(NoK8sResourcesFoundError):
         k8s_execution_engine.cancel(CLIENT_ID, ACTION_ID, cascade=False)
 
