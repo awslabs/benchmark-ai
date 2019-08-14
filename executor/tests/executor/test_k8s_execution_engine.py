@@ -114,23 +114,30 @@ def mock_check_output(mocker):
 
 @fixture
 def mock_check_output_with_parent_not_found(mocker):
-    return mocker.patch.object(executor.k8s_execution_engine, "check_output", side_effect=[
-        # Resource deletion fails
-        NoK8sResourcesFoundError("Not found"),
+    return mocker.patch.object(
+        executor.k8s_execution_engine,
+        "check_output",
+        side_effect=[
+            # Resource deletion fails
+            NoK8sResourcesFoundError("Not found"),
+            # Resources spawned by the scheduled job are found
+            b"resources deleted successfully",
+        ],
+    )
 
-        # Resources spawned by the scheduled job are found
-        b"resources deleted successfully",
-    ])
 
 @fixture
 def mock_check_output_no_resource_found(mocker):
-    return mocker.patch.object(executor.k8s_execution_engine, "check_output", side_effect=[
-        # Resource deletion fails
-        NoK8sResourcesFoundError("Not found"),
-
-        # Resources spawned by the scheduled job are not found
-        NoK8sResourcesFoundError("No spawned jobs found"),
-    ])
+    return mocker.patch.object(
+        executor.k8s_execution_engine,
+        "check_output",
+        side_effect=[
+            # Resource deletion fails
+            NoK8sResourcesFoundError("Not found"),
+            # Resources spawned by the scheduled job are not found
+            NoK8sResourcesFoundError("No spawned jobs found"),
+        ],
+    )
 
 
 JOINED_RESOURCE_TYPES = ",".join(K8SExecutionEngine.ALL_K8S_RESOURCE_TYPES)
@@ -209,7 +216,6 @@ def test_cancel_benchmark_with_cascade_with_not_found_exception(
                 K8SExecutionEngine._create_label_selector(CLIENT_ID, ACTION_ID, as_parent=False),
             ]
         ),
-
         # Also deletes resources with label parent-action-id=<action_id>
         call(
             [
