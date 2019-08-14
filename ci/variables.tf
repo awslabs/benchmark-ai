@@ -50,7 +50,7 @@ variable "github_organization" {
 
 variable "github_branch" {
   type    = string
-  default = "master"
+  default = "whitebox-metrics"
 }
 
 variable "chime_hook_url" {
