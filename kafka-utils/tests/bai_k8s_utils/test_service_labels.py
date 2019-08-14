@@ -14,6 +14,15 @@ def test_get_label_selector():
     )
 
 
+def test_get_label_selector_as_parent():
+    assert (
+        ServiceLabels.get_label_selector_as_parent(SOME_SERVICE, CLIENT_ID, ACTION_ID)
+        == f"{ServiceLabels.CREATED_BY_LABEL}={SOME_SERVICE},"
+        + f"{ServiceLabels.CLIENT_ID_LABEL}={CLIENT_ID},"
+        + f"{ServiceLabels.PARENT_ACTION_ID_LABEL}={ACTION_ID}"
+    )
+
+
 def test_get_label_selector_all_actions():
     assert (
         ServiceLabels.get_label_selector(SOME_SERVICE, CLIENT_ID)
@@ -24,6 +33,14 @@ def test_get_label_selector_all_actions():
 def test_labels():
     assert ServiceLabels.get_labels(SOME_SERVICE, CLIENT_ID, ACTION_ID) == {
         ServiceLabels.ACTION_ID_LABEL: ACTION_ID,
+        ServiceLabels.CLIENT_ID_LABEL: CLIENT_ID,
+        ServiceLabels.CREATED_BY_LABEL: SOME_SERVICE,
+    }
+
+
+def test_labels_as_parent():
+    assert ServiceLabels.get_labels_as_parent(SOME_SERVICE, CLIENT_ID, ACTION_ID) == {
+        ServiceLabels.PARENT_ACTION_ID_LABEL: ACTION_ID,
         ServiceLabels.CLIENT_ID_LABEL: CLIENT_ID,
         ServiceLabels.CREATED_BY_LABEL: SOME_SERVICE,
     }
