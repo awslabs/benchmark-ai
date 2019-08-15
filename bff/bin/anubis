@@ -124,13 +124,14 @@ usage:
 This is the command-line, client-side interface to the Bechmark AI service...
 
  > %s --submit <descriptor file | action id> [ --script <path to script>] : Returns an \"action id\" if submission successful
-          --status   <action id>   : displays a report of the current status
+          --status  [<action id>]  : displays a report of the current status
           --results [<action id>]  : displays output of the benchmark output (stdout from model)
           --inspect  <message id> [<action-id>] : displays full details of specified message object
           --show-descriptor [<action-id>]       : shows the descriptor acknowledged by Anubis
           --last-action-id         : displays the last action id from a valid submission
-          --cancel   <action id>   : cancels the current in progress submission
-          --check-version          : checks to see if the version you are running is the latest posted
+          --cancel   <action id>   : cancels the current, in progress, submission
+          --cancel*  <action id>   : cancels the current, in progress, submission and all descendant processes
+          --check-version          : checks to see if the version you are running is the latest posted (not yet implemented)
           --upgrade                : fetches latest version of this tool [%s]
           --sync-version           : synchronized this tool with that of the service endpoint
           --tail                   : when showing status, only show the latest from the service
@@ -522,11 +523,20 @@ $(eval ${cmd} | jq '.[]')
 EOF
 }
 
+_looks_like_an_action_id() {
+    local action_id="${1}"
+    if [[ -z $(sed -rne '/[a-f0-9-]{8}-([a-f0-9-]{4}-){3}[a-f0-9-]{12}/p' <<<"${action_id}") ]]; then
+        printf "\033[01;31m[ERROR] Incorrect action-id format: expecting a UUID\033[0m\n" 1>&2
+        return 1
+    fi
+    return 0
+}
+
 #REST API call
 get_submission_status() {
     local action_id=${1:-$(use_last_action_id)}
     ((DEBUG)) && echo "[DEBUG] - get_submission_status, was passed in [${action_id}]" 1>&2
-    if [[ -z $(sed -rne '/[a-f0-9-]{8}-([a-f0-9-]{4}-){3}[a-f0-9-]{12}/p' <<<"${action_id}") ]]; then
+    if ! _looks_like_an_action_id "${action_id}" ; then
         printf "\033[01;31m[ERROR] Incorrect action-id format: expecting a UUID\033[0m\n"
         exit 9
     fi
@@ -611,7 +621,13 @@ get_results() {
 
 #command event
 abort_submission() {
-    local action_id=${1:?"abort_submission() -> You MUST provide the action_id returned by the initial submission"}
+    local action_id
+    if _looks_like_an_action_id "${1}" ; then
+        action_id="${1}"
+    else
+        printf "%b You MUST provide a valid, well-formed action_id \033[01;31mtry again buddy\033[0m\n\n" "${emoji[FAIL]}" >&2
+        exit 9
+    fi
     local current_service_endpoint=$(cat "${ANUBIS_SERVICE_ENDPOINT_CONFIG}" | tail -n 1)
     shift
     ((VERBOSE)) && echo "abort submisson ${action_id}"
@@ -772,6 +788,11 @@ main() {
                 --abort|--cancel)
                     shift
                     abort_submission ${@} ; shift
+                    exit $?
+                    ;;
+                --abort\* | --cancel\*)
+                    shift
+                    abort_submission ${@} '{ "cascade" : true }'; shift
                     exit $?
                     ;;
                 --check-prerequisites) # hidden option
