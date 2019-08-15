@@ -6,6 +6,7 @@ BENCHMARK_DIR=../..
 
 JOB_NAME=executor-it
 STAGE ?= devo
+TIMEOUT=600
 
 include $(BENCHMARK_DIR)/docker-common.mk
 include $(BENCHMARK_DIR)/deploy-common.mk
