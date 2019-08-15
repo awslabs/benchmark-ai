@@ -1,6 +1,7 @@
 (ns bai-bff.events
   (:require [bai-bff.core :refer :all]
             [bai-bff.utils.utils :as utils]
+            [bai-bff.utils.parsers :as parsers]
             [clojure.pprint :refer :all]
             [clojure.java.io :as io]
             [clojure.data.codec.base64 :as b64]
@@ -38,6 +39,11 @@
     (-> event
         (assoc-in [:payload :toml :verified] verified?)
         (assoc-in [:payload :toml :contents] toml->map))))
+
+(defn validate-toml-crontab [event]
+  (when-let [crontab-string (some-> event :payload :toml :contents :info :scheduling)]
+    (when-not (parsers/valid-crontab? crontab-string) (throw (Exception. (str "INVALID CRONTAB ENTRY: " crontab-string)))))
+  event)
 
 (defn glean-dataset-info
   "Pulls out the dataset information out of the TOML and raises it in the \"payload\" map.
@@ -90,6 +96,7 @@
       :payload         (some-> message-body :payload)
       :type            "BAI_APP_BFF"}
      (decode-document)
+     (validate-toml-crontab)
      (glean-dataset-info)
      (glean-script-info)
      (add-my-visited-entry))))

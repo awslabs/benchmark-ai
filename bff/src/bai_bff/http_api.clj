@@ -43,7 +43,7 @@
         (:action_id event)))
     (catch Exception e
       (log/error "Could Not Parse Descriptor Input:" (.getMessage e))
-      (bad-request "Could Not Parse Submitted Descriptor"))))
+      (bad-request (str "Could Not Parse Submitted Descriptor: " (.getMessage e))))))
 
 (defn dispatch-delete-job [request body action-id]
   (try
@@ -64,7 +64,7 @@
         (:action_id event)))
     (catch Exception e
       (log/error "Could Not Parse Descriptor Input")
-      (bad-request "Could Not Parse Submitted Descriptor"))))
+      (bad-request "Could Not Parse Submitted Descriptor "))))
 
 ;;----------------------
 ;; Misc Helper functions...
