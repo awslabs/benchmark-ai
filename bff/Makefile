@@ -364,8 +364,15 @@ deploy: _deploy_venv deploy.yml service.yml
 	@echo "------------------------"
 	#Deploy this service to the k8s cluster
 	kubectl $(K8S_KUBECTL_ARGS) apply -f deploy.yml
-	kubectl $(K8S_KUBECTL_ARGS) apply -f service.yml \
-		&& kubectl $(K8S_KUBECTL_ARGS) get service bai-bff -o json | jq '.status.loadBalancer.ingress[].hostname' > $(SERVICE_ENDPOINT)
+	kubectl $(K8S_KUBECTL_ARGS) apply -f service.yml
+	$(shell \
+		touch $(SERVICE_ENDPOINT) \
+		while [ ! -s $(SERVICE_ENDPOINT) ]; do \
+    		kubectl $(K8S_KUBECTL_ARGS) get service bai-bff -o json | jq '.status.loadBalancer.ingress[].hostname' > $(SERVICE_ENDPOINT) \
+			sleep 5 \
+		done \
+	)
+
 
 undeploy-deployment:
 	kubectl $(K8S_KUBECTL_ARGS) delete deployment $(PROJECT) --grace-period=60
