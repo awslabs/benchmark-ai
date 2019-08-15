@@ -5,5 +5,3 @@ configMapGenerator:
     literals:
       - timeout=30
     behavior: merge
-patchesStrategicMerge:
-  - executor-it-job.yml
