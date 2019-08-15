@@ -76,7 +76,7 @@
   (if (nil? event)
     store
     (let [{:keys [client_id action_id target_action_id] :or {target_action_id nil}} event
-          [client-key action-key] (mapv keyword [client_id (if target_action_id target_action_id action_id)])]
+          [client-key action-key] (mapv keyword [client_id (or target_action_id action_id)])]
       (if (and client-key action-key)
         (try
           (assoc-in store [client-key action-key] (vec (remove nil? (flatten (vector (some-> store client-key action-key) event)))))
