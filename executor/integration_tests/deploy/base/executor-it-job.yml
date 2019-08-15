@@ -17,7 +17,8 @@ spec:
             name: kubectl
       containers:
         - name: it
-          image: benchmarkai/executor-it
+          imagePullPolicy: Never
+          image: "benchmarkai/executor-it"
           env:
           - name: AVAILABILITY_ZONES
             valueFrom:

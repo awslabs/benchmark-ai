@@ -1,14 +1,16 @@
+from subprocess import CalledProcessError
+
 import pytest
 from bai_kafka_utils.events import FetcherBenchmarkEvent, BenchmarkDoc, FetcherPayload, create_from_object, BenchmarkJob
 from bai_kafka_utils.executors.descriptor import DescriptorError
 from bai_kafka_utils.executors.execution_callback import ExecutionEngineException
 from bai_kafka_utils.utils import DEFAULT_ENCODING
+from mock import call
 from pytest import fixture
-from subprocess import CalledProcessError
 
 import executor
 from executor.config import ExecutorConfig
-from executor.k8s_execution_engine import K8SExecutionEngine
+from executor.k8s_execution_engine import K8SExecutionEngine, NoK8sResourcesFoundError
 
 ACTION_ID = "ACTION_ID"
 
@@ -107,27 +109,123 @@ def test_raise_yaml_exception(
 
 @fixture
 def mock_check_output(mocker):
-    return mocker.patch.object(executor.k8s_execution_engine.subprocess, "check_output")
+    return mocker.patch.object(executor.k8s_execution_engine, "check_output", return_value=b"something")
+
+
+@fixture
+def mock_check_output_with_parent_not_found(mocker):
+    return mocker.patch.object(
+        executor.k8s_execution_engine,
+        "check_output",
+        side_effect=[
+            # Resource deletion fails
+            NoK8sResourcesFoundError("Not found"),
+            # Resources spawned by the scheduled job are found
+            b"resources deleted successfully",
+        ],
+    )
+
+
+@fixture
+def mock_check_output_no_resource_found(mocker):
+    return mocker.patch.object(
+        executor.k8s_execution_engine,
+        "check_output",
+        side_effect=[
+            # Resource deletion fails
+            NoK8sResourcesFoundError("Not found"),
+            # Resources spawned by the scheduled job are not found
+            NoK8sResourcesFoundError("No spawned jobs found"),
+        ],
+    )
 
 
 JOINED_RESOURCE_TYPES = ",".join(K8SExecutionEngine.ALL_K8S_RESOURCE_TYPES)
 
 
-def test_cancel_benchmark(k8s_execution_engine: K8SExecutionEngine, mock_check_output):
-    k8s_execution_engine.cancel(CLIENT_ID, ACTION_ID)
+def test_cancel_benchmark_without_cascade(k8s_execution_engine: K8SExecutionEngine, mock_check_output):
+    k8s_execution_engine.cancel(CLIENT_ID, ACTION_ID, cascade=False)
 
     expected_call = [
         KUBECTL,
         "delete",
         JOINED_RESOURCE_TYPES,
         "--selector",
-        K8SExecutionEngine._create_label_selector(CLIENT_ID, ACTION_ID),
+        K8SExecutionEngine._create_label_selector(CLIENT_ID, ACTION_ID, as_parent=False),
     ]
     mock_check_output.assert_called_with(expected_call)
 
 
-def test_cancel_fails(k8s_execution_engine: K8SExecutionEngine, mock_check_output):
-    mock_check_output.return_value = b"No resources found"
+def test_cancel_benchmark_with_cascade(k8s_execution_engine: K8SExecutionEngine, mock_check_output):
+    k8s_execution_engine.cancel(CLIENT_ID, ACTION_ID, cascade=True)
 
-    with pytest.raises(ValueError):
-        k8s_execution_engine.cancel(CLIENT_ID, ACTION_ID)
+    expected_calls = [
+        # Deletes resources with label action-id=<action_id>
+        call(
+            [
+                KUBECTL,
+                "delete",
+                JOINED_RESOURCE_TYPES,
+                "--selector",
+                K8SExecutionEngine._create_label_selector(CLIENT_ID, ACTION_ID, as_parent=False),
+            ]
+        ),
+        # Also deletes resources with label parent-action-id=<action_id>
+        call(
+            [
+                KUBECTL,
+                "delete",
+                JOINED_RESOURCE_TYPES,
+                "--selector",
+                K8SExecutionEngine._create_label_selector(CLIENT_ID, ACTION_ID, as_parent=True),
+            ]
+        ),
+    ]
+    mock_check_output.assert_has_calls(expected_calls)
+
+
+def test_cancel_without_cascade_fails(k8s_execution_engine: K8SExecutionEngine, mock_check_output_no_resource_found):
+    with pytest.raises(NoK8sResourcesFoundError):
+        k8s_execution_engine.cancel(CLIENT_ID, ACTION_ID, cascade=False)
+
+
+def test_cancel_with_cascade_fails(k8s_execution_engine: K8SExecutionEngine, mock_check_output_no_resource_found):
+    with pytest.raises(NoK8sResourcesFoundError):
+        k8s_execution_engine.cancel(CLIENT_ID, ACTION_ID, cascade=False)
+
+
+def test_cancel_benchmark_with_cascade_with_not_found_exception(
+    k8s_execution_engine: K8SExecutionEngine, mock_check_output_with_parent_not_found
+):
+    """
+    Tests that when deleting a benchmark with cascade, an attempt to cascade the deletion
+    is still made even in the case that the scheduled benchmark is not found. E.g. if the user
+    deletes a scheduled benchmark without cascading, they should still be able to delete the
+    scheduled job's spawned jobs.
+    """
+    k8s_execution_engine.cancel(CLIENT_ID, ACTION_ID, cascade=True)
+
+    expected_calls = [
+        # Deletes resources with label action-id=<action_id>
+        call(
+            [
+                KUBECTL,
+                "delete",
+                JOINED_RESOURCE_TYPES,
+                "--selector",
+                K8SExecutionEngine._create_label_selector(CLIENT_ID, ACTION_ID, as_parent=False),
+            ]
+        ),
+        # Also deletes resources with label parent-action-id=<action_id>
+        call(
+            [
+                KUBECTL,
+                "delete",
+                JOINED_RESOURCE_TYPES,
+                "--selector",
+                K8SExecutionEngine._create_label_selector(CLIENT_ID, ACTION_ID, as_parent=True),
+            ]
+        ),
+    ]
+
+    mock_check_output_with_parent_not_found.assert_has_calls(expected_calls)

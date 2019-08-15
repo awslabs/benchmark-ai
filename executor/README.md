@@ -115,3 +115,12 @@ python descriptor_reader.py path_to_descriptor.toml
 ```
 
 This utility is used by the baictl CLI to run Kubernetes jobs.
+
+## Integration tests
+
+To help in development and testing of the service, use [kind](https://github.com/kubernetes-sigs/kind) to locally simulate a kubernetes cluster.
+Once installed, bring up the cluster with `kind create cluster --image=$K8S_KINDEST_V12 --config=integration-test-cluster.yml`. When finished,
+update your kubeconfig environment variable with `export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"`. Then, follow the steps in the
+*build* section of the [buildspec.yaml](buildspec.yml).
+
+NOTE: keep in mind that the docker images will need to be pulled by the docker nodes. This could affect test outcomes, so keep it this in mind.

@@ -5,6 +5,8 @@ ENV_NAME = executorit
 BENCHMARK_DIR=../..
 
 JOB_NAME=executor-it
+STAGE ?= devo
+TIMEOUT=600
 
 include $(BENCHMARK_DIR)/docker-common.mk
 include $(BENCHMARK_DIR)/deploy-common.mk
@@ -33,4 +35,10 @@ _k8s_silent_cleanup:
 	-$(KUBECTL) delete jobs,persistentvolumeclaims --selector action-id $(KUBECTL_FLAGS)
 
 deploy.yml:
-	$(KUBECTL) kustomize ./deploy/$(STAGE) > deploy.yml
+	# $(KUBECTL) kustomize ./deploy/$(STAGE) > deploy.yml
+	echo "Kustomize deployment"
+	$(DEPLOY_CONDA_RUN) sed -e 's\|@@DOCKER_IMAGE_TAG@@\|$(DOCKER_IMAGE_TAG)\|g' \
+		-e 's\|@@STAGE@@\|$(STAGE)\|g' deploy/kustomization.tpl.yml > deploy/kustomization.yml
+	cat deploy/kustomization.yml
+	$(KUBECTL) kustomize deploy > deploy.yml
+	rm -f deploy/kustomization.yml

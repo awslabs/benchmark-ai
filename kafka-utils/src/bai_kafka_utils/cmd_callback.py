@@ -67,6 +67,7 @@ class KafkaCommandCallback(KafkaServiceCallback):
                 kw_args["kafka_service"] = kafka_service
 
             params = OrderedDict(sig.parameters)
+
             # Remove positionals
             orderparams = list(params)
             for i in range(0, min(len(pos_args), len(orderparams))):
@@ -74,12 +75,14 @@ class KafkaCommandCallback(KafkaServiceCallback):
 
             # Remove named
             for k in kw_args:
-                del params[k]
+                if k in params:
+                    del params[k]
 
             from_event = vars(event)
             for key in from_event.keys() & params.keys():
                 kw_args[key] = from_event[key]
             try:
+                logger.info(f"executing {command}({pos_args}, {kw_args})")
                 result = method(*pos_args, **kw_args)
             except TypeError as e:
                 logger.exception("Method invocation failed")

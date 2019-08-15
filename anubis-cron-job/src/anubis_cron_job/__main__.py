@@ -16,7 +16,9 @@ from anubis_cron_job.config import get_config
 
 
 def create_benchmark_event(scheduled_benchmark_event: FetcherBenchmarkEvent) -> FetcherBenchmarkEvent:
-    benchmark_event = dataclasses.replace(scheduled_benchmark_event, action_id=generate_uuid())
+    benchmark_event = dataclasses.replace(
+        scheduled_benchmark_event, action_id=generate_uuid(), parent_action_id=scheduled_benchmark_event.action_id
+    )
 
     # Set scheduling to single run
     info = benchmark_event.payload.toml.contents.get("info")
@@ -61,7 +63,7 @@ def main(argv=None):
         event_emitter.send_status_message_event(
             handled_event=scheduled_benchmark_event,
             status=Status.SUCCEEDED,
-            msg=f"Spawning benchmark with action_id: {benchmark_event.action_id}",
+            msg=f"Spawning benchmark with action_id: [{benchmark_event.action_id}]",
         )
         logging.debug("Closing producer")
         kafka_producer.close()

@@ -22,18 +22,30 @@ phases:
       - |
         if [ "${RUN_INTEGRATION_TESTS}" != "false" ]; then
             # Start k8s 1.12 cluster
-            kind create cluster --image=$K8S_KINDEST_V12
+            kind create cluster --image=$K8S_KINDEST_V12 --config=integration-test-cluster.yml
             # Prebuild the docker image in parallel to cluster initialization
             # Since we don't push anything, we don't care about the hash - so no dependency on git
-            make docker_package COMMIT_SHORT_HASH="local-latest"
             # Now we need the cluster
             export KUBECONFIG=$(kind get kubeconfig-path)
             kubectl wait --for=condition=ready --timeout=120s node/kind-control-plane
-            kubectl label node kind-control-plane failure-domain.beta.kubernetes.io/zone=test-zone node.type=bai-worker beta.kubernetes.io/instance-type=local
+            kubectl label node kind-worker failure-domain.beta.kubernetes.io/zone=test-zone node.type=bai-worker beta.kubernetes.io/instance-type=local
+            kubectl label node kind-worker2 node.type=bai-services-cheap
             kubectl apply -f ../metrics-pusher/metrics-pusher-roles.yaml
 
+            # Build docker images
+            cd ../anubis-cron-job
+            make docker_package COMMIT_SHORT_HASH="local-latest"
+            make publish STAGE=local LOCAL_PUBLISH="kind load docker-image " COMMIT_SHORT_HASH="local-latest"
+
+            cd ../metrics-pusher
+            make docker_package COMMIT_SHORT_HASH="local-latest"
+            make publish STAGE=local LOCAL_PUBLISH="kind load docker-image " COMMIT_SHORT_HASH="local-latest"
+
+            cd ../executor
+            make docker_package COMMIT_SHORT_HASH="local-latest"
             make publish STAGE=local LOCAL_PUBLISH="kind load docker-image " COMMIT_SHORT_HASH="local-latest"
             make deploy STAGE=local COMMIT_SHORT_HASH="local-latest"
+
             # All the containers are probably just creating
             kubectl get pods
             kubectl wait --for=condition=ready --timeout=120s pod/zookeeper-0

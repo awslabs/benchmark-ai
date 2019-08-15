@@ -5,6 +5,7 @@ metadata:
   labels:
     app: benchmark-ai
     action-id: {event.action_id}
+    parent-action-id: '{event.parent_action_id}'
     client-id: {event.client_id}
     created-by: {service_name}
 spec:
@@ -13,6 +14,7 @@ spec:
       labels:
         app: benchmark-ai
         action-id: {event.action_id}
+        parent-action-id: '{event.parent_action_id}'
         client-id: {event.client_id}
         created-by: {service_name}
       annotations:

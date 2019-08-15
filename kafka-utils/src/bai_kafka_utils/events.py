@@ -7,6 +7,9 @@ from dataclasses_json import dataclass_json
 from typing import List, Optional, Type, Dict, Any, TypeVar, Union
 
 
+_REQUIRED = object()
+
+
 class FetcherStatus(Enum):
     def __new__(cls, val: str, final: bool, success: bool):
         obj = object.__new__(cls)
@@ -122,16 +125,25 @@ class VisitedService:
 @dataclass_json
 @dataclass
 class BenchmarkEvent:
-    action_id: str
-    message_id: str
-    client_id: str
-    client_version: str
-    client_username: str
-    authenticated: bool
-    tstamp: int
-    visited: List[VisitedService]
-    type: str
-    payload: Any
+    action_id: str = _REQUIRED
+    parent_action_id: Optional[str] = ""
+    message_id: str = _REQUIRED
+    client_id: str = _REQUIRED
+    client_version: str = _REQUIRED
+    client_username: str = _REQUIRED
+    authenticated: bool = _REQUIRED
+    tstamp: int = _REQUIRED
+    visited: List[VisitedService] = _REQUIRED
+    type: str = _REQUIRED
+    payload: Any = _REQUIRED
+
+    def __post_init__(self):
+        # We cannot add parent_action_id as an optional with default value
+        # as this breaks the sub-classes. Therefore, we attach default values
+        # to all fields and simulate the required fields.
+        for field in self.__dict__.keys():
+            if self.__dict__[field] == _REQUIRED:
+                raise TypeError(f"__init__ missing 1 required argument: '{field}'")
 
 
 @dataclass_json
@@ -243,9 +255,14 @@ class StatusMessageBenchmarkEvent(BenchmarkEvent):
     regarding her benchmark.
     """
 
-    message: str
-    status: Status
-    payload: Any
+    message: str = _REQUIRED
+    status: Status = _REQUIRED
+    payload: Any = _REQUIRED
+
+    def __post_init__(self):
+        for field in self.__dict__.keys():
+            if self.__dict__[field] == _REQUIRED:
+                raise TypeError(f"__init__ missing 1 required argument: '{field}'")
 
     @classmethod
     def create_from_event(cls, status: Status, message: str, event: BenchmarkEvent):
