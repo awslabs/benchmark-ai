@@ -52,8 +52,7 @@ class KubernetesTestUtilsClient:
         label_selector = ServiceLabels.get_label_selector(self.service, client_id, action_id)
         logger.info(f"cron job selector request:{label_selector}")
         cron_jobs: V1beta1CronJobList = self.beta_api_instance.list_namespaced_cron_job(
-            namespace,
-            label_selector=label_selector
+            namespace, label_selector=label_selector
         )
         return bool(cron_jobs.items)
 
@@ -72,13 +71,14 @@ class KubernetesTestUtilsClient:
         namespace: str,
         client_id: str,
         action_id: str,
-        duration: int = DEFAULT_TIMEOUT_SECONDS
+        duration: int = DEFAULT_TIMEOUT_SECONDS,
     ):
         @timeout(duration)
         def fn():
             while predicate(namespace, client_id, action_id):
                 logger.info(msg)
                 sleep(1)
+
         fn()
 
     def wait_for_volume_claim_exists(self, namespace: str, client_id: str, action_id: str):

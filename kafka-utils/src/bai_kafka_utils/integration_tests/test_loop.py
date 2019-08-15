@@ -36,12 +36,8 @@ class CombinedFilter(EventFilter):
 
 
 def wait_for_response(
-    filter_event: EventFilter,
-    kafka_consumer_of_produced:
-    KafkaConsumer,
-    duration: int = WAIT_TIMEOUT
+    filter_event: EventFilter, kafka_consumer_of_produced: KafkaConsumer, duration: int = WAIT_TIMEOUT
 ):
-
     @timeout(duration)
     def fn():
         while True:
@@ -88,10 +84,7 @@ def get_is_command_return_filter(
 
 
 def get_cancel_event(template_event: BenchmarkEvent, cmd_submit_topic: str, cascade: bool = False):
-    cmd_args = {
-        "target_action_id": template_event.action_id,
-        "cascade": cascade
-    }
+    cmd_args = {"target_action_id": template_event.action_id, "cascade": cascade}
     cancel_payload = CommandRequestPayload(command="cancel", args=cmd_args)
     return dataclasses.replace(
         template_event, payload=cancel_payload, action_id=template_event.action_id + "_cancel", type=cmd_submit_topic
