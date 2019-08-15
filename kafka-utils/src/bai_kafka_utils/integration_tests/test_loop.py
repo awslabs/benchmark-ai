@@ -35,18 +35,27 @@ class CombinedFilter(EventFilter):
         return not self.set_filters
 
 
-@timeout(WAIT_TIMEOUT)
-def wait_for_response(filter_event: EventFilter, kafka_consumer_of_produced: KafkaConsumer):
-    while True:
-        records = kafka_consumer_of_produced.poll(POLL_TIMEOUT_MS)
-        print("Got this:")
-        print(records)
-        kafka_consumer_of_produced.commit()
-        for topic, recs in records.items():
-            for msg in recs:
-                print(f"Got event {msg.value}")
-                if filter_event(msg.value):
-                    return
+def wait_for_response(
+    filter_event: EventFilter,
+    kafka_consumer_of_produced:
+    KafkaConsumer,
+    duration: int = WAIT_TIMEOUT
+):
+
+    @timeout(duration)
+    def fn():
+        while True:
+            records = kafka_consumer_of_produced.poll(POLL_TIMEOUT_MS)
+            print("Got this:")
+            print(records)
+            kafka_consumer_of_produced.commit()
+            for topic, recs in records.items():
+                for msg in recs:
+                    print(f"Got event {msg.value}")
+                    if filter_event(msg.value):
+                        return
+
+    fn()
 
 
 def get_is_status_filter(
@@ -78,8 +87,12 @@ def get_is_command_return_filter(
     return filter_command_event
 
 
-def get_cancel_event(template_event: BenchmarkEvent, cmd_submit_topic: str):
-    cancel_payload = CommandRequestPayload(command="cancel", args={"target_action_id": template_event.action_id})
+def get_cancel_event(template_event: BenchmarkEvent, cmd_submit_topic: str, cascade: bool = False):
+    cmd_args = {
+        "target_action_id": template_event.action_id,
+        "cascade": cascade
+    }
+    cancel_payload = CommandRequestPayload(command="cancel", args=cmd_args)
     return dataclasses.replace(
         template_event, payload=cancel_payload, action_id=template_event.action_id + "_cancel", type=cmd_submit_topic
     )
