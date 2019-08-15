@@ -45,7 +45,7 @@ phases:
             make docker_package COMMIT_SHORT_HASH="local-latest"
             make publish STAGE=local LOCAL_PUBLISH="kind load docker-image " COMMIT_SHORT_HASH="local-latest"
             make deploy STAGE=local COMMIT_SHORT_HASH="local-latest"
-        
+
             # All the containers are probably just creating
             kubectl get pods
             kubectl wait --for=condition=ready --timeout=120s pod/zookeeper-0
