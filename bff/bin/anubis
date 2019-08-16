@@ -130,7 +130,7 @@ This is the command-line, client-side interface to the Bechmark AI service...
           --show-descriptor [<action-id>]       : shows the descriptor acknowledged by Anubis
           --last-action-id         : displays the last action id from a valid submission
           --cancel   <action id>   : cancels the current, in progress, submission
-          --cancel*  <action id>   : cancels the current, in progress, submission and all descendant processes
+          --purge    <action id>   : cancels the current, in progress, submission and all descendant processes
           --check-version          : checks to see if the version you are running is the latest posted (not yet implemented)
           --upgrade                : fetches latest version of this tool [%s]
           --sync-version           : synchronized this tool with that of the service endpoint
@@ -790,7 +790,7 @@ main() {
                     abort_submission ${@} ; shift
                     exit $?
                     ;;
-                --abort\* | --cancel\*)
+                --abort\* | --cancel\* | --purge)
                     shift
                     abort_submission ${@} '{ "cascade" : true }'; shift
                     exit $?
