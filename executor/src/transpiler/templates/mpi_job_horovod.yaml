@@ -6,7 +6,6 @@ metadata:
   labels:
     benchmark: {job_id}
     action-id: {event.action_id}
-    parent-action-id: '{event.parent_action_id}'
     client-id: {event.client_id}
     created-by: {service_name}
 data:
@@ -28,7 +27,6 @@ metadata:
   labels:
     benchmark: {job_id}
     action-id: {event.action_id}
-    parent-action-id: '{event.parent_action_id}'
     client-id: {event.client_id}
     created-by: {service_name}
 subjects:
@@ -49,7 +47,6 @@ metadata:
   labels:
     app: benchmark-ai
     action-id: {event.action_id}
-    parent-action-id: '{event.parent_action_id}'
     client-id: {event.client_id}
     created-by: {service_name}
 spec:
@@ -61,7 +58,6 @@ spec:
       labels:
         app: benchmark-ai
         action-id: {event.action_id}
-        parent-action-id: '{event.parent_action_id}'
         client-id: {event.client_id}
         created-by: {service_name}
     spec:
