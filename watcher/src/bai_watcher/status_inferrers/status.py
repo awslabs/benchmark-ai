@@ -32,6 +32,7 @@ class BenchmarkJobStatus(Enum):
             BenchmarkJobStatus.FAILED_AT_INIT_CONTAINERS,
             BenchmarkJobStatus.FAILED_AT_BENCHMARK_CONTAINER,
             BenchmarkJobStatus.FAILED_AT_SIDECAR_CONTAINER,
+            BenchmarkJobStatus.JOB_DOES_NOT_EXIST,
         )
 
     def is_running(self):
