@@ -5,18 +5,18 @@ metadata:
   labels:
     app: benchmark-ai
     action-id: ACTION_ID
-    parent-action-id: parentactionid
     client-id: CLIENT_ID
     created-by: executor
+    parent-action-id: parentactionid
 spec:
   template:
     metadata:
       labels:
         app: benchmark-ai
         action-id: ACTION_ID
-        parent-action-id: parentactionid
         client-id: CLIENT_ID
         created-by: executor
+        parent-action-id: parentactionid
       annotations:
         iam.amazonaws.com/role: benchmark-host
     spec:

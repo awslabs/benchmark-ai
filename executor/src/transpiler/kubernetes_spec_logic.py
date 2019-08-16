@@ -3,6 +3,7 @@ import itertools
 
 import ruamel.yaml as yaml
 
+from itertools import chain
 from typing import Dict, Any
 
 # Using the official Kubernetes Model classes (https://github.com/kubernetes-client/python) is avoided here
@@ -147,6 +148,29 @@ class KubernetesRootObjectHelper:
                 container_name, [c.name for c in itertools.chain(containers, init_containers)]
             )
         )
+
+    def add_label(self, key, value):
+        k8s_objs = list(chain([self._root], self.config_maps, self.role_bindings))
+
+        for k8s_obj in k8s_objs:
+            self._add_label(k8s_obj, key, value)
+
+    @staticmethod
+    def _add_label(k8s_obj: Dict[Any, Any], key: str, value: str):
+        if not k8s_obj:
+            return
+
+        nodes = [k8s_obj]
+
+        while nodes:
+            current = nodes.pop(0)
+            if isinstance(current, Dict):
+                if current.get("metadata"):
+                    if not current.metadata.get("labels"):
+                        current.metadata["labels"] = {}
+                    current.metadata["labels"][key] = value
+
+                nodes.extend(current.values())
 
     def remove_volume(self, volume_name: str):
         """

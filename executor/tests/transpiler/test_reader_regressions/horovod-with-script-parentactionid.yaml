@@ -6,9 +6,9 @@ metadata:
   labels:
     benchmark: benchmark-job-id
     action-id: ACTION_ID
-    parent-action-id: parentactionid
     client-id: CLIENT_ID
     created-by: executor
+    parent-action-id: parentactionid
 subjects:
 - kind: ServiceAccount
   name: benchmark-job-id-launcher
@@ -26,9 +26,9 @@ metadata:
   labels:
     benchmark: benchmark-job-id
     action-id: ACTION_ID
-    parent-action-id: parentactionid
     client-id: CLIENT_ID
     created-by: executor
+    parent-action-id: parentactionid
 data:
   entrypoint.sh: |
     #!/bin/bash
@@ -49,9 +49,9 @@ metadata:
   labels:
     app: benchmark-ai
     action-id: ACTION_ID
-    parent-action-id: parentactionid
     client-id: CLIENT_ID
     created-by: executor
+    parent-action-id: parentactionid
 spec:
   replicas: 2
   template:
@@ -61,9 +61,9 @@ spec:
       labels:
         app: benchmark-ai
         action-id: ACTION_ID
-        parent-action-id: parentactionid
         client-id: CLIENT_ID
         created-by: executor
+        parent-action-id: parentactionid
     spec:
       serviceAccountName: metrics-pusher
       affinity:
