@@ -2,9 +2,9 @@ from unittest.mock import call
 
 import kafka
 import pytest
-
 from bai_kafka_utils.events import Status, ExecutorBenchmarkEvent, ExecutorPayload, BenchmarkDoc, BenchmarkJob
 from bai_kafka_utils.kafka_service import KafkaServiceConfig, KafkaService
+
 from bai_watcher.args import WatcherServiceConfig
 from bai_watcher.kafka_service_watcher import create_service, WatchJobsEventHandler, choose_status_from_benchmark_status
 from bai_watcher.status_inferrers.status import BenchmarkJobStatus
@@ -19,6 +19,11 @@ GRAFANA_RESULTS_URL = "{grafana_endpoint}/{dashboard_id}/client_id={client_id}/a
 GRAFANA_OP_METRICS_DASHBOARD_UID = "op-metrics-uid"
 JOB_START_TIME = 1000
 JOB_END_TIME = 2000
+
+
+@pytest.fixture
+def k8s_job_watcher(mocker):
+    return mocker.patch("bai_watcher.kafka_service_watcher.KubernetesJobWatcher", autospec=True)
 
 
 @pytest.fixture
@@ -40,7 +45,7 @@ def kubernetes_config(mocker):
 
 
 @pytest.fixture
-def watcher_config():
+def watcher_service_config():
     return WatcherServiceConfig(
         kubernetes_namespace_of_running_jobs=KUBERNETES_NAMESPACE,
         kubeconfig=MOCK_KUBECONFIG,
@@ -50,7 +55,20 @@ def watcher_config():
     )
 
 
-def test_create_service(mocker, kafka_service_config, watcher_config):
+@pytest.fixture
+def kafka_service(mocker, kafka_service_config, watcher_service_config):
+    kafka_producer_class = mocker.patch.object(kafka, "KafkaProducer")
+    kafka_consumer_class = mocker.patch.object(kafka, "KafkaConsumer")
+    _ = mocker.patch(
+        "bai_watcher.kafka_service_watcher.create_kafka_consumer_producer",
+        return_value=(kafka_consumer_class, kafka_producer_class),
+        autospec=True,
+    )
+
+    return create_service(kafka_service_config, watcher_service_config)
+
+
+def test_create_service(mocker, kafka_service_config, watcher_service_config):
     kafka_producer_class = mocker.patch.object(kafka, "KafkaProducer")
     kafka_consumer_class = mocker.patch.object(kafka, "KafkaConsumer")
     mock_create_consumer_producer = mocker.patch(
@@ -59,23 +77,25 @@ def test_create_service(mocker, kafka_service_config, watcher_config):
         autospec=True,
     )
 
-    service = create_service(kafka_service_config, watcher_config)
+    service = create_service(kafka_service_config, watcher_service_config)
 
     assert isinstance(service, KafkaService)
     mock_create_consumer_producer.assert_called_once()
 
 
-def test_constructor_loads_kubernetes_config_with_inexistent_kubeconfig_file(kubernetes_config, watcher_config):
-    watcher_config.kubeconfig = "inexistent-path"
-    WatchJobsEventHandler(watcher_config)
+def test_constructor_loads_kubernetes_config_with_inexistent_kubeconfig_file(kubernetes_config, watcher_service_config):
+    watcher_service_config.kubeconfig = "inexistent-path"
+    WatchJobsEventHandler(watcher_service_config)
     assert kubernetes_config.load_incluster_config.call_args_list == [call()]
     assert kubernetes_config.load_kube_config.call_args_list == []
 
 
-def test_constructor_loads_kubernetes_config_with_existing_kubeconfig_file(kubernetes_config, datadir, watcher_config):
+def test_constructor_loads_kubernetes_config_with_existing_kubeconfig_file(
+    kubernetes_config, datadir, watcher_service_config
+):
     kubeconfig_filename = str(datadir / "kubeconfig")
-    watcher_config.kubeconfig = kubeconfig_filename
-    WatchJobsEventHandler(watcher_config)
+    watcher_service_config.kubeconfig = kubeconfig_filename
+    WatchJobsEventHandler(watcher_service_config)
     assert kubernetes_config.load_incluster_config.call_args_list == []
     assert kubernetes_config.load_kube_config.call_args_list == [call(kubeconfig_filename)]
 
@@ -105,8 +125,8 @@ def benchmark_event():
     )
 
 
-def test_get_metrics_available_message(watcher_config, benchmark_event):
-    watcher = WatchJobsEventHandler(watcher_config)
+def test_get_metrics_available_message(watcher_service_config, benchmark_event):
+    watcher = WatchJobsEventHandler(watcher_service_config)
     message = watcher._get_metrics_available_message(benchmark_event, JOB_START_TIME, JOB_END_TIME)
 
     expected_grafana_url = GRAFANA_RESULTS_URL.format(
@@ -120,3 +140,23 @@ def test_get_metrics_available_message(watcher_config, benchmark_event):
     expected_message = watcher.MESSAGE_METRICS_AVAILABLE.format(action_id=ACTION_ID, results_url=expected_grafana_url)
 
     assert message == expected_message
+
+
+def test_status_callback_returns_false_on_job_not_found(
+    k8s_job_watcher, watcher_service_config, benchmark_event, kafka_service
+):
+    """
+    Checks BenchmarkJobStatus.JOB_DOES_NOT_EXIST makes the status callback return True,
+    thus terminating the watcher thread for that job id
+    """
+    job_id = benchmark_event.payload.job.id
+
+    # setup event handler
+    watcher = WatchJobsEventHandler(watcher_service_config)
+    watcher.watchers[job_id] = k8s_job_watcher
+
+    # create status callback function
+    status_callback = watcher._make_status_callback(benchmark_event, kafka_service)
+
+    assert status_callback(job_id, BenchmarkJobStatus.JOB_DOES_NOT_EXIST, k8s_job_watcher) is True
+    assert job_id not in watcher.watchers

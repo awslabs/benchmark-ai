@@ -1,12 +1,12 @@
 import time
-from typing import Tuple
+from typing import Callable, Tuple
 
 import kubernetes
-
 from bai_kafka_utils.events import ExecutorBenchmarkEvent, Status
 from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
 from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService, KafkaServiceConfig
 from bai_kafka_utils.utils import get_pod_name
+
 from bai_watcher import SERVICE_NAME, __version__, service_logger
 from bai_watcher.args import WatcherServiceConfig
 from bai_watcher.kubernetes_job_watcher import KubernetesJobWatcher, load_kubernetes_config
@@ -53,15 +53,9 @@ class WatchJobsEventHandler(KafkaServiceCallback):
 
         load_kubernetes_config(config.kubeconfig)
 
-    def handle_event(self, event: ExecutorBenchmarkEvent, kafka_service: KafkaService):
-        job_id = event.payload.job.id
-        if job_id in self.watchers:
-            # This shouldn't happen, so it is here more as a protection mechanism
-            logger.warning("There is already a watcher for job '%s'", job_id)
-            return
-
-        logger.info("Starting to watch the job '%s'", job_id)
-
+    def _make_status_callback(
+        self, event: ExecutorBenchmarkEvent, kafka_service: KafkaService
+    ) -> Callable[[str, BenchmarkJobStatus, KubernetesJobWatcher], bool]:
         def callback(job_id, benchmark_job_status: BenchmarkJobStatus, watcher: KubernetesJobWatcher):
             # This method is called at each thread (not the Main Thread)
             logger.info(f"Benchmark job '{job_id}'' has status '{benchmark_job_status}'")
@@ -89,9 +83,19 @@ class WatchJobsEventHandler(KafkaServiceCallback):
                 return True
             return False
 
+        return callback
+
+    def handle_event(self, event: ExecutorBenchmarkEvent, kafka_service: KafkaService):
+        job_id = event.payload.job.id
+        if job_id in self.watchers:
+            # This shouldn't happen, so it is here more as a protection mechanism
+            logger.warning("There is already a watcher for job '%s'", job_id)
+            return
+
+        logger.info("Starting to watch the job '%s'", job_id)
         watcher = KubernetesJobWatcher(
             job_id,
-            callback,
+            self._make_status_callback(event, kafka_service),
             kubernetes_client_jobs=kubernetes.client.BatchV1Api(),
             kubernetes_client_pods=kubernetes.client.CoreV1Api(),
             kubernetes_namespace=self.config.kubernetes_namespace_of_running_jobs,
