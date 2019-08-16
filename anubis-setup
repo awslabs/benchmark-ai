@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+
+conda_usage() {
+    printf "
+
+ Anubis Setup uses Conda to provide a predictable running environment.
+ Make sure you have Conda installed. We recommend installing miniconda
+ via https://docs.conda.io/en/latest/miniconda.html
+
+ Once Conda is installed run the following:
+
+ %s --env-setup
+
+ And then re-run the ${0##*/} command :-)
+
+" "${0##*/}"
+    exit 9
+}
+
+#TODO - add the dependencies that cover some of the other tools this script needs:
+#  uuidgen
+#  hostname
+#  tar
+env_setup() {
+    if ! conda --version; then conda_usage; fi;
+    local tmp_environment_file=$(mktemp "/tmp/${0##*/}-XXXXXXXXX").yml
+    ((DEDBUG)) && echo "${tmp_environment_file}"
+    cat <<EOF > "${tmp_environment_file}"
+name: anubis-setup
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - sed 4.7
+  - terraform 0.12.*
+  - python 3.7.*
+  - boto3
+  - requests
+  - pip
+  - pip:
+    - pyfiglet
+    - python-terraform
+EOF
+    cmd="conda env update -f ${tmp_environment_file}"
+    ${cmd}
+    rm "${tmp_environment_file}"
+    [ -f "${tmp_environment_file%.*}" ] && rm "${tmp_environment_file%.*}"
+
+    printf "
+  Please proceed with your %s shenanigans
+
+" "${0##*/}"
+}
+
+if [ $1 = "--env-setup" ]; then
+    env_setup
+    exit $?
+fi
+
+if ! source "${CONDA_EXE%/*}"/activate anubis-setup >& /dev/null; then
+    printf "
+  Oops, there seems to be a problem with Conda...
+        (Co you have Conda installed? Is it in your \$PATH?)\n"
+    conda_usage
+fi
+
+DEBUG=${DEBUG:-0}
+VERBOSE=${VERBOSE:-0}
+
+## put code here
+
+#TODO
+#Manual setup, (pipeline free)
+# ci/baictl create infra --aws-prefix-list-id=pl-f8a64391 --aws-region=us-west-2
+# build-and-deploy-all-services
+
+#Pipeline setup
+# ci/anubis-pipeline.py --region=us-west-1
+
+main() {
+    (cd ci; anubis-driver.py $@)
+}
+
+main $@
