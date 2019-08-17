@@ -57,26 +57,41 @@
 (def stored-scripts (atom #{}))
 
 (defn update-status-store
-  "client-id -> action-id -> [events] : Using a map as an indexed event
+  "Stores an event (map) in the event in a {k{k[v]}} database based on
+  client-id -> action-id -> events : Using a map as an indexed event
   store, this function updates the store. The store is built as map of
   maps of vectors that hold the trail of events.  In this case status
   messages.
 
-  Semantically
-  - use client id and transform that value into a keyword to index on.
-  - use target_action_id iff set, otherwise use action_id; and transform that into a keyword to index on.
-    (the second case it to support commands that have their own, different action_id but will carry the action id that their action is targeted for as target_action_id.  We want the commands to be indexed into the same bucket [technically map] as the action they were intended to affect.) Get it? Gyot it?
+  *Developer insight:*
+  The spirit of this function is that you pass it an event and
+  fuggedaboutdit.  The function will index and store the event
+  appropriately.  There are times when we want to override / usurp the
+  secondary index field (the action-id) with another value.  On those
+  occasions use the keyword arg `:usurping-index` to inject a
+  different secondary index to be used.
+
+  Indeed, this function is opinionated with a bias toward enforcing
+  the structure of the event (it must have a client-id and action-id,
+  at the top level).  It makes the choice for using another indexing
+  value as an explicit call - further enforcing the explicit
+  cognizance of this action by use of keyword arg.  The specific use
+  case that motivated this functionality is when a command return
+  event is encountered, we want that command return event to be in the
+  same index bucket as the target action it was affecting.  This way
+  you can get a more clear lineage of events as associated with a
+  particular action. Get it? Gyot it? Good. :-)
 
   Caveat - there is no dedupping or sorting (by time) in the event
   vector.  This is a TODO item, which means that since atomic calls
   can be re-run at anytime, we should make sure this function is pure
   and right now it is not - not without sorting and dedupping."
-  [store event]
+  [store event & {:keys [usurping-index]}]
   (log/trace "update-status-store called...")
   (if (nil? event)
     store
-    (let [{:keys [client_id action_id target_action_id] :or {target_action_id nil}} event
-          [client-key action-key] (mapv keyword [client_id (or target_action_id action_id)])]
+    (let [{:keys [client_id action_id]} event
+          [client-key action-key] (mapv keyword [client_id (or usurping-index action_id)])]
       (if (and client-key action-key)
         (try
           (assoc-in store [client-key action-key] (vec (remove nil? (flatten (vector (some-> store client-key action-key) event)))))
@@ -106,7 +121,7 @@
   (when (seq events)
     (log/trace (str "Processing "(count events)" command events"))
     (doseq [event events] ; <- I should do this loop with recursion and then only have a single call to swap! at the end... meh.
-      (if-not (nil? event) (swap! status-db update-status-store event))))
+      (if-not (nil? event) (swap! status-db update-status-store event :usurping-index (some-> event :payload :cmd_submit :payload :args :target_action_id)))))
   true)
 
 (defn get-all-jobs
