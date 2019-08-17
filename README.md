@@ -113,19 +113,20 @@ any updates would have to be done manually by running the script again.
 
 ----
 
-As you probably guessed, under the hood, the CreateInfra stage is using `baictl` which:
+The installation process... consists of two phases - setting up "infrastructure" and deploying orchestration services.
 
+Infrastructure:
 - Uses [terraform](https://www.terraform.io/) to create all of the AWS infrastructure:
     - [EKS](https://aws.amazon.com/eks) cluster
     - [Elasticsearch](https://aws.amazon.com/elasticsearch-service/) cluster
     - [MSK](http://aws.amazon.com/msk) cluster
     - [Prometheus](https://prometheus.io/) broker and Alert Manager
-- Adds Pods to Kubernetes. Some of them are:
+- Adds Pods to Kubernetes:
     - FluentD
     - Autoscaler
     - NVIDIA device plugin
 
-And the Deploy stage deploys the orchestration services:
+Orchestration services:
  - BFF
  - Fetcher
  - Executor
