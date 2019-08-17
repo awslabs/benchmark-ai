@@ -18,6 +18,7 @@ Anubis provides a simple, self service solution for teams to schedule and run be
 * Designed to be future proof
 * Built around open standards
 * Cloud native, cloud ready and cloud scalable*
+* Operational Metrics
 
 *Takes advantage of your cloud provider or datacenter's available resources - currently supports AWS out-of-the-box"
 
@@ -101,24 +102,23 @@ terraform apply
 
 Type 'yes' when prompted and terraform will create the Codebuild pipeline and its dependencies.  When terraform finishes navigate to the AWS console -> Codebuild -> Pipeline -> Pipelines -> Anubis on the console to see the status of the installation
 
-As you probably guessed, under the hood, the CreateInfra stage is using `baictl` which is:
+As you probably guessed, under the hood, the CreateInfra stage is using `baictl` which:
 
-- Using [terraform](https://www.terraform.io/) to create all of the AWS infrastructure:
-    - an [EKS](https://aws.amazon.com/eks) cluster
-    - an [Elasticsearch](https://aws.amazon.com/elasticsearch-service/) cluster
-    - a [MSK](http://aws.amazon.com/msk) cluster
-    - a  [Prometheus](https://prometheus.io/) broker and Alert Manager
-- Adding some Pods to Kubernetes. Some of them are:
+- Uses [terraform](https://www.terraform.io/) to create all of the AWS infrastructure:
+    - [EKS](https://aws.amazon.com/eks) cluster
+    - [Elasticsearch](https://aws.amazon.com/elasticsearch-service/) cluster
+    - [MSK](http://aws.amazon.com/msk) cluster
+    - [Prometheus](https://prometheus.io/) broker and Alert Manager
+- Adds Pods to Kubernetes. Some of them are:
     - FluentD
     - Autoscaler
     - NVIDIA device plugin
 
-And the Deploy stage is running `make deploy` on the various services:
- - Executor
- - Fetcher
- - Watcher
+And the Deploy stage deploys the orchestration services:
  - BFF
- - ...
+ - Fetcher
+ - Executor
+ - Watcher
 
 **Advanced usage**: The directory `baictl/drivers/aws/cluster/.terraform/bai` is created with everything related to the infrastructure (kubeconfig, bastion_private.pem, etc.).
 
@@ -169,10 +169,18 @@ Explore the [descriptor file format](executor/README.md)
 in order to run your benchmarks in Benchmark AI. Make sure to post metrics by integrating the [client library](https://github.com/MXNetEdge/benchmark-ai/tree/master/client-lib)
 in your code.
 
-Other interesting features:
+Future Feature Roadmap...
 
-- Cronjobs (https://github.com/MXNetEdge/benchmark-ai/issues/24)
-- Distributed ML training benchmarks (https://github.com/MXNetEdge/benchmark-ai/issues/28)
+- [x] Cronjobs
+- [ ] Global status state
+- [ ] User Metrics
+- [ ] AWS: Cloudwatch exporting
+- [ ] Alerting
+- [ ] AWS: Improved AZ selection
+- [ ] Distributed ML training benchmarks
+- [ ] Range capabilities in TOML
+- [ ] Persistent raw event and log storage
+- [ ] Report generation
 
 # Design and architecture
 
@@ -187,6 +195,23 @@ The system is built to embody a few guiding tenets:
 
 ![Anubis design](docs/images/anubis_architecture_diagram.png "Anubis Design")
 
-# Supported cloud providers
+#### Technologies
 
+This project is an exercise in the amalgamation and orchestration of several technologies to create a tool that adds value to our users.
+
+- Python: (https://www.python.org/)
+- Clojure: (https://clojure.org/),  (https://www.braveclojure.com/do-things/)
+- Bash: (https://www.tldp.org/LDP/abs/html/)
+- Jq: (https://stedolan.github.io/jq/)
+- Conda: (https://docs.conda.io/projects/conda/en/latest/index.html)
+- Docker: (https://www.docker.com/)
+- Kafka: (http://kafka.apache.org/intro) (MSK)
+- Kubernetes: (https://kubernetes.io/) (EKS)
+- Prometheus: (https://prometheus.io/)
+- Terraform: (https://www.terraform.io/)
+- Zookeeper: (https://zookeeper.apache.org/)
+- ElasticSearch: (https://www.elastic.co/products/elasticsearch) (Managed ElasticSearch)
+
+# Supported cloud providers
+(currently)
 - AWS
