@@ -42,7 +42,7 @@ The other is the `anubis` client tool that allows users to...
 The envisioned use-case is that a team or group or org instantiates the service infrastructure to support its constituents.  As such only the "admin" needs to run `baictl`.  While all users of the service interact with it using the Anubis client tool (or via the direct HTTP API, for the adventurous)
 
 For more information on all commands, please see the [full documentation]() of `baictl`.<br>
-For more information on the `anubis` client, please see its [starter document](bff/docs/anubis-client.md).
+For more information on the `anubis` client, please see its [starter document](bff/docs/anubis-client.md).q
 
 <hr>
 <i>
@@ -86,21 +86,32 @@ git clone https://github.com/MXNetEdge/benchmark-ai.git
 cd benchmark-ai
 ```
 
+----
+
 ## Step 1 - Create the infrastructure
 
-**NOTE**: These steps will soon be replaced by a wrapper script to make your life easier!
+#### Via Code Pipeline (preferred)
 
 You will now create a Codebuild pipeline that deploys Anubis infrastructure and services in your AWS account using the default region us-east-1 (this can be changed from benchmark-ai/ci/variables.tf):
 
 ```bash
 # Assuming PWD is `benchmark-ai`
-cd ci
-conda env update && conda activate ci
-./terraform-init.py
-terraform apply
+anubis-setup --region=us-west-1
+```
+Type 'yes' when prompted and terraform will create the Codebuild pipeline and its dependencies.  When terraform finishes navigate to the AWS console -> Codebuild -> Pipeline -> Pipelines -> Anubis on the console to see the status of the installation
+
+
+#### One-Shot no-frills instantiation
+
+``` bash
+# Assuming PWD is `benchmark-ai`
+anubis-setup --no-pipeline --region=us-west-1
 ```
 
-Type 'yes' when prompted and terraform will create the Codebuild pipeline and its dependencies.  When terraform finishes navigate to the AWS console -> Codebuild -> Pipeline -> Pipelines -> Anubis on the console to see the status of the installation
+*NOTE* The one-shot instantiation of Anubis does not allow you the CI/CD affordances of the pipeline (above) method.
+any updates would have to be done manually by running the script again.
+
+----
 
 As you probably guessed, under the hood, the CreateInfra stage is using `baictl` which:
 
@@ -123,6 +134,8 @@ And the Deploy stage deploys the orchestration services:
 **Advanced usage**: The directory `baictl/drivers/aws/cluster/.terraform/bai` is created with everything related to the infrastructure (kubeconfig, bastion_private.pem, etc.).
 
 ## Step 2 - Run benchmarks
+
+To run benchmarks and generally interact with Anubis, use the [Anubis client tool](bff/bin/anubis) ([starter doc here](bff/docs/anubis-client.md)).
 
 Anubis provides some sample benchmarks at the `benchmark-ai/sample-benchmarks` directory. Let's run some of them:
 
