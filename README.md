@@ -86,13 +86,35 @@ git clone https://github.com/MXNetEdge/benchmark-ai.git
 cd benchmark-ai
 ```
 
-----
 
 ## Step 1 - Create the infrastructure
 
+#### Overview...
+The installation process... consists of two phases - 1) configuring and deploying *infrastructure* services, and then 2) configuring and deploying *orchestration* services.
+
+**Infrastructure**:
+- Uses [Terraform](https://www.terraform.io/) to create all of the infrastructure:
+    - Kubernetes - [EKS](https://aws.amazon.com/eks) cluster
+    - [Elasticsearch](https://aws.amazon.com/elasticsearch-service/) cluster
+    - Kafka - [MSK](http://aws.amazon.com/msk) cluster
+    - [Prometheus](https://prometheus.io/) broker and Alert Manager
+- Adds Pods to Kubernetes:
+    - FluentD
+    - Autoscaler
+    - NVIDIA device plugin
+
+**Orchestration services**:
+ - BFF
+ - Fetcher
+ - Executor
+ - Watcher
+----
+
+### Installation Options:
+
 #### Via Code Pipeline (preferred)
 
-You will now create a Codebuild pipeline that deploys Anubis infrastructure and services in your AWS account using the default region us-east-1 (this can be changed from benchmark-ai/ci/variables.tf):
+You will now create a Codebuild pipeline that deploys Anubis infrastructure and orchestration services in your AWS account using the default region us-east-1 (this can be changed from benchmark-ai/ci/variables.tf):
 
 ```bash
 # Assuming PWD is `benchmark-ai`
@@ -100,6 +122,7 @@ anubis-setup --region=us-west-1
 ```
 Type 'yes' when prompted and terraform will create the Codebuild pipeline and its dependencies.  When terraform finishes navigate to the AWS console -> Codebuild -> Pipeline -> Pipelines -> Anubis on the console to see the status of the installation
 
+**OR**
 
 #### One-Shot no-frills instantiation
 
@@ -108,29 +131,8 @@ Type 'yes' when prompted and terraform will create the Codebuild pipeline and it
 anubis-setup --no-pipeline --region=us-west-1
 ```
 
-*NOTE* The one-shot instantiation of Anubis does not allow you the CI/CD affordances of the pipeline (above) method.
-any updates would have to be done manually by running the script again.
+**NOTE**: The one-shot instantiation of Anubis does not provide you with the CI/CD capabilities of the pipeline method (above).  Any updates would have to be done manually by either building, publishing and deploying each of the services independently or doing so via the running the script again with the `--no-pipeline` option again.
 
-----
-
-The installation process... consists of two phases - setting up "infrastructure" and deploying orchestration services.
-
-Infrastructure:
-- Uses [Terraform](https://www.terraform.io/) to create all of the AWS infrastructure:
-    - [EKS](https://aws.amazon.com/eks) cluster
-    - [Elasticsearch](https://aws.amazon.com/elasticsearch-service/) cluster
-    - [MSK](http://aws.amazon.com/msk) cluster
-    - [Prometheus](https://prometheus.io/) broker and Alert Manager
-- Adds Pods to Kubernetes:
-    - FluentD
-    - Autoscaler
-    - NVIDIA device plugin
-
-Orchestration services:
- - BFF
- - Fetcher
- - Executor
- - Watcher
 
 **Advanced usage**: The directory `baictl/drivers/aws/cluster/.terraform/bai` is created with everything related to the infrastructure (kubeconfig, bastion_private.pem, etc.).
 
@@ -157,9 +159,9 @@ and the following will be done:
 - Metrics are collected into:
     - Prometheus
 
-Optional: Put bff/bin/anubis in your $PATH
+*hint: put bff/bin/anubis, or symlink to it, in your $PATH*
 
-Anubis supports "Script Mode".  This means along with posting the descriptor file, you may also include the code that you wish to run.  See our "Hello World" [README](sample-benchmarks/hello-world) for info on that.  Also look at the `anubis` client program [document](bff/docs/anubis-client.md) located in the bff service.
+Anubis supports "Script Mode".  This means along with posting the descriptor file, you may also specify and include the actual code that you wish to run.  This is a great way to more explicitly separate your model code from the framework you want to run. See our "Hello World" [README](sample-benchmarks/hello-world) for info on that.  Also look at the `anubis` client program [document](bff/docs/anubis-client.md) located in the bff service.
 
 ```bash
 #To watch the status messages showing the progress of the run
