@@ -39,7 +39,6 @@ dependencies:
   - pip
   - pip:
     - pyfiglet
-    - python-terraform
 EOF
     cmd="conda env update -f ${tmp_environment_file}"
     ${cmd}
