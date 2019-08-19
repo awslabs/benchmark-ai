@@ -18,6 +18,7 @@ Anubis provides a simple, self service solution for teams to schedule and run be
 * Designed to be future proof
 * Built around open standards
 * Cloud native, cloud ready and cloud scalable*
+* Operational Metrics
 
 *Takes advantage of your cloud provider or datacenter's available resources - currently supports AWS out-of-the-box"
 
@@ -27,21 +28,20 @@ Anubis provides a simple, self service solution for teams to schedule and run be
 
 <b>Anubis</b> provides <b>two</b> fundamental scripts.
 
-One is the `baictl` (BAI = Benchmark AI, ctl = control...clever huh!) utility.
-It is used to...
+One is the installer [`anubis-setup`](docs/anubis-setup.md), that is used to...
 
-- create the service infrastructure: `baictl create infra`
+- configure and create the Anubis infrastructure
 
-The other is the `anubis` client tool that allows users to...
+The other is the [`anubis`](bff/docs/anubis-client.md) client tool that allows users to...
 
 - run a benchmark: `anbis --submit resnet50-descriptor.toml`
 - monitor the progress of a run activities `anubis --status`
 - obtain information from a benchmark that was run: `anubis --results`
 
-The envisioned use-case is that a team or group or org instantiates the service infrastructure to support its constituents.  As such only the "admin" needs to run `baictl`.  While all users of the service interact with it using the Anubis client tool (or via the direct HTTP API, for the adventurous)
+The envisioned use-case is that a team or group or org instantiates the service infrastructure to be be used by its constituents. As such only the "admin" needs to run `anubis-setup`.  While all users of Anubis interact with it using the `anubis` client tool.
 
-For more information on all commands, please see the [full documentation]() of `baictl`.<br>
-For more information on the `anubis` client, please see its [starter document](bff/docs/anubis-client.md).
+For more information on how to use `anubis-setup`, including use case examples and option explanations, please see the [full documentation here](docs/anubis-setup.md).<br>
+For more information on how to use the `anubis` client, please see its [starter document](bff/docs/anubis-client.md).
 
 <hr>
 <i>
@@ -85,44 +85,64 @@ git clone https://github.com/MXNetEdge/benchmark-ai.git
 cd benchmark-ai
 ```
 
+
 ## Step 1 - Create the infrastructure
 
-**NOTE**: These steps will soon be replaced by a wrapper script to make your life easier!
+#### Overview...
+The installation process... consists of two phases - 1) configuring and deploying *infrastructure* services, and then 2) configuring and deploying *orchestration* services.
 
-You will now create a Codebuild pipeline that deploys Anubis infrastructure and services in your AWS account using the default region us-east-1 (this can be changed from benchmark-ai/ci/variables.tf):
-
-```bash
-# Assuming PWD is `benchmark-ai`
-cd ci
-conda env update && conda activate ci
-./terraform-init.py
-terraform apply
-```
-
-Type 'yes' when prompted and terraform will create the Codebuild pipeline and its dependencies.  When terraform finishes navigate to the AWS console -> Codebuild -> Pipeline -> Pipelines -> Anubis on the console to see the status of the installation
-
-As you probably guessed, under the hood, the CreateInfra stage is using `baictl` which is:
-
-- Using [terraform](https://www.terraform.io/) to create all of the AWS infrastructure:
-    - an [EKS](https://aws.amazon.com/eks) cluster
-    - an [Elasticsearch](https://aws.amazon.com/elasticsearch-service/) cluster
-    - a [MSK](http://aws.amazon.com/msk) cluster
-    - a  [Prometheus](https://prometheus.io/) broker and Alert Manager
-- Adding some Pods to Kubernetes. Some of them are:
+**Infrastructure**:
+- Uses [Terraform](https://www.terraform.io/) to create all of the infrastructure:
+    - Kubernetes - [EKS](https://aws.amazon.com/eks) cluster
+    - [Elasticsearch](https://aws.amazon.com/elasticsearch-service/) cluster
+    - Kafka - [MSK](http://aws.amazon.com/msk) cluster
+    - [Prometheus](https://prometheus.io/) broker and Alert Manager
+- Adds Pods to Kubernetes:
     - FluentD
     - Autoscaler
     - NVIDIA device plugin
 
-And the Deploy stage is running `make deploy` on the various services:
- - Executor
- - Fetcher
- - Watcher
+**Orchestration services**:
  - BFF
- - ...
+ - Fetcher
+ - Executor
+ - Watcher
+----
+
+### Installation Options:
+
+#### Via Code Pipeline (preferred)
+
+You will now create a Codebuild pipeline that deploys Anubis infrastructure and orchestration services in your AWS account using the default region us-east-1 (this can be changed from benchmark-ai/ci/variables.tf):
+
+```bash
+# Assuming PWD is `benchmark-ai`
+anubis-setup --region=us-east-1
+```
+Type 'yes' when prompted and terraform will create the Codebuild pipeline and its dependencies.  When terraform finishes navigate to the AWS console -> Codebuild -> Pipeline -> Pipelines -> Anubis on the console to see the status of the installation
+
+**OR**
+
+#### Via the "no frills" instantiation
+
+This form also does a full instantiation of the Anubis service (infrastructure and orchestration services).  However, with this installation mechanism you will **not** get any of the CI/CD benefits provided by code pipeline.  This means that to apply any updates you would have to do so explicitly by re-issuing the command or by using the appropriate flags that give you control down to the service level ([see documentation for more details](docs/anubis-setup.md)).  The "no frills" option is more high touch, and as such offers a bit more control over what services get updated, when and how.
+
+``` bash
+# Assuming PWD is `benchmark-ai`
+pushd baictl
+conda env update
+conda activate baictl
+./baictl create infra --aws-region={region} --aws-prefix-list-id={matching prefix list}
+popd
+./build-and-deploy-all-services 
+```
+
 
 **Advanced usage**: The directory `baictl/drivers/aws/cluster/.terraform/bai` is created with everything related to the infrastructure (kubeconfig, bastion_private.pem, etc.).
 
 ## Step 2 - Run benchmarks
+
+To run benchmarks and generally interact with Anubis, use the [Anubis client tool](bff/bin/anubis) ([starter doc here](bff/docs/anubis-client.md)).
 
 Anubis provides some sample benchmarks at the `benchmark-ai/sample-benchmarks` directory. Let's run some of them:
 
@@ -143,9 +163,9 @@ and the following will be done:
 - Metrics are collected into:
     - Prometheus
 
-Optional: Put bff/bin/anubis in your $PATH
+*hint: put bff/bin/anubis, or symlink to it, in your $PATH*
 
-Anubis supports "Script Mode".  This means along with posting the descriptor file, you may also include the code that you wish to run.  See our "Hello World" [README](sample-benchmarks/hello-world) for info on that.  Also look at the `anubis` client program [document](bff/docs/anubis-client.md) located in the bff service.
+Anubis supports "Script Mode".  This means along with posting the descriptor file, you may also specify and include the actual code that you wish to run.  This is a great way to more explicitly separate your model code from the framework you want to run. See our "Hello World" [README](sample-benchmarks/hello-world) for info on that.  Also look at the `anubis` client program [document](bff/docs/anubis-client.md) located in the bff service.
 
 ```bash
 #To watch the status messages showing the progress of the run
@@ -169,10 +189,18 @@ Explore the [descriptor file format](executor/README.md)
 in order to run your benchmarks in Benchmark AI. Make sure to post metrics by integrating the [client library](https://github.com/MXNetEdge/benchmark-ai/tree/master/client-lib)
 in your code.
 
-Other interesting features:
+Future Feature Roadmap...
 
-- Cronjobs (https://github.com/MXNetEdge/benchmark-ai/issues/24)
-- Distributed ML training benchmarks (https://github.com/MXNetEdge/benchmark-ai/issues/28)
+- [x] Cronjobs
+- [ ] Global status state
+- [ ] User Metrics
+- [ ] AWS: Cloudwatch exporting
+- [ ] Alerting
+- [ ] AWS: Improved AZ selection
+- [ ] Distributed ML training benchmarks
+- [ ] Range capabilities in TOML
+- [ ] Persistent raw event and log storage
+- [ ] Report generation
 
 # Design and architecture
 
@@ -187,6 +215,23 @@ The system is built to embody a few guiding tenets:
 
 ![Anubis design](docs/images/anubis_architecture_diagram.png "Anubis Design")
 
-# Supported cloud providers
+#### Technologies
 
+This project is an exercise in the amalgamation and orchestration of several technologies to create a tool that adds value to our users.
+
+- Python: (https://www.python.org/)
+- Clojure: (https://clojure.org/),  (https://www.braveclojure.com/do-things/)
+- Bash: (https://www.tldp.org/LDP/abs/html/)
+- Jq: (https://stedolan.github.io/jq/)
+- Conda: (https://docs.conda.io/projects/conda/en/latest/index.html)
+- Docker: (https://www.docker.com/)
+- Kafka: (http://kafka.apache.org/intro) (MSK)
+- Kubernetes: (https://kubernetes.io/) (EKS)
+- Prometheus: (https://prometheus.io/)
+- Terraform: (https://www.terraform.io/)
+- Zookeeper: (https://zookeeper.apache.org/)
+- ElasticSearch: (https://www.elastic.co/products/elasticsearch) (Managed ElasticSearch)
+
+# Supported cloud providers
+(currently)
 - AWS
