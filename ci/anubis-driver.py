@@ -154,7 +154,9 @@ def file_replace_line(file_path, str_find, str_replace):
 def add_current_user_arn(config, session):
     sts = session.client("sts")
     current_user_arn = sts.get_caller_identity()["Arn"]
-    config["extra_users"] = config["extra_users"] + f",{current_user_arn}"
+    extra_users_config = set() if config["extra_users"] is None else set(config["extra_users"].split(","))
+    extra_users_config.add(current_user_arn)
+    config["extra_users"] = ",".join(extra_users_config)
 
 
 def main():
