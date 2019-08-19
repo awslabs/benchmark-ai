@@ -28,21 +28,20 @@ Anubis provides a simple, self service solution for teams to schedule and run be
 
 <b>Anubis</b> provides <b>two</b> fundamental scripts.
 
-One is the `baictl` (BAI = Benchmark AI, ctl = control...clever huh!) utility.
-It is used to...
+One is the installer [`anubis-setup`](docs/anubis-setup.md), that is used to...
 
-- create the service infrastructure: `baictl create infra`
+- configure and create the Anubis infrastructure
 
-The other is the `anubis` client tool that allows users to...
+The other is the [`anubis`](bff/docs/anubis-client.md) client tool that allows users to...
 
 - run a benchmark: `anbis --submit resnet50-descriptor.toml`
 - monitor the progress of a run activities `anubis --status`
 - obtain information from a benchmark that was run: `anubis --results`
 
-The envisioned use-case is that a team or group or org instantiates the service infrastructure to support its constituents.  As such only the "admin" needs to run `baictl`.  While all users of the service interact with it using the Anubis client tool (or via the direct HTTP API, for the adventurous)
+The envisioned use-case is that a team or group or org instantiates the service infrastructure to be be used by its constituents. As such only the "admin" needs to run `anubis-setup`.  While all users of Anubis interact with it using the `anubis` client tool.
 
-For more information on all commands, please see the [full documentation]() of `baictl`.<br>
-For more information on the `anubis` client, please see its [starter document](bff/docs/anubis-client.md).q
+For more information on how to use `anubis-setup`, including use case examples and option explanations, please see the [full documentation here](docs/anubis-setup.md).<br>
+For more information on how to use the `anubis` client, please see its [starter document](bff/docs/anubis-client.md).
 
 <hr>
 <i>
