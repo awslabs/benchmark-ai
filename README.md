@@ -123,14 +123,14 @@ Type 'yes' when prompted and terraform will create the Codebuild pipeline and it
 
 **OR**
 
-#### One-Shot no-frills instantiation
+#### Via the "no frills" instantiation
+
+This form also does a full instantiation of the Anubis service (infrastructure and orchestration services).  However, with this installation mechanism you will **not** get any of the CI/CD benefits provided by code pipeline.  This means that to apply any updates you would have to do so explicitly by re-issuing the command.  The "no frills" option is more high touch, and as such offers a bit more control over what services get updated, when and how.
 
 ``` bash
 # Assuming PWD is `benchmark-ai`
 anubis-setup --no-pipeline --region=us-west-1
 ```
-
-**NOTE**: The one-shot instantiation of Anubis does not provide you with the CI/CD capabilities of the pipeline method (above).  Any updates would have to be done manually by either building, publishing and deploying each of the services independently or doing so via the running the script again with the `--no-pipeline` option again.
 
 
 **Advanced usage**: The directory `baictl/drivers/aws/cluster/.terraform/bai` is created with everything related to the infrastructure (kubeconfig, bastion_private.pem, etc.).
