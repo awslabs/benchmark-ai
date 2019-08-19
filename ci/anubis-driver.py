@@ -40,6 +40,8 @@ class Config:
         "region",
         "bucket",
         "prefix_list_id",
+        "extra_users",
+        "extra_roles",
     }
 
     def __init__(self):
@@ -197,6 +199,7 @@ def main():
     # Create pipeline which creates infrastructure and deploys services
     print("=> Calling `terraform plan`")
     return_code = subprocess.call(["terraform", "plan", "--out=terraform.plan"])
+
     if return_code != 0:
         raise Exception(f"Failure calling `terraform plan`: {return_code}")
     print("=> Calling `terraform apply`")

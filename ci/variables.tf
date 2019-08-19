@@ -64,5 +64,15 @@ variable "run_integration_tests" {
 }
 
 variable "prefix_list_id" {
-  type = "string"
+  type = string
+}
+
+variable "extra_users" {
+  type    = string
+  default = ""
+}
+
+variable "extra_roles" {
+  type    = string
+  default = ""
 }
