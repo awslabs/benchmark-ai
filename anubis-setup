@@ -24,7 +24,7 @@ conda_usage() {
 env_setup() {
     if ! conda --version; then conda_usage; fi;
     local tmp_environment_file=$(mktemp "/tmp/${0##*/}-XXXXXXXXX").yml
-    ((DEDBUG)) && echo "${tmp_environment_file}"
+    ((DEBUG)) && echo "${tmp_environment_file}"
     cat <<EOF > "${tmp_environment_file}"
 name: anubis-setup
 channels:
