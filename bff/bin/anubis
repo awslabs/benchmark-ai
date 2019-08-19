@@ -52,6 +52,7 @@ if [ $1 = "--env-setup" ]; then
     exit $?
 fi
 
+CONDA_EXE="${CONDA_EXE:=$(which conda)}"
 if ! source "${CONDA_EXE%/*}"/activate anubis >& /dev/null; then
     printf "
   Oops, there seems to be a problem with Conda...
