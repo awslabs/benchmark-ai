@@ -79,8 +79,6 @@ hardware. ;-)
 2. We use [CONDA](https://docs.conda.io/en/latest/index.html) as our way to stabilize the environment in which we run code.  Please install CONDA, the recommended installation is posted [here](https://docs.conda.io/en/latest/miniconda.html).
 3. Install **bash** version 5+
 
-2. Get [Conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html?highlight=conda)
-
 
 You are now ready to create the environment to use the tool:
 
