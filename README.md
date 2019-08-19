@@ -125,7 +125,7 @@ Type 'yes' when prompted and terraform will create the Codebuild pipeline and it
 
 #### Via the "no frills" instantiation
 
-This form also does a full instantiation of the Anubis service (infrastructure and orchestration services).  However, with this installation mechanism you will **not** get any of the CI/CD benefits provided by code pipeline.  This means that to apply any updates you would have to do so explicitly by re-issuing the command.  The "no frills" option is more high touch, and as such offers a bit more control over what services get updated, when and how.
+This form also does a full instantiation of the Anubis service (infrastructure and orchestration services).  However, with this installation mechanism you will **not** get any of the CI/CD benefits provided by code pipeline.  This means that to apply any updates you would have to do so explicitly by re-issuing the command or by using the appropriate flags that give you control down to the service level ([see documentation for more details](docs/anubis-setup.md)).  The "no frills" option is more high touch, and as such offers a bit more control over what services get updated, when and how.
 
 ``` bash
 # Assuming PWD is `benchmark-ai`
