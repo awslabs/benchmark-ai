@@ -40,6 +40,8 @@ class Config:
         "region",
         "bucket",
         "prefix_list_id",
+        "extra_users",
+        "extra_roles",
     }
 
     def __init__(self):
@@ -149,6 +151,12 @@ def file_replace_line(file_path, str_find, str_replace):
     shutil.move(tmp_file_path, file_path)
 
 
+def add_current_user_arn(config, session):
+    sts = session.client("sts")
+    current_user_arn = sts.get_caller_identity()["Arn"]
+    config["extra_users"] = config["extra_users"] + f",{current_user_arn}"
+
+
 def main():
     print(Figlet().renderText("anubis setup"))
     parser = argparse.ArgumentParser()
@@ -166,6 +174,7 @@ def main():
 
     chime_hook_url(config, session)
     s3_remote_state_bucket(config, region, session)
+    add_current_user_arn(config, session)
     config.write()
 
     print("=> Configuration to call terraform with:")
@@ -195,8 +204,9 @@ def main():
         return 1
 
     # Create pipeline which creates infrastructure and deploys services
-    print("=> Calling `terraform plan`")
+    print(f"=> Calling `terraform plan --out=terraform.plan`")
     return_code = subprocess.call(["terraform", "plan", "--out=terraform.plan"])
+
     if return_code != 0:
         raise Exception(f"Failure calling `terraform plan`: {return_code}")
     print("=> Calling `terraform apply`")

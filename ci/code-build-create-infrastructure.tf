@@ -42,6 +42,16 @@ resource "aws_codebuild_project" "ci-create-infra" {
       name  = "EXTRA_CIDR_BLOCK"
       value = "${module.blackbox-tests-vpc.nat_public_ips[0]}/32"
     }
+
+    # These EXTRA_USERS/EXTRA_ROLES gives the provided ARNs permissions on the EKS cluster
+    environment_variable {
+      name  = "EXTRA_USERS"
+      value = signum(length(var.extra_users)) == 1 ? var.extra_users : "UNSET"
+    }
+    environment_variable {
+      name  = "EXTRA_ROLES"
+      value = signum(length(var.extra_roles)) == 1 ? var.extra_roles : "UNSET"
+    }
   }
 
   source {

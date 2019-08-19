@@ -23,7 +23,7 @@ create-infra: check-parameter-region check-parameter-prefix-list-id venv
 
 create-infra: check-parameter-region check-parameter-prefix-list-id venv _create-infra
 _create-infra:
-	./baictl create infra --aws-region=$(AWS_REGION) --aws-prefix-list-id=$(AWS_PREFIX_LIST_ID) --aws-ssh-access-cidr-blocks=$(EXTRA_CIDR_BLOCK)
+	./baictl create infra --aws-region=$(AWS_REGION) --aws-prefix-list-id=$(AWS_PREFIX_LIST_ID) --aws-ssh-access-cidr-blocks=$(EXTRA_CIDR_BLOCK) --extra-users=$(EXTRA_USERS) --extra-roles=$(EXTRA_ROLES)
 
 destroy-infra: check-parameter-region venv _destroy-infra
 _destroy-infra:
