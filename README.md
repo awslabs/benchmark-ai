@@ -117,7 +117,7 @@ You will now create a Codebuild pipeline that deploys Anubis infrastructure and 
 
 ```bash
 # Assuming PWD is `benchmark-ai`
-anubis-setup --region=us-west-1
+anubis-setup --region=us-east-1
 ```
 Type 'yes' when prompted and terraform will create the Codebuild pipeline and its dependencies.  When terraform finishes navigate to the AWS console -> Codebuild -> Pipeline -> Pipelines -> Anubis on the console to see the status of the installation
 
