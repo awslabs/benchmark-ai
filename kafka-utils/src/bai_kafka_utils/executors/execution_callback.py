@@ -23,7 +23,7 @@ class ExecutionEngine(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def cancel(self, client_id: str, action_id: str, cascade: bool):
+    def cancel(self, client_id: str, action_id: str, cascade: bool = False):
         pass
 
 
