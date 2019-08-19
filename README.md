@@ -130,6 +130,8 @@ This form also does a full instantiation of the Anubis service (infrastructure a
 ``` bash
 # Assuming PWD is `benchmark-ai`
 pushd baictl
+conda env update
+conda activate baictl
 ./baictl create infra --aws-region={region} --aws-prefix-list-id={matching prefix list}
 popd
 ./build-and-deploy-all-services 
