@@ -133,5 +133,5 @@ variable "msk_broker_volume_size" {
 
 variable "msk_kafka_version" {
   type    = "string"
-  default = "2.1.0"
+  default = "2.2.1"
 }
