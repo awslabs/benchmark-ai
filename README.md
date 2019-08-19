@@ -76,6 +76,8 @@ hardware. ;-)
    It can be either `AWS_PROFILE` or `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`.
    [This guide](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/setup-credentials.html) helps setting these
    variables (ignore the fact it says it's for the Java SDK).
+2. We use [CONDA](https://docs.conda.io/en/latest/index.html) as our way to stabilize the environment in which we run code.  Please install CONDA, the recommended installation is posted [here](https://docs.conda.io/en/latest/miniconda.html).
+3. Install **bash** version 5+
 
 
 You are now ready to create the environment to use the tool:
@@ -134,7 +136,7 @@ conda env update
 conda activate baictl
 ./baictl create infra --aws-region={region} --aws-prefix-list-id={matching prefix list}
 popd
-./build-and-deploy-all-services 
+./build-and-deploy-all-services
 ```
 
 

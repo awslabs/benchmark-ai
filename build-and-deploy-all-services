@@ -117,6 +117,7 @@ _execute() {
     shift
     local make_variables=(${@})
 
+    CONDA_EXE="${CONDA_EXE:=$(which conda)}"
     for service in $(find . -maxdepth 2 -mindepth 2 | grep Makefile); do
         (
             echo "-----------------------------------"
