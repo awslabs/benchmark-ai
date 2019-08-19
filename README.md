@@ -129,7 +129,10 @@ This form also does a full instantiation of the Anubis service (infrastructure a
 
 ``` bash
 # Assuming PWD is `benchmark-ai`
-anubis-setup --no-pipeline --region=us-west-1
+pushd baictl
+./baictl create infra --aws-region={region} --aws-prefix-list-id={matching prefix list}
+popd
+./build-and-deploy-all-services 
 ```
 
 
