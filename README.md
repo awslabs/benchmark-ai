@@ -213,6 +213,13 @@ bff/bin/anubis --watch --status
 bff/bin/anubis --results <ACTION_ID>
 ```
 
+## Step 4 - Destroy Anubis Infrastructure
+
+```bash
+# Assuming PWD is `benchmark-ai`
+./anubis-setup --region=us-east-1 --prefix-list-id pl-60b85b09 --destroy
+```
+
 ## Great, what's next?
 
 Write your own benchmarks!
