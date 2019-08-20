@@ -5,7 +5,7 @@ include ../python-common.mk
 
 PROJECT=watcher
 
-include ../docker-common.mk
+include ../etc/docker-common.mk
 include ../etc/deploy-common.mk
 
 _post_venv::

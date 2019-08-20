@@ -2,7 +2,7 @@ PROJECT = mock-fetcher-job
 
 BENCHMARK_DIR = ../..
 
-include $(BENCHMARK_DIR)/docker-common.mk
+include $(BENCHMARK_DIR)/etc/docker-common.mk
 
 build:
 	echo "Stub target for build"
