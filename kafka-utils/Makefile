@@ -1,6 +1,6 @@
 ENV_NAME = kafka-utils-test
 
-include ../base-common.mk
+include ../etc/base-common.mk
 include ../python-common.mk
 include ../docker-common.mk
 
@@ -24,7 +24,7 @@ include ../deploy-common.mk
   TEST_LABEL=DOCKER_IMAGE_LABEL=$(DOCKER_IMAGE_LABEL)
 else
   TEST_LABEL=
-include ../base-common.mk
+include ../etc/base-common.mk
 endif
 
 integration_tests:
