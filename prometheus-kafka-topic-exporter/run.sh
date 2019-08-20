@@ -2,9 +2,9 @@
 set -ex
 
 # Fill in template - expects config to be mounted at /config/kafka-topic-exporter.properties
-cat /config/kafka-topic-exporter.properties.template > /tmp/kafka-topic-exporter.properties
-sed  "s/@@KAFKA_BOOTSTRAP_SERVERS@@/$KAFKA_BOOTSTRAP_SERVERS/g" /tmp/kafka-topic-exporter.properties > /tmp/kafka-topic-exporter.properties
-sed  "s/@@METRICS_CONSUMER_TOPIC@@/$METRICS_CONSUMER_TOPIC/g" /tmp/kafka-topic-exporter.properties > /tmp/kafka-topic-exporter.properties
+cp /config/kafka-topic-exporter.properties.template /tmp/kafka-topic-exporter.properties
+sed -i "s/@@KAFKA_BOOTSTRAP_SERVERS@@/$KAFKA_BOOTSTRAP_SERVERS/g" /tmp/kafka-topic-exporter.properties
+sed -i "s/@@METRICS_CONSUMER_TOPIC@@/$METRICS_CONSUMER_TOPIC/g" /tmp/kafka-topic-exporter.properties
 
 # Create Kafka Topic we're consuming
 /opt/kafka/bin/kafka-topics.sh --create \
