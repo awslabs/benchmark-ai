@@ -13,7 +13,7 @@ COVERAGE_FLAGS = --cov=$(SRC_FOLDERS) --cov-report html --cov-report term
 
 LINT = flake8
 
-FORMAT = black
+FORMAT = black --config $(BENCHMARK_DIR)/etc/pyproject.toml
 FORMAT_FLAGS = --line-length=120
 
 .DEFAULT_GOAL := default
