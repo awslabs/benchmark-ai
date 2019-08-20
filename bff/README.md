@@ -48,6 +48,8 @@ The `bai-bff` is the only user-facing, service-side, service through which all i
 * Kubernetes
   * `kubctrl`
   * Minikube
+  
+* unzip
 
 ---
 
