@@ -6,7 +6,7 @@ include ../python-common.mk
 PROJECT=executor
 
 include ../docker-common.mk
-include ../deploy-common.mk
+include ../etc/deploy-common.mk
 
 STAGE ?= devo
 

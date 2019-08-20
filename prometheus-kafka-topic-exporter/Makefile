@@ -4,7 +4,7 @@ PROJECT=prometheus-kafka-topic-exporter
 
 include ../etc/base-common.mk
 include ../docker-common.mk
-include ../deploy-common.mk
+include ../etc/deploy-common.mk
 
 STAGE ?= devo
 

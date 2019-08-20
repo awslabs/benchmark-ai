@@ -7,7 +7,7 @@ ENV_NAME = bff
 ifneq (, $(shell which conda))
 # If doing `deploy`, then we use conda to grab the dependencies
 include ../etc/base-common.mk
-include ../deploy-common.mk
+include ../etc/deploy-common.mk
 CONDA_DEPLOY_ENV_BIN = $(CONDA_ROOT)/envs/$(DEPLOY_ENV_NAME)/bin
 export PATH := $(CONDA_DEPLOY_ENV_BIN):$(PATH)
 else

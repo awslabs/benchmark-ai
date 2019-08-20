@@ -9,7 +9,7 @@ STAGE ?= devo
 TIMEOUT=600
 
 include $(BENCHMARK_DIR)/docker-common.mk
-include $(BENCHMARK_DIR)/deploy-common.mk
+include $(BENCHMARK_DIR)/etc/deploy-common.mk
 
 
 build:
