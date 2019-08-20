@@ -33,7 +33,7 @@ _Kafka Topics_...<br>
 * **BAI_APP_STATUS** and **CMD_RETURN** we consider as "broadcast" topics a slightly different classification than the other topics which have more directed semantics.
 ----
 
-Client Tool (baictl): → BFF via web service call.
+TOML → Client Tool (anubis): → BFF via web service call.
 
 (The TOML format is described [here](https://github.com/MXNetEdge/benchmark-ai/tree/master/baictl/descriptor-file))
 
@@ -57,7 +57,8 @@ Client Tool (baictl): → BFF via web service call.
 ```
 ----
 
-[below] Sent from BFF directly (...to Fetcher) via the Kafka topic **BAI_APP_BFF**
+[below]<br>
+Sent from BFF directly (...to Fetcher) via the Kafka topic **BAI_APP_BFF**<br>
 **BFF**: [ingress]: (The Client Tool) → [egress]: **BAI_APP_BFF**
 
 ```
@@ -71,8 +72,8 @@ Client Tool (baictl): → BFF via web service call.
     date: "1554901873677" //millis epoch
  -> visited: [{svc:"baictl", tstamp:"1554901873677", version:"v0.1.0-481dad1", node:"baictl-client-1"},
               {svc:"frontend-02", tstamp:"1554901873677", version:"v0.1.0-7bf8717", node:"baictl-bff-045" }],
-**    type: "BAI_APP_BFF"
-**    payload:{
+    type: "BAI_APP_BFF"
+    payload:{
  ->     datasets: [
             {src:"http://imagenet.org/somebig.zig",
              md5: "gifudifdoiudfdfklfdjll"},
@@ -93,7 +94,8 @@ Client Tool (baictl): → BFF via web service call.
 ```
 ----
 
-[below] Sent from Fetcher (...to Executor) via the Kafka topic:
+[below]<br>
+Sent from Fetcher (...to Executor) via the Kafka topic:<br>
 **Fetcher**: [ingress]:  **BAI_APP_BFF** → [egress]:  **BAI_APP_FETCHER**
 
 ```
@@ -129,8 +131,9 @@ Client Tool (baictl): → BFF via web service call.
 ```
 ----
 
-[below] Sent from Executor ... This may be what we would consider the “receipt” for the submission, perhaps augmented further with information on where to look to get the graphs / dashboard for the run.
-**Executor**: [ingress]:  **BAI_APP_FETCHER → **[egress]:  **BAI_APP_EXECUTOR**
+[below]<br>
+Sent from Executor ... This may be what we would consider the “receipt” for the submission, perhaps augmented further with information on where to look to get the graphs / dashboard for the run.<br>
+**Executor**: [ingress]:  **BAI_APP_FETCHER** →  [egress]:  **BAI_APP_EXECUTOR**
 
 ```
 {
@@ -176,6 +179,8 @@ The job is run and the output and status are updated in a new message that conta
 This means that the executor will also push to the **BAI_APP_EXECUTOR** channel with an update of the message.
 
 ----
+
+## Broadcast Topics
 
 System topic: **BAI_APP_STATUS**
 
