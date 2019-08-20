@@ -21,7 +21,7 @@ _pre_docker_package::
 	echo "Pre docker actions"
 
 _docker_package: _pre_docker_package
-	$(DOCKER) build $(BENCHMARK_DIR) -f $(BENCHMARK_DIR)/Dockerfile-service --build-arg SERVICE=$(PROJECT) -t $(DOCKER_IMAGE_TAG)
+	$(DOCKER) build $(BENCHMARK_DIR) -f $(BENCHMARK_DIR)/etc/Dockerfile-service --build-arg SERVICE=$(PROJECT) -t $(DOCKER_IMAGE_TAG)
 
 _post_docker_package:: _docker_package
 	echo "Post docker actions"
