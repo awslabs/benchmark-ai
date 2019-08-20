@@ -1,7 +1,7 @@
 ENV_NAME = baictl
 PROJECT = baictl
 
-include ../base-common.mk
+include ../etc/base-common.mk
 include ../python-common.mk
 
 _venv:

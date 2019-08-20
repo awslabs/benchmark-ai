@@ -2,7 +2,7 @@ ENV_NAME=prometheus-kafka-topic-exporter
 
 PROJECT=prometheus-kafka-topic-exporter
 
-include ../base-common.mk
+include ../etc/base-common.mk
 include ../docker-common.mk
 include ../deploy-common.mk
 

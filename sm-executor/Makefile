@@ -1,6 +1,6 @@
 ENV_NAME = sm-executor
 
-include ../base-common.mk
+include ../etc/base-common.mk
 include ../python-common.mk
 
 PROJECT = sm-executor

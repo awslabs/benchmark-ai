@@ -3,7 +3,7 @@ ENV_NAME = blackbox-tests
 # Use `build` as default because we don't want coverage
 default: build
 
-include ../base-common.mk
+include ../etc/base-common.mk
 include ../python-common.mk
 
 PYTEST = pytest -s

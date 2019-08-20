@@ -1,6 +1,6 @@
 ENV_NAME = metrics-extractor
 
-include ../base-common.mk
+include ../etc/base-common.mk
 include ../python-common.mk
 
 PROJECT=metrics-extractor
