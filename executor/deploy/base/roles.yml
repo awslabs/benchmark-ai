@@ -127,7 +127,7 @@ roleRef:
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: metrics-pusher-pod-status-binding
+  name: executor-pod-status-binding
 subjects:
 - kind: ServiceAccount
   name: executor
