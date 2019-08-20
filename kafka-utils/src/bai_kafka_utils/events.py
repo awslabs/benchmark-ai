@@ -177,13 +177,21 @@ class CommandResponsePayload:
     return_code: int
     cmd_submit: CommandRequestEvent
     return_value: Optional[Any] = None
-    message: Optional[str] = None
 
 
 @dataclass_json
 @dataclass
 class CommandResponseEvent(BenchmarkEvent):
-    payload: CommandResponsePayload
+    message: str = _REQUIRED
+    payload: CommandResponsePayload = _REQUIRED
+
+    def __post_init__(self):
+        # We cannot add parent_action_id as an optional with default value
+        # as this breaks the sub-classes. Therefore, we attach default values
+        # to all fields and simulate the required fields.
+        for field in self.__dict__.keys():
+            if self.__dict__[field] == _REQUIRED:
+                raise TypeError(f"__init__ missing 1 required argument: '{field}'")
 
 
 class Status(Enum):
