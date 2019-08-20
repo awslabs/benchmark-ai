@@ -247,6 +247,7 @@ The system is built to embody a few guiding tenets:
   <li>Self Service</li>
   <li>"Push Button" Installation</li>
   <li>Complete Delivery</li>
+  <li>Clear Mental Model (Transparency)</li>
   <li>Use best of breed technology that has significant mind share</li>
 </ul>
 
