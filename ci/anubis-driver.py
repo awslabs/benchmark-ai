@@ -96,14 +96,12 @@ class Config:
             "--region",
             help="AWS region that Anubis infrastructure and services will be instantiated in. There can only be one instantiation of Anubis per account due to IAM role name collisions, etc.",
             required=True,
-            action="store_true",
         )
         variable_names.remove("region")
         parser_required.add_argument(
             "--prefix-list-id",
             help="In order to access Anubis infrastructure from corp we can add the corresponding corp prefix list from the Amazon Prefix List Lookup tool",
             required=True,
-            action="store_true",
         )
         variable_names.remove("prefix_list_id")
         parser.add_argument(
