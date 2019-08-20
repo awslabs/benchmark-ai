@@ -2,7 +2,7 @@ ENV_NAME = kafka-utils-test
 
 include ../etc/base-common.mk
 include ../python-common.mk
-include ../docker-common.mk
+include ../etc/docker-common.mk
 
 publish:
 	echo "Nothing to publish"

@@ -8,7 +8,7 @@ JOB_NAME=executor-it
 STAGE ?= devo
 TIMEOUT=600
 
-include $(BENCHMARK_DIR)/docker-common.mk
+include $(BENCHMARK_DIR)/etc/docker-common.mk
 include $(BENCHMARK_DIR)/etc/deploy-common.mk
 
 

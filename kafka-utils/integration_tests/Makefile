@@ -7,7 +7,7 @@ include $(BENCHMARK_DIR)/python-common.mk
 
 JOB_NAME = kafka-utils-it
 
-include $(BENCHMARK_DIR)/docker-common.mk
+include $(BENCHMARK_DIR)/etc/docker-common.mk
 include $(BENCHMARK_DIR)/etc/deploy-common.mk
 
 
