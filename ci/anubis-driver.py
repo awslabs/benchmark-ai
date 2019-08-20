@@ -9,10 +9,10 @@ import subprocess
 import argparse
 import boto3
 import sys
+import time
 from pyfiglet import Figlet
 from pathlib import Path
 from collections import namedtuple
-from time import time
 from typing import Dict
 
 
@@ -180,16 +180,23 @@ def add_current_user_arn(config, session):
     config["extra_users"] = ",".join(extra_users_config)
 
 
-def sync_baictl(session, region):
+def sync_baictl(region, session):
+    # TODO: add mode option for push / pull if needed
     os.environ["AWS_REGION"] = region
+    sts = session.client("sts")
+    account_id = sts.get_caller_identity()["Account"]
+    backend_tfvars_path = os.path.join(
+        os.path.dirname(__file__), "../baictl/drivers/aws/cluster/.terraform/bai/backend.tfvars"
+    )
 
+    # Delete .terraform directory if mismatched with aws caller identity
     print(f"=> Calling `./baictl sync infra --aws-region={region}` in baictl to get kubeconfig")
-
-    if os.path.exists(os.path.join(os.path.dirname(__file__), "../baictl/drivers/aws/cluster/.terraform")):
-        return_code = subprocess.call(["rm", "-rf", "drivers/aws/cluster/.terraform"], cwd="../baictl")
-        if return_code != 0:
-            raise Exception(f"Failure calling `rm -rf drivers/aws/cluster/.terraform` in baictl: {return_code}")
-
+    if os.path.exists(backend_tfvars_path):
+        backend_tfvars = open(backend_tfvars_path, "r").read()
+        if account_id not in backend_tfvars:
+            return_code = subprocess.call(["rm", "-rf", "drivers/aws/cluster/.terraform"], cwd="../baictl")
+            if return_code != 0:
+                raise Exception(f"Failure calling `rm -rf drivers/aws/cluster/.terraform` in baictl: {return_code}")
     return_code = subprocess.call(["make", "sync-infra"], cwd="../baictl")
     if return_code != 0:
         raise Exception(f"Failure calling `make sync-infra` in baictl: {return_code}")
@@ -209,65 +216,49 @@ def undeploy_services():
             raise Exception(f"Failure calling `make undeploy` in {folder}: {return_code}")
 
 
-def main():
-    print(Figlet().renderText("anubis setup"))
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--clean", action="store_true", help="Removes current state and configured values")
-    parser.add_argument("--destroy", action="store_true", help="Destroys Anubis infrastructure and pipeline")
-    Config.add_args(parser)
-    args = parser.parse_args()
-    if args.clean:
-        remove_terraform_config_files()
-        return
+def get_service_endpoint(region, session):
+    codepipeline = session.client("codepipeline")
+    dots = ""
 
-    config = Config.create_from_args(args)
-    region = config["region"]
-    session = boto3.Session(region_name=region)
+    while True:
+        resp = codepipeline.get_pipeline_state(name="Anubis")
 
-    chime_hook_url(config, session)
-    s3_remote_state_bucket(config, region, session)
-    add_current_user_arn(config, session)
-    config.write()
+        # Get CreateInfra stage status
+        for stage in resp["stageStates"]:
+            if stage["stageName"].lower() == "createinfra":
+                if "latestExecution" in stage:
+                    codepipeline_createinfra_status = stage["latestExecution"]["status"]
+                else:
+                    codepipeline_createinfra_status = "NotRunYet"
 
-    print("=> Configuration to call terraform with:")
-    print(config)
-    mode = "destroy" if args.destroy else "create"
-    user_response = input(f"Do you want to {mode} the pipeline with this configuration? ([y]/n)?: ").lower().strip()
-    if not user_response == "y" and not user_response == "yes" and not user_response == "":
-        sys.exit()
-    print("=> Calling `terraform init`")
-    return_code = subprocess.call(["terraform", "init", "-backend-config=.terraform/ci-backend-config"])
+        # Pull down kubeconfig and get service endpoint
+        if codepipeline_createinfra_status == "Succeeded":
+            sync_baictl(region, session)
+            kubeconfig_path = os.path.join(
+                os.path.dirname(__file__), "../baictl/drivers/aws/cluster/.terraform/bai/kubeconfig"
+            )
+            if os.path.exists(kubeconfig_path):
+                kubeconfig_abs_path = os.path.dirname(os.path.abspath(kubeconfig_path)) + "/kubeconfig"
+            else:
+                raise Exception(f"baictl sync infra failed to download: {kubeconfig_path}")
+            # kubectl get service endpoint
+            service_endpoint = subprocess.check_output(
+                ["kubectl", f"--kubeconfig={kubeconfig_abs_path}", "get", "service", "bai-bff", "-o", "json"]
+            )
+            service_endpoint = json.loads(service_endpoint)["status"]["loadBalancer"]["ingress"][0]["hostname"]
+            print(f"=> Your Anubis service endpoint: {service_endpoint}")
+            return service_endpoint
+        elif codepipeline_createinfra_status == "Failed":
+            raise Exception(f"Unable to get service endpoint since `CreateInfra` stage failed")
+
+        dots = dots + "."
+        print(f"-> Waiting for CreateInfra step to finish {dots}", end="\r", flush=True)
+        time.sleep(60)
+
+def register_service_endpoint(service_endpoint):
+    return_code = subprocess.call(["./bin/anubis", "--register", f"{service_endpoint}:80"], cwd="../bff")
     if return_code != 0:
-        raise Exception(f"Failure to init terraform: {return_code}")
-
-    # Destroy pipeline and infrastructure
-    if args.destroy:
-        sync_baictl(session, region)
-        destroy_pipeline(region)
-        undeploy_services()
-        destroy_infrastructure(region)
-        return
-
-    if "GITHUB_TOKEN" not in os.environ:
-        print("!!! ATTENTION !!!")
-        print("Don't forget to set the environment variable `GITHUB_TOKEN` before `terraform apply`.")
-        print("This is a limitation of the AWS Terraform provider (HACK!!!)")
-        print(
-            "Follow this page for instructions: https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line"
-        )
-        return 1
-
-    # Create pipeline which creates infrastructure and deploys services
-    print(f"=> Calling `terraform plan --out=terraform.plan`")
-    return_code = subprocess.call(["terraform", "plan", "--out=terraform.plan"])
-    if return_code != 0:
-        raise Exception(f"Failure calling `terraform plan`: {return_code}")
-    print("=> Calling `terraform apply`")
-    return_code = subprocess.call(["terraform", "apply", "terraform.plan"])
-    if return_code != 0:
-        raise Exception(f"Failure calling `terraform plan`: {return_code}")
-
-    return
+        raise Exception(f"Failure registering service endpoint to bff `/bin/anubis --register {service_endpoint}:80`: {return_code}")
 
 
 def remove_terraform_config_files():
@@ -318,6 +309,70 @@ def destroy_infrastructure(region):
     return_code = subprocess.call(["make", "destroy-infra"], cwd="../baictl")
     if return_code != 0:
         raise Exception(f"Failure calling `make destroy` in baictl: {return_code}")
+
+
+def main():
+    print(Figlet().renderText("anubis setup"))
+    # Set up configuration and parse args
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--clean", action="store_true", help="Removes current state and configured values")
+    parser.add_argument("--destroy", action="store_true", help="Destroys Anubis infrastructure and pipeline")
+    Config.add_args(parser)
+    args = parser.parse_args()
+    if args.clean:
+        remove_terraform_config_files()
+        return
+    config = Config.create_from_args(args)
+    region = config["region"]
+    session = boto3.Session(region_name=region)
+    chime_hook_url(config, session)
+    s3_remote_state_bucket(config, region, session)
+    add_current_user_arn(config, session)
+    config.write()
+
+    # Initialize terraform
+    print("=> Configuration to call terraform with:")
+    print(config)
+    mode = "destroy" if args.destroy else "create"
+    user_response = input(f"Do you want to {mode} the pipeline with this configuration? ([y]/n)?: ").lower().strip()
+    if not user_response == "y" and not user_response == "yes" and not user_response == "":
+        sys.exit()
+    print("=> Calling `terraform init`")
+    return_code = subprocess.call(["terraform", "init", "-backend-config=.terraform/ci-backend-config"])
+    if return_code != 0:
+        raise Exception(f"Failure to init terraform: {return_code}")
+
+    # Destroy pipeline and infrastructure
+    if args.destroy:
+        sync_baictl(region, session)
+        destroy_pipeline(region)
+        undeploy_services()
+        destroy_infrastructure(region)
+        return
+
+    # HACK for github
+    if "GITHUB_TOKEN" not in os.environ:
+        print("!!! ATTENTION !!!")
+        print("Don't forget to set the environment variable `GITHUB_TOKEN` before `terraform apply`.")
+        print("This is a limitation of the AWS Terraform provider (HACK!!!)")
+        print(
+            "Follow this page for instructions: https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line"
+        )
+        return 1
+
+    # Create pipeline which creates infrastructure and deploys services
+    print(f"=> Calling `terraform plan --out=terraform.plan`")
+    return_code = subprocess.call(["terraform", "plan", "--out=terraform.plan"])
+    if return_code != 0:
+        raise Exception(f"Failure calling `terraform plan`: {return_code}")
+    print("=> Calling `terraform apply`")
+    return_code = subprocess.call(["terraform", "apply", "terraform.plan"])
+    if return_code != 0:
+        raise Exception(f"Failure calling `terraform plan`: {return_code}")
+    print(f"=> Creation complete!  Check AWS -> CodePipeline -> Anubis in {region}")
+    service_endpoint = get_service_endpoint(region, session)
+    register_service_endpoint(service_endpoint)
+    return
 
 
 if __name__ == "__main__":
