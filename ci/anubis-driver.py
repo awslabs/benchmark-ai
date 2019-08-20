@@ -90,11 +90,36 @@ class Config:
 
     @classmethod
     def add_args(cls, parser):
-        for var_name in Config.VARIABLE_NAMES:
-            if var_name == "region" or var_name == "prefix_list_id":
-                parser.add_argument("--{var_name}".format(var_name=var_name.replace("_", "-")), required=True)
-            else:
-                parser.add_argument("--{var_name}".format(var_name=var_name.replace("_", "-")))
+        parser_required = parser.add_argument_group("required arguments")
+        variable_names = set(Config.VARIABLE_NAMES)
+        parser_required.add_argument(
+            "--region",
+            help="AWS region that Anubis infrastructure and services will be instantiated in. There can only be one instantiation of Anubis per account due to IAM role name collisions, etc.",
+            required=True,
+            action="store_true",
+        )
+        variable_names.remove("region")
+        parser_required.add_argument(
+            "--prefix-list-id",
+            help="In order to access Anubis infrastructure from corp we can add the corresponding corp prefix list from the Amazon Prefix List Lookup tool",
+            required=True,
+            action="store_true",
+        )
+        variable_names.remove("prefix_list_id")
+        parser.add_argument(
+            "--extra-users",
+            help="In order for a user to directly run kubectl commands against the Anubis EKS cluster you must provide that user's IAM ARN",
+            action="store_true",
+        )
+        variable_names.remove("extra_users")
+        parser.add_argument("--extra-roles", help="Same as extra-users except with AWS IAM roles", action="store_true")
+        variable_names.remove("extra_roles")
+        parser.add_argument(
+            "--chime-hook-url", help="Provide a chime URL for notification of pipeline failures", action="store_true"
+        )
+        variable_names.remove("chime_hook_url")
+        for var_name in variable_names:
+            parser.add_argument("--{var_name}".format(var_name=var_name.replace("_", "-")), action="store_true")
 
 
 def s3_remote_state_bucket(config, region, session):
@@ -163,7 +188,7 @@ def main():
     print(Figlet().renderText("anubis setup"))
     parser = argparse.ArgumentParser()
     parser.add_argument("--clean", action="store_true", help="Removes current state and configured values")
-    parser.add_argument("--destroy", action="store_true", help="Removes current state and configured values")
+    parser.add_argument("--destroy", action="store_true", help="Destroys Anubis infrastructure and pipeline")
     Config.add_args(parser)
     args = parser.parse_args()
     if args.clean:
