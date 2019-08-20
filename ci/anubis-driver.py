@@ -193,7 +193,7 @@ def main():
     # Destroy pipeline and infrastructure
     if args.destroy:
         destroy_pipeline(region)
-        destroy_infrastructure()
+        destroy_infrastructure(region)
         return
 
     if "GITHUB_TOKEN" not in os.environ:
@@ -256,9 +256,10 @@ def destroy_pipeline(region):
         raise Exception(f"Failure calling `terraform destroy`: {return_code}")
 
 
-def destroy_infrastructure():
-    print("=> Calling `make destroy` in baictl to destroy infrastructure")
-    return_code = subprocess.call(["make", "destroy"], cwd="../baictl")
+def destroy_infrastructure(region):
+    print("=> Calling `make destroy-infra` in baictl to destroy infrastructure")
+    os.environ["AWS_REGION"] = region
+    return_code = subprocess.call(["make", "destroy-infra"], cwd="../baictl")
     if return_code != 0:
         raise Exception(f"Failure calling `make destroy` in baictl: {return_code}")
 
