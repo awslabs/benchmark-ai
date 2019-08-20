@@ -11,7 +11,7 @@ KUBECTL = $(DEPLOY_CONDA_RUN) kubectl
 BENCHMARK_DIR ?= ..
 
 _deploy_venv:
-	conda env update --file $(BENCHMARK_DIR)/deploy-environment.yml --prune --name $(DEPLOY_ENV_NAME)
+	conda env update --file $(BENCHMARK_DIR)/etc/deploy-environment.yml --prune --name $(DEPLOY_ENV_NAME)
 
 deploy: deploy.yml _deploy_venv
 	$(call fn_k8s_deploy)
