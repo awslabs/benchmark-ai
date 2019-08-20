@@ -4,6 +4,8 @@
 # The service pipeline: clean-all -> [build -> test] -> [package -> publish] -> deploy
 #--------------------------------------------------------------------------------------
 
+# Run this file at the top level directory for this repository
+
 # Every Makefile in this project must respect these basic targets and
 # their semantics.  With that said, this program cycles through all of
 # the projects that have Makefiles and calls the basic targets that
