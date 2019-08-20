@@ -14,7 +14,7 @@ variable "projects" {
     "metrics-extractor",
     "prometheus-kafka-topic-exporter",
     "sm-executor",
-    "anubis-cron-job"
+    "cron-job"
   ]
 }
 

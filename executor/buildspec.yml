@@ -33,7 +33,7 @@ phases:
             kubectl apply -f ../metrics-pusher/metrics-pusher-roles.yaml
 
             # Build docker images
-            cd ../anubis-cron-job
+            cd ../cron-job
             make docker_package COMMIT_SHORT_HASH="local-latest"
             make publish STAGE=local LOCAL_PUBLISH="kind load docker-image " COMMIT_SHORT_HASH="local-latest"
 

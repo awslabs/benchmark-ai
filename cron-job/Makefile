@@ -1,9 +1,9 @@
-ENV_NAME = anubis-cron-job
+ENV_NAME = cron-job
 
 include ../etc/base-common.mk
 include ../etc/python-common.mk
 
-PROJECT=anubis-cron-job
+PROJECT=cron-job
 
 include ../etc/docker-common.mk
 

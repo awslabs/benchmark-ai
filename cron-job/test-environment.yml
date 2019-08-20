@@ -1,4 +1,4 @@
-name: anubis-cron-job
+name: cron-job
 channels:
   - conda-forge
   - defaults

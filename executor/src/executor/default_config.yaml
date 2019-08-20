@@ -1,6 +1,6 @@
 transpiler-puller-mount-chmod: 777
 transpiler-puller-docker-image: benchmarkai/puller:3115770
-transpiler-cron-job-docker-image: benchmarkai/anubis-cron-job:3115770
+transpiler-cron-job-docker-image: benchmarkai/cron-job:3115770
 
 # descriptor config
 transpiler-valid-strategies: single_node,horovod
