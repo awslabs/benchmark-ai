@@ -164,7 +164,7 @@ conda env update
 conda activate baictl
 ./baictl create infra --aws-region={region} --aws-prefix-list-id={matching prefix list}
 popd
-./build-and-deploy-all-services
+./bin/build-and-deploy-all-services
 ```
 
 
