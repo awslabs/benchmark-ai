@@ -2,7 +2,7 @@ ENV_NAME = baictl
 PROJECT = baictl
 
 include ../etc/base-common.mk
-include ../python-common.mk
+include ../etc/python-common.mk
 
 _venv:
 	# Override to avoid looking at the other `environment.yml` files (lint-environment.yml, deploy-environment.yml)

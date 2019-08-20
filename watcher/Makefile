@@ -1,7 +1,7 @@
 ENV_NAME = watcher
 
 include ../etc/base-common.mk
-include ../python-common.mk
+include ../etc/python-common.mk
 
 PROJECT=watcher
 

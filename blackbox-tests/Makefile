@@ -4,7 +4,7 @@ ENV_NAME = blackbox-tests
 default: build
 
 include ../etc/base-common.mk
-include ../python-common.mk
+include ../etc/python-common.mk
 
 PYTEST = pytest -s
 # Make coverage flags empty because there is no need for coverage.

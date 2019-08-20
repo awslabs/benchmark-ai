@@ -3,7 +3,7 @@ ENV_NAME = kafka-utils-test
 SERVICE = kafka-utils
 BENCHMARK_DIR = ../..
 
-include $(BENCHMARK_DIR)/python-common.mk
+include $(BENCHMARK_DIR)/etc/python-common.mk
 
 JOB_NAME = kafka-utils-it
 
