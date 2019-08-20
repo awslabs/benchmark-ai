@@ -81,8 +81,15 @@ def _mock_existing_node():
 
 
 @fixture
-def zoo_keeper_client() -> KazooClient:
-    return create_autospec(KazooClient)
+def zoo_keeper_znode_stat() -> ZnodeStat:
+    return create_autospec(ZnodeStat)
+
+
+@fixture
+def zoo_keeper_client(zoo_keeper_znode_stat) -> KazooClient:
+    zoo_keeper_client = create_autospec(KazooClient)
+    zoo_keeper_client.exists.return_value = zoo_keeper_znode_stat
+    return zoo_keeper_client
 
 
 @fixture
@@ -282,6 +289,13 @@ def zoo_keeper_client_to_cancel(zoo_keeper_client: KazooClient) -> KazooClient:
 
 
 @fixture
+def zoo_keeper_client_no_node(zoo_keeper_client: KazooClient) -> KazooClient:
+    zoo_keeper_client.exists.return_value = None
+    zoo_keeper_client.get_children.side_effect = NoNodeError()
+    return zoo_keeper_client
+
+
+@fixture
 def zoo_keeper_client_with_conflict(zoo_keeper_client: KazooClient) -> KazooClient:
     zoo_keeper_client.get_children.return_value = [DATASET_PATH]
     zoo_keeper_client.get.side_effect = [
@@ -359,6 +373,17 @@ def test_cancel_nothing_to_do(
     data_set_manager.cancel(CLIENT_ID, ACTION_ID)
 
     zoo_keeper_client_nothing_to_cancel.set.assert_not_called()
+
+
+def test_cancel_no_node(
+    kubernetes_job_starter: DataSetDispatcher, zoo_keeper_client_no_node: KazooClient, mock_lock_manager: RWLockManager
+):
+    data_set_manager = DataSetManager(
+        zoo_keeper_client_no_node, kubernetes_job_starter, mock_lock_manager, data_set_to_path
+    )
+    data_set_manager.cancel(CLIENT_ID, ACTION_ID)
+
+    zoo_keeper_client_no_node.set.assert_not_called()
 
 
 def test_pass_through_estimator_error(
