@@ -18,7 +18,7 @@ _post_venv::
 .PHONY: integration_tests
 
 ifeq ($(STAGE),local)
-include ../deploy-common.mk
+include ../etc/deploy-common.mk
 #Pass special label designed for local integration tests
   DOCKER_IMAGE_LABEL=local-latest
   TEST_LABEL=DOCKER_IMAGE_LABEL=$(DOCKER_IMAGE_LABEL)

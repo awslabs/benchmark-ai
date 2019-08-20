@@ -7,7 +7,7 @@ BENCHMARK_DIR=../..
 JOB_NAME=fetcher-it
 
 include $(BENCHMARK_DIR)/docker-common.mk
-include $(BENCHMARK_DIR)/deploy-common.mk
+include $(BENCHMARK_DIR)/etc/deploy-common.mk
 
 
 build:
