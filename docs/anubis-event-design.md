@@ -232,10 +232,10 @@ System topic: **CMD_RETURN**
   date: "1554901873677" //millis epoch
   visited: [{svc:"fetcher", tstamp:"1554901873677", version:"v0.1.0-481dad1", node:"example-node-1"}],
   type: "CMD_RETURN"
+  message: "" // Intended for the user to see
   payload:{
     return_code: <NUMBER> // Unix-like: 0 for SUCCESS, else failure
     return_value: {} // Actual output of the command
-    message: "" // Intended for the user to see
     cmd_submit: <FULL_CMD_SUBMIT_EVENT>
   },
 }
