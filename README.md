@@ -113,15 +113,43 @@ The installation process... consists of two phases - 1) configuring and deployin
 
 ### Installation Options:
 
-#### Via Code Pipeline (preferred)
+#### Via Code Pipeline (recommended)
 
 You will now create a Codebuild pipeline that deploys Anubis infrastructure and orchestration services in your AWS account using the default region us-east-1 (this can be changed from benchmark-ai/ci/variables.tf):
 
 ```bash
 # Assuming PWD is `benchmark-ai`
-anubis-setup --region=us-east-1
+./anubis-setup --region=us-east-1 --prefix-list-id pl-xxxxxxxx
 ```
 Type 'yes' when prompted and terraform will create the Codebuild pipeline and its dependencies.  When terraform finishes navigate to the AWS console -> Codebuild -> Pipeline -> Pipelines -> Anubis on the console to see the status of the installation
+
+<details><summary><strong>More about anubis-setup arguments</strong></summary>
+<p>
+
+ - region: (REQUIRED) AWS region that Anubis infrastructure and services will be instantiated in.  There can only be one instantiation of Anubis per account due to IAM role name collisions, etc.
+ - prefix-list-id: (REQUIRED) In order to access Anubis infrastructure from corp we can add the corresponding corp prefix list from the Amazon Prefix List Lookup tool
+ - extra-users: *Provide as comma delimited list arn:aws:iam::1234:user/user1,arn:aws:iam::1234:user/user2* In order for a user to directly run kubectl commands against the Anubis EKS cluster you must provide that user's IAM ARN.  By default the users that are added are the Codebuild pipeline user, and your current aws user (find this out by running `aws sts get-caller-identity`)
+ - extra-roles: Same as extra-users except with AWS IAM roles
+ - chime-hook-url: Provide a chime URL for notification of pipeline failures
+ - clean: Deletes the terraform statefile, backend config, terraform variable file, and terraform plan file.  Useful for debugging failures or resetting configuration.
+ - destroy: Deletes Anubis infrastructure and pipeline
+
+</p>
+</details>
+
+##### Get the service endpoint for Anubis
+
+Once the Anubis pipeline has completed atleast the `deploy` step successfully you need to query the EKS cluster for the Anubis endpoint.
+
+```bash
+# Assuming PWD is `benchmark-ai`
+cd baictl
+conda env update && conda activate baictl
+./baictl sync infra --aws-region=us-east-1 --mode=pull
+conda deactivate
+# The kubeconfig will be downloaded to `drivers/aws/cluster/.terraform/bai/kubeconfig`
+kubectl --kubeconfig=drivers/aws/cluster/.terraform/bai/kubeconfig get service bai-bff -o json | jq '.status.loadBalancer.ingress[].hostname'
+```
 
 **OR**
 
@@ -181,6 +209,13 @@ bff/bin/anubis --watch --status
 ```bash
 # Assuming PWD is `benchmark-ai`
 bff/bin/anubis --results <ACTION_ID>
+```
+
+## Step 4 - Destroy Anubis Infrastructure
+
+```bash
+# Assuming PWD is `benchmark-ai`
+./anubis-setup --region=us-east-1 --prefix-list-id pl-xxxxxxxx --destroy
 ```
 
 ## Great, what's next?
