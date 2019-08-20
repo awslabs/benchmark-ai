@@ -21,12 +21,17 @@ class KafkaCommandCallback(KafkaServiceCallback):
     CODE_COMMAND_ERROR = 1
     CODE_CLIENT_ERROR = 2
 
-    OK = "Command was executed successfully"
-    INVALID_ARGS = "Invalid args %s"
+    OK = "{} command executed successfully"
+    INVALID_ARGS = "{} command failed: Invalid args {}"
+    UNKNOWN_ERROR = "{} command failed: Unknown error with message '{}'"
 
     def __init__(self, cmd_object: Any, cmd_return_topic: str):
         self.cmd_object = cmd_object
         self.cmd_return_topic = cmd_return_topic
+
+    @staticmethod
+    def _get_message(fmt: str, command, *args, **kwargs):
+        return fmt.format(command.capitalize(), *args, **kwargs)
 
     def handle_event(self, event: CommandRequestEvent, kafka_service: KafkaService):
         # Safety check
@@ -51,7 +56,7 @@ class KafkaCommandCallback(KafkaServiceCallback):
 
             result = None
             code = KafkaCommandCallback.CODE_SUCCESS
-            msg = KafkaCommandCallback.OK
+            msg = self._get_message(KafkaCommandCallback.OK, command)
 
             pos_args = []
             kw_args = {}
@@ -87,11 +92,11 @@ class KafkaCommandCallback(KafkaServiceCallback):
             except TypeError as e:
                 logger.exception("Method invocation failed")
                 code = KafkaCommandCallback.CODE_CLIENT_ERROR
-                msg = KafkaCommandCallback.INVALID_ARGS.format(str(e))
+                msg = self._get_message(KafkaCommandCallback.INVALID_ARGS, command, str(e))
             except Exception as e:
                 logger.exception("Command failed")
                 code = KafkaCommandCallback.CODE_COMMAND_ERROR
-                msg = str(e)
+                msg = self._get_message(KafkaCommandCallback.UNKNOWN_ERROR, command, str(e))
 
             response_payload = CommandResponsePayload(code, event, result)
             response_event = create_from_object(CommandResponseEvent, event, payload=response_payload, message=msg)
