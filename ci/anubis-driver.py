@@ -107,17 +107,14 @@ class Config:
         parser.add_argument(
             "--extra-users",
             help="In order for a user to directly run kubectl commands against the Anubis EKS cluster you must provide that user's IAM ARN",
-            action="store_true",
         )
         variable_names.remove("extra_users")
-        parser.add_argument("--extra-roles", help="Same as extra-users except with AWS IAM roles", action="store_true")
+        parser.add_argument("--extra-roles", help="Same as extra-users except with AWS IAM roles")
         variable_names.remove("extra_roles")
-        parser.add_argument(
-            "--chime-hook-url", help="Provide a chime URL for notification of pipeline failures", action="store_true"
-        )
+        parser.add_argument("--chime-hook-url", help="Provide a chime URL for notification of pipeline failures")
         variable_names.remove("chime_hook_url")
         for var_name in variable_names:
-            parser.add_argument("--{var_name}".format(var_name=var_name.replace("_", "-")), action="store_true")
+            parser.add_argument("--{var_name}".format(var_name=var_name.replace("_", "-")))
 
 
 def s3_remote_state_bucket(config, region, session):

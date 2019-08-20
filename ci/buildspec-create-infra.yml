@@ -5,7 +5,7 @@ phases:
     commands:
       - env
       - cd baictl
-      - make create-infra AWS_REGION=$AWS_DEFAULT_REGION AWS_PREFIX_LIST_ID=$AWS_PREFIX_LIST_ID EXTRA_CIDR_BLOCK=${EXTRA_CIDR_BLOCK}
+      - make create-infra AWS_REGION=$AWS_DEFAULT_REGION AWS_PREFIX_LIST_ID=$AWS_PREFIX_LIST_ID EXTRA_CIDR_BLOCK=${EXTRA_CIDR_BLOCK} EXTRA_USERS=${EXTRA_USERS} EXTRA_ROLES=${EXTRA_ROLES}
 artifacts:
   files:
     - kubeconfig

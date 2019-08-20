@@ -261,6 +261,7 @@ _add_extra_users_roles(){
 
     for user in $(echo $extra_users | sed "s/,/ /g")
     do
+        if [ $user == "UNSET" ]; then continue; fi
         (
             export KUBECONFIG=${kubeconfig}
             python3 ${src_dir}/add_permission_to_aws_auth_configmap.py --iam-user-arn $user --iam-user-username $(echo $user | sed -n 's/.*\/\(.[a-zA-Z0-9]*\)/\1/p') --iam-user-groups system:masters || return 1
@@ -271,9 +272,10 @@ _add_extra_users_roles(){
 
     for role in $(echo $extra_roles | sed "s/,/ /g")
     do
+        if [ $role == "UNSET" ]; then continue; fi
         (
             export KUBECONFIG=${kubeconfig}
-            python3 ${src_dir}/add_permission_to_aws_auth_configmap.py --role-arn $ --role-username $(echo $role | sed -n 's/.*\/\(.[a-zA-Z0-9]*\)/\1/p') --role-groups system:masters || return 1
+            python3 ${src_dir}/add_permission_to_aws_auth_configmap.py --role-arn $role --role-username $(echo $role | sed -n 's/.*\/\(.[a-zA-Z0-9]*\)/\1/p') --role-groups system:masters || return 1
         )
         local exit_code=$?
         [[ "$exit_code" != 0 ]] && echo "[ERROR] Failed with exit code: $exit_code" && return 1
