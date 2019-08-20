@@ -20,7 +20,7 @@ run: publish k8s_run
 k8s_run: _k8s_silent_cleanup _k8s_silent_undeploy deploy _wait_for_job _k8s_cleanup
 
 _docker_package: _pre_docker_package
-	$(DOCKER) build $(BENCHMARK_DIR) -f $(BENCHMARK_DIR)/Dockerfile-it --build-arg SERVICE=$(SERVICE) -t $(DOCKER_IMAGE_TAG)
+	$(DOCKER) build $(BENCHMARK_DIR) -f $(BENCHMARK_DIR)/etc/Dockerfile-it --build-arg SERVICE=$(SERVICE) -t $(DOCKER_IMAGE_TAG)
 
 
 #Copy paste from the executor
