@@ -1,7 +1,7 @@
 ENV_NAME = fetcher
 
 include ../etc/base-common.mk
-include ../python-common.mk
+include ../etc/python-common.mk
 
 PROJECT=fetcher
 
