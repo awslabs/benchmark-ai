@@ -58,7 +58,7 @@
                                                               (.put "value.deserializer" (env :kafka-value-deserializer "org.apache.kafka.common.serialization.StringDeserializer"))))]
                                (log/info (str "Configuring to consume from ["(count kafka-source-topics)"] topics: "(env :kafka-source-topics)))
                                (reset! topic->process-fn-map
-                                       (merge (zipmap kafka-source-topics (repeatedly #(partial (fn [event] (log/warn "No handler implementation for this event <"event">"))))) @topic->process-fn-map))
+                                       (merge (zipmap kafka-source-topics (repeatedly #(fn [event] (log/warn "No handler implementation for this event <"event">")))) @topic->process-fn-map))
                                (.subscribe consumer kafka-source-topics)
                                (while @started?
                                  (let [poll-interval (Duration/ofMillis(Integer/parseInt (env :kafka-poll-interval-ms)))
