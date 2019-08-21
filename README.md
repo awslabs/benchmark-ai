@@ -119,7 +119,7 @@ You will now create a Codebuild pipeline that deploys Anubis infrastructure and 
 
 ```bash
 # Assuming PWD is `benchmark-ai`
-./anubis-setup --region=us-east-1 --prefix-list-id pl-xxxxxxxx
+./anubis-setup --region us-east-1 --prefix-list-id pl-xxxxxxxx
 ```
 Type 'yes' when prompted and terraform will create the Codebuild pipeline and its dependencies.  When terraform finishes navigate to the AWS console -> Codebuild -> Pipeline -> Pipelines -> Anubis on the console to see the status of the installation
 
@@ -215,7 +215,7 @@ bff/bin/anubis --results <ACTION_ID>
 
 ```bash
 # Assuming PWD is `benchmark-ai`
-./anubis-setup --region=us-east-1 --prefix-list-id pl-xxxxxxxx --destroy
+./anubis-setup --region us-east-1 --prefix-list-id pl-xxxxxxxx --destroy
 ```
 
 ## Great, what's next?
