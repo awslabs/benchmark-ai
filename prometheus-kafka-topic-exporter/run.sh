@@ -2,7 +2,7 @@
 set -ex
 
 # Fill in template - expects config to be mounted at /config/kafka-topic-exporter.properties
-cp /config/kafka-topic-exporter.properties.template /tmp/kafka-topic-exporter.properties
+cp /config/kafka-topic-exporter.properties.template /tmp/kafka-topic-exporter.properties -H
 sed -i "s/@@KAFKA_BOOTSTRAP_SERVERS@@/$KAFKA_BOOTSTRAP_SERVERS/g" /tmp/kafka-topic-exporter.properties
 sed -i "s/@@METRICS_CONSUMER_TOPIC@@/$METRICS_CONSUMER_TOPIC/g" /tmp/kafka-topic-exporter.properties
 
