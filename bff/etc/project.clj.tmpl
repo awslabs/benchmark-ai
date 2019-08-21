@@ -56,7 +56,9 @@
   :plugins [[lein-ring "0.12.5"]
             [lein-exec "0.3.7"]
             [lein-pprint "1.2.0"]
-            [lein-codox "0.10.6"]]
+            [lein-codox "0.10.6"]
+            [lein-nvd "1.2.0"]
+            [jonase/eastwood "0.3.3"]]
   :codox {:sources ["@@SOURCE_PATHS@@"] :output-path "@@GEN_DOCS_PATH@@" :doc-paths ["doc"]}
   :cloverage {:output "@@GEN_DOCS_PATH@@/coverage"}
   :ring {:handler @@PROJECT@@.http-api/create-application-routes}

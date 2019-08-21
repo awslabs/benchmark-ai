@@ -7,7 +7,8 @@
             [clojure.string :as s]
             [cheshire.core :as json]
             [taoensso.timbre :as log])
-  (:import  [org.apache.kafka.clients.consumer KafkaConsumer]))
+  (:import  [org.apache.kafka.clients.consumer KafkaConsumer]
+            [java.time Duration]))
 
 (def kafka-keys
   #{:kafka-bootstrap-servers
@@ -60,7 +61,7 @@
                                        (merge (zipmap kafka-source-topics (repeatedly #(partial (fn [event] (log/warn "No handler implementation for this event <"event">"))))) @topic->process-fn-map))
                                (.subscribe consumer kafka-source-topics)
                                (while @started?
-                                 (let [poll-interval (Integer/parseInt (env :kafka-poll-interval-ms))
+                                 (let [poll-interval (Duration/ofMillis(Integer/parseInt (env :kafka-poll-interval-ms)))
                                        records (.poll consumer poll-interval)]
                                    (when (every? true? (map (fn [topic]
                                                               ((get @topic->process-fn-map topic) (records->events records topic))) kafka-source-topics))

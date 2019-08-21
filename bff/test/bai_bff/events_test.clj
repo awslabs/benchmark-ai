@@ -1,4 +1,4 @@
-(ns bai-bff.core-test
+(ns bai-bff.events-test
   (:require [clojure.test :refer :all]
             [bai-bff.core :refer :all]))
 
