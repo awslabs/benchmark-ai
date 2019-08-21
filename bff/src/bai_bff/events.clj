@@ -25,11 +25,12 @@
   (= (some-> event :payload :toml :sha1)
      (digest/sha1(b64/decode (.getBytes (some-> event :payload :toml :doc))))))
 
-(defn decode-document [event]
+(defn decode-document
   "Takes an event and decodes the base64 encoded descriptor
   document (that is in TOML format), and transforms the information
   into a map under the \"contents\" key.  It also verifies that the
   SHA1 posted does indeed match the descriptor document posted."
+  [event]
   (let [decoded-bytes (b64/decode (.getBytes (some-> event :payload :toml :doc)))
         verified?     (= (digest/sha1 decoded-bytes)
                          (some-> event :payload :toml :sha1))
