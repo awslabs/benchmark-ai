@@ -5,6 +5,7 @@ channels:
 dependencies:
   - python 3.7.*
   - ruamel.yaml >= 0.15
+  - setuptools == 41.0.1
   - toml 0.9.*
   - addict 2.2.*
   - python-kubernetes 9.0.*
