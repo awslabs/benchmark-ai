@@ -29,6 +29,10 @@ destroy-infra: check-parameter-region venv _destroy-infra
 _destroy-infra:
 	./baictl destroy infra --aws-region=$(AWS_REGION)
 
+sync-infra: check-parameter-region venv _sync-infra
+_sync-infra:
+	./baictl sync infra --aws-region=$(AWS_REGION) --mode=pull
+
 publish:
 	echo "Nothing to publish"
 
