@@ -59,7 +59,7 @@ class KafkaBackend(Backend):
                 name=metric_name,
                 value=metric_value,
                 timestamp=timestamp_in_millis,
-                labels={"job-id": self._job_id, "sender": "metrics-pusher"},
+                labels={"job_id": self._job_id, "sender": "metrics-pusher"},
             )
 
             # TODO: Handle KafkaTimeoutError

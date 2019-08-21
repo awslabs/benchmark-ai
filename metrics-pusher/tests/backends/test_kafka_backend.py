@@ -25,12 +25,12 @@ def freeze_time_to_1_second_after_epoch(mocker):
 
 
 def test_1_metric(mock_kafka_producer):
-    kafka_backend = KafkaBackend("job-id", topic="KAFKA_TOPIC", key="KAFKA_KEY")
+    kafka_backend = KafkaBackend("job_id", topic="KAFKA_TOPIC", key="KAFKA_KEY")
 
     kafka_backend.emit({"metric": 0.1})
 
     expected_metric_object = KafkaExporterMetric(
-        name="metric", value=0.1, timestamp=1000, labels={"job-id": "job-id", "sender": "metrics-pusher"}
+        name="metric", value=0.1, timestamp=1000, labels={"job_id": "job_id", "sender": "metrics-pusher"}
     )
     assert mock_kafka_producer.send.call_args_list == [
         call("KAFKA_TOPIC", value=expected_metric_object, key="KAFKA_KEY")
@@ -38,14 +38,14 @@ def test_1_metric(mock_kafka_producer):
 
 
 def test_2_metrics(mock_kafka_producer):
-    kafka_backend = KafkaBackend("job-id", topic="KAFKA_TOPIC", key="KAFKA_KEY")
+    kafka_backend = KafkaBackend("job_id", topic="KAFKA_TOPIC", key="KAFKA_KEY")
     kafka_backend.emit({"metric1": 0.1, "metric2": 0.2})
 
     expected_metric_object1 = KafkaExporterMetric(
-        name="metric1", value=0.1, timestamp=1000, labels={"job-id": "job-id", "sender": "metrics-pusher"}
+        name="metric1", value=0.1, timestamp=1000, labels={"job_id": "job_id", "sender": "metrics-pusher"}
     )
     expected_metric_object2 = KafkaExporterMetric(
-        name="metric2", value=0.2, timestamp=1000, labels={"job-id": "job-id", "sender": "metrics-pusher"}
+        name="metric2", value=0.2, timestamp=1000, labels={"job_id": "job_id", "sender": "metrics-pusher"}
     )
     assert mock_kafka_producer.send.call_args_list == [
         call("KAFKA_TOPIC", value=expected_metric_object1, key="KAFKA_KEY"),
@@ -54,6 +54,6 @@ def test_2_metrics(mock_kafka_producer):
 
 
 def test_close(mock_kafka_producer):
-    kafka_backend = KafkaBackend("job-id", topic="KAFKA_TOPIC", key="KAFKA_KEY")
+    kafka_backend = KafkaBackend("job_id", topic="KAFKA_TOPIC", key="KAFKA_KEY")
     kafka_backend.close()
     assert mock_kafka_producer.close.call_args_list == [call()]
