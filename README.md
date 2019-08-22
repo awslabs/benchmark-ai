@@ -130,7 +130,7 @@ You will now create a Codebuild pipeline that deploys Anubis infrastructure and 
 
 Type 'yes' when prompted and terraform will create the Codebuild pipeline and its dependencies.  When terraform finishes navigate to the AWS console -> Codebuild -> Pipeline -> Pipelines -> Anubis on the console to see the status of the installation
 
-<details><summary><strong>More about anubis-setup arguments</strong></summary>
+<details><summary>More about anubis-setup arguments</summary>
 <p>
 
  - region: (REQUIRED) AWS region that Anubis infrastructure and services will be instantiated in.  There can only be one instantiation of Anubis per account due to IAM role name collisions, etc.
@@ -146,7 +146,7 @@ Type 'yes' when prompted and terraform will create the Codebuild pipeline and it
 
 ##### Get the service endpoint for Anubis
 
-Once the Anubis pipeline has completed atleast the `deploy` step successfully you need to query the EKS cluster for the Anubis endpoint.
+Once the Anubis pipeline has completed, at least the `deploy` step, successfully you need to query the EKS cluster for the Anubis service endpoint.
 
 ```bash
 # Assuming PWD is `benchmark-ai`
@@ -174,8 +174,50 @@ popd
 ./bin/build-and-deploy-all-services
 ```
 
+<details><summary>(advanced usage)</summary>
+<p>
+The directory `baictl/drivers/aws/cluster/.terraform/bai` is created with everything related to the infrastructure (kubeconfig, bastion_private.pem, etc.).
+</p>
+</details>
 
-**Advanced usage**: The directory `baictl/drivers/aws/cluster/.terraform/bai` is created with everything related to the infrastructure (kubeconfig, bastion_private.pem, etc.).
+----
+
+#### Registration:
+
+Once the instantiation of the anubis *infrastructure* is complete you may begin to use the [`anubis`](bff/docs/anubis-client.md) client to interact with the system.  However you must first tell the [`anubis`](bff/docs/anubis-client.md) client which infrastructure it needs to point to.  You do this by *registering* your infrastructure's *endpoint* with the client.  Use the **--register** flag supplying the network **address** and **port** of your Anubis instantiation.  This will be provided to you at the end of the infrastructure instantiation process that you just went through (above).
+
+``` bash
+# Assuming PWD is `benchmark-ai`
+bff/bin/anubis --register xxxxxxxxxxx-xxxx.us-east-1.elb.amazonaws.com:80
+```
+
+To check that the client has registered with the Anubis instantiation, **--ping** it.
+
+``` bash
+# Assuming PWD is `benchmark-ai`
+bff/bin/anubis --ping
+
+                       _      _
+                      | |    (_)
+   __ _  _ __   _   _ | |__   _  ___
+  / _  ||  _ \ | | | ||  _ \ | |/ __|
+ | (_| || | | || |_| || |_) || |\__ \
+  \__,_||_| |_| \__,_||_.__/ |_||___/ ♎
+
+(v0.1.0-481dad2)
+-------------------------
+AWS: Benchmark AI Client
+-------------------------
+
+Brought to you by the cool peeps of the  MXNet-Berlin Team
+..........
+Current service endpoint is: [xxxxxxxxxxx-xxxx.us-east-1.elb.amazonaws.com:80]
+
+😎  Ready And Willing like Big Daddy Kane
+
+```
+This means you are good to go ;-) - Nice work.
+
 
 ## Step 2 - Run benchmarks
 
