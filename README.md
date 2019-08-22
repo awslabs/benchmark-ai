@@ -277,16 +277,122 @@ in your code.
 
 Future Feature Roadmap...
 
-- [x] Cronjobs
-- [ ] Global status state
-- [ ] User Metrics
-- [ ] AWS: Cloudwatch exporting
-- [ ] Alerting
-- [ ] AWS: Improved AZ selection
-- [ ] Distributed ML training benchmarks
-- [ ] Range capabilities in TOML
-- [ ] Persistent raw event and log storage
-- [ ] Report generation
+<details><summary>Global status state</summary>
+<p>
+
+To be able to store status state in a global store that persists.  In
+the current implementation the data is stored in memory and is
+ephemeral bound to the life-cycle of the BFF instance(s).  The solution here is to use a data structure store.  Redis would be a suitable tool for this.  One may also just take advantage of the event persistence story, and replenish data from Kafka or S3.
+
+</p>
+</details>
+<details><summary>User Metrics</summary>
+<p>
+
+To provide user defined metrics to the customer.  This entails
+providing a means of dynamically producing dashboards for a given run
+based on what is being collected/emitted.
+
+</p>
+</details>
+
+<details><summary>AWS: Cloudwatch exporting</summary>
+<p>
+
+To export data so that it may be consumed by cloudwatch.  This entails
+creating a service whose function is to listen to messages and writing
+them out to Cloud Watch.
+
+</p>
+</details>
+<details><summary>AMI Support</summary>
+<p>
+
+For Anubis to support running jobs across "bare metal" AMIs.
+
+This feature can be supported in three phases.
+<ul>
+<li> Implementing an executor that can provision EC2 instances and imbue them with software to coordinate runs. The first pass would be running single node jobs.
+<li> Following that is setting up for multi-node jobs
+<li> Finally, addressing the alerting story in this context.
+</ul>
+
+</p>
+</details>
+<details><summary>Alerting</summary>
+<p>
+
+With regards to metrics, we want to be able to alert the user if there
+are exceptional conditions based on the metrics values.  This is
+allows the system to be used for regression detection among other
+things.  Anubis sets up Prometheus as well as the Prometheus Alert
+Manager. We will directly leveraged it to satisfy all reasonable
+alerting needs.  The trick here is to figure out how to capture the
+alerting rules. This may, most likely, be written as a new stanza in
+the TOML.
+
+</p>
+</details>
+<details><summary>AWS: Improved AZ selection</summary>
+<p>
+
+Availability Zones can be specified explicitly in the TOML descriptor,
+if not they are randomly selected.  The random selection could lead to
+running pods in zones that don't have the resources desired.  This
+leads to the system not being able to run a benchmark, and spinning
+forever waiting for resources that are not present and never
+returning.  The low hanging fruit here would be to set a max timeout
+threshold for waiting on resources.  The better solution would be to
+connect to an API (or some information) where you can determine that
+the resources desired are present.
+
+</p>
+</details>
+<details><summary>Range capabilities in TOML</summary>
+<p>
+
+We want to be able to specify ranges of values across the *framework*,
+*model*, *hardware* axes.  This would generate the cross product of
+results. This would be especially useful in the hyper parameter
+optimization space.  This feature would require the introduction of an
+aggregating identifying attribute that would group action ids into an
+"action-id-family" With the action-id-family, the notion of experiment
+can be realized - as a set of actions / runs that are semantically
+related.
+
+</p>
+</details>
+<details><summary>Persistent metrics, raw events and log storage</summary>
+<p>
+
+Being able to have all events recorded durably would be advantageous
+as it would result in having "event datasets" that enable further
+out-of-band investigations or reporting.
+
+<ul>
+
+<li> Events: Listen to Kafka and dump all the events for each topic to
+S3.
+<li> Logs: We are using fluentD to push logs to ElasticSearch. This
+can be configured to write to s3 (I believe - need to confirm)
+<li> Metrics: This means having a persistence story for Prometheus
+metrics which are rather opaque and not amenable to simple file
+writing.  There is a story and write up for this capability, executing
+it will manifest this feature.
+</ul>
+</p>
+</details>
+<details><summary>Report generation</summary>
+<p>
+
+Processing systems to generate reports akin to those presented now
+with "BAI 1.0".  Report generation entails looking through data to put
+together the insights you seek.  This is largely out-of-band
+processing happening at the egress end of the system, and goes hand in
+hand with the raw persistence story.
+
+</p>
+</details>
 
 # Design and architecture
 
