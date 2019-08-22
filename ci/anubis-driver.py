@@ -275,7 +275,10 @@ def remove_terraform_config_files():
 
 def destroy_pipeline(region):
     # HACK: Rules don't get revoked causing timeout on security group destroy
-    if subprocess.call(["terraform", "output"]) == 0:
+    if (
+        subprocess.call(["terraform", "output", "blackbox_vpc_default_group_id"]) == 0
+        and subprocess.call(["terraform", "output", "blackbox_public_group_id"]) == 0
+    ):
         group_id = subprocess.check_output(["terraform", "output", "blackbox_vpc_default_group_id"]).strip()
         source_group = subprocess.check_output(["terraform", "output", "blackbox_public_group_id"]).strip()
         return_code = subprocess.call(
