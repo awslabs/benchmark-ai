@@ -79,8 +79,14 @@ hardware. ;-)
 2. We use [CONDA](https://docs.conda.io/en/latest/index.html) as our way to stabilize the environment in which we run code.  Please install CONDA, the recommended installation is posted [here](https://docs.conda.io/en/latest/miniconda.html).
 3. Install **bash** version 5+
 
+After you have installed these tools, please open up a new terminal (the simplest way to come up in a clean new state).<br>
+*Note - If your shell session comes up with the default "(base)" conda environment, deactivate the "(base)" environment with the following command:*
 
-You are now ready to create the environment to use the tool:
+```bash
+conda deactivate
+```
+
+Now, you are now ready to proceed :-)
 
 ```bash
 git clone https://github.com/MXNetEdge/benchmark-ai.git
@@ -121,6 +127,7 @@ You will now create a Codebuild pipeline that deploys Anubis infrastructure and 
 # Assuming PWD is `benchmark-ai`
 ./anubis-setup --region us-east-1 --prefix-list-id pl-xxxxxxxx
 ```
+
 Type 'yes' when prompted and terraform will create the Codebuild pipeline and its dependencies.  When terraform finishes navigate to the AWS console -> Codebuild -> Pipeline -> Pipelines -> Anubis on the console to see the status of the installation
 
 <details><summary><strong>More about anubis-setup arguments</strong></summary>
