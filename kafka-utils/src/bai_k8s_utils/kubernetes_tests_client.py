@@ -1,12 +1,12 @@
 import logging
-from functools import wraps
-
-from typing import Callable
 
 import kubernetes
+from functools import wraps
+from kubernetes.client import V1Pod, V1PodStatus
 from kubernetes.client import V1PodList, V1PersistentVolumeClaimList, V1beta1CronJobList
 from time import sleep
 from timeout_decorator import timeout
+from typing import Callable
 
 from bai_k8s_utils.service_labels import ServiceLabels
 
@@ -37,10 +37,24 @@ class KubernetesTestUtilsClient:
     DEFAULT_TIMEOUT_SECONDS = 60
 
     def is_pod_present(self, namespace: str, client_id: str, action_id: str):
+        pods = self._get_pods(namespace, client_id, action_id)
+        return bool(pods.items)
+
+    def _get_pods(self, namespace, client_id, action_id) -> V1PodList:
         label_selector = ServiceLabels.get_label_selector(self.service, client_id, action_id)
         logger.info(f"pod selector request:{label_selector}")
-        pods: V1PodList = self.core_api_instance.list_namespaced_pod(namespace, label_selector=label_selector)
-        return bool(pods.items)
+        pods = self.core_api_instance.list_namespaced_pod(namespace, label_selector=label_selector)
+        return pods
+
+    def is_pod_succeeded(self, namespace: str, client_id: str, action_id: str):
+        pods = self._get_pods(namespace, client_id, action_id)
+        if len(pods.items) == 0:
+            return False
+        if len(pods.items) > 1:
+            raise ValueError("Multiple pods found, but one expected")
+        pod: V1Pod = pods.items[0]
+        status: V1PodStatus = pod.status
+        return status.phase == "Succeeded"
 
     def is_job_present(self, namespace: str, client_id: str, action_id: str):
         label_selector = ServiceLabels.get_label_selector(self.service, client_id, action_id)
@@ -91,6 +105,9 @@ class KubernetesTestUtilsClient:
 
     def wait_for_pod_exists(self, namespace: str, client_id: str, action_id: str):
         self._wait_loop(negate(self.is_pod_present), "pod doesn't exist yet", namespace, client_id, action_id)
+
+    def wait_for_pod_succeeded(self, namespace: str, client_id: str, action_id: str):
+        self._wait_loop(negate(self.is_pod_succeeded), "pod has not succeeded yet", namespace, client_id, action_id)
 
     def wait_for_pod_not_exists(self, namespace: str, client_id: str, action_id: str):
         self._wait_loop(self.is_pod_present, "pod still exists", namespace, client_id, action_id)

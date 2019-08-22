@@ -12,11 +12,14 @@ fi
 USER_FILES=$2
 FILES=(${USER_FILES//:/ })
 
+S3_ENDPOINT_ARG=""
+[ "${S3_ENDPOINT}" != "" ] && S3_ENDPOINT_ARG="--endpoint-url=${S3_ENDPOINT}"
+
 #Ugly HACK to check if should be a dir.
 #Brittle and unstable - yes, fails for filenames with PRE
 is_prefix(){
     local S3FILE=$1
-    pre=$(aws s3 ls s3://${BUCKET}/${S3FILE} | grep " PRE ")
+    pre=$(aws s3 ls s3://${BUCKET}/${S3FILE} ${S3_ENDPOINT_ARG} | grep " PRE ")
     [ -n "${pre}" ] || return 1
 }
 
@@ -40,8 +43,8 @@ for file in "${FILES[@]}"; do
         echo " ---> No download path for ${file}, assuming ${TARGET}"
     fi
 
-    CMD="aws s3 cp s3://${BUCKET}/${S3FILE} ${TARGET}"
-    is_prefix "$S3FILE" && CMD="aws s3 sync s3://${BUCKET}/${S3FILE} ${TARGET}"
+    CMD="aws s3 cp s3://${BUCKET}/${S3FILE} ${TARGET} ${S3_ENDPOINT_ARG}"
+    is_prefix "$S3FILE" && CMD="aws s3 sync s3://${BUCKET}/${S3FILE} ${TARGET} ${S3_ENDPOINT_ARG}"
     echo " ---> Executing: ${CMD}"
     eval $CMD
 

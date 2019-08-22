@@ -32,6 +32,27 @@ spec:
       initContainers:
       - name: data-puller
         image: {config.puller_docker_image}
+        env:
+        - name: S3_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: outputs-infrastructure
+              key: s3_endpoint
+        # This environment variables are optional.
+        # They reference a config map missing in DEVO/PROD.
+        # Enable the integration tests
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            configMapKeyRef:
+              name: s3
+              key: access-key-id
+              optional: true
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: s3
+              key: secret-access-key
+              optional: true
         volumeMounts:
         - name: datasets-volume
           mountPath: /data
@@ -40,6 +61,27 @@ spec:
         volumeMounts:
           - name: scripts-volume
             mountPath: /bai/scripts
+        env:
+        - name: S3_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: outputs-infrastructure
+              key: s3_endpoint
+        # This environment variables are optional.
+        # They reference a config map missing in DEVO/PROD.
+        # Enable the integration tests
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            configMapKeyRef:
+              name: s3
+              key: access-key-id
+              optional: true
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: s3
+              key: secret-access-key
+              optional: true
       containers:
       - name: benchmark
         image: {descriptor.docker_image}

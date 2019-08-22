@@ -9,3 +9,4 @@ dependencies:
   - pytest-datadir
   - pytest-regressions
   - timeout-decorator
+  - boto3 1.9.*

@@ -34,6 +34,24 @@ spec:
       initContainers:
       - name: data-puller
         image: benchmarkai/puller:3115770
+        env:
+        - name: S3_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: outputs-infrastructure
+              key: s3_endpoint
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            configMapKeyRef:
+              name: s3
+              key: access-key-id
+              optional: true
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: s3
+              key: secret-access-key
+              optional: true
         volumeMounts:
         - name: datasets-volume
           mountPath: /data
@@ -45,8 +63,26 @@ spec:
         volumeMounts:
         - name: scripts-volume
           mountPath: /bai/scripts
+        env:
+        - name: S3_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: outputs-infrastructure
+              key: s3_endpoint
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            configMapKeyRef:
+              name: s3
+              key: access-key-id
+              optional: true
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: s3
+              key: secret-access-key
+              optional: true
         args:
-        - script-exchange
+        - scripts-exchange
         - anubis/scripts1.tar,777,/bai/scripts/s0,unpack_in_place:anubis/scripts2.tar,777,/bai/scripts/s1,unpack_in_place
       containers:
       - name: benchmark

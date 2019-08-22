@@ -71,6 +71,11 @@ spec:
               configMapKeyRef:
                 name: pytest
                 key: timeout
+          - name: S3_ENDPOINT
+            valueFrom:
+              configMapKeyRef:
+                name: outputs-infrastructure
+                key: s3_endpoint
           volumeMounts:
             - mountPath: /kubectl
               name: kubectl

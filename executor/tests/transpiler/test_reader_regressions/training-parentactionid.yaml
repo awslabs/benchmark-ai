@@ -34,6 +34,24 @@ spec:
       initContainers:
       - name: data-puller
         image: benchmarkai/puller:3115770
+        env:
+        - name: S3_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: outputs-infrastructure
+              key: s3_endpoint
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            configMapKeyRef:
+              name: s3
+              key: access-key-id
+              optional: true
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: s3
+              key: secret-access-key
+              optional: true
         volumeMounts:
         - name: datasets-volume
           mountPath: /data
