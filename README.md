@@ -38,10 +38,10 @@ The other is the [`anubis`](bff/docs/anubis-client.md) client tool that allows u
 - monitor the progress of a run activities `anubis --status`
 - obtain information from a benchmark that was run: `anubis --results`
 
-The envisioned use-case is that a team or group or org instantiates the service infrastructure to be be used by its constituents. As such only the "admin" needs to run `anubis-setup`.  While all users of Anubis interact with it using the `anubis` client tool.
+The envisioned use-case is that a team or group or org instantiates the service infrastructure to be be used by its constituents. As such only the "admin" needs to run [`anubis-setup`](docs/anubis-setup.md).  While all users of Anubis interact with it using the `anubis` client tool.
 
-For more information on how to use `anubis-setup`, including use case examples and option explanations, please see the [full documentation here](docs/anubis-setup.md).<br>
-For more information on how to use the `anubis` client, please see its [starter document](bff/docs/anubis-client.md).
+For more information on how to use [`anubis-setup`](docs/anubis-setup.md), including use case examples and option explanations, please see the [full documentation here](docs/anubis-setup.md).<br>
+For more information on how to use the [`anubis`](bff/docs/anubis-client.md) client, please see its [starter document](bff/docs/anubis-client.md).
 
 <hr>
 <i>
