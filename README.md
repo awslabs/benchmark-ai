@@ -184,7 +184,7 @@ The directory `baictl/drivers/aws/cluster/.terraform/bai` is created with everyt
 
 #### Registration:
 
-Once the instantiation of the anubis *infrastructure* is complete you may begin to use the [`anubis`](bff/docs/anubis-client.md) client to interact with the system.  However, you must first tell the [`anubis`](bff/docs/anubis-client.md) client which infrastructure it needs to point to.  You do this by *registering* your infrastructure's *endpoint* with the client.  Use the **--register** flag supplying the network **address** and **port** of your Anubis instantiation.  This will be provided to you at the end of the infrastructure instantiation process that you just went through (above).
+Once the instantiation of the anubis *infrastructure* is complete you may begin to use the [`anubis`](bff/docs/anubis-client.md) client to interact with the system.  However, you must first tell the [`anubis`](bff/docs/anubis-client.md) client which infrastructure it needs to point to. You do this by *registering* your infrastructure's *endpoint* with the client.  Use the **--register** flag supplying the network **address** and **port** of your Anubis instantiation.  This will be provided to you at the end of the infrastructure instantiation process that you just went through (above).
 
 ``` bash
 # Assuming PWD is `benchmark-ai`
