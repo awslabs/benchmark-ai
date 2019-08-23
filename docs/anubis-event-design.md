@@ -35,7 +35,7 @@ _Kafka Topics_...<br>
 
 TOML → Client Tool (anubis): → BFF via web service call.
 
-(The TOML format is described [here](https://github.com/MXNetEdge/benchmark-ai/tree/master/executor/))
+(The TOML format is described [here](https://github.com/MXNetEdge/benchmark-ai/tree/master/executor/#example-descriptor))
 
 ```
 {
