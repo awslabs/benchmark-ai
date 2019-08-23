@@ -120,12 +120,13 @@ class Config:
 def s3_remote_state_bucket(config, region, session):
     # Ensure bucket exists for remote state
     sts = session.client("sts")
-    if os.path.exists(os.path.join(os.path.dirname(__file__), ".terraform/ci-backend-config")):
+    script_path = os.path.join(os.path.dirname(__file__)
+    if os.path.exists(script_path, ".terraform/ci-backend-config")):
         ci_backend_config = open(".terraform/ci-backend-config", "r").read()
         if sts.get_caller_identity()["Account"] not in ci_backend_config:
             os.remove(".terraform/ci-backend-config")
             config["bucket"] = None
-            if os.path.exists(os.path.join(os.path.dirname(__file__), ".terraform/terraform.tfstate")):
+            if os.path.exists(script_path, ".terraform/terraform.tfstate")):
                 os.remove(".terraform/terraform.tfstate")
 
     if config["bucket"] is None:
