@@ -120,12 +120,12 @@ class Config:
 def s3_remote_state_bucket(config, region, session):
     # Ensure bucket exists for remote state
     sts = session.client("sts")
-    if os.path.exists(".terraform/ci-backend-config"):
+    if os.path.exists(os.path.join(os.path.dirname(__file__), ".terraform/ci-backend-config")):
         ci_backend_config = open(".terraform/ci-backend-config", "r").read()
         if sts.get_caller_identity()["Account"] not in ci_backend_config:
             os.remove(".terraform/ci-backend-config")
             config["bucket"] = None
-            if os.path.exists(".terraform/terraform.tfstate"):
+            if os.path.exists(os.path.join(os.path.dirname(__file__), ".terraform/terraform.tfstate")):
                 os.remove(".terraform/terraform.tfstate")
 
     if config["bucket"] is None:
@@ -180,24 +180,32 @@ def add_current_user_arn(config, session):
 
 
 def sync_baictl(session, region):
-    sts = session.client("sts")
-    account_id = sts.get_caller_identity()["Account"]
     os.environ["AWS_REGION"] = region
 
     print(f"=> Calling `./baictl sync infra --aws-region={region}` in baictl to get kubeconfig")
 
-    if os.path.exists("../baictl/drivers/aws/cluster/.terraform") and os.path.exists(
-        "../baictl/drivers/aws/cluster/.terraform/terraform.tfstate"
-    ):
-        terraform_state_file = open("../baictl/drivers/aws/cluster/.terraform/terraform.tfstate", "r").read()
-        if account_id not in terraform_state_file:
-            return_code = subprocess.call(["rm", "-rf", "drivers/aws/cluster/.terraform"], cwd="../baictl")
-            if return_code != 0:
-                raise Exception(f"Failure calling `rm -rf drivers/aws/cluster/.terraform` in baictl: {return_code}")
+    if os.path.exists(os.path.join(os.path.dirname(__file__), "../baictl/drivers/aws/cluster/.terraform")):
+        return_code = subprocess.call(["rm", "-rf", "drivers/aws/cluster/.terraform"], cwd="../baictl")
+        if return_code != 0:
+            raise Exception(f"Failure calling `rm -rf drivers/aws/cluster/.terraform` in baictl: {return_code}")
 
     return_code = subprocess.call(["make", "sync-infra"], cwd="../baictl")
     if return_code != 0:
         raise Exception(f"Failure calling `make sync-infra` in baictl: {return_code}")
+
+
+def undeploy_services():
+    parent_dir = os.path.join(os.path.dirname(__file__), "..")
+    service_dirs = [
+        f
+        for f in os.listdir(parent_dir)
+        if os.path.isdir(os.path.join(parent_dir, f)) and os.path.exists(os.path.join(parent_dir, f) + "/Makefile")
+    ]
+
+    for folder in service_dirs:
+        return_code = subprocess.call(["make", "undeploy"], cwd=f"../{folder}")
+        if return_code != 0:
+            raise Exception(f"Failure calling `make undeploy` in {folder}: {return_code}")
 
 
 def main():
@@ -235,6 +243,7 @@ def main():
     if args.destroy:
         sync_baictl(session, region)
         destroy_pipeline(region)
+        undeploy_services()
         destroy_infrastructure(region)
         return
 
@@ -250,7 +259,6 @@ def main():
     # Create pipeline which creates infrastructure and deploys services
     print(f"=> Calling `terraform plan --out=terraform.plan`")
     return_code = subprocess.call(["terraform", "plan", "--out=terraform.plan"])
-
     if return_code != 0:
         raise Exception(f"Failure calling `terraform plan`: {return_code}")
     print("=> Calling `terraform apply`")
@@ -275,9 +283,10 @@ def remove_terraform_config_files():
 
 def destroy_pipeline(region):
     # HACK: Rules don't get revoked causing timeout on security group destroy
+    devnull = open(os.devnull, "w")
     if (
-        subprocess.call(["terraform", "output", "blackbox_vpc_default_group_id"]) == 0
-        and subprocess.call(["terraform", "output", "blackbox_public_group_id"]) == 0
+        subprocess.call(["terraform", "output", "blackbox_vpc_default_group_id"], stderr=devnull) == 0
+        and subprocess.call(["terraform", "output", "blackbox_public_group_id"], stderr=devnull) == 0
     ):
         group_id = subprocess.check_output(["terraform", "output", "blackbox_vpc_default_group_id"]).strip()
         source_group = subprocess.check_output(["terraform", "output", "blackbox_public_group_id"]).strip()
@@ -304,12 +313,6 @@ def destroy_pipeline(region):
 
 def destroy_infrastructure(region):
     os.environ["AWS_REGION"] = region
-    return_code = subprocess.call(["kubectl", "get", "deployments", "bai-bff"])
-    if return_code == 0:
-        print("=> Calling `make undeploy` in bff to destroy loadbalancer")
-        return_code = subprocess.call(["make", "undeploy"], cwd="../bff")
-        if return_code != 0:
-            raise Exception(f"Failure calling `make undeploy` in bff: {return_code}")
     print("=> Calling `make destroy-infra` in baictl to destroy infrastructure")
     return_code = subprocess.call(["make", "destroy-infra"], cwd="../baictl")
     if return_code != 0:
