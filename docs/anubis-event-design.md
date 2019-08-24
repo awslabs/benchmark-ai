@@ -4,10 +4,10 @@ This document describes each of the main events that are pushed through the Benc
 
 Key attributes:
 
-message_id
-client_id
-action_id
-visited
+* message_id
+* client_id
+* action_id
+* visited
 
 When we refer to UUID - they specifically are in this format:<br>
 [UUID format: "728ff542-b332-4520-bb2e-51d5e32cfc0a"](https://en.wikipedia.org/wiki/Universally_unique_identifier)
