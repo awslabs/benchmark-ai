@@ -1,21 +1,15 @@
 # Benchmark AI: Event design
 
-https://quip-amazon.com/JGHsAukyNFOs/BenchmarkAI-Descriptor-file
-
 This document describes each of the main events that are pushed through the Benchmark AI system.
 
-#---------<br>
-EVERY event must have...<br>
-#---------<br>
+Key attributes:
 
-UUID = UUID created from the initial ingress point of the system
-CLIENT_VERSION = The version of the client
-API_VERSION = The version of the API that this client is speaking
-CLIENT_USER = The username of the client
-AUTHENTICATED = Whether or not this client has been authenticated.
-DATE = The date created (to nanosecond)
-VISITED = array of ids of nodes visited
+message_id
+client_id
+action_id
+visited
 
+When we refer to UUID - they specifically are in this format:<br>
 [UUID format: "728ff542-b332-4520-bb2e-51d5e32cfc0a"](https://en.wikipedia.org/wiki/Universally_unique_identifier)
 
 _Kafka Topics_...<br>
@@ -30,6 +24,7 @@ _Kafka Topics_...<br>
 * “**message-id**” is always unique and set for **every** dispatch of the message.
 * "**tstamp**" is in **millis** since epoch and are set the the time when a message **arrives**.
    (The date field should be identical to the tstamp of the last visited node)
+* "**visited**" contains the set of services that have transformed the event in some way - the event's provenance.
 * **BAI_APP_STATUS** and **CMD_RETURN** we consider as "broadcast" topics a slightly different classification than the other topics which have more directed semantics.
 ----
 

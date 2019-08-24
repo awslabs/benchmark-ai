@@ -406,7 +406,16 @@ The system is built to embody a few guiding tenets:
   <li>Use best of breed technology that has significant mind share</li>
 </ul>
 
+The picture below shows the "infrastructure" layer of Anubis.
+
 ![Anubis design](docs/images/anubis_architecture_diagram.png "Anubis Design")
+
+The orchestration layer consists of services running on K8s, sending
+[events](docs/anubis-event-design.md#benchmark-ai-event-design) to
+each other to coordinate the activities necessary to shepherd model
+runs. More specifically events are sent to kafka on specified topics.
+Kafka facilitates the event sending throughout Anubis.
+
 
 #### Technologies
 
