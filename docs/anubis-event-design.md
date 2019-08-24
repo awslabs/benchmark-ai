@@ -2,14 +2,7 @@
 
 This document describes each of the main events that are pushed through the Benchmark AI system.
 
-Key attributes:
-
-* message_id
-* client_id
-* action_id
-* visited
-
-When we refer to UUID - they specifically are in this format:<br>
+_Note: When we refer to UUID - they specifically are in this format:_<br>
 [UUID format: "728ff542-b332-4520-bb2e-51d5e32cfc0a"](https://en.wikipedia.org/wiki/Universally_unique_identifier)
 
 _Kafka Topics_...<br>
@@ -18,7 +11,7 @@ _Kafka Topics_...<br>
 **CMD_SUBMIT**,<br>
 **CMD_RETURN, BAI_APP_STATUS**<br>
 
-#### Notes:
+#### Key attributes:
 
 * “**action-id**” _remains the same_ throughout the transformations of the events.  It represents the client's semantic action, despite how we accomplish it.
 * “**message-id**” is always unique and set for **every** dispatch of the message.
