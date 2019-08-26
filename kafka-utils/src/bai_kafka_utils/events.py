@@ -1,11 +1,10 @@
 import dataclasses
 from dataclasses import dataclass
 from enum import Enum
+from typing import List, Optional, Type, Dict, Any, TypeVar, Union
 
 import dacite
 from dataclasses_json import dataclass_json
-from typing import List, Optional, Type, Dict, Any, TypeVar, Union
-
 
 _REQUIRED = object()
 

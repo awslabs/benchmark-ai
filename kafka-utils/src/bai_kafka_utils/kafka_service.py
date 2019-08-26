@@ -2,7 +2,6 @@ import abc
 import dataclasses
 import itertools
 import logging
-import time
 from dataclasses import dataclass
 from signal import signal, SIGTERM
 from typing import List, Optional, Dict
@@ -11,7 +10,7 @@ from kafka import KafkaProducer, KafkaConsumer
 
 from bai_kafka_utils.events import BenchmarkEvent, Status
 from bai_kafka_utils.events import VisitedService, StatusMessageBenchmarkEvent
-from bai_kafka_utils.utils import generate_uuid
+from bai_kafka_utils.utils import generate_uuid, now_milliseconds
 
 logger = logging.getLogger(__name__)
 
@@ -84,14 +83,14 @@ class EventEmitter:
         """
 
         def add_self_to_visited(src_event):
-            current_time_ms = int(time.time() * 1000)
+            current_time_ms = now_milliseconds()
             entry = VisitedService(self.name, current_time_ms, self.version, self.pod_name)
             res = list(src_event.visited)
             res.append(entry)
             return res
 
         event_to_send = dataclasses.replace(
-            event, message_id=generate_uuid(), type=topic, visited=add_self_to_visited(event)
+            event, message_id=generate_uuid(), type=topic, visited=add_self_to_visited(event), tstamp=now_milliseconds()
         )
         event_key = event_to_send.client_id
 
