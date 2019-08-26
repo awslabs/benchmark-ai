@@ -1,21 +1,8 @@
 # Benchmark AI: Event design
 
-https://quip-amazon.com/JGHsAukyNFOs/BenchmarkAI-Descriptor-file
-
 This document describes each of the main events that are pushed through the Benchmark AI system.
 
-#---------<br>
-EVERY event must have...<br>
-#---------<br>
-
-UUID = UUID created from the initial ingress point of the system
-CLIENT_VERSION = The version of the client
-API_VERSION = The version of the API that this client is speaking
-CLIENT_USER = The username of the client
-AUTHENTICATED = Whether or not this client has been authenticated.
-DATE = The date created (to nanosecond)
-VISITED = array of ids of nodes visited
-
+_Note: When we refer to UUID - they specifically are in this format:_<br>
 [UUID format: "728ff542-b332-4520-bb2e-51d5e32cfc0a"](https://en.wikipedia.org/wiki/Universally_unique_identifier)
 
 _Kafka Topics_...<br>
@@ -24,18 +11,19 @@ _Kafka Topics_...<br>
 **CMD_SUBMIT**,<br>
 **CMD_RETURN, BAI_APP_STATUS**<br>
 
-#### Notes:
+#### Key attributes:
 
 * “**action-id**” _remains the same_ throughout the transformations of the events.  It represents the client's semantic action, despite how we accomplish it.
 * “**message-id**” is always unique and set for **every** dispatch of the message.
 * "**tstamp**" is in **millis** since epoch and are set the the time when a message **arrives**.
    (The date field should be identical to the tstamp of the last visited node)
+* "**visited**" contains the set of services that have transformed the event in some way - the event's provenance.
 * **BAI_APP_STATUS** and **CMD_RETURN** we consider as "broadcast" topics a slightly different classification than the other topics which have more directed semantics.
 ----
 
 TOML → Client Tool (anubis): → BFF via web service call.
 
-(The TOML format is described [here](https://github.com/MXNetEdge/benchmark-ai/tree/master/executor/))
+(The TOML format is described [here](https://github.com/MXNetEdge/benchmark-ai/tree/master/executor/#example-descriptor))
 
 ```
 {
