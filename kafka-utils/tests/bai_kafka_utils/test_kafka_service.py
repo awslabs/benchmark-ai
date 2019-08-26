@@ -1,7 +1,6 @@
 import collections
 import copy
 import re
-import time
 import uuid
 from dataclasses import dataclass
 from typing import List, Dict
@@ -165,7 +164,7 @@ def mock_generate_uuid(mocker):
 
 @fixture
 def mock_time(mocker):
-    mocker.patch.object(time, "time", return_value=VISIT_TIME)
+    return mocker.patch.object(bai_kafka_utils.kafka_service, "now_milliseconds", return_value=VISIT_TIME_MS)
 
 
 @fixture
@@ -188,6 +187,9 @@ def test_event_emitter_sends_message(kafka_producer, benchmark_event, mock_gener
     expected_event.visited.append(VisitedService(SERVICE_NAME, tstamp=VISIT_TIME_MS, version=VERSION, node=POD_NAME))
     expected_event.type = dest_topic
 
+    # assert timestamp is update to now
+    expected_event.tstamp = VISIT_TIME_MS
+
     kafka_producer.send.assert_called_with(dest_topic, value=expected_event, key=CLIENT_ID)
 
 
@@ -205,6 +207,9 @@ def test_event_emitter_sends_status_message(kafka_producer, benchmark_event, moc
     expected_event.message_id = str(mock_generate_uuid())
     expected_event.visited.append(VisitedService(SERVICE_NAME, tstamp=VISIT_TIME_MS, version=VERSION, node=POD_NAME))
     expected_event.type = STATUS_TOPIC
+
+    # assert event time stamp is update to now
+    expected_event.tstamp = VISIT_TIME_MS
 
     kafka_producer.send.assert_called_with(STATUS_TOPIC, value=expected_event, key=CLIENT_ID)
 

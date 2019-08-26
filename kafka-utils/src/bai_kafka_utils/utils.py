@@ -3,6 +3,7 @@ import hashlib
 import platform
 import random
 import string
+import time
 import uuid
 
 DEFAULT_ENCODING = encodings.utf_8.getregentry().name
@@ -20,6 +21,13 @@ def md5sum(str_to_hash: str, encoding: str = DEFAULT_ENCODING):
 
 def generate_uuid():
     return str(uuid.uuid4())
+
+
+def now_milliseconds():
+    """
+    :return: current time in milliseconds
+    """
+    return int(time.time() * 1000)
 
 
 def get_pod_name():
