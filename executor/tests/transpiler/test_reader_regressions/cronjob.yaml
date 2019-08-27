@@ -40,7 +40,7 @@ spec:
                   name: executor
                   key: status_topic
             - name: BENCHMARK_EVENT
-              value: '{"action_id": "ACTION_ID", "parent_action_id": "", "message_id":
+              value: '{"action_id": "ACTION_ID", "parent_action_id": null, "message_id":
                 "MESSAGE_ID", "client_id": "CLIENT_ID", "client_version": "CLIENT_VERSION",
                 "client_username": "client_username", "authenticated": false, "tstamp":
                 42, "visited": [], "type": "BAI_APP_FETCHER", "payload": {"toml":

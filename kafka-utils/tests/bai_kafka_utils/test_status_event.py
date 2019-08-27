@@ -33,7 +33,7 @@ STATUS_EVENT_JSON = (
   "message_id": "MESSAGE_ID",
   "client_id":  "CLIENT_ID",
   "action_id":  "ACTION_ID",
-  "parent_action_id": "",
+  "parent_action_id": null,
   "tstamp": 1554901873677 ,
   "client_username": "vasya",
   "client_version": "1.0",
@@ -76,9 +76,6 @@ def test_serialization():
 
     serialized = json.loads(STATUS_EVENT.to_json())
     expected = json.loads(STATUS_EVENT_JSON)
-
-    print(serialized)
-    print(expected)
 
     assert serialized == expected
 

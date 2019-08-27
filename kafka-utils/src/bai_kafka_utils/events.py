@@ -125,7 +125,7 @@ class VisitedService:
 @dataclass
 class BenchmarkEvent:
     action_id: str = _REQUIRED
-    parent_action_id: Optional[str] = ""
+    parent_action_id: Optional[str] = None
     message_id: str = _REQUIRED
     client_id: str = _REQUIRED
     client_version: str = _REQUIRED
