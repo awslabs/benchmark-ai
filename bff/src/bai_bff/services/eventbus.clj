@@ -10,6 +10,7 @@
   there is state I manage it in this way. Oh well.)"
   (:require [bai-bff.core :refer :all]
             [bai-bff.services :refer [RunService]]
+            [bai-bff.services.persistence :as db]
             [bai-bff.utils.parsers :refer [parse-long]]
             [bai-bff.utils.utils :as utils]
             [bai-bff.utils.log-index :as log-index]
@@ -30,6 +31,8 @@
   RunService
   (start! [this]
     (log/info (str "starting eventbus service component..."))
+    ;; init persistence layer
+    (db/initialize)
     (reset! send-event-channel-atom send-channel)
     (reset! receive-events-channel-atom receive-channel))
   (stop! [this]
@@ -53,7 +56,6 @@
 ;;----------------------------------------------------------
 
 ;; The "database"
-(def status-db (atom {}))
 (def stored-scripts (atom #{}))
 
 (defn update-status-store
@@ -86,19 +88,15 @@
   vector.  This is a TODO item, which means that since atomic calls
   can be re-run at anytime, we should make sure this function is pure
   and right now it is not - not without sorting and dedupping."
-  [store event & {:keys [usurping-index]}]
+  [event & {:keys [usurping-index]}]
   (log/trace "update-status-store called...")
   (if (nil? event)
-    store
+    false
     (let [{:keys [client_id action_id]} event
           [client-key action-key] (mapv keyword [client_id (or usurping-index action_id)])]
       (if (and client-key action-key)
-        (try
-          (assoc-in store [client-key action-key] (vec (remove nil? (flatten (vector (some-> store client-key action-key) event)))))
-          (catch NullPointerException e
-            (.getMessage e)
-            store))
-        store))))
+      	(db/save-event client-key action-key event)
+      	(throw (Exception. "Could not insert event"))))))
 
 (defn process-status-records
   "Implementation of the callback function passed to the Kafka
@@ -108,8 +106,8 @@
   [events]
   (when (seq events)
     (log/trace (str "Processing "(count events)" status events"))
-    (doseq [event events] ; <- I should do this loop with recursion and then only have a single call to swap! at the end... meh.
-      (if-not (nil? event) (swap! status-db update-status-store event))))
+    (doseq [event events]
+      (if-not (nil? event) (update-status-store event))))
   true)
 
 (defn process-cmd-return-records
@@ -121,34 +119,18 @@
   (when (seq events)
     (log/trace (str "Processing "(count events)" command events"))
     (doseq [event events] ; <- I should do this loop with recursion and then only have a single call to swap! at the end... meh.
-      (if-not (nil? event) (swap! status-db update-status-store event :usurping-index (some-> event :payload :cmd_submit :payload :args :target_action_id)))))
+      (if-not (nil? event) (update-status-store event :usurping-index (some-> event :payload :cmd_submit :payload :args :target_action_id)))))
   true)
 
-(defn get-all-jobs
-  "Show the full map database of all the status messages received by the
-  BFF"
-  []
-  (log/trace "get-all-jobs called...")
-  @status-db)
-
-(defn get-all-client-jobs
-  "Get the maps of jobs, in this internal context we call them actions,
-  for a given client"
-  [client-id]
-  (log/trace "get-all-client-jobs called...")
-  (let [client-key (keyword client-id)]
-    (get @status-db client-key)))
 
 (defn get-all-client-jobs-for-action
   "Gets all the events associated with a particular client and this
   particular action (job)"
   [client-id action-id since]
   (log/trace "get-all-client-jobs-for-action called...")
-  (let [client-key (keyword client-id)
-        action-key (keyword action-id)
-        since-tstamp (or (parse-long since) 0)]
+  (let [since-tstamp (or (parse-long since) 0)]
     (log/trace (str "since... "since-tstamp))
-    (filterv #(< since-tstamp (:tstamp (peek (:visited %)))) (get-in @status-db [client-key action-key] {}))))
+    (db/get-all-events client-id action-id since-tstamp)))
 
 (defn get-job-results [client-id action-id]
   (log/trace "get-job-results - client-id ["client-id"] action-id ["action-id"]")

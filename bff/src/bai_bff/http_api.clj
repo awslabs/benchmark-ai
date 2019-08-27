@@ -101,15 +101,11 @@
        (str "<hr><CENTER><h1> BAI-BFF HTTP Service API (v"VERSION")</h1><a href=\"http://foobar.com/api\">docs</a></CENTER><hr>"))
   (context "/api/job" []
            (defroutes job-routes
-             (GET  "/" [] (response (eventbus/get-all-jobs))) ;;TODO - remove this in production...? implement me
              (GET  "/script/:filename" [filename] (response (if (eventbus/has-file? filename) (str "true") (str "false"))))
              (GET  "/results/:client-id/:action-id" [client-id action-id] (response (eventbus/get-job-results client-id action-id)))
              (POST "/" {body :body :as request} (post-proc-results (log/info (pprint request)) #_(create-job body)));TODO - implement me
              (POST "/descriptor" {{body :submit-event} :params :as request} (response (dispatch-submit-job request body)))
              (context "/:client-id" [client-id]
-                      (defroutes client-routes
-                        (GET    "/" [] (post-proc-results (eventbus/get-all-client-jobs client-id)))
-                        (DELETE "/" [] (post-proc-results (log/info "delete-client-jobs... [NOT]") #_(delete-job action-id))))
                       (context "/:action-id" [action-id]
                                (defroutes action-routes
                                  (GET    "/" {{:keys[since] :or {since 0}} :params :as req} (post-proc-results (eventbus/get-all-client-jobs-for-action client-id action-id since)))
