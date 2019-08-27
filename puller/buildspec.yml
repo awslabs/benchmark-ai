@@ -2,4 +2,5 @@ version: 0.2
 phases:
   build:
     commands:
+    # Nothing to do. puller is bash-based and has no tests. 
       - echo 'Hello build'
