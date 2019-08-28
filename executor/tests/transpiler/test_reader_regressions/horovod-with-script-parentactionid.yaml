@@ -224,7 +224,7 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: ANUBIS_METRICS
-          value: []
+          value: '[]'
         volumeMounts:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
