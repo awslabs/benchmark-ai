@@ -5,9 +5,9 @@ import json
 import logging
 import re
 from collections import namedtuple
+from dataclasses import dataclass
 from typing import List, Optional
 
-from attr import dataclass
 from kubernetes import client
 
 from benchmarkai import emit
