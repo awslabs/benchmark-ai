@@ -1,4 +1,4 @@
-(ns bai-bff.services.persistence
+(ns bai-bff.utils.persistence
   "This namespace handles the communication with the backing store"
   (:require [amazonica.aws.dynamodbv2 :as ddb]
             [taoensso.timbre :as log])

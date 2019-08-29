@@ -10,8 +10,8 @@
   there is state I manage it in this way. Oh well.)"
   (:require [bai-bff.core :refer :all]
             [bai-bff.services :refer [RunService]]
-            [bai-bff.services.persistence :as db]
             [bai-bff.utils.parsers :refer [parse-long]]
+            [bai-bff.utils.persistence :as db]
             [bai-bff.utils.utils :as utils]
             [bai-bff.utils.log-index :as log-index]
             [environ.core :refer [env]]
