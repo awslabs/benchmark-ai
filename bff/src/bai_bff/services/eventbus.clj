@@ -93,8 +93,8 @@
     (let [{:keys [client_id action_id]} event
           [client-key action-key] (mapv keyword [client_id (or usurping-index action_id)])]
       (if (and client-key action-key)
-      	(db/save-event client-key action-key event)
-      	(throw (Exception. "Could not insert event"))))))
+       (db/save-event client-key action-key event)
+       (throw (Exception. "Could not insert event"))))))
 
 (defn process-status-records
   "Implementation of the callback function passed to the Kafka
@@ -120,24 +120,51 @@
       (if-not (nil? event) (update-status-store event :usurping-index (some-> event :payload :cmd_submit :payload :args :target_action_id)))))
   true)
 
-(defn get-all-client-jobs
-  "Get the list of action ids, in this internal context we call them actions,
-  for a given client"
-  ([client-id] (get-all-client-jobs client-id 0))
-  ([client-id since]
-  	(log/trace "get-all-client-jobs called...")
-  	(let [since-tstamp (or (parse-long since) 0)]
-    	(log/trace (str "since... " since-tstamp))
-    	{ :action_ids (db/get-all-jobs client-id since-tstamp) })))
+(defn get-client-jobs
+  "Returns a list of (action id, submission timestamp) tuples 
+  of submissions made by a client. The maximum number of items returned 
+  per query is governed by the underlying persistence layer.
+  Not all action_ids will necessarily be returned in a query. 
+  The *since* optional parameter can be used to paginate the query.
 
-(defn get-all-client-jobs-for-action
+  The rows are lexicographically sorted by a range key with the 
+  format <timestamp>:<action_id>. Therefore, the *since* parameter can be 
+  *any* string, however either a timestamp (e.g. 1567070046827)
+  or a range key in the above format should be used 
+  (e.g. 1567070046827:61e76d4d-2f31-4259-8bcb-84ab424d9d16).
+  Using just the timestamp will return all action ids created from 
+  that timestamp (inclusive), using the sort key in the appropriate format will 
+  return every action_id created after the specified sort key.
+  "
+  ([client-id] (get-client-jobs client-id "0"))
+  ([client-id since]
+   (log/trace "get-all-client-jobs called...")
+   (let [since-tstamp (or since "0")]
+     (log/trace (str "since... " since-tstamp))
+     { :action_ids (db/get-jobs client-id :from-sort-key since-tstamp) })))
+
+(defn get-client-jobs-for-action
   "Gets all the events associated with a particular client and this
-  particular action (job)"
+   particular action (job). The number of items returned in the list 
+   is governed by the underlying persistence layer.
+   However, not all events will be necessarily be returned. 
+   The *since* optional parameter can be used to paginate the query.
+
+   The rows are lexicographically sorted by a range key with 
+   the format <timestamp>:<message_id>. Therefore, the *since* parameter 
+   can be *any* string. However, either a timestamp (e.g. 1567070046827) or 
+   a range key in the above format should be used 
+   (e.g. 1567079110254:fd708459-2c73-4602-91ce-dff8f1d90bcf).
+   Using just the timestamp will return all events (for action_id created) 
+   from that timestamp (inclusive), using the sort key in the appropriate 
+   format will return every event (for the action_id) created _after_ the 
+   specified sort key.
+   "
   [client-id action-id since]
   (log/trace "get-all-client-jobs-for-action called...")
-  (let [since-tstamp (or (parse-long since) 0)]
+  (let [since-tstamp (or since "0")]
     (log/trace (str "since... " since-tstamp))
-    (db/get-all-events client-id action-id since-tstamp)))
+    (db/get-events client-id action-id :from-sort-key since-tstamp)))
 
 (defn get-job-results [client-id action-id]
   (log/trace "get-job-results - client-id ["client-id"] action-id ["action-id"]")

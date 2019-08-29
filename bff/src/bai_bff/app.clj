@@ -54,8 +54,8 @@
                                  :kafka-sink
                                  :kafka-source
                                  :endpoints])]
-   		;; init persistence layer
-   		(log/report "Initializing persistence layer")
+     ;; init persistence layer
+     (log/report "Initializing persistence layer")
      (db/initialize)
 
      ;; start services
