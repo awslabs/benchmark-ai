@@ -205,3 +205,80 @@ resource "aws_msk_cluster" "benchmark-msk-cluster" {
     }
   }
 }
+
+resource "aws_dynamodb_table" "anubis_events_table" {
+  name           = "AnubisEvents"
+  billing_mode   = "PROVISIONED"
+  read_capacity  = 30
+  write_capacity = 30
+  hash_key       = "ActionId"
+  range_key      = "SKey"
+
+  attribute {
+    name = "ActionId"
+    type = "S"
+  }
+
+  attribute {
+    name = "SKey"
+    type = "S"
+  }
+
+  tags = {
+    Name        = "anubis_events_table"
+  }
+}
+
+resource "aws_dynamodb_table" "anubis_jobs_table" {
+  name           = "AnubisJobs"
+  billing_mode   = "PROVISIONED"
+  read_capacity  = 30
+  write_capacity = 30
+  hash_key       = "ClientId"
+  range_key      = "SKey"
+
+  attribute {
+    name = "ClientId"
+    type = "S"
+  }
+
+  attribute {
+    name = "SKey"
+    type = "S"
+  }
+
+  tags = {
+    Name        = "anubis_jobs_table"
+  }
+}
+
+resource "aws_iam_policy" "anubis_table_rwc" {
+  name        = "anubis_table_rwc"
+  description = "Allow for read/write/create on DynamoDB"
+
+  policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "dynamodb:CreateTable",
+                "dynamodb:PutItem",
+                "dynamodb:Query"
+            ],
+            "Resource": "arn:aws:dynamodb:*:*:table/*"
+        },
+        {
+            "Sid": "VisualEditor1",
+            "Effect": "Allow",
+            "Action": "dynamodb:Query",
+            "Resource": "arn:aws:dynamodb:*:*:table/*/index/*"
+        }
+    ]
+}
+EOF
+}
+
+

@@ -9,7 +9,7 @@ resource "aws_s3_bucket" "scripts-exchange" {
 }
 
 resource "aws_iam_policy" "script-exchange-read" {
-  name = "script-exchange-read"
+  name   = "script-exchange-read"
   policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -41,7 +41,7 @@ EOF
 }
 
 resource "aws_iam_policy" "script-exchange-write" {
-  name = "script-exchange-write"
+  name   = "script-exchange-write"
   policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -63,7 +63,7 @@ EOF
 }
 
 resource "aws_iam_role" "kube2iam-bff-pod-role" {
-  name = "bai-bff-pod-role"
+  name               = "bai-bff-pod-role"
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -82,10 +82,15 @@ EOF
 
 resource "aws_iam_role_policy_attachment" "bai-bff-read-script-exchange" {
   policy_arn = "${aws_iam_policy.script-exchange-read.arn}"
-  role = "${aws_iam_role.kube2iam-bff-pod-role.name}"
+  role       = "${aws_iam_role.kube2iam-bff-pod-role.name}"
 }
 
 resource "aws_iam_role_policy_attachment" "bai-bff-write-script-exchange" {
   policy_arn = "${aws_iam_policy.script-exchange-write.arn}"
-  role = "${aws_iam_role.kube2iam-bff-pod-role.name}"
+  role       = "${aws_iam_role.kube2iam-bff-pod-role.name}"
+}
+
+resource "aws_iam_role_policy_attachment" "bai-bff-dynamodb-rwc" {
+  policy_arn = "${aws_iam_policy.anubis_table_rwc.arn}"
+  role       = "${aws_iam_role.kube2iam-bff-pod-role.name}"
 }
