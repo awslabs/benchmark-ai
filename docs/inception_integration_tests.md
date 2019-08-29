@@ -1,6 +1,7 @@
 # Inception Integration Tests
 
-[Image: inception.jpg]
+![inception_setup](images/inception.jpg)
+
 Docker in docker in docker... Oh my!
 
 ## Requirements
@@ -22,13 +23,13 @@ https://www.loodse.com/blog/2019-03-12-running-kubernetes-in-the-ci-pipeline-/
 
 ### Any other options?
 
-We have evaluated https://github.com/kubernetes-retired/kubeadm-dind-cluster. The project is deprecated in favour of kind. Slower initialisation, not as closely smooth as kind. 
+We have evaluated https://github.com/kubernetes-retired/kubeadm-dind-cluster. The project is deprecated in favour of kind. Slower initialisation, not as closely smooth as kind.
 
 For a moment we have considered running minikube with —vm-driver=none in docker. Although there are concept proofs, that it’s possible, we have found faking systemctl to be an unstable and tedious solution.
 https://aspenmesh.io/2018/01/building-istio-with-minikube-in-a-container-and-jenkins/
 Typical implementation:
 https://github.com/testingtoollab/minikube-container
-We have not seen any examples of a recent minikube version running with a recent k8s. 
+We have not seen any examples of a recent minikube version running with a recent k8s.
 
 ### How do I setup the kind cluster?
 
@@ -70,7 +71,7 @@ make integration tests
 
 ### Can I actually run integration tests against a real cluster?
 
-Yes. Use 
+Yes. Use
 
 ```
 export STAGE=devo #Or prod
@@ -112,13 +113,13 @@ The integration test consumes from service’s producer and produces to the cons
 ### Do we run tests against real S3 or MSK?
 
 No. All the AWS dependencies are mocked inside of the mock-infra deployment.
-We use containers with kafka/zookeeper/s3 (using https://hub.docker.com/r/zenko/cloudserver/) 
-It’s easy to imagine ElasticSearch 
+We use containers with kafka/zookeeper/s3 (using https://hub.docker.com/r/zenko/cloudserver/)
+It’s easy to imagine ElasticSearch
 
 ### Why do we run job inside of cluster?
 
 **tl;dr  We were not able to expose Kafka in multiple networks**
- 
+
 Running the job inside of cluster has the following disadvantages:
 
 * You need additional **kubectl logs **to collect the logs of the job
