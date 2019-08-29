@@ -2,6 +2,7 @@
   (:require [bai-bff.core :refer :all]
             [bai-bff.events :as events]
             [bai-bff.services.eventbus :as eventbus]
+            [bai-bff.utils.persistence :as db]
             [clojure.pprint :refer :all]
             [clojure.java.io :as io]
             [ring.adapter.jetty :refer :all]
@@ -38,6 +39,8 @@
             status-event (partial events/status-event event)]
         (log/debug event)
         (log/info (json/generate-string event {:pretty true}))
+        (log/trace "Storing submission")
+        (db/save-job event)
         (>!! @eventbus/send-event-channel-atom [(status-event :bai-bff.events/succeeded (str "Submission has been successfully received..."))])
         (>!! @eventbus/send-event-channel-atom [event])
         (:action_id event)))
@@ -106,6 +109,9 @@
              (POST "/" {body :body :as request} (post-proc-results (log/info (pprint request)) #_(create-job body)));TODO - implement me
              (POST "/descriptor" {{body :submit-event} :params :as request} (response (dispatch-submit-job request body)))
              (context "/:client-id" [client-id]
+                      (defroutes client-routes
+                        (GET    "/" [] (post-proc-results (eventbus/get-all-client-jobs client-id)))
+                        (DELETE "/" [] (post-proc-results (log/info "delete-client-jobs... [NOT]") #_(delete-job action-id))))
                       (context "/:action-id" [action-id]
                                (defroutes action-routes
                                  (GET    "/" {{:keys[since] :or {since 0}} :params :as req} (post-proc-results (eventbus/get-all-client-jobs-for-action client-id action-id since)))

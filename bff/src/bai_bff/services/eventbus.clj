@@ -31,8 +31,6 @@
   RunService
   (start! [this]
     (log/info (str "starting eventbus service component..."))
-    ;; init persistence layer
-    (db/initialize)
     (reset! send-event-channel-atom send-channel)
     (reset! receive-events-channel-atom receive-channel))
   (stop! [this]
@@ -122,6 +120,15 @@
       (if-not (nil? event) (update-status-store event :usurping-index (some-> event :payload :cmd_submit :payload :args :target_action_id)))))
   true)
 
+(defn get-all-client-jobs
+  "Get the list of action ids, in this internal context we call them actions,
+  for a given client"
+  ([client-id] (get-all-client-jobs client-id 0))
+  ([client-id since]
+  	(log/trace "get-all-client-jobs called...")
+  	(let [since-tstamp (or (parse-long since) 0)]
+    	(log/trace (str "since... " since-tstamp))
+    	{ :action_ids (db/get-all-jobs client-id since-tstamp) })))
 
 (defn get-all-client-jobs-for-action
   "Gets all the events associated with a particular client and this
@@ -129,7 +136,7 @@
   [client-id action-id since]
   (log/trace "get-all-client-jobs-for-action called...")
   (let [since-tstamp (or (parse-long since) 0)]
-    (log/trace (str "since... "since-tstamp))
+    (log/trace (str "since... " since-tstamp))
     (db/get-all-events client-id action-id since-tstamp)))
 
 (defn get-job-results [client-id action-id]
