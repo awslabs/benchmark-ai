@@ -2,12 +2,12 @@
 
 ## Problem
 
-We have to run a test with just script mode on some AMI. 
+We have to run a test with just script mode on some AMI.
 
 ## Solution
 
-In order to achieve the goal we create a new executor. 
-In this document we discuss different aspects of the implementation. The ami-executor can be potentially the most complicated one, since we cannot rely anymore on any existing middleware. We cannot use k8s/ecs/kubeflow. 
+In order to achieve the goal we create a new executor.
+In this document we discuss different aspects of the implementation. The ami-executor can be potentially the most complicated one, since we cannot rely anymore on any existing middleware. We cannot use k8s/ecs/kubeflow.
 
 Instead of that we suggest using to reuse as much code/mind models as possible with replacing pod by a benchmark-job agent running on an E2 instance.
 
@@ -58,17 +58,17 @@ cloud-init seems to be a more portable option, since we don’t know the package
 Look here for details: https://cloudinit.readthedocs.io/en/latest/topics/examples.html#install-arbitrary-packages
 
 **O2. SSH Initialisation**
-Not recommended because of complicated state management. 
+Not recommended because of complicated state management.
 
 ### What do we need?
 
-* **conda** to avoid collisions with installed python software and manage dependencies. 
-* **aws **for puller 
+* **conda** to avoid collisions with installed python software and manage dependencies.
+* **aws **for puller
 * **bsdtar **for puller** **
 * **openmpi** for horovod
 * **openssh** for openmpi - Clarify if it’s enough to have the expected AMI’s own **ssh**.
 
-The dependencies can be managed with conda, as long as they are present as conda packages 
+The dependencies can be managed with conda, as long as they are present as conda packages
 
 ### How do we know, that the initialization is finished?
 
@@ -79,7 +79,7 @@ Con:
 
 **O2. Make cloud-init call home**
 https://cloudinit.readthedocs.io/en/latest/topics/examples.html#call-a-url-when-finished
-Pro: 
+Pro:
 
 * Cleaner solution - we call a lambda or the service itself.
 
@@ -123,11 +123,11 @@ The role must basically:
 ## Benchmark Execution
 
 Since we cannot use our typical 4-5 containers pod, we have to accomplish the same tasks on our own without docker.
-On the other side we can think aforementioned [job-agent](https://quip-amazon.com/z4IjAn7cua78/DLAMI-bare-metal-executor#Hfb9CAH50XU) as an art pod-replacement. 
+On the other side we can think aforementioned [job-agent](https://quip-amazon.com/z4IjAn7cua78/DLAMI-bare-metal-executor#Hfb9CAH50XU) as an art pod-replacement.
 
-### What are the tasks accomplished by the job agent? 
+### What are the tasks accomplished by the job agent?
 
-Job agent is started from cloud-init and is responsible for running the benchmark. It’s our equivalent of a benchmark pod. 
+Job agent is started from cloud-init and is responsible for running the benchmark. It’s our equivalent of a benchmark pod.
 
 ### How do we pass the benchmark into to JOB AGENT?
 
@@ -135,7 +135,7 @@ We may pass a small JSON through user data to be read by the job agent.
 
 ### Pullers
 
-Data Set and Script Pullers are trivial. We can simply reuse the shell script from the puller container. 
+Data Set and Script Pullers are trivial. We can simply reuse the shell script from the puller container.
 aws and bsdtar are the dependencies.
 
 Additionally our init script may have to initialize an env variable BAI_SCRIPTS_PATH with the path to the scripts.
@@ -146,7 +146,7 @@ Metrics pusher can be started in the background, listening to the fifo. Since we
 
 ### Metrics extractor
 
-Since we don’t have the k8s master anymore we have to split k8s client from metrics-extractor and just leave the log-parser.  
+Since we don’t have the k8s master anymore we have to split k8s client from metrics-extractor and just leave the log-parser.
 
 ### Benchmark
 
@@ -177,17 +177,17 @@ Pro:
 
 Con:
 
-* Additional component 
+* Additional component
 
 **O2. Place the code in the executor**
-Something like https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#EC2.Instance.wait_until_running. 
-Pro: 
+Something like https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#EC2.Instance.wait_until_running.
+Pro:
 
 * Less moving parts
 
 Con:
 
-* Crashed executor leaves a zombie 
+* Crashed executor leaves a zombie
 
 ### How do we create instances?
 
@@ -200,7 +200,7 @@ Basically we simulate k8s StatefulSet.
 
 ### How do we meEt the req1?
 
-**O1. We create the set of instances with predefined IPv6**  
+**O1. We create the set of instances with predefined IPv6**
 https://github.com/open-mpi/ompi/issues/6656 this may require creating a /etc/hosts as well additionally to MPI hostsfile.
 
 **O2. We ssh the creation of the files.**
@@ -223,10 +223,10 @@ mpirun foo # Aka passed benchmark code
 ```
 
 The last one, will do the **mpirun **call.
-As discussed previously we should just create the last one as soon the first N-1 are created. AWS Lambda and local waiter are the options. 
+As discussed previously we should just create the last one as soon the first N-1 are created. AWS Lambda and local waiter are the options.
 How do we wait for sleep to start on the workers is an open question.
 
-[Image: ec2exec.png][Link](https://wsd.aka.amazon.com/?lz=cGFydGljaXBhbnQgRUMyRXhlY3V0b3IgYXMgRQoADg8AEAVDMgAKDUxhdW5jaGUALAVMACQNV29ya2VyMSBhcyBXMQAHEwBKBVcyCgpFLT5FQzI6IHJ1bl9pbnN0YW5jZXMoMiwgIncAPgUiKQpFQzItPlcxAB8FAAYHACsGCgpXMQAUBmNsb3VkLWluaXQKYWN0aXZhdGUgVzEKVwAlBwAKFTIANQpzbGVlcCAzNjVkACoJAAgLClcxLS0-RTogcGhvbmUgaG9tZQpXMgACEQCBNhUoMSwgImwAgiAHAIFGBiAtPiBMAIE5B0wtPkwAgSgWTAAVB21waXJ1biBiZW5jaG1hcmsKTACBLAdzaAAGDzIAAhNMOgAvCwBEDnNodXRkb3duAEUMAAsJZGUAgjsMAFMLAA0VMgCBQQcAKxRMCgoK&s=default&h=c4FiXYW4_Ppei6rM)
+![ec2exec.png](../images/ec2exec.png)
 
 ### How do we finish the jobs?
 
@@ -250,15 +250,15 @@ In the same way we do it for SageMaker - by using a bridge from CW to Prometheus
 
 ### What do we do about user metrics?
 
-We can send them immediately to Kafka->Prometheus->CloudWatch through the metrics-pusher. 
+We can send them immediately to Kafka->Prometheus->CloudWatch through the metrics-pusher.
 
 ## Testing
 
-### How do we test all that awesomeness? 
+### How do we test all that awesomeness?
 
-The best we can do is to create a set of integration tests, that check the components thrown together. 
+The best we can do is to create a set of integration tests, that check the components thrown together.
 Ironically, the best way to do that is to run the tests in a docker container.
-Select any image, that has **cloud-init**. 
+Select any image, that has **cloud-init**.
 
 ## Summary
 
@@ -271,4 +271,3 @@ We prefer not to ssh if possible, since this will make us govern nodes.  We will
 ### Poll vs AWS Lambda?
 
 We recommend AWS Lambda due to a more robust event based architecture vs polling.
-
