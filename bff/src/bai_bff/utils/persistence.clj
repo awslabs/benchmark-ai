@@ -1,65 +1,15 @@
 (ns bai-bff.utils.persistence
   "This namespace handles the communication with the backing store"
   (:require [amazonica.aws.dynamodbv2 :as ddb]
+            [environ.core :refer [env]]
             [taoensso.timbre :as log])
   (:import [com.amazonaws.services.dynamodbv2.model 
               ResourceInUseException]))
 
 
-(def events-table "AnubisEvents")
-(def jobs-table "AnubisSubmissions")
+(def events-table (env :ddb-events-table-name))
+(def jobs-table (env :ddb-jobs-table-name))
 (def query-limit 30)
-
-(defn create-events-table []
- "Creates the events table.
-  Fails silently in case table already exists"
- (try
-  (ddb/create-table 
-   :table-name events-table
-   :attribute-definitions [
-    {:attribute-name "action_id" :attribute-type "S"}
-    ;; sortkey will be timestamp:message_id
-    {:attribute-name "skey" :attribute-type "S"}
-   ]
-   :key-schema [
-    {:attribute-name "action_id" :key-type "HASH"}
-    {:attribute-name "skey" :key-type "RANGE"}
-   ]
-   :billing-mode "PROVISIONED"
-   :provisioned-throughput {
-    :read-capacity-units 10
-    :write-capacity-units 10
-   })
-  (catch ResourceInUseException e (log/debug events-table "table already exists...")))
- true)
-
-(defn create-jobs-table []
- "Creates the jobs table used to register jobs submitted to the bff"
- (try
-  (ddb/create-table 
-   :table-name jobs-table
-   :attribute-definitions [
-    {:attribute-name "client_id" :attribute-type "S"}
-    ;; sort key will be timetamp:action_id
-    {:attribute-name "skey" :attribute-type "S"}
-   ]
-   :key-schema [
-    {:attribute-name "client_id" :key-type "HASH"}
-    {:attribute-name "skey" :key-type "RANGE"}
-   ]
-   :billing-mode "PROVISIONED"
-   :provisioned-throughput {
-    :read-capacity-units 10
-    :write-capacity-units 10
-   })
-  (catch ResourceInUseException e (log/debug jobs-table "table already exists...")))
- true)
-
-(defn initialize []
- "Initializes the persistence layer - creates tables, etc."
- (create-events-table)
- (create-jobs-table)
- true)
 
 (defn save-event [client-id action-id event]
  "Stores an event in the event table. The action-id is used

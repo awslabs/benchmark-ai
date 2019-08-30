@@ -11,7 +11,6 @@
             [bai-bff.services.sources.kafka-source :refer [create-kafka-source-service]]
             [bai-bff.services.eventbus   :as bus   :refer [create-eventbus-service]]
             [bai-bff.services.endpoints            :refer [create-endpoints-service]]
-            [bai-bff.utils.persistence :as db :refer [initialize]]
             [environ.core :refer [env]]
             [clojure.string :refer [trim]]
             [taoensso.timbre :as log])
@@ -54,10 +53,6 @@
                                  :kafka-sink
                                  :kafka-source
                                  :endpoints])]
-     ;; init persistence layer
-     (log/report "Initializing persistence layer")
-     (db/initialize)
-
      ;; start services
      (doseq [service services]
        (log/report "Starting service: " service)

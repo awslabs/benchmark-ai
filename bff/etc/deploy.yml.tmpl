@@ -111,6 +111,10 @@ spec:
                 configMapKeyRef:
                   name: outputs-infrastructure
                   key: es_endpoint
+            - name: DDB_EVENTS_TABLE_NAME
+              value: "AnubisEvents"
+            - name: DDB_JOBS_TABLE_NAME
+              value: "AnubisJobs"
       nodeSelector:
         node.type: bai-services-cheap
       restartPolicy: Always
