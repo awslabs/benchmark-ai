@@ -33,23 +33,16 @@ phases:
             kubectl apply -f ../metrics-pusher/metrics-pusher-roles.yaml
 
             # Build docker images
-            cd ../anubis-cron-job
-            make docker_package COMMIT_SHORT_HASH="local-latest"
-            make publish STAGE=local LOCAL_PUBLISH="kind load docker-image " COMMIT_SHORT_HASH="local-latest"
-
-            cd ../metrics-pusher
-            make docker_package COMMIT_SHORT_HASH="local-latest"
-            make publish STAGE=local LOCAL_PUBLISH="kind load docker-image " COMMIT_SHORT_HASH="local-latest"
-
-            cd ../executor
-            make docker_package COMMIT_SHORT_HASH="local-latest"
-            make publish STAGE=local LOCAL_PUBLISH="kind load docker-image " COMMIT_SHORT_HASH="local-latest"
+            export LOCAL_PUBLISH="kind load docker-image "
+            export STAGE=local
 
             # Make images we depend on
-            (cd ../metrics-pusher && make publish STAGE=local LOCAL_PUBLISH="kind load docker-image " COMMIT_SHORT_HASH="local-latest")
-            (cd ../puller && make publish STAGE=local LOCAL_PUBLISH="kind load docker-image " COMMIT_SHORT_HASH="local-latest")
+            (cd ../anubis-cron-job && make publish COMMIT_SHORT_HASH="local-latest")
+            (cd ../metrics-pusher && make publish COMMIT_SHORT_HASH="local-latest")
+            (cd ../puller && make publish COMMIT_SHORT_HASH="local-latest")
 
-            make deploy STAGE=local COMMIT_SHORT_HASH="local-latest"
+            make publish COMMIT_SHORT_HASH="local-latest"
+            make deploy COMMIT_SHORT_HASH="local-latest"
 
             # All the containers are probably just creating
             kubectl get pods
@@ -59,5 +52,5 @@ phases:
             sleep 30s
             # Describe to have some info in case of errors.
             kubectl describe pods
-            make integration_tests STAGE=local LOCAL_PUBLISH="kind load docker-image "
+            make integration_tests
         fi
