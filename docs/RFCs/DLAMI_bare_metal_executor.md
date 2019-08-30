@@ -10,10 +10,11 @@ In order to achieve the goal we create a new executor.
 In this document we discuss different aspects of the implementation. The ami-executor can be potentially the most complicated one, since we cannot rely anymore on any existing middleware. We cannot use k8s/ecs/kubeflow.
 
 Instead of that we suggest using to reuse as much code/mind models as possible with replacing pod by a benchmark-job agent running on an E2 instance.
+We introduce a new component of the system, **EC2 benchmark agent**, that will be deployed to every EC2 node and run the benchmark.
 
 ### Why don’t we use AWS Batch?
 
-AWS Batch is a service atop of ECS. So it cannot be used in own bare AMI use-case.
+AWS Batch is a service atop of ECS. So it cannot be used in our bare AMI use-case.
 
 ## TOML Changes
 
@@ -50,7 +51,7 @@ https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.h
 We will need some additional software to be installed on the instance.
 For example in the case of distributed training we can imagine openmpi to be a requirement.
 
-**O1. User Data InitialiSation**
+**O1. User Data Initialization**
 UserData parameter is intended to be used for that:
 https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html#user-data-shell-scripts
 
@@ -63,16 +64,20 @@ Not recommended because of complicated state management.
 ### What do we need?
 
 * **conda** to avoid collisions with installed python software and manage dependencies.
-* **aws **for puller
-* **bsdtar **for puller** **
+* **aws** for puller
+* **bsdtar** for puller
 * **openmpi** for horovod
 * **openssh** for openmpi - Clarify if it’s enough to have the expected AMI’s own **ssh**.
 
 The dependencies can be managed with conda, as long as they are present as conda packages
 
+Besides of that we may need ssh keys for distributed training, so the launcher can ssh to the nodes.
+https://cloudinit.readthedocs.io/en/latest/topics/examples.html#configure-instances-ssh-keys
+
 ### How do we know, that the initialization is finished?
 
 **O1. ssh to the host and wait for a file dumped by cloud-init on completion.**
+https://www.digitalocean.com/community/questions/how-to-make-sure-that-cloud-init-finished-running
 Con:
 
 * Seems like a hack, depending on cloud-init internals
@@ -120,6 +125,10 @@ The role must basically:
 * Read from scripts-exchange S3
 * Read from data-pull S3
 
+### How do we distribute the job-agents?
+
+wget/aws the tar from s3 seems the easiest option.
+
 ## Benchmark Execution
 
 Since we cannot use our typical 4-5 containers pod, we have to accomplish the same tasks on our own without docker.
@@ -129,9 +138,22 @@ On the other side we can think aforementioned [job-agent](https://quip-amazon.co
 
 Job agent is started from cloud-init and is responsible for running the benchmark. It’s our equivalent of a benchmark pod.
 
-### How do we pass the benchmark into to JOB AGENT?
+### How do we pass the benchmark into to Job Agent?
 
-We may pass a small JSON through user data to be read by the job agent.
+We may pass a small JSON/YAML/TOML through user data to be read by the job agent.
+
+
+|	|Benchmark Pod in K8S	|Benchmark Job Agent on EC2	|
+|---	|---	|---	|
+|	|Represent the benchmark job on a particular node	|Represent the benchmark job on a particular node
+|... is configured by ... | YAML created by k8s executor | JSON (or YAML/TOML) created by ec2 executor and passed through user data |
+|The benchmark code is...	|the arbitrary code executed in the benchmark container	|the arbitrary code executed in the VM with AMI	|
+|... runs on the ...| k8s node | EC2 vm |
+|Puller	|Init container to be executed before the benchmark container is run.	|Application to be executed before the benchmark script is executed	|
+|Metrics Pusher	|Sidecar, which runs parallel to the benchmark container	|Service (background process), which runs parallel to the benchmark container	|
+|Metrics Extractor	|(current state) Sidecar to communicate to k8s master or (later) DaemonSet or a  sidecar to parse logs (or may be) a parent process, that tee's the logs	|A component of the job agent, that pipes the stdout from the started benchmark	|
+|Benchmark	|Container of the benchmark pod	|Process started by the job agent	|
+|DataSet	|... saved on the (EBS-)volume shared by the puller and benchmark	|... saved on the (EBS-)volume, used by the agent	|
 
 ### Pullers
 
@@ -146,7 +168,7 @@ Metrics pusher can be started in the background, listening to the fifo. Since we
 
 ### Metrics extractor
 
-Since we don’t have the k8s master anymore we have to split k8s client from metrics-extractor and just leave the log-parser.
+Since we don’t have the k8s master anymore we have to split k8s client from metrics-extractor and just leave the log-parser. 
 
 ### Benchmark
 
@@ -154,7 +176,17 @@ The benchmark can be scheduled to be executed from the UserData. We hope to be a
 
 ### How do we finish the jobs?
 
-Adding **shutdown** to the benchmark_code seems like the best option. The we wait for instance termination.
+Adding **shutdown** to the benchmark_code is a simple option.
+
+Ensure you configure the instance to be terminated on shutdown.
+```python
+InstanceInitiatedShutdownBehavior='terminate'
+```
+
+### Do we use an EC2 instance just for one benchmark run?
+
+Yes. This design does not contain any logic to reuse the instances.
+Safe reusing of the instances may be tricky.
 
 ## Distributed training
 
@@ -171,6 +203,7 @@ To implement the horovod we need some notifications from EC2 like (created/termi
 We can implement that in the executor or we can create an AWS lambda to listen on the events from EC2.
 
 **O1. AWS Lambda**
+
 Pro:
 
 * More stable and scalable
@@ -181,6 +214,7 @@ Con:
 
 **O2. Place the code in the executor**
 Something like https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#EC2.Instance.wait_until_running.
+
 Pro:
 
 * Less moving parts
@@ -198,7 +232,7 @@ We have the following requirements:
 
 Basically we simulate k8s StatefulSet.
 
-### How do we meEt the req1?
+### How do we meet the req1?
 
 **O1. We create the set of instances with predefined IPv6**
 https://github.com/open-mpi/ompi/issues/6656 this may require creating a /etc/hosts as well additionally to MPI hostsfile.
@@ -211,10 +245,6 @@ Not recommended, since complicated.
 We create N-1 instances with the start command.
 
 ```
-# Do the puller job
-download-s3 datasets
-download-s3 scripts
-
 # Do this after the initialization if you are just a worker
 sleep 365d
 
@@ -222,7 +252,7 @@ sleep 365d
 mpirun foo # Aka passed benchmark code
 ```
 
-The last one, will do the **mpirun **call.
+The last one, will do the **mpirun** call.
 As discussed previously we should just create the last one as soon the first N-1 are created. AWS Lambda and local waiter are the options.
 How do we wait for sleep to start on the workers is an open question.
 
@@ -235,7 +265,7 @@ mprun-ing shutdown from the launcher sounds like the best option.
 ### How do we ensure the ssh-communication?
 
 * We create a security group for every job.
-* We deploy a key to allow nodes to communicate
+* We deploy a key to allow nodes to communicate in cloud-init (https://cloudinit.readthedocs.io/en/latest/topics/examples.html#configure-instances-ssh-keys)
 
 ## Metrics
 
