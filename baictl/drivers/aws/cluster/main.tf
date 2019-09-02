@@ -212,7 +212,7 @@ resource "aws_dynamodb_table" "anubis_events_table" {
   read_capacity  = 30
   write_capacity = 30
   hash_key       = "ActionId"
-  range_key      = "SortKey"
+  range_key      = "TimestampMessageId"
 
   attribute {
     name = "ActionId"
