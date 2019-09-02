@@ -102,8 +102,8 @@ MAX_QUEUE_SIZE := 21
 #KAFKA_BOOTSTRAP_SERVERS #Here only as a note: gotten from k8s configmap
 KAFKA_CONSUMER_GROUP_ID := $(PROJECT)
 KAFKA_POLL_INTERVAL_MS := 500
-KAFKA_SOURCE_TOPICS := BAI_APP_STATUS,CMD_RETURN
-KAFKA_SINK_TOPICS := BAI_APP_STATUS,BAI_APP_BFF,CMD_SUBMIT
+KAFKA_SOURCE_TOPICS := BAI_APP_STATUS,CMD_RETURN,BAI_SYS_BFF,BAI_SYS_FETCHER,BAI_SYS_EXECUTOR
+KAFKA_SINK_TOPICS := BAI_APP_STATUS,BAI_APP_BFF,CMD_SUBMIT,BAI_SYS_BFF
 KAFKA_DEFAULT_NUM_PARTITIONS := 3
 KAFKA_DEFAULT_REPLICATION_FACTOR := 3
 #SCRIPTS_EXCHANGE_S3_BUCKET_NAME #Here only as note: gotten from k8s configmap
@@ -358,7 +358,7 @@ service.yml: FORCE
 	     -e 's|@@JMX_PORT@@|$(JMX_PORT)|g' \
 	     -e 's|@@SVC_PORT@@|$(SVC_PORT)|g' $(SERVICE_TEMPLATE) > $(shell PATH=$(PATH) sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(SERVICE_TEMPLATE))
 
-deploy: _deploy_venv deploy.yml service.yml 
+deploy: _deploy_venv deploy.yml service.yml
 	@echo "------------------------"
 	@echo "K8S deployment..."
 	@echo "------------------------"
@@ -368,7 +368,7 @@ deploy: _deploy_venv deploy.yml service.yml
 	$(shell \
 		touch $(SERVICE_ENDPOINT) \
 		while [ ! -s $(SERVICE_ENDPOINT) ]; do \
-    		kubectl $(K8S_KUBECTL_ARGS) get service bai-bff -o json | jq '.status.loadBalancer.ingress[].hostname' > $(SERVICE_ENDPOINT) \
+			kubectl $(K8S_KUBECTL_ARGS) get service bai-bff -o json | jq '.status.loadBalancer.ingress[].hostname' > $(SERVICE_ENDPOINT) \
 			sleep 5 \
 		done \
 	)
