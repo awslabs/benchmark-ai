@@ -212,7 +212,7 @@ resource "aws_dynamodb_table" "anubis_events_table" {
   read_capacity  = 30
   write_capacity = 30
   hash_key       = "ActionId"
-  range_key      = "SKey"
+  range_key      = "SortKey"
 
   attribute {
     name = "ActionId"
@@ -220,7 +220,7 @@ resource "aws_dynamodb_table" "anubis_events_table" {
   }
 
   attribute {
-    name = "SKey"
+    name = "SortKey"
     type = "S"
   }
 
@@ -235,7 +235,7 @@ resource "aws_dynamodb_table" "anubis_jobs_table" {
   read_capacity  = 30
   write_capacity = 30
   hash_key       = "ClientId"
-  range_key      = "SKey"
+  range_key      = "SortKey"
 
   attribute {
     name = "ClientId"
@@ -243,7 +243,7 @@ resource "aws_dynamodb_table" "anubis_jobs_table" {
   }
 
   attribute {
-    name = "SKey"
+    name = "SortKey"
     type = "S"
   }
 
