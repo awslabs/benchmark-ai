@@ -128,6 +128,8 @@
       :action_id       (some-> event :action_id)
       :client_version  (some-> event :client_version)
       :date            (some-> event :date)
+      :authenticated   false
+      :client_username (some-> event :client_username)
       :tstamp          tstamp                                     ; <--
       :visited         (some-> event :visited)
       :payload         (some-> event :payload)
