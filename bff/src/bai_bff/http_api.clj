@@ -38,7 +38,7 @@
             status-event (partial events/status-event event)]
         (log/debug event)
         (log/info (json/generate-string event {:pretty true}))
-        (>!! @eventbus/send-event-channel-atom [(status-event :bai-bff.events/submitted (str "Submission has been successfully received..."))])
+        (>!! @eventbus/send-event-channel-atom [(status-event :bai-bff.events/pending (str "Submission has been successfully received..."))])
         (>!! @eventbus/send-event-channel-atom [event])
         (:action_id event)))
     (catch Exception e
@@ -59,7 +59,7 @@
             status-event (partial events/status-event event)]
         (log/debug event)
         (log/info (json/generate-string event {:pretty true}))
-        (>!! @eventbus/send-event-channel-atom [(status-event :bai-bff.events/submitted (str "Action received, dispatching delete for <"action-id">"))])
+        (>!! @eventbus/send-event-channel-atom [(status-event :bai-bff.events/pending (str "Action received, dispatching delete for <"action-id">"))])
         (>!! @eventbus/send-event-channel-atom [event])
         (:action_id event)))
     (catch Exception e

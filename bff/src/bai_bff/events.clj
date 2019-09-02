@@ -11,13 +11,13 @@
             [java-time :refer [instant]]
             [taoensso.timbre :as log]))
 
-(def status-map {::submitted "SUBMITTED"
-                 ::error "ERROR"
+(def status-map {::error "ERROR"
                  ::initializing "INITIALIZING"
                  ::running "RUNNING"
                  ::failed "FAILED"
                  ::succeeded "SUCCEEDED"
-                 ::pending "PENDING"})
+                 ::pending "PENDING"
+                 ::cancelled "CANCELLED"})
 
 (defn uuid [] (str (java.util.UUID/randomUUID)))
 
