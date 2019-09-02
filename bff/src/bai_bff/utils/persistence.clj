@@ -11,6 +11,12 @@
 (def jobs-table (env :ddb-jobs-table-name))
 (def query-limit 30)
 
+(defn make-event-table-sort-key [event] 
+	(str (event :tstamp) ":" (event :message_id)))
+
+(defn make-job-table-sort-key [event] 
+	(str (event :tstamp) ":" (event :action_id)))
+
 (defn save-event [client-id action-id event]
  "Stores an event in the event table. The action-id is used
   as the partition key. To guarantee order and uniqueness, a composite key
@@ -19,12 +25,12 @@
   an event against a target action_id. For instance, we would like to log the 
   outcome of a cancel command against its target action_id."
  (let [item {
-   :action_id action-id
-   :skey (str (event :tstamp) ":" (event :message_id))
-   :client_id client-id
-   :event event
+   :ActionId action-id
+   :TimestampMessageId (make-event-table-sort-key event)
+   :ClientId client-id
+   :Event event
   }]
-   (log/trace "Saving event with client_id: " (:client_id item) " and action_id: " (:action_id item))
+   (log/trace "Saving event with client_id: " (:ClientId item) " and action_id: " (:ActionId item))
    (ddb/put-item :table-name events-table :item item)))
 
 (defn get-events
@@ -39,11 +45,11 @@
      :table-name events-table 
      :limit query-limit 
      :key-conditions { 
-      :action_id { 
+      :ActionId { 
        :attribute-value-list [action-id] 
        :comparison-operator "EQ"
       }
-      :skey {
+      :TimestampMessageId {
        :attribute-value-list [from-sort-key-str]
        :comparison-operator "GE"
       }
@@ -53,24 +59,24 @@
      ;; Although, the probability is *really* small.
      ;; The client_id filter here just to guard against murphy's law.
      :expression-attribute-names {
-      "#cid" "client_id"
+      "#cid" "ClientId"
      }
      :expression-attribute-values {
       ":cid" client-id
      }
      :filter-expression "#cid = :cid")]
    (log/trace (str "Querying events for client_id: " client-id " and action_id: " action-id))
-   (map :event (:items (if (= from-sort-key-str "0") 
+   (map :Event (:items (if (= from-sort-key-str "0") 
     (status-query)
-    (status-query :exclusive-start-key { :action_id action-id :skey from-sort-key-str }))))))
+    (status-query :exclusive-start-key { :ActionId action-id :TimestampMessageId from-sort-key-str }))))))
 
 (defn save-job [benchmark-creation-event]
  "Stores the action_ids of submitted benchmarks to the benchmark table"
  (let [item {
-   :action_id (benchmark-creation-event :action_id)
-   :skey (str (benchmark-creation-event :tstamp) ":" (benchmark-creation-event :action_id))
-   :client_id (benchmark-creation-event :client_id)
-   :timestamp (benchmark-creation-event :tstamp)
+   :ActionId (benchmark-creation-event :action_id)
+   :TimestampActionId (make-job-table-sort-key benchmark-creation-event)
+   :ClientId (benchmark-creation-event :client_id)
+   :Timestamp (benchmark-creation-event :tstamp)
   }]
    (log/trace "Saving job with client_id: " (:client_id item) " and action_id: " (:action_id item))
    (ddb/put-item :table-name jobs-table :item item)))
@@ -88,17 +94,19 @@
      :table-name jobs-table 
      :limit query-limit 
      :key-conditions { 
-      :client_id { 
+      :ClientId { 
        :attribute-value-list [client-id] 
        :comparison-operator "EQ"
       }
-      :skey {
+      :TimestampActionId {
        :attribute-value-list [from-sort-key-str]
        :comparison-operator "GE"
       }
      })]
 
    (log/trace (str "Querying jobs for client_id: " client-id))
-   (map #(select-keys % [:action_id :timestamp]) (:items (if (= from-sort-key-str "0") 
-    (jobs-query)
-    (jobs-query :exclusive-start-key { :client_id client-id :skey from-sort-key-str }))))))
+  	(map (fn [item] {:action_id (:ActionId item) :timestamp (:Timestamp item)})
+	   (map #(select-keys % [:ActionId :Timestamp]) 
+	   	(:items (if (= from-sort-key-str "0") 
+	    	(jobs-query)
+	    	(jobs-query :exclusive-start-key { :ClientId client-id :TimestampActionId from-sort-key-str })))))))
