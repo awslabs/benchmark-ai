@@ -235,7 +235,7 @@ resource "aws_dynamodb_table" "anubis_jobs_table" {
   read_capacity  = 30
   write_capacity = 30
   hash_key       = "ClientId"
-  range_key      = "SortKey"
+  range_key      = "TimestampActionId"
 
   attribute {
     name = "ClientId"
