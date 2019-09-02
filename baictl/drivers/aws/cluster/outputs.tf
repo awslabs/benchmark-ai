@@ -60,7 +60,7 @@ output "data_pull_s3" {
 
 output "scripts_exchange_s3" {
   description = "S3 bucket for BFF model code/scripts"
-  value = "${aws_s3_bucket.scripts-exchange.id}"
+  value       = "${aws_s3_bucket.scripts-exchange.id}"
 }
 
 output "private_subnets" {
@@ -95,20 +95,35 @@ output "kube2iam_default_pod_role_name" {
 
 output "sagemaker_role_name" {
   description = "SageMaker role name"
-  value = "${aws_iam_role.sagemaker-role.name}"
+  value       = "${aws_iam_role.sagemaker-role.name}"
 }
 
 output "sagemaker_output_s3" {
   description = "SageMaker role name"
-  value = "${aws_s3_bucket.sagemaker-output.id}"
+  value       = "${aws_s3_bucket.sagemaker-output.id}"
 }
 
 output "sagemaker_nodata_s3" {
   description = "SageMaker dummy data set"
-  value = "s3://${aws_s3_bucket.data-pull.id}/${aws_s3_bucket_object.nodata.id}"
+  value       = "s3://${aws_s3_bucket.data-pull.id}/${aws_s3_bucket_object.nodata.id}"
 }
 
 output "loopback_security_group_id" {
   description = "Security group id to allow corp access to bff loadbalancer"
   value       = "${aws_security_group.loopback.id}"
+}
+
+output "anubis_events_table" {
+  description = "DynamoDB table for event status"
+  value       = "${aws_dynamodb_table.anubis_events_table.id}"
+}
+
+output "anubis_jobs_table" {
+  description = "DynamoDB table for job status"
+  value       = "${aws_dynamodb_table.anubis_jobs_table.id}"
+}
+
+output "anubis_table_policy" {
+  description = "DynamoDB table for job status"
+  value       = "${aws_iam_policy.anubis_table_rwc.id}"
 }
