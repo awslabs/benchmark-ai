@@ -71,7 +71,7 @@ Not recommended because of complicated state management.
 
 The dependencies can be managed with conda, as long as they are present as conda packages
 
-Besides of that we may need ssh keys for distributed training, so the launcher can ssh to the nodes.
+We may also need ssh keys for distributed training, so the launcher can ssh to the nodes.
 https://cloudinit.readthedocs.io/en/latest/topics/examples.html#configure-instances-ssh-keys
 
 ### How do we know, that the initialization is finished?
