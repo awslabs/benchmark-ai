@@ -252,6 +252,7 @@ resource "aws_dynamodb_table" "anubis_jobs_table" {
   }
 }
 
+# TODO: restrict policy to only point to anubis_events_table and anubis_jobs_table
 resource "aws_iam_policy" "anubis_table_rwc" {
   name        = "anubis_table_rwc"
   description = "Allow for read/write/create on DynamoDB"
