@@ -39,7 +39,9 @@ class ExecutorEventHandler(KafkaServiceCallback):
     ):
         self.producer_topic = producer_topic
         self.execution_engines = execution_engines
-        self.valid_execution_engines = valid_execution_engines
+        self.valid_execution_engines = set(valid_execution_engines)
+        # Some engine is default for sure
+        self.valid_execution_engines.add(ExecutorEventHandler.DEFAULT_ENGINE)
 
     def handle_event(self, event: FetcherBenchmarkEvent, kafka_service: KafkaService):
 
@@ -52,9 +54,12 @@ class ExecutorEventHandler(KafkaServiceCallback):
         engine = self.execution_engines.get(engine_id)
 
         if not engine:
-
             # Ok. I've failed, but may be another service can have this engine
-            if engine_id not in self.valid_execution_engines:
+            if engine_id in self.valid_execution_engines:
+                kafka_service.send_status_message_event(
+                    event, Status.SUCCEEDED, f"{engine_id} is whitelisted, but not present here. Nothing to do"
+                )
+            else:
                 # It's really something weird
                 kafka_service.send_status_message_event(event, Status.ERROR, f"Unknown engine {engine_id}")
             return

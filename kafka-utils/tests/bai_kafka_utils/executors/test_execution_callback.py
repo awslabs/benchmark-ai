@@ -59,6 +59,11 @@ def executor_handler(execution_engines: Dict[str, ExecutionEngine]):
 
 
 @fixture
+def no_engines_handler(execution_engines: Dict[str, ExecutionEngine]):
+    return ExecutorEventHandler({}, VALID_ENGINES, PRODUCER_TOPIC)
+
+
+@fixture
 def kafka_service():
     return create_autospec(KafkaService)
 
@@ -133,35 +138,28 @@ def test_second_engine(
     engine2.run.assert_called_once_with(fetcher_event)
 
 
+@pytest.mark.parametrize(
+    ["engine_id", "expected_status"],
+    [
+        (ExecutorEventHandler.DEFAULT_ENGINE, Status.SUCCEEDED),
+        ("INVALID", Status.ERROR),
+        (REMOTE_ENGINE_ID, Status.SUCCEEDED),
+    ],
+)
 def test_remote_engine(
-    executor_handler: ExecutorEventHandler,
+    no_engines_handler: ExecutorEventHandler,
     fetcher_event: FetcherBenchmarkEvent,
     kafka_service: KafkaService,
     engine1: ExecutionEngine,
     engine2: ExecutionEngine,
+    engine_id: str,
+    expected_status: Status,
 ):
-    set_execution_engine(fetcher_event, REMOTE_ENGINE_ID)
+    set_execution_engine(fetcher_event, engine_id)
 
-    executor_handler.handle_event(fetcher_event, kafka_service)
+    no_engines_handler.handle_event(fetcher_event, kafka_service)
 
-    kafka_service.send_status_message_event.assert_not_called()
-    kafka_service.send_event.assert_not_called()
-    engine1.run.assert_not_called()
-    engine2.run.assert_not_called()
-
-
-def test_invalid_engine(
-    executor_handler: ExecutorEventHandler,
-    fetcher_event: FetcherBenchmarkEvent,
-    kafka_service: KafkaService,
-    engine1: ExecutionEngine,
-    engine2: ExecutionEngine,
-):
-    set_execution_engine(fetcher_event, "INVALID")
-
-    executor_handler.handle_event(fetcher_event, kafka_service)
-
-    kafka_service.send_status_message_event.assert_called_once_with(fetcher_event, Status.ERROR, ANY)
+    kafka_service.send_status_message_event.assert_called_once_with(fetcher_event, expected_status, ANY)
     kafka_service.send_event.assert_not_called()
     engine1.run.assert_not_called()
     engine2.run.assert_not_called()
