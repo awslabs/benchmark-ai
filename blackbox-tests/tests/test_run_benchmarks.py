@@ -139,6 +139,7 @@ def test_sample_benchmarks(client, descriptor_filename):
     events = unique_justseen(events)
     events = set(events)
     assert events == {
+        ServiceAndStatus("bai-bff", Status.SUCCEEDED),
         ServiceAndStatus("fetcher-dispatcher", Status.PENDING),
         ServiceAndStatus("fetcher-dispatcher", Status.SUCCEEDED),
         ServiceAndStatus("executor", Status.PENDING),
@@ -148,10 +149,11 @@ def test_sample_benchmarks(client, descriptor_filename):
         ServiceAndStatus("watcher", Status.PENDING),
         ServiceAndStatus("watcher", Status.RUNNING),
         ServiceAndStatus("watcher", Status.SUCCEEDED),
+        ServiceAndStatus("watcher", Status.METRICS_AVAILABLE),
     }
 
     # All visited services
-    visited_services = [visited.svc for visited in status_messages[-1].visited]
+    visited_services = [visited.svc for msg in status_messages for visited in msg.visited]
     visited_services = set(visited_services)
     assert visited_services == {
         "bai-client-python",
