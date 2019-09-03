@@ -82,9 +82,12 @@ def mock_session_factory(mock_session):
     return _factory
 
 
+MOCKED_REGION = "us-east-1"
+
+
 @fixture
 def mock_sagemaker_client():
-    sagemaker_client = boto3.client("sagemaker")
+    sagemaker_client = boto3.client("sagemaker", region_name=MOCKED_REGION)
     stub = Stubber(sagemaker_client)
 
     stub.add_response("stop_training_job", service_response={}, expected_params={"TrainingJobName": ACTION_ID})
