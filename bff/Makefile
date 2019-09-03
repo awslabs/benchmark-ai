@@ -1,5 +1,5 @@
 #NOTE: Requires: sed, git, docker, kubectl
-SHELL :=/usr/local/bin/bash
+SHELL :=/bin/bash
 
 .DEFAULT_GOAL := build
 
