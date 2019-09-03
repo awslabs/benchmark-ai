@@ -93,7 +93,7 @@
     (let [{:keys [client_id action_id]} event
           [client-key action-key] (mapv keyword [client_id (or usurping-index action_id)])]
       (if (and client-key action-key)
-       (db/save-event client-key action-key event)
+       (db/save-client-job-status client-key action-key event)
        (throw (Exception. "Could not insert event"))))))
 
 (defn process-status-records
@@ -141,9 +141,9 @@
    (log/trace "get-all-client-jobs called...")
    (let [since-tstamp (or since "0")]
      (log/trace (str "since... " since-tstamp))
-     { :action_ids (db/get-jobs client-id :from-sort-key since-tstamp) })))
+     { :action_ids (db/get-client-jobs client-id :from-sort-key since-tstamp) })))
 
-(defn get-client-jobs-for-action
+(defn get-client-job-status-for-action
   "Gets all the events associated with a particular client and this
    particular action (job). The number of items returned in the list 
    is governed by the underlying persistence layer.
@@ -161,10 +161,10 @@
    specified sort key.
    "
   [client-id action-id since]
-  (log/trace "get-all-client-jobs-for-action called...")
+  (log/trace "get-client-job-status-for-action called...")
   (let [since-tstamp (or since "0")]
     (log/trace (str "since... " since-tstamp))
-    (db/get-events client-id action-id :from-sort-key since-tstamp)))
+    (db/get-client-job-status client-id action-id :from-sort-key since-tstamp)))
 
 (defn get-job-results [client-id action-id]
   (log/trace "get-job-results - client-id ["client-id"] action-id ["action-id"]")

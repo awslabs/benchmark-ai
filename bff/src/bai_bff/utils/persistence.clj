@@ -7,17 +7,17 @@
               ResourceInUseException]))
 
 
-(def events-table (env :ddb-events-table-name))
-(def jobs-table (env :ddb-jobs-table-name))
+(def client-job-status-table (env :ddb-client-job-status-table-name))
+(def client-jobs-table (env :ddb-client-jobs-table-name))
 (def query-limit 30)
 
-(defn make-event-table-sort-key [event] 
+(defn make-client-job-status-table-sort-key [event] 
 	(str (event :tstamp) ":" (event :message_id)))
 
-(defn make-job-table-sort-key [event] 
+(defn make-client-job-table-sort-key [event] 
 	(str (event :tstamp) ":" (event :action_id)))
 
-(defn save-event [client-id action-id event]
+(defn save-client-job-status [client-id action-id status-event]
  "Stores an event in the event table. The action-id is used
   as the partition key. To guarantee order and uniqueness, a composite key
   tstamp:message_id is used as the sort key. The action-id is set explicitly 
@@ -26,23 +26,23 @@
   outcome of a cancel command against its target action_id."
  (let [item {
    :ActionId action-id
-   :TimestampMessageId (make-event-table-sort-key event)
+   :TimestampMessageId (make-client-job-status-table-sort-key status-event)
    :ClientId client-id
-   :Event event
+   :Event status-event
   }]
-   (log/trace "Saving event with client_id: " (:ClientId item) " and action_id: " (:ActionId item))
-   (ddb/put-item :table-name events-table :item item)))
+   (log/trace "Saving job status with client_id: " (:ClientId item) " and action_id: " (:ActionId item))
+   (ddb/put-item :table-name client-job-status-table :item item)))
 
-(defn get-events
- "Queries the event table for events against the supplied client_id and action_id.
+(defn get-client-job-status
+ "Queries the client job status table for status events against the supplied client_id and action_id.
   An optional last-evaluated-key can be passed in, for pagination. Will return a dynamodb query response.
   If it includes a last-evaluated-key, the next set of rows is retrieved."
   [client-id action-id & {:keys [from-sort-key]
                           :or { from-sort-key "0" } }]
   (let [
     from-sort-key-str (str from-sort-key)
-    status-query (partial ddb/query 
-     :table-name events-table 
+    client-job-status-query (partial ddb/query 
+     :table-name client-job-status-table 
      :limit query-limit 
      :key-conditions { 
       :ActionId { 
@@ -67,21 +67,21 @@
      :filter-expression "#cid = :cid")]
    (log/trace (str "Querying events for client_id: " client-id " and action_id: " action-id))
    (map :Event (:items (if (= from-sort-key-str "0") 
-    (status-query)
-    (status-query :exclusive-start-key { :ActionId action-id :TimestampMessageId from-sort-key-str }))))))
+    (client-job-status-query)
+    (client-job-status-query :exclusive-start-key { :ActionId action-id :TimestampMessageId from-sort-key-str }))))))
 
-(defn save-job [benchmark-creation-event]
+(defn save-client-job [client-job-submission-event]
  "Stores the action_ids of submitted benchmarks to the benchmark table"
  (let [item {
-   :ActionId (benchmark-creation-event :action_id)
-   :TimestampActionId (make-job-table-sort-key benchmark-creation-event)
-   :ClientId (benchmark-creation-event :client_id)
-   :Timestamp (benchmark-creation-event :tstamp)
+   :ActionId (client-job-submission-event :action_id)
+   :TimestampActionId (make-client-job-table-sort-key client-job-submission-event)
+   :ClientId (client-job-submission-event :client_id)
+   :Timestamp (client-job-submission-event :tstamp)
   }]
-   (log/trace "Saving job with client_id: " (:client_id item) " and action_id: " (:action_id item))
-   (ddb/put-item :table-name jobs-table :item item)))
+   (log/trace "Saving job with client_id: " (:ClientId item) " and action_id: " (:ActionId item))
+   (ddb/put-item :table-name client-jobs-table :item item)))
 
-(defn get-jobs
+(defn get-client-jobs
  "Queries the jobs table for action ids against the supplied client_id.
   An optional last-evaluated-key can be passed in, for pagination. Will return a dynamodb query response.
   If it includes a last-evaluated-key, the next set of rows is retrieved.
@@ -90,8 +90,8 @@
                 :or { from-sort-key "0" }}]
   (let [
     from-sort-key-str (str from-sort-key)
-    jobs-query (partial ddb/query 
-     :table-name jobs-table 
+    client-jobs-query (partial ddb/query 
+     :table-name client-jobs-table 
      :limit query-limit 
      :key-conditions { 
       :ClientId { 
@@ -108,5 +108,5 @@
   	(map (fn [item] {:action_id (:ActionId item) :timestamp (:Timestamp item)})
 	   (map #(select-keys % [:ActionId :Timestamp]) 
 	   	(:items (if (= from-sort-key-str "0") 
-	    	(jobs-query)
-	    	(jobs-query :exclusive-start-key { :ClientId client-id :TimestampActionId from-sort-key-str })))))))
+	    	(client-jobs-query)
+	    	(client-jobs-query :exclusive-start-key { :ClientId client-id :TimestampActionId from-sort-key-str })))))))

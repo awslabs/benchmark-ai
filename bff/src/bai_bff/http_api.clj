@@ -40,7 +40,7 @@
         (log/debug event)
         (log/info (json/generate-string event {:pretty true}))
         (log/trace "Storing submission")
-        (db/save-job event)
+        (db/save-client-job event)
         (>!! @eventbus/send-event-channel-atom [(status-event :bai-bff.events/succeeded (str "Submission has been successfully received..."))])
         (>!! @eventbus/send-event-channel-atom [event])
         (:action_id event)))
@@ -114,7 +114,7 @@
                         (DELETE "/" [] (post-proc-results (log/info "delete-client-jobs... [NOT]") #_(delete-job action-id))))
                       (context "/:action-id" [action-id]
                                (defroutes action-routes
-                                 (GET    "/" {{:keys[since] :or {since "0"}} :params :as req} (post-proc-results (eventbus/get-client-jobs-for-action client-id action-id since)))
+                                 (GET    "/" {{:keys[since] :or {since "0"}} :params :as req} (post-proc-results (eventbus/get-client-job-status-for-action client-id action-id since)))
                                  (DELETE "/" {body :body :as request} (response (dispatch-delete-job request body action-id)))))))) ;
   (ANY "*" []
        (route/not-found (slurp (io/resource "404.html")))))
