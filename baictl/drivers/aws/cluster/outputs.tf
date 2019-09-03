@@ -113,14 +113,14 @@ output "loopback_security_group_id" {
   value       = "${aws_security_group.loopback.id}"
 }
 
-output "anubis_events_table" {
+output "anubis_client_job_status_table" {
   description = "DynamoDB table for event status"
-  value       = "${aws_dynamodb_table.anubis_events_table.id}"
+  value       = "${aws_dynamodb_table.anubis_client_job_status_table.id}"
 }
 
-output "anubis_jobs_table" {
+output "anubis_client_jobs_table" {
   description = "DynamoDB table for job status"
-  value       = "${aws_dynamodb_table.anubis_jobs_table.id}"
+  value       = "${aws_dynamodb_table.anubis_client_jobs_table.id}"
 }
 
 output "anubis_table_policy" {
