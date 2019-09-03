@@ -87,8 +87,9 @@ CD_TARGET_PATH := target
 # Deployment
 #---
 DEPLOY_TEMPLATE := etc/deploy.yml.tmpl
-DEPLOY_YML := etc/deploy.yml
+DEPLOY_YML := deploy.yml
 SERVICE_TEMPLATE := etc/service.yml.tmpl
+SERVICE_YML := service.yml
 DOCKER_TEMPLATE := etc/Dockerfile.tmpl
 DOCKER_DEV_TEMPLATE := etc/Dockerfile_dev.tmpl
 SERVICE_ENDPOINT := ./service_endpoint
@@ -357,7 +358,7 @@ service.yml: FORCE
 	     -e 's|@@PROJECT@@|$(PROJECT)|g' \
 	     -e 's|@@ENVIRONMENT@@|$(ENVIRONMENT)|g' \
 	     -e 's|@@JMX_PORT@@|$(JMX_PORT)|g' \
-	     -e 's|@@SVC_PORT@@|$(SVC_PORT)|g' $(SERVICE_TEMPLATE) > $(shell PATH=$(PATH) sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(SERVICE_TEMPLATE))
+	     -e 's|@@SVC_PORT@@|$(SVC_PORT)|g' $(SERVICE_TEMPLATE) > $(SERVICE_YML)
 
 deploy: _deploy_venv deploy.yml service.yml 
 	@echo "------------------------"
@@ -366,13 +367,11 @@ deploy: _deploy_venv deploy.yml service.yml
 	#Deploy this service to the k8s cluster
 	kubectl $(K8S_KUBECTL_ARGS) apply -f deploy.yml
 	kubectl $(K8S_KUBECTL_ARGS) apply -f service.yml
-	$(shell \
-		touch $(SERVICE_ENDPOINT) \
-		while [ ! -s $(SERVICE_ENDPOINT) ]; do \
-    		kubectl $(K8S_KUBECTL_ARGS) get service bai-bff -o json | jq '.status.loadBalancer.ingress[].hostname' > $(SERVICE_ENDPOINT) \
-			sleep 5 \
-		done \
-	)
+	touch $(SERVICE_ENDPOINT)
+	while [ ! -s $(SERVICE_ENDPOINT) ]; do \
+	  kubectl $(K8S_KUBECTL_ARGS) get service bai-bff -o json | jq '.status.loadBalancer.ingress[].hostname' > $(SERVICE_ENDPOINT); \
+	  sleep 5; \
+	done
 
 
 undeploy-deployment:
