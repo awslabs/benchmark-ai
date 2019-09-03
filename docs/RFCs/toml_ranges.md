@@ -33,6 +33,8 @@ instance_type** **= ["p3.8xlarge", "p3.16xlarge"]
 # ...
 ```
 
+In case multiple fields use this feature, the resulting jobs correspond to the cartesian product of the different options. 
+
 
 **Descriptor preprocessing**
 
@@ -40,9 +42,9 @@ The executor service is in charge of converting a TOML containing ranges into mu
 ![Image: toml_ranges .jpg](../images/toml_ranges.jpg)
 
 
-**Action-family label**
+**parent-action-id label**
 
-All jobs derived from a TOML containing multiple-value parameters share a common label: *action-family*. The value of this label corresponds to the action id of the message which submitted the original multi-value TOML. This is important because then this label can be used in a label selector to identify all these children jobs. For example, if the customer decides to cancel all jobs originated from a given multi-value TOML submitted with action id X, we can do so by deleting all jobs with *action-family = X.*
+Similar to what is done with the scheduled benchmarks, all jobs derived from a TOML containing multiple-value parameters share a common label: *parent-action-id*. The value of this label corresponds to the action id of the message which submitted the original multi-value TOML. This is important because then this label can be used in a label selector to identify all these children jobs. For example, if the customer decides to cancel all jobs originated from a given multi-value TOML submitted with action id X, we can do so by deleting all jobs with *parent-action-id = X.*
 
 
 ### Benefit
