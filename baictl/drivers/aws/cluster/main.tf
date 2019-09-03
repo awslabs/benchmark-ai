@@ -206,8 +206,8 @@ resource "aws_msk_cluster" "benchmark-msk-cluster" {
   }
 }
 
-resource "aws_dynamodb_table" "anubis_events_table" {
-  name           = "AnubisEvents"
+resource "aws_dynamodb_table" "anubis_client_job_status_table" {
+  name           = "AnubisClientJobStatus"
   billing_mode   = "PROVISIONED"
   read_capacity  = 30
   write_capacity = 30
@@ -220,17 +220,17 @@ resource "aws_dynamodb_table" "anubis_events_table" {
   }
 
   attribute {
-    name = "SortKey"
+    name = "TimestampMessageId"
     type = "S"
   }
 
   tags = {
-    Name        = "anubis_events_table"
+    Name        = "anubis_client_job_status_table"
   }
 }
 
-resource "aws_dynamodb_table" "anubis_jobs_table" {
-  name           = "AnubisJobs"
+resource "aws_dynamodb_table" "anubis_client_jobs_table" {
+  name           = "AnubisClientJobs"
   billing_mode   = "PROVISIONED"
   read_capacity  = 30
   write_capacity = 30
@@ -243,16 +243,16 @@ resource "aws_dynamodb_table" "anubis_jobs_table" {
   }
 
   attribute {
-    name = "SortKey"
+    name = "TimestampActionId"
     type = "S"
   }
 
   tags = {
-    Name        = "anubis_jobs_table"
+    Name        = "anubis_client_jobs_table"
   }
 }
 
-# TODO: restrict policy to only point to anubis_events_table and anubis_jobs_table
+# TODO: restrict policy to only point to anubis_client_job_status_table and anubis_jobs_table
 resource "aws_iam_policy" "anubis_table_rwc" {
   name        = "anubis_table_rwc"
   description = "Allow for read/write/create on DynamoDB"
