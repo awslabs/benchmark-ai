@@ -1,5 +1,5 @@
 #NOTE: Requires: sed, git, docker, kubectl
-SHELL :=/bin/bash
+SHELL :=/usr/local/bin/bash
 
 .DEFAULT_GOAL := build
 
@@ -87,6 +87,7 @@ CD_TARGET_PATH := target
 # Deployment
 #---
 DEPLOY_TEMPLATE := etc/deploy.yml.tmpl
+DEPLOY_YML := etc/deploy.yml
 SERVICE_TEMPLATE := etc/service.yml.tmpl
 DOCKER_TEMPLATE := etc/Dockerfile.tmpl
 DOCKER_DEV_TEMPLATE := etc/Dockerfile_dev.tmpl
@@ -348,7 +349,7 @@ deploy.yml: FORCE
 	     -e 's|@@KAFKA_POLL_INTERVAL_MS@@|$(KAFKA_POLL_INTERVAL_MS)|g' \
 	     -e 's|@@KAFKA_SINK_TOPICS@@|$(KAFKA_SINK_TOPICS)|g' \
 	     -e 's|@@KAFKA_CMD_SUBMIT_TOPIC@@|$(KAFKA_CMD_SUBMIT_TOPIC)|g' \
-	     -e 's|@@KAFKA_CMD_RETURN_TOPIC@@|$(KAFKA_CMD_RETURN_TOPIC)|g' $(DEPLOY_TEMPLATE) > $(shell PATH=$(PATH) sed -n 's|.*/\(.*\).tmpl|\1|p' <<< $(DEPLOY_TEMPLATE))
+	     -e 's|@@KAFKA_CMD_RETURN_TOPIC@@|$(KAFKA_CMD_RETURN_TOPIC)|g' $(DEPLOY_TEMPLATE) > $(DEPLOY_YML)
 
 service.yml: FORCE
 	@echo "Generating kubernetes service.yaml from template..."
