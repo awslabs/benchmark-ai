@@ -75,9 +75,12 @@ def mock_file(stub, key, name, content):
     stub.add_response(method="get_object", service_response={"Body": tar_stream})
 
 
+MOCKED_REGION = "us-east-1"
+
+
 @fixture
 def mock_s3():
-    s3client = boto3.client("s3")
+    s3client = boto3.client("s3", region_name=MOCKED_REGION)
     stub = Stubber(s3client)
 
     mock_file(stub, FIRST_KEY, FIRST_FILE_NAME, FIRST_CONTENT)
