@@ -121,14 +121,14 @@
       :type             "CMD_SUBMIT"})))
 
 (defn status-event[event status-keyword status-message]
-  (let [tstamp (System/currentTimeMillis)] ;NOTE auth should have been taken care of by middleware.
+  (let [tstamp (System/currentTimeMillis) authenticated false] ;NOTE auth should have been taken care of by middleware.
     (add-my-visited-entry
      {:message_id      (uuid)                                     ; <--
       :client_id       (some-> event :client_id)
       :action_id       (some-> event :action_id)
       :client_version  (some-> event :client_version)
       :date            (some-> event :date)
-      :authenticated   false
+      :authenticated   authenticated
       :client_username (some-> event :client_username)
       :tstamp          tstamp                                     ; <--
       :visited         (some-> event :visited)
