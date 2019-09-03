@@ -27,6 +27,11 @@ class ScheduledBenchmarkExecutorEventHandler(KafkaServiceCallback):
             return
 
         try:
+            kafka_service.send_status_message_event(
+                event,
+                Status.PENDING,
+                f"{kafka_service.name} service, node {kafka_service.pod_name}: Processing event...",
+            )
             job = self.k8s_execution_engine.schedule(event)
         except ExecutionEngineException as e:
             logger.exception("Engine throws exception")

@@ -56,15 +56,18 @@ class ExecutorEventHandler(KafkaServiceCallback):
         if not engine:
             # Ok. I've failed, but may be another service can have this engine
             if engine_id in self.valid_execution_engines:
-                kafka_service.send_status_message_event(
-                    event, Status.SUCCEEDED, f"{engine_id} is whitelisted, but not present here. Nothing to do"
-                )
+                logging.info(f"{engine_id} is whitelisted, but not present here. Nothing to do")
             else:
                 # It's really something weird
-                kafka_service.send_status_message_event(event, Status.ERROR, f"Unknown engine {engine_id}")
+                logging.fatal(f"Unknown engine {engine_id}")
             return
 
         try:
+            kafka_service.send_status_message_event(
+                event,
+                Status.PENDING,
+                f"Processing benchmark submission request...",
+            )
             job = engine.run(event)
         except ExecutionEngineException as e:
             logger.exception("Engine throws exception")

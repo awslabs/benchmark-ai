@@ -393,23 +393,6 @@ class DoNothingCallback(KafkaServiceCallback):
         pass
 
 
-def test_status_message_sent(
-    kafka_consumer: KafkaConsumer,
-    kafka_producer: KafkaProducer,
-    benchmark_event: BenchmarkEvent,
-    mock_event_emitter: EventEmitter,
-):
-    status_callback = DoNothingCallback()
-
-    kafka_service = _create_kafka_service({STATUS_TOPIC: [status_callback]}, kafka_consumer, kafka_producer)
-    kafka_service.run_loop()
-
-    status = Status.PENDING
-    message = f"{SERVICE_NAME} service, node {POD_NAME}: Processing event..."
-
-    mock_event_emitter.send_status_message_event.assert_called_with(benchmark_event, status, message)
-
-
 # Regression prevention test - assert that we always pass timeout
 def test_poll_interval(kafka_consumer: KafkaConsumer, kafka_producer: KafkaProducer):
     kafka_service = _create_kafka_service({}, kafka_consumer, kafka_producer)

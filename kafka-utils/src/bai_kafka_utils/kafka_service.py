@@ -124,8 +124,8 @@ class KafkaService:
             name=name, version=version, pod_name=pod_name, status_topic=status_topic, kakfa_producer=kafka_producer
         )
 
-        self.name = name
-        self.pod_name = pod_name
+        self._name = name
+        self._pod_name = pod_name
         self._consumer = kafka_consumer
 
         # Immutability helps us to avoid nasty bugs.
@@ -137,6 +137,22 @@ class KafkaService:
     _LOOP_IS_ALREADY_RUNNING = "Loop is already running"
     _IS_NOT_RUNNING = "Loop is not running"
     _CANNOT_UPDATE_CALLBACKS = "Cannot update callbacks with running loop"
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, name):
+        self._name = name
+
+    @property
+    def pod_name(self):
+        return self._pod_name
+
+    @pod_name.setter
+    def pod_name(self, pod_name):
+        self._pod_name = pod_name
 
     def safe_handle_msg(self, msg, callback: KafkaServiceCallback):
         try:
@@ -154,9 +170,7 @@ class KafkaService:
         if not event:
             raise KafkaServiceCallbackException("Empty message received (no event found)")
         logger.info(f"Got event {event}")
-        self._event_emitter.send_status_message_event(
-            event, Status.PENDING, f"{self.name} service, node {self.pod_name}: Processing event..."
-        )
+        logging.debug(f"{self.name} service, node {self.pod_name}: Processing event...")
         callback.handle_event(event, self)
 
     def send_status_message_event(self, handled_event: BenchmarkEvent, status: Status, msg: str):

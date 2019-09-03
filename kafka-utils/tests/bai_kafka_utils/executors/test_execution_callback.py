@@ -1,7 +1,7 @@
 import pytest
 from pytest import fixture
 from typing import Dict
-from unittest.mock import create_autospec, ANY
+from unittest.mock import call, create_autospec, ANY
 
 from bai_kafka_utils.events import (
     FetcherBenchmarkEvent,
@@ -93,6 +93,11 @@ def expected_executor_event(fetcher_event: FetcherBenchmarkEvent) -> ExecutorBen
     return create_from_object(ExecutorBenchmarkEvent, fetcher_event, payload=job_payload)
 
 
+@fixture
+def expected_pending_call(fetcher_event: FetcherBenchmarkEvent):
+    return call(fetcher_event, Status.PENDING, ANY)
+
+
 def test_default_engine(
     executor_handler: ExecutorEventHandler,
     fetcher_event: FetcherBenchmarkEvent,
@@ -159,7 +164,7 @@ def test_remote_engine(
 
     no_engines_handler.handle_event(fetcher_event, kafka_service)
 
-    kafka_service.send_status_message_event.assert_called_once_with(fetcher_event, expected_status, ANY)
+    kafka_service.send_status_message_event.assert_not_called()
     kafka_service.send_event.assert_not_called()
     engine1.run.assert_not_called()
     engine2.run.assert_not_called()
@@ -170,11 +175,14 @@ def test_handle_event(
     fetcher_event: FetcherBenchmarkEvent,
     kafka_service: KafkaService,
     expected_executor_event: ExecutorBenchmarkEvent,
+    expected_pending_call,
 ):
     executor_handler.handle_event(fetcher_event, kafka_service)
 
+    kafka_service.send_status_message_event.assert_has_calls(
+        [expected_pending_call, call(expected_executor_event, Status.SUCCEEDED, ANY)]
+    )
     kafka_service.send_event.assert_called_once_with(expected_executor_event, PRODUCER_TOPIC)
-    kafka_service.send_status_message_event.assert_called_once_with(expected_executor_event, Status.SUCCEEDED, ANY)
 
 
 def test_handle_event_processes_single_run_benchmark(
@@ -182,11 +190,14 @@ def test_handle_event_processes_single_run_benchmark(
     single_run_fetcher_event: FetcherBenchmarkEvent,
     kafka_service: KafkaService,
     expected_executor_event: ExecutorBenchmarkEvent,
+    expected_pending_call,
 ):
     executor_handler.handle_event(single_run_fetcher_event, kafka_service)
 
+    kafka_service.send_status_message_event.assert_has_calls(
+        [expected_pending_call, call(expected_executor_event, Status.SUCCEEDED, ANY)]
+    )
     kafka_service.send_event.assert_called_once_with(expected_executor_event, PRODUCER_TOPIC)
-    kafka_service.send_status_message_event.assert_called_once_with(expected_executor_event, Status.SUCCEEDED, ANY)
 
 
 def test_handle_event_ignores_scheduled_events(
@@ -205,11 +216,14 @@ def test_run_raises(
     fetcher_event: FetcherBenchmarkEvent,
     kafka_service: KafkaService,
     engine1: ExecutionEngine,
+    expected_pending_call,
 ):
     engine1.run.side_effect = ExecutionEngineException("Oops")
 
     with pytest.raises(KafkaServiceCallbackException):
         executor_handler.handle_event(fetcher_event, kafka_service)
 
-    kafka_service.send_status_message_event.assert_called_once_with(fetcher_event, Status.ERROR, ANY)
+    kafka_service.send_status_message_event.assert_has_calls(
+        [expected_pending_call, call(fetcher_event, Status.ERROR, ANY)]
+    )
     kafka_service.send_event.assert_not_called()
