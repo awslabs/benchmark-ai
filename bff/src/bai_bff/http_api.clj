@@ -2,6 +2,7 @@
   (:require [bai-bff.core :refer :all]
             [bai-bff.events :as events]
             [bai-bff.services.eventbus :as eventbus]
+            [bai-bff.utils.persistence :as db]
             [clojure.pprint :refer :all]
             [clojure.java.io :as io]
             [ring.adapter.jetty :refer :all]
@@ -38,6 +39,8 @@
             status-event (partial events/status-event event)]
         (log/debug event)
         (log/info (json/generate-string event {:pretty true}))
+        (log/trace "Storing submission")
+        (db/save-client-job event)
         (>!! @eventbus/send-event-channel-atom [(status-event :bai-bff.events/succeeded (str "Submission has been successfully received..."))])
         (>!! @eventbus/send-event-channel-atom [event])
         (:action_id event)))
@@ -101,18 +104,18 @@
        (str "<hr><CENTER><h1> BAI-BFF HTTP Service API (v"VERSION")</h1><a href=\"http://foobar.com/api\">docs</a></CENTER><hr>"))
   (context "/api/job" []
            (defroutes job-routes
-             (GET  "/" [] (response (eventbus/get-all-jobs))) ;;TODO - remove this in production...? implement me
+             (GET  "/" [] (response #_(eventbus/get-all-jobs)))
              (GET  "/script/:filename" [filename] (response (if (eventbus/has-file? filename) (str "true") (str "false"))))
              (GET  "/results/:client-id/:action-id" [client-id action-id] (response (eventbus/get-job-results client-id action-id)))
              (POST "/" {body :body :as request} (post-proc-results (log/info (pprint request)) #_(create-job body)));TODO - implement me
              (POST "/descriptor" {{body :submit-event} :params :as request} (response (dispatch-submit-job request body)))
              (context "/:client-id" [client-id]
                       (defroutes client-routes
-                        (GET    "/" [] (post-proc-results (eventbus/get-all-client-jobs client-id)))
+                        (GET    "/" {{:keys[since] :or {since "0"}} :params :as req} (post-proc-results (eventbus/get-client-jobs client-id since)))
                         (DELETE "/" [] (post-proc-results (log/info "delete-client-jobs... [NOT]") #_(delete-job action-id))))
                       (context "/:action-id" [action-id]
                                (defroutes action-routes
-                                 (GET    "/" {{:keys[since] :or {since 0}} :params :as req} (post-proc-results (eventbus/get-all-client-jobs-for-action client-id action-id since)))
+                                 (GET    "/" {{:keys[since] :or {since "0"}} :params :as req} (post-proc-results (eventbus/get-client-job-status-for-action client-id action-id since)))
                                  (DELETE "/" {body :body :as request} (response (dispatch-delete-job request body action-id)))))))) ;
   (ANY "*" []
        (route/not-found (slurp (io/resource "404.html")))))

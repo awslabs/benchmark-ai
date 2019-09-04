@@ -53,6 +53,7 @@
                                  :kafka-sink
                                  :kafka-source
                                  :endpoints])]
+     ;; start services
      (doseq [service services]
        (log/report "Starting service: " service)
        (.start! service))

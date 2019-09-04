@@ -111,6 +111,16 @@ spec:
                 configMapKeyRef:
                   name: outputs-infrastructure
                   key: es_endpoint
+            - name: DDB_CLIENT_JOB_STATUS_TABLE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: outputs-infrastructure
+                  key: anubis_client_job_status_table
+            - name: DDB_CLIENT_JOBS_TABLE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: outputs-infrastructure
+                  key: anubis_client_jobs_table
       nodeSelector:
         node.type: bai-services-cheap
       restartPolicy: Always

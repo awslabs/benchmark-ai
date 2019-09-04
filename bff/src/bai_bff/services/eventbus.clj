@@ -11,6 +11,7 @@
   (:require [bai-bff.core :refer :all]
             [bai-bff.services :refer [RunService]]
             [bai-bff.utils.parsers :refer [parse-long]]
+            [bai-bff.utils.persistence :as db]
             [bai-bff.utils.utils :as utils]
             [bai-bff.utils.log-index :as log-index]
             [environ.core :refer [env]]
@@ -53,7 +54,6 @@
 ;;----------------------------------------------------------
 
 ;; The "database"
-(def status-db (atom {}))
 (def stored-scripts (atom #{}))
 
 (defn update-status-store
@@ -86,19 +86,15 @@
   vector.  This is a TODO item, which means that since atomic calls
   can be re-run at anytime, we should make sure this function is pure
   and right now it is not - not without sorting and dedupping."
-  [store event & {:keys [usurping-index]}]
+  [event & {:keys [usurping-index]}]
   (log/trace "update-status-store called...")
   (if (nil? event)
-    store
+    false
     (let [{:keys [client_id action_id]} event
           [client-key action-key] (mapv keyword [client_id (or usurping-index action_id)])]
       (if (and client-key action-key)
-        (try
-          (assoc-in store [client-key action-key] (vec (remove nil? (flatten (vector (some-> store client-key action-key) event)))))
-          (catch NullPointerException e
-            (.getMessage e)
-            store))
-        store))))
+       (db/save-client-job-status client-key action-key event)
+       (throw (Exception. "Could not insert event"))))))
 
 (defn process-status-records
   "Implementation of the callback function passed to the Kafka
@@ -108,8 +104,8 @@
   [events]
   (when (seq events)
     (log/trace (str "Processing "(count events)" status events"))
-    (doseq [event events] ; <- I should do this loop with recursion and then only have a single call to swap! at the end... meh.
-      (if-not (nil? event) (swap! status-db update-status-store event))))
+    (doseq [event events]
+      (if-not (nil? event) (update-status-store event))))
   true)
 
 (defn process-cmd-return-records
@@ -121,34 +117,54 @@
   (when (seq events)
     (log/trace (str "Processing "(count events)" command events"))
     (doseq [event events] ; <- I should do this loop with recursion and then only have a single call to swap! at the end... meh.
-      (if-not (nil? event) (swap! status-db update-status-store event :usurping-index (some-> event :payload :cmd_submit :payload :args :target_action_id)))))
+      (if-not (nil? event) (update-status-store event :usurping-index (some-> event :payload :cmd_submit :payload :args :target_action_id)))))
   true)
 
-(defn get-all-jobs
-  "Show the full map database of all the status messages received by the
-  BFF"
-  []
-  (log/trace "get-all-jobs called...")
-  @status-db)
+(defn get-client-jobs
+  "Returns a list of (action id, submission timestamp) tuples 
+  of submissions made by a client. The maximum number of items returned 
+  per query is governed by the underlying persistence layer.
+  Not all action_ids will necessarily be returned in a query. 
+  The *since* optional parameter can be used to paginate the query.
 
-(defn get-all-client-jobs
-  "Get the maps of jobs, in this internal context we call them actions,
-  for a given client"
-  [client-id]
-  (log/trace "get-all-client-jobs called...")
-  (let [client-key (keyword client-id)]
-    (get @status-db client-key)))
+  The rows are lexicographically sorted by a range key with the 
+  format <timestamp>:<action_id>. Therefore, the *since* parameter can be 
+  *any* string, however either a timestamp (e.g. 1567070046827)
+  or a range key in the above format should be used 
+  (e.g. 1567070046827:61e76d4d-2f31-4259-8bcb-84ab424d9d16).
+  Using just the timestamp will return all action ids created from 
+  that timestamp (inclusive), using the sort key in the appropriate format will 
+  return every action_id created after the specified sort key.
+  "
+  ([client-id] (get-client-jobs client-id "0"))
+  ([client-id since]
+   (log/trace "get-all-client-jobs called...")
+   (let [since-tstamp (or since "0")]
+     (log/trace (str "since... " since-tstamp))
+     { :action_ids (db/get-client-jobs client-id :from-sort-key since-tstamp) })))
 
-(defn get-all-client-jobs-for-action
+(defn get-client-job-status-for-action
   "Gets all the events associated with a particular client and this
-  particular action (job)"
+   particular action (job). The number of items returned in the list 
+   is governed by the underlying persistence layer.
+   However, not all events will be necessarily be returned. 
+   The *since* optional parameter can be used to paginate the query.
+
+   The rows are lexicographically sorted by a range key with 
+   the format <timestamp>:<message_id>. Therefore, the *since* parameter 
+   can be *any* string. However, either a timestamp (e.g. 1567070046827) or 
+   a range key in the above format should be used 
+   (e.g. 1567079110254:fd708459-2c73-4602-91ce-dff8f1d90bcf).
+   Using just the timestamp will return all events (for action_id created) 
+   from that timestamp (inclusive), using the sort key in the appropriate 
+   format will return every event (for the action_id) created _after_ the 
+   specified sort key.
+   "
   [client-id action-id since]
-  (log/trace "get-all-client-jobs-for-action called...")
-  (let [client-key (keyword client-id)
-        action-key (keyword action-id)
-        since-tstamp (or (parse-long since) 0)]
-    (log/trace (str "since... "since-tstamp))
-    (filterv #(< since-tstamp (:tstamp (peek (:visited %)))) (get-in @status-db [client-key action-key] {}))))
+  (log/trace "get-client-job-status-for-action called...")
+  (let [since-tstamp (or since "0")]
+    (log/trace (str "since... " since-tstamp))
+    (db/get-client-job-status client-id action-id :from-sort-key since-tstamp)))
 
 (defn get-job-results [client-id action-id]
   (log/trace "get-job-results - client-id ["client-id"] action-id ["action-id"]")
