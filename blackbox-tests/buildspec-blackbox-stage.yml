@@ -1,7 +1,8 @@
 version: 0.2
 
+# Build spec for blackbox test stage
 phases:
   build:
     commands:
       - cd blackbox-tests
-      - make lint
+      - make

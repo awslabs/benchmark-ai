@@ -100,7 +100,7 @@ resource "aws_codebuild_project" "ci-blackbox-tests" {
 
   source {
     type = "CODEPIPELINE"
-    buildspec = "blackbox-tests/buildspec.yml"
+    buildspec = "blackbox-tests/buildspec-blackbox-stage.yml"
   }
 
   vpc_config {
