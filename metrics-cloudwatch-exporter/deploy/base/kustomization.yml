@@ -1,0 +1,3 @@
+resources:
+  - metrics_cloudwatch_exporter.yml
+  - config.yml

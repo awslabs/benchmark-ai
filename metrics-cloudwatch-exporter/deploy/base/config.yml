@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+data:
+  consumer_group_id: metrics-cloudwatch-exporter
+  consumer_topic: BAI_APP_METRICS
+  # Not sure we even need a producer topic
+  # KafkaService expects it tho - setting it to garbage here
+  # TODO: Figure this out...
+  producer_topic: BAI_APP_EXECUTOR
+  status_topic: BAI_APP_STATUS
+metadata:
+  name: metrics-cloudwatch-exporter
+  namespace: default

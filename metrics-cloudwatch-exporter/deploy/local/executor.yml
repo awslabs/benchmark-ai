@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metrics-cloudwatch-exporter
+spec:
+  template:
+    spec:
+      containers:
+        - name: metrics-cloudwatch-exporter
+          imagePullPolicy: Never
+          env:
+            - name: NUM_PARTITIONS
+              value: "1"
+            - name: REPLICATION_FACTOR
+              value: "1"
+      affinity:
+      #--
+      nodeSelector:
+      #--
