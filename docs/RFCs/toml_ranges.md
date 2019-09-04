@@ -69,6 +69,27 @@ periodically launches experiments.
 ![Image: toml_ranges .jpg](../images/scheduled_experiments.jpg)
 
 
+**Overrides**
+
+By default, if there is more than one parameter with multiple values in the TOML, the benchmarks spawned by Anubis will 
+correspond to the cartesian product of all possible values. In some cases, however, customers might be interested only 
+in some combinations. In order to achieve this, they can use *overrides*.
+
+Overrides are included in a section at the end of the descriptor and specify values to be replaced in the original TOML.
+The following code, for example, would produce the combinations (f1,b1), (f1,b2) and (f2,b3) for parameters (foo,bar).
+
+```
+# ...
+[[override]] 
+foo = "f1"
+bar = ["b1","b2"]
+
+[[override]]
+foo = "f2"
+bar = "b3"
+```
+
+
 ### Benefit
 
 This feature gives users an extremely convenient way to implement a very common use case. They can compare tens of 
