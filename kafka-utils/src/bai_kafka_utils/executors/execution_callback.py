@@ -64,9 +64,7 @@ class ExecutorEventHandler(KafkaServiceCallback):
 
         try:
             kafka_service.send_status_message_event(
-                event,
-                Status.PENDING,
-                f"Processing benchmark submission request...",
+                event, Status.PENDING, f"Processing benchmark submission request..."
             )
             job = engine.run(event)
         except ExecutionEngineException as e:
