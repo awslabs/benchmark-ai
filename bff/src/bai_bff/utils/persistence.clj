@@ -9,7 +9,7 @@
 
 (def client-job-status-table (env :ddb-client-job-status-table-name))
 (def client-jobs-table (env :ddb-client-jobs-table-name))
-(def query-limit 30)
+(def query-limit 100)
 
 (defn make-client-job-status-table-sort-key [event] 
 	(str (event :tstamp) ":" (event :message_id)))
