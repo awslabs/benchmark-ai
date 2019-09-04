@@ -140,12 +140,9 @@ def test_sample_benchmarks(client, descriptor_filename):
     events = set(events)
     assert events == {
         ServiceAndStatus("bai-bff", Status.SUCCEEDED),
-        ServiceAndStatus("fetcher-dispatcher", Status.PENDING),
         ServiceAndStatus("fetcher-dispatcher", Status.SUCCEEDED),
         ServiceAndStatus("executor", Status.PENDING),
         ServiceAndStatus("executor", Status.SUCCEEDED),
-        ServiceAndStatus("sm-executor", Status.PENDING),
-        ServiceAndStatus("sm-executor", Status.SUCCEEDED),
         ServiceAndStatus("watcher", Status.PENDING),
         ServiceAndStatus("watcher", Status.RUNNING),
         ServiceAndStatus("watcher", Status.SUCCEEDED),
@@ -160,6 +157,5 @@ def test_sample_benchmarks(client, descriptor_filename):
         "bai-bff",
         "fetcher-dispatcher",
         "executor",
-        "sm-executor",
         "watcher",
     }
