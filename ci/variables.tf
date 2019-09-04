@@ -2,6 +2,7 @@ variable "projects" {
   type = list(string)
   default = [
     "client-lib",
+    "blackbox-tests",
     "metrics-pusher",
     "fetcher",
     "fetcher-job",
