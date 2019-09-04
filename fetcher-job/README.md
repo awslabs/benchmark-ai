@@ -1,1 +1,1 @@
-This project is a fetcher job.
+This project is a fetcher job
