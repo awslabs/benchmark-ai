@@ -82,7 +82,7 @@ resource "aws_default_security_group" "default" {
 
 
 resource "aws_codebuild_project" "ci-blackbox-tests" {
-  name = "blackbox-tests"
+  name = "ci-blackbox-tests"
   description = "Runs blackbox tests"
   build_timeout = "120"
   service_role = aws_iam_role.code-build-role.arn
