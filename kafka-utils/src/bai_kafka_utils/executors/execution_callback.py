@@ -59,7 +59,7 @@ class ExecutorEventHandler(KafkaServiceCallback):
                 logging.info(f"{engine_id} is whitelisted, but not present here. Nothing to do")
             else:
                 # It's really something weird
-                logging.fatal(f"Unknown engine {engine_id}")
+                logging.warning(f"Unknown engine {engine_id}")
             return
 
         try:

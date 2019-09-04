@@ -138,19 +138,9 @@ class KafkaService:
     _IS_NOT_RUNNING = "Loop is not running"
     _CANNOT_UPDATE_CALLBACKS = "Cannot update callbacks with running loop"
 
-    @property
-    def name(self):
-        return self._name
-
-    @name.setter
     def name(self, name):
         self._name = name
 
-    @property
-    def pod_name(self):
-        return self._pod_name
-
-    @pod_name.setter
     def pod_name(self, pod_name):
         self._pod_name = pod_name
 
