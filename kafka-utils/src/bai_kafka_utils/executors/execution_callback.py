@@ -76,9 +76,7 @@ class ExecutorEventHandler(KafkaServiceCallback):
 
         response_event = create_from_object(ExecutorBenchmarkEvent, event, payload=payload)
 
-        kafka_service.send_status_message_event(
-            response_event, Status.SUCCEEDED, f"Benchmark successfully submitted with job id {job.id}"
-        )
+        kafka_service.send_status_message_event(response_event, Status.SUCCEEDED, f"Benchmark successfully created...")
         kafka_service.send_event(response_event, topic=self.producer_topic)
 
     @staticmethod
