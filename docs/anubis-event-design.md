@@ -1,4 +1,4 @@
-# Benchmark AI: Event design
+# Anubis: Event design
 
 This document describes each of the main events that are pushed through the Benchmark AI system.
 
