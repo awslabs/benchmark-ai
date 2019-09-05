@@ -1,3 +1,6 @@
+from typing import Dict, Any
+from unittest.mock import create_autospec, PropertyMock
+
 import addict
 import boto3
 import botocore
@@ -14,12 +17,11 @@ from bai_kafka_utils.events import (
 )
 from bai_kafka_utils.executors.descriptor import Descriptor, DescriptorError
 from bai_kafka_utils.executors.execution_callback import ExecutionEngineException
+from botocore.exceptions import ClientError
 from botocore.stub import Stubber
 from pytest import fixture
 from sagemaker import Session
 from sagemaker.estimator import EstimatorBase, Framework
-from typing import Dict, Any
-from unittest.mock import create_autospec, PropertyMock
 
 from sm_executor import sm_execution_engine
 from sm_executor.args import SageMakerExecutorConfig
@@ -86,25 +88,20 @@ MOCKED_REGION = "us-east-1"
 
 
 @fixture
-def mock_sagemaker_client():
+def sagemaker_client():
     sagemaker_client = boto3.client("sagemaker", region_name=MOCKED_REGION)
-    stub = Stubber(sagemaker_client)
-
-    stub.add_response("stop_training_job", service_response={}, expected_params={"TrainingJobName": ACTION_ID})
-
-    stub.activate()
     return sagemaker_client
 
 
 @fixture
 def sm_execution_engine_to_test(
-    mock_session_factory, mock_estimator_factory, sagemaker_config: SageMakerExecutorConfig, mock_sagemaker_client
+    mock_session_factory, mock_estimator_factory, sagemaker_config: SageMakerExecutorConfig, sagemaker_client
 ):
     return SageMakerExecutionEngine(
         session_factory=mock_session_factory,
         estimator_factory=mock_estimator_factory,
         config=sagemaker_config,
-        sagemaker_client=mock_sagemaker_client,
+        sagemaker_client=sagemaker_client,
     )
 
 
@@ -224,5 +221,31 @@ def test_run_fail_from_sagemaker(
         sm_execution_engine_to_test.run(fetcher_event)
 
 
-def test_cancel(sm_execution_engine_to_test: SageMakerExecutionEngine):
-    sm_execution_engine_to_test.cancel(CLIENT_ID, ACTION_ID)
+def test_cancel_ignores_not_found(sm_execution_engine_to_test: SageMakerExecutionEngine):
+    stub = Stubber(sm_execution_engine_to_test.sagemaker_client)
+    stub.add_client_error(
+        "stop_training_job",
+        service_error_code="ValidationException",
+        service_message="Requested resource not found.",
+        expected_params={"TrainingJobName": ACTION_ID},
+    )
+    stub.activate()
+
+    try:
+        sm_execution_engine_to_test.cancel(CLIENT_ID, ACTION_ID)
+    except ClientError:
+        pytest.fail("Cancel threw not found client error")
+
+
+def test_cancel_raises(sm_execution_engine_to_test: SageMakerExecutionEngine):
+    stub = Stubber(sm_execution_engine_to_test.sagemaker_client)
+    stub.add_client_error(
+        "stop_training_job",
+        service_error_code="SomeRandomError",
+        service_message="Some random error has occured",
+        expected_params={"TrainingJobName": ACTION_ID},
+    )
+    stub.activate()
+
+    with pytest.raises(ClientError):
+        sm_execution_engine_to_test.cancel(CLIENT_ID, ACTION_ID)
