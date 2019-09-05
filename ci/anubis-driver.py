@@ -184,7 +184,8 @@ def sync_baictl(region, session):
     # TODO: add mode option for push / pull if needed
     os.environ["AWS_REGION"] = region
     sts = session.client("sts")
-    account_id = sts.get_caller_identity()["Account"]
+    account_id = sts.get_caller_identity()
+    account_id = account_id["Account"]
     backend_tfvars_path = os.path.join(
         os.path.dirname(__file__), "../baictl/drivers/aws/cluster/.terraform/bai/backend.tfvars"
     )
@@ -255,10 +256,13 @@ def get_service_endpoint(region, session):
         print(f"-> Waiting for CreateInfra step to finish {dots}", end="\r", flush=True)
         time.sleep(60)
 
+
 def register_service_endpoint(service_endpoint):
     return_code = subprocess.call(["./bin/anubis", "--register", f"{service_endpoint}:80"], cwd="../bff")
     if return_code != 0:
-        raise Exception(f"Failure registering service endpoint to bff `/bin/anubis --register {service_endpoint}:80`: {return_code}")
+        raise Exception(
+            f"Failure registering service endpoint to bff `/bin/anubis --register {service_endpoint}:80`: {return_code}"
+        )
 
 
 def remove_terraform_config_files():
