@@ -77,8 +77,8 @@ def test_construction(default_options):
 def test_empty(default_options):
     options = default_options
     options.metrics = []
-    with pytest.raises(ValueError):
-        _ = LogExtractor(options)
+    extractor = LogExtractor(options)
+    assert len(extractor.metrics) == 0
 
 
 def test_invalid(default_options):

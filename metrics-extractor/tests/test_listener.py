@@ -7,9 +7,9 @@ from anubis_metrics_extractor.log_listener import EnvironmentReader
 
 
 def test_empty():
-    with pytest.raises(ValueError):
-        reader = EnvironmentReader("")
-        _ = reader.get_metrics()
+    reader = EnvironmentReader("")
+    metrics = reader.get_metrics()
+    assert len(metrics) == 0
 
 
 patterns = dict(one="Lio=", another="Lis=", digit="XGQ=")  # .* | .+ | \d

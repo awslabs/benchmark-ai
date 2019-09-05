@@ -39,6 +39,7 @@ phases:
             # Make images we depend on
             (cd ../anubis-cron-job && make publish COMMIT_SHORT_HASH="local-latest")
             (cd ../metrics-pusher && make publish COMMIT_SHORT_HASH="local-latest")
+            (cd ../metrics-extractor && make publish COMMIT_SHORT_HASH="local-latest")
             (cd ../puller && make publish COMMIT_SHORT_HASH="local-latest")
 
             make publish COMMIT_SHORT_HASH="local-latest"
