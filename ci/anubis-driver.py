@@ -184,8 +184,8 @@ def sync_baictl(region, session):
     # TODO: add mode option for push / pull if needed
     os.environ["AWS_REGION"] = region
     sts = session.client("sts")
-    account_id = sts.get_caller_identity()
-    account_id = account_id["Account"]
+    identity = sts.get_caller_identity()
+    account_id = identity["Account"]
     backend_tfvars_path = os.path.join(
         os.path.dirname(__file__), "../baictl/drivers/aws/cluster/.terraform/bai/backend.tfvars"
     )
