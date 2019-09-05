@@ -63,7 +63,7 @@ class KubernetesJobWatcher:
                 logger.exception(
                     "The specified job {job_id} does not exist. Stopping thread.".format(job_id=self.job_id)
                 )
-                return BenchmarkJobStatus.JOB_DOES_NOT_EXIST
+                return BenchmarkJobStatus.JOB_NOT_FOUND
 
             logger.exception(
                 "Unknown error from Kubernetes, stopping thread that watches job {job_id} with an exception".format(
