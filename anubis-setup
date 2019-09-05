@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-ANUBIS_REPO_HOME=${ANUBIS_REPO_HOME:-"."}
+ANUBIS_REPO_HOME=${ANUBIS_REPO_HOME:-$(realpath ${BASH_SOURCE})}
 
 conda_usage() {
     printf "
