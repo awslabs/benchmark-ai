@@ -1,9 +1,12 @@
 import logging
+import re
 import tempfile
 
 import boto3
 import botocore
 import sagemaker
+
+from botocore.exceptions import ClientError
 from bai_kafka_utils.events import FetcherBenchmarkEvent, BenchmarkJob
 from bai_kafka_utils.executors.descriptor import DescriptorConfig, Descriptor, DescriptorError
 from bai_kafka_utils.executors.execution_callback import ExecutionEngine, ExecutionEngineException
@@ -88,6 +91,16 @@ class SageMakerExecutionEngine(ExecutionEngine):
         total_size_gb = int(SageMakerExecutionEngine.SAFETY_FACTOR * ceil(total_size / 1024 ** 3))
         return total_size_gb
 
+    @staticmethod
+    def _is_not_found_error(client_error: ClientError):
+        error_message = client_error.response.get("Error", {}).get("Message", "")
+        return re.match(r"(\w*\s*)*not found(\s*\w*)*", error_message, re.IGNORECASE) is not None
+
     def cancel(self, client_id: str, action_id: str, cascade: bool = False):
         job_name = SageMakerExecutionEngine._get_job_name(action_id)
-        self.sagemaker_client.stop_training_job(TrainingJobName=job_name)
+        try:
+            self.sagemaker_client.stop_training_job(TrainingJobName=job_name)
+        except botocore.exceptions.ClientError as e:
+            if self._is_not_found_error(e):
+                return
+            raise e
