@@ -1,4 +1,86 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+conda_usage() {
+    printf "
+
+ Anubis uses Conda to provide a predictable running environment.  Make
+ sure you have Conda installed. We recommend installing miniconda via
+ https://docs.conda.io/en/latest/miniconda.html
+
+ Once Conda is installed run the following:
+
+ %s --env-setup
+
+ And then re-run the ${0##*/} command :-)
+
+" "${0##*/}"
+    exit 9
+}
+
+#TODO - add the dependencies that cover some of the other tools this script needs:
+#  uuidgen
+#  hostname
+#  tar
+env_setup() {
+    if ! conda --version; then conda_usage; fi;
+    local tmp_environment_file=$(mktemp "/tmp/${0##*/}-XXXXXXXXX").yml
+    ((DEDBUG)) && echo "${tmp_environment_file}"
+    cat <<EOF > "${tmp_environment_file}"
+name: baictl
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - jq >=1.6
+  - terraform 0.11.*
+  - aws-iam-authenticator >=1.11
+  # TODO: https://issues.amazon.com/issues/MXBLN-1149
+  # - kubernetes >= 1.13
+  - kubernetes-helm 2.13.*
+  - ruamel.yaml >= 0.15
+  # OS X has no realpath or md5sum.
+  - coreutils >= 8.31
+  - python 3.7.*
+  - toml 0.9.*
+  - addict 2.2.*
+  - ksonnet 0.13.1
+  - awscli >= 1.16
+  - pip
+  - unzip >= 6.0
+  - curl
+  - wget >= 1.20.1
+  - pip:
+    - ConfigArgParse
+    - python-crontab
+    - dataclasses-json
+    - dacite
+EOF
+    cmd="conda env update -f ${tmp_environment_file}"
+    ${cmd}
+    rm "${tmp_environment_file}"
+    [ -f "${tmp_environment_file%.*}" ] && rm "${tmp_environment_file%.*}"
+
+    printf "
+  Please proceed with your %s shenanigans
+
+" "${0##*/}"
+}
+
+if [ $1 = "--env-setup" ]; then
+    env_setup
+    exit $?
+fi
+
+CONDA_EXE="${CONDA_EXE:=$(which conda)}"
+if ! source "${CONDA_EXE%/*}"/activate baictl >& /dev/null; then
+    printf "
+  Oops, there seems to be a problem with Conda...
+        (Co you have Conda installed? Is it in your \$PATH?)\n"
+    conda_usage
+fi
+
+DEBUG=${DEBUG:-0}
+VERBOSE=${VERBOSE:-0}
 
 print_usage_and_exit(){
     printf "Usage: baictl [verb] [object] [options]\n"
@@ -60,4 +142,3 @@ else
    printf "Backend %s does not exist.\n" "$target"
    print_usage_and_exit
 fi
-
