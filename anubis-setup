@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+ANUBIS_REPO_HOME=${ANUBIS_REPO_HOME:-"."}
+
 conda_usage() {
     printf "
 
@@ -78,7 +80,7 @@ VERBOSE=${VERBOSE:-0}
 # ci/anubis-pipeline.py --region=us-west-1
 
 main() {
-    (cd ci; ./anubis-driver.py $@)
+    (cd ${ANUBIS_REPO_HOME}/ci; ./anubis-driver.py $@)
 }
 
 main $@
