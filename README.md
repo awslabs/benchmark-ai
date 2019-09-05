@@ -237,7 +237,15 @@ Anubis supports "Script Mode".  This means along with posting the descriptor fil
 bff/bin/anubis --watch --status
 ```
 
+### (To Cancel)
 
+```bash
+#To cancel a run that is in progress (already been submitted but not completed)
+bff/bin/anubis --cancel <ACTION_ID>
+
+#To definitively cancel a run in progress and all sub processes.
+bff/bin/anubis --purge <ACTION_ID>
+```
 
 ## Step 3 - Collect the results of your run
 
