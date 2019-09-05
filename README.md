@@ -137,9 +137,7 @@ Once the Anubis pipeline has completed, at least the `deploy` step, successfully
 ```bash
 # Assuming PWD is `benchmark-ai`
 cd baictl
-conda env update && conda activate baictl
 ./baictl sync infra --aws-region=us-east-1 --mode=pull
-conda deactivate
 # The kubeconfig will be downloaded to `drivers/aws/cluster/.terraform/bai/kubeconfig`
 kubectl --kubeconfig=drivers/aws/cluster/.terraform/bai/kubeconfig get service bai-bff -o json | jq '.status.loadBalancer.ingress[].hostname'
 ```
@@ -153,8 +151,6 @@ This form also does a full instantiation of the Anubis service (infrastructure a
 ``` bash
 # Assuming PWD is `benchmark-ai`
 pushd baictl
-conda env update
-conda activate baictl
 ./baictl create infra --aws-region={region} --aws-prefix-list-id={matching prefix list}
 popd
 ./bin/build-and-deploy-all-services
