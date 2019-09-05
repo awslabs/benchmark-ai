@@ -21,7 +21,7 @@ class KafkaCommandCallback(KafkaServiceCallback):
     CODE_COMMAND_ERROR = 1
     CODE_CLIENT_ERROR = 2
 
-    OK = "{} command executed successfully"
+    OK = "{} command processed successfully"
     INVALID_ARGS = "{} command failed: Invalid args {}"
     UNKNOWN_ERROR = "{} command failed: Unknown error with message '{}'"
 

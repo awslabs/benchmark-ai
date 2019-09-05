@@ -38,10 +38,6 @@ SCRIPTS = [FileSystemObject(dst="s3://exchange/script.tar")]
 
 ACTION_ID = "ACTION_ID"
 
-NOT_FOUND_ACTION_ID = "NOT_FOUND_ACTION_ID"
-
-RANDOM_ERROR_ACTION_ID = "RANDOM_ERROR_ACTION_ID"
-
 CLIENT_ID = "CLIENT_ID"
 
 DATASET_ID = "some_data"
