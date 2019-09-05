@@ -17,10 +17,6 @@ conda_usage() {
     exit 9
 }
 
-#TODO - add the dependencies that cover some of the other tools this script needs:
-#  uuidgen
-#  hostname
-#  tar
 env_setup() {
     if ! conda --version; then conda_usage; fi;
     local tmp_environment_file=$(mktemp "/tmp/${0##*/}-XXXXXXXXX").yml

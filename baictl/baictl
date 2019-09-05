@@ -3,7 +3,7 @@
 conda_usage() {
     printf "
 
- Anubis uses Conda to provide a predictable running environment.  Make
+ baictl uses Conda to provide a predictable running environment.  Make
  sure you have Conda installed. We recommend installing miniconda via
  https://docs.conda.io/en/latest/miniconda.html
 
@@ -17,10 +17,6 @@ conda_usage() {
     exit 9
 }
 
-#TODO - add the dependencies that cover some of the other tools this script needs:
-#  uuidgen
-#  hostname
-#  tar
 env_setup() {
     if ! conda --version; then conda_usage; fi;
     local tmp_environment_file=$(mktemp "/tmp/${0##*/}-XXXXXXXXX").yml
@@ -75,7 +71,7 @@ CONDA_EXE="${CONDA_EXE:=$(which conda)}"
 if ! source "${CONDA_EXE%/*}"/activate baictl >& /dev/null; then
     printf "
   Oops, there seems to be a problem with Conda...
-        (Co you have Conda installed? Is it in your \$PATH?)\n"
+        (Do you have Conda installed? Is it in your \$PATH?)\n"
     conda_usage
 fi
 
