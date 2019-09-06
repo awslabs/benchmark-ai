@@ -816,6 +816,7 @@ main() {
                 --register)
                     shift
                     register_service_endpoint "${1}"
+                    exit $?
                     ;;
                 --ping-service-endpoint | --ping)
                     shift
