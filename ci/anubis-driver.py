@@ -258,6 +258,12 @@ def get_service_endpoint(region, session):
 
 
 def register_service_endpoint(service_endpoint):
+    anubis_srse_output = subprocess.check_output(["./bin/anubis", "--show-registered-service-endpoint", f"{service_endpoint}:80"], cwd="../bff")
+    if service_endpoint in anubis_srse_output:
+        return
+    user_response = input(f"Do you want to register this service endpoint now? ([y]/n)?: ").lower().strip()
+    if "y" not in user_response or "" != user_response:
+        return
     return_code = subprocess.call(["./bin/anubis", "--register", f"{service_endpoint}:80"], cwd="../bff")
     if return_code != 0:
         raise Exception(
