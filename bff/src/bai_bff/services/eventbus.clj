@@ -86,12 +86,12 @@
   vector.  This is a TODO item, which means that since atomic calls
   can be re-run at anytime, we should make sure this function is pure
   and right now it is not - not without sorting and dedupping."
-  [event & {:keys [usurping-index]}]
+  [event]
   (log/trace "update-status-store called...")
   (if (nil? event)
     false
     (let [{:keys [client_id action_id]} event
-          [client-key action-key] (mapv keyword [client_id (or usurping-index action_id)])]
+          [client-key action-key] (mapv keyword [client_id action_id])]
       (if (and client-key action-key)
        (db/save-client-job-status client-key action-key event)
        (throw (Exception. "Could not insert event"))))))
@@ -117,7 +117,7 @@
   (when (seq events)
     (log/trace (str "Processing "(count events)" command events"))
     (doseq [event events] ; <- I should do this loop with recursion and then only have a single call to swap! at the end... meh.
-      (if-not (nil? event) (update-status-store event :usurping-index (some-> event :payload :cmd_submit :payload :args :target_action_id)))))
+      (if-not (nil? event) (update-status-store event))))
   true)
 
 (defn get-client-jobs
