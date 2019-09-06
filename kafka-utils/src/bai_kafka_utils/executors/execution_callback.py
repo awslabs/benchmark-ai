@@ -1,7 +1,7 @@
 import abc
 import logging
 
-from typing import Dict, List
+from typing import Dict, List, Optional, Any
 
 from bai_kafka_utils.events import (
     FetcherBenchmarkEvent,
@@ -23,7 +23,7 @@ class ExecutionEngine(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def cancel(self, client_id: str, action_id: str, cascade: bool = False):
+    def cancel(self, client_id: str, action_id: str, cascade: bool = False) -> Optional[Any]:
         pass
 
 
