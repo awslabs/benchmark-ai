@@ -26,8 +26,8 @@ def choose_status_from_benchmark_status(job_status: BenchmarkJobStatus) -> Tuple
         return Status.SUCCEEDED, "Job finished with success"
     elif job_status == BenchmarkJobStatus.NO_POD_SCHEDULED:
         return Status.FAILED, "Job was not able to run in the cluster"
-    elif job_status == BenchmarkJobStatus.JOB_DOES_NOT_EXIST:
-        return Status.PENDING, "Job is being created"
+    elif job_status == BenchmarkJobStatus.JOB_NOT_FOUND:
+        return Status.CANCELED, "My watch has ended..."
     elif job_status in (
         BenchmarkJobStatus.PENDING_AT_INIT_CONTAINERS,
         BenchmarkJobStatus.PENDING_AT_BENCHMARK_CONTAINER,

@@ -44,7 +44,7 @@ def k8s_job_watcher(mocker):
 
 def test_get_status_when_job_does_not_exist(k8s_job_watcher):
     k8s_job_watcher.jobs_client.read_namespaced_job_status.side_effect = kubernetes.client.rest.ApiException(status=404)
-    assert k8s_job_watcher.get_status() == BenchmarkJobStatus.JOB_DOES_NOT_EXIST
+    assert k8s_job_watcher.get_status() == BenchmarkJobStatus.JOB_NOT_FOUND
 
 
 @pytest.mark.parametrize("error_code", [500, 503])
