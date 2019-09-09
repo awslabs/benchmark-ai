@@ -49,8 +49,5 @@ def test_distinct_engines(mock_kafka_service: KafkaService, command_request_even
 
     mock_engine.cancel.assert_called_once_with(CLIENT_ID, TARGET_ACTION_ID, CASCADE)
     mock_kafka_service.send_status_message_event.assert_called_once_with(
-        expected_handled_event,
-        Status.SUCCEEDED,
-        ANY,
-        TARGET_ACTION_ID,
+        expected_handled_event, Status.SUCCEEDED, ANY, TARGET_ACTION_ID
     )

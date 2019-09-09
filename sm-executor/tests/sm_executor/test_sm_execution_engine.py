@@ -16,8 +16,7 @@ from bai_kafka_utils.events import (
     BenchmarkJob,
 )
 from bai_kafka_utils.executors.descriptor import Descriptor, DescriptorError
-from bai_kafka_utils.executors.execution_callback import ExecutionEngineException
-from botocore.exceptions import ClientError
+from bai_kafka_utils.executors.execution_callback import ExecutionEngineException, NoResourcesFoundException
 from botocore.stub import Stubber
 from pytest import fixture
 from sagemaker import Session
@@ -221,7 +220,7 @@ def test_run_fail_from_sagemaker(
         sm_execution_engine_to_test.run(fetcher_event)
 
 
-def test_cancel_ignores_not_found(sm_execution_engine_to_test: SageMakerExecutionEngine):
+def test_cancel_raises_not_found(sm_execution_engine_to_test: SageMakerExecutionEngine):
     stub = Stubber(sm_execution_engine_to_test.sagemaker_client)
     stub.add_client_error(
         "stop_training_job",
@@ -231,10 +230,8 @@ def test_cancel_ignores_not_found(sm_execution_engine_to_test: SageMakerExecutio
     )
     stub.activate()
 
-    try:
+    with pytest.raises(NoResourcesFoundException):
         sm_execution_engine_to_test.cancel(CLIENT_ID, ACTION_ID)
-    except ClientError:
-        pytest.fail("Cancel threw not found client error")
 
 
 def test_cancel_raises(sm_execution_engine_to_test: SageMakerExecutionEngine):
@@ -247,5 +244,5 @@ def test_cancel_raises(sm_execution_engine_to_test: SageMakerExecutionEngine):
     )
     stub.activate()
 
-    with pytest.raises(ClientError):
+    with pytest.raises(ExecutionEngineException):
         sm_execution_engine_to_test.cancel(CLIENT_ID, ACTION_ID)

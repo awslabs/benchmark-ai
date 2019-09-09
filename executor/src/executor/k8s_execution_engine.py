@@ -4,7 +4,11 @@ from subprocess import CalledProcessError, check_output
 from bai_k8s_utils.service_labels import ServiceLabels
 from bai_kafka_utils.events import FetcherBenchmarkEvent, BenchmarkJob
 from bai_kafka_utils.executors.descriptor import DescriptorError
-from bai_kafka_utils.executors.execution_callback import ExecutionEngine, ExecutionEngineException
+from bai_kafka_utils.executors.execution_callback import (
+    ExecutionEngine,
+    ExecutionEngineException,
+    NoResourcesFoundException,
+)
 from bai_kafka_utils.utils import DEFAULT_ENCODING
 
 from executor import SERVICE_NAME
@@ -97,10 +101,17 @@ class K8SExecutionEngine(ExecutionEngine):
             # Use-case: User deletes scheduled benchmark without cascading, and now would
             # like to delete the spawned jobs.
             if not cascade:
-                raise err
+                raise NoResourcesFoundException(action_id) from err
+        except Exception as err:
+            raise ExecutionEngineException(str(err)) from err
 
         if cascade:
-            results.append(self._cancel(client_id, action_id, as_parent=True))
+            try:
+                results.append(self._cancel(client_id, action_id, as_parent=True))
+            except NoK8sResourcesFoundError as err:
+                raise NoResourcesFoundException(action_id) from err
+            except Exception as err:
+                raise ExecutionEngineException(str(err)) from err
 
         return results
 
