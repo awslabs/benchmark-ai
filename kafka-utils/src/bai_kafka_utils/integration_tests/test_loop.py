@@ -61,7 +61,7 @@ def get_is_status_filter(
         return (
             event.type == kafka_service_config.status_topic
             and event.action_id == src_event.action_id
-            and event.status == status
+            and event.payload.status == status
         )
 
     return filter_status_event

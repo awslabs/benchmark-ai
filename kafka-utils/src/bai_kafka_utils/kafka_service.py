@@ -59,14 +59,21 @@ class EventEmitter:
         self._status_topic = status_topic
         self._kafka_producer = kakfa_producer
 
-    def send_status_message_event(self, handled_event: BenchmarkEvent, status: Status, msg: str):
+    def send_status_message_event(
+        self, handled_event: BenchmarkEvent, status: Status, msg: str, target_action_id: Optional[str] = None
+    ):
         """
         Utility method for sending status message events.
         :param status: status of the event
         :param handled_event: value of the message to send
         :param msg: Message to send
+        :param target_action_id: The action id against which the status message should be registered. If
+        not set, the action id of the source event will be used.
         """
         status_event = StatusMessageBenchmarkEvent.create_from_event(status, msg, handled_event)
+
+        if target_action_id:
+            status_event.action_id = target_action_id
 
         if not self._status_topic:
             logger.info(f"No status topic specified. Losing event: {status_event}")
@@ -163,8 +170,10 @@ class KafkaService:
         logging.debug(f"{self.name} service, node {self.pod_name}: Processing event...")
         callback.handle_event(event, self)
 
-    def send_status_message_event(self, handled_event: BenchmarkEvent, status: Status, msg: str):
-        self._event_emitter.send_status_message_event(handled_event, status, msg)
+    def send_status_message_event(
+        self, handled_event: BenchmarkEvent, status: Status, msg: str, target_action_id: Optional[str] = None
+    ):
+        self._event_emitter.send_status_message_event(handled_event, status, msg, target_action_id)
 
     def send_event(self, event: BenchmarkEvent, topic: str):
         self._event_emitter.send_event(event, topic)

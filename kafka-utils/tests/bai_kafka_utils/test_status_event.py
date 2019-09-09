@@ -1,9 +1,13 @@
 import dataclasses
 
+import dacite
+
 import pytest
 
 from bai_kafka_utils.events import (
+    BenchmarkEvent,
     StatusMessageBenchmarkEvent,
+    StatusMessageBenchmarkEventPayload,
     VisitedService,
     DataSet,
     FetcherPayload,
@@ -38,14 +42,16 @@ STATUS_EVENT_JSON = (
   "client_username": "vasya",
   "client_version": "1.0",
   "authenticated": true,
-  "message": "Some fancy string as message",
-  "status": "RUNNING",
-  "visited": [{"node":"POD_NAME", "svc":"baictl", "tstamp":"1554901873677", "version":"v0.1.0-481dad1"}],
+  "visited": [],
   "type": "BAI_APP_STATUS",
-  "payload": %s
+  "payload": {
+    "message": "Some fancy string as message",
+    "status": "RUNNING",
+    "src_event": %s
+  }
 }
 """
-    % FETCHER_PAYLOAD.to_json()
+    % FETCHER_EVENT.to_json()
 )
 
 MESSAGE = "Some fancy string as message"
@@ -58,11 +64,14 @@ STATUS_EVENT = StatusMessageBenchmarkEvent(
     client_username="vasya",
     authenticated=True,
     tstamp=1554901873677,
-    visited=[VisitedService(svc="baictl", tstamp="1554901873677", version="v0.1.0-481dad1", node="POD_NAME")],
+    visited=[],
     type="BAI_APP_STATUS",
-    status=Status.RUNNING,
-    message=MESSAGE,
-    payload=dataclasses.asdict(FETCHER_PAYLOAD),
+    payload=StatusMessageBenchmarkEventPayload(
+        message=MESSAGE,
+        status=Status.RUNNING,
+        # cast fetcher event down to BenchmarkEvent
+        src_event=dacite.from_dict(data_class=BenchmarkEvent, data=dataclasses.asdict(FETCHER_EVENT)),
+    ),
 )
 
 
@@ -83,15 +92,15 @@ def test_serialization():
 def test_create_from_event():
     event = StatusMessageBenchmarkEvent.create_from_event(Status.RUNNING, MESSAGE, FETCHER_EVENT)
 
-    assert event.status == Status.RUNNING
-    assert event.message == "Some fancy string as message"
+    assert event.payload.status == Status.RUNNING
+    assert event.payload.message == "Some fancy string as message"
     assert event.action_id == FETCHER_EVENT.action_id
     assert event.client_id == FETCHER_EVENT.client_id
     assert event.client_username == FETCHER_EVENT.client_username
     assert event.authenticated == FETCHER_EVENT.authenticated
     assert event.tstamp == FETCHER_EVENT.tstamp
-    assert event.payload == dataclasses.asdict(FETCHER_PAYLOAD)
-    assert event.visited == FETCHER_EVENT.visited
+    assert event.payload.src_event == FETCHER_EVENT
+    assert event.visited == []
 
 
 def test_status_event_required_fields():
