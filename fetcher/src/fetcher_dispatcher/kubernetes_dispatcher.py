@@ -1,16 +1,14 @@
 import logging
 from math import ceil
-
-import kubernetes
-
 from typing import Dict, List, Optional
 
+import kubernetes
 from bai_k8s_utils.service_labels import ServiceLabels
 from bai_kafka_utils.events import DataSet, BenchmarkEvent, DataSetSizeInfo
 from bai_kafka_utils.utils import id_generator, md5sum
+
 from fetcher_dispatcher.args import FetcherJobConfig
 from fetcher_dispatcher.data_set_manager import DataSetDispatcher
-
 
 BYTES_IN_MB = 1024 * 1024
 
@@ -198,7 +196,7 @@ class KubernetesDispatcher(DataSetDispatcher):
                         resources=kubernetes.client.V1ResourceRequirements(requests={"storage": f"{volume_size}M"}),
                     ),
                 )
-                resp = self.core_api_instance.create_namespaced_persistent_volume_claim(
+                self.core_api_instance.create_namespaced_persistent_volume_claim(
                     self.fetcher_job.namespace, volume_body
                 )
 
@@ -210,8 +208,9 @@ class KubernetesDispatcher(DataSetDispatcher):
             logger.exception("Failed to create a kubernetes job")
             raise
 
-    def cancel_all(self, client_id: str, action_id: str = None):
+    def cancel_all(self, client_id: str, action_id: str = None) -> List[str]:
         logger.info(f"Removing jobs {client_id}/{action_id}")
+        results = []
         action_id_label_selector = self._get_label_selector(client_id, action_id)
 
         jobs_response = self.batch_api_instance.delete_collection_namespaced_job(
@@ -219,15 +218,20 @@ class KubernetesDispatcher(DataSetDispatcher):
         )
         logger.debug("k8s response: %s", jobs_response)
         logger.info(f"Removing pods {client_id}/{action_id}")
+        results.append(str(jobs_response))
         pods_response = self.core_api_instance.delete_collection_namespaced_pod(
             self.fetcher_job.namespace, label_selector=action_id_label_selector
         )
         logger.debug("k8s response: %s", pods_response)
         logger.info(f"Removing volume claims {client_id}/{action_id}")
+        results.append(str(pods_response))
         volumes_response = self.core_api_instance.delete_collection_namespaced_persistent_volume_claim(
             self.fetcher_job.namespace, label_selector=action_id_label_selector
         )
         logger.debug("k8s response: %s", volumes_response)
+        results.append(str(volumes_response))
+
+        return results
 
     def cleanup(self, task: DataSet, event: BenchmarkEvent):
         delete_selector = self._get_label_selector(event.client_id, event.action_id, task)

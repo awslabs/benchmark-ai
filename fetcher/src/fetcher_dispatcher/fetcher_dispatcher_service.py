@@ -1,12 +1,14 @@
-from kazoo.client import KazooClient
-from typing import List, Callable
+import logging
+from typing import List, Callable, Optional, Any
 
 from bai_kafka_utils.cmd_callback import KafkaCommandCallback
-from bai_kafka_utils.events import FetcherBenchmarkEvent, Status, FetcherStatus
+from bai_kafka_utils.events import CommandRequestEvent, FetcherBenchmarkEvent, Status, FetcherStatus
 from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
 from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService, KafkaServiceConfig
 from bai_kafka_utils.utils import get_pod_name
 from bai_zk_utils.zk_locker import DistributedRWLockManager
+from kazoo.client import KazooClient
+
 from fetcher_dispatcher import SERVICE_NAME, __version__
 from fetcher_dispatcher.args import FetcherServiceConfig, FetcherJobConfig
 from fetcher_dispatcher.data_set_manager import DataSet, DataSetManager, get_lock_name
@@ -14,6 +16,8 @@ from fetcher_dispatcher.data_set_pull import get_dataset_dst
 from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
 
 LOCK_MANAGER_PREFIX = "fetcher_lock_manager"
+
+logger = logging.getLogger(__name__)
 
 
 def create_data_set_manager(zookeeper_ensemble_hosts: str, kubeconfig: str, fetcher_job: FetcherJobConfig):
@@ -58,12 +62,24 @@ class FetcherEventHandler(KafkaServiceCallback):
             self.data_set_mgr.fetch(task, event, callback)
 
         def execute_all(tasks: List[DataSet], callback: Callable) -> None:
-            kafka_service.send_status_message_event(event, Status.PENDING, "Start fetching datasets")
+            kafka_service.send_status_message_event(event, Status.PENDING, "Initiating dataset download...")
 
             pending = list(tasks)
 
             def on_done(data_set: DataSet):
-                kafka_service.send_status_message_event(event, Status.PENDING, f"Dataset {data_set.src} processed")
+                if data_set.status == FetcherStatus.DONE:
+                    msg, status = f"Dataset {data_set.src} downloaded...", Status.PENDING
+                elif data_set.status == FetcherStatus.CANCELED:
+                    msg, status = f"Dataset {data_set.src} download canceled...", Status.CANCELED
+                elif data_set.status == FetcherStatus.FAILED:
+                    msg, status = f"Dataset {data_set.src} download failed: '{data_set.message}'...", Status.FAILED
+                elif data_set.status in {FetcherStatus.RUNNING, FetcherStatus.PENDING}:
+                    msg, status = f"Downloading dataset {data_set.src}...", Status.PENDING
+                else:
+                    msg, status = f"Unknown status {data_set.status} issued for dataset {data_set.src}", Status.ERROR
+
+                if msg and status:
+                    kafka_service.send_status_message_event(event, status, msg)
 
                 pending.remove(data_set)
                 if not pending:
@@ -85,7 +101,11 @@ class FetcherEventHandler(KafkaServiceCallback):
             # Any failed/canceled fetching is not actionable - so we don't send it down the pipeline
             if total_status == Status.SUCCEEDED:
                 kafka_service.send_event(event, self.producer_topic)
-            kafka_service.send_status_message_event(event, total_status, "All data sets processed")
+                kafka_service.send_status_message_event(event, total_status, "All data sets processed")
+            elif total_status in [Status.CANCELED, Status.FAILED]:
+                kafka_service.send_status_message_event(event, total_status, "Aborting execution")
+            else:
+                logging.warning(f"Fetching ended with unexpected status: {total_status}")
 
         execute_all(tasks, on_all_done)
 
@@ -97,8 +117,35 @@ class DataSetCmdObject:
     def __init__(self, data_set_mgr: DataSetManager):
         self.data_set_mgr = data_set_mgr
 
-    def cancel(self, client_id: str, target_action_id: str, cascade: bool = False):
-        self.data_set_mgr.cancel(client_id, target_action_id)
+    def cancel(
+        self,
+        kafka_service: KafkaService,
+        event: CommandRequestEvent,
+        client_id: str,
+        target_action_id: str,
+        cascade: bool = False,
+    ) -> Optional[Any]:
+
+        kafka_service.send_status_message_event(event, Status.PENDING, "Canceling downloads...", target_action_id)
+        try:
+            k8s_delete_results, num_zk_nodes_updated = self.data_set_mgr.cancel(client_id, target_action_id)
+        except Exception as err:
+            kafka_service.send_status_message_event(
+                event,
+                Status.FAILED,
+                f"An error occurred when attempting to delete resources related to {target_action_id}. "
+                f"Please check the status of the deletion command ({event.action_id} "
+                f"for additional information.",
+                target_action_id,
+            )
+            raise err
+
+        if num_zk_nodes_updated == 0:
+            kafka_service.send_status_message_event(
+                event, Status.SUCCEEDED, "No downloads to cancel...", target_action_id
+            )
+
+        return {"k8s_deletion_results": k8s_delete_results, "num_zookeeper_nodes_updated": num_zk_nodes_updated}
 
 
 def create_fetcher_dispatcher(common_kafka_cfg: KafkaServiceConfig, fetcher_cfg: FetcherServiceConfig) -> KafkaService:
