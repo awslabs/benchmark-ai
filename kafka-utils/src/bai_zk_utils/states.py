@@ -13,7 +13,7 @@ DEFAULT_ENCODING = "utf-8"
 class FetcherResult:
     status: FetcherStatus
     type: Optional[FetchedType] = None
-    message: Optional[str] = ""
+    message: Optional[str] = None
 
     def to_binary(self):
         return self.to_json().encode(DEFAULT_ENCODING)
