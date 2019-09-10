@@ -155,40 +155,39 @@ class DataSetManager:
         zk_node_path = self._get_node_path(client_id, action_id)
 
         try:
-            if self._zk.exists(zk_node_path, watch=None) is not None:
-                for child in self._zk.get_children(zk_node_path, watch=None):
-                    abs_path = zk_node_path + "/" + child
+            for child in self._zk.get_children(zk_node_path, watch=None):
+                abs_path = zk_node_path + "/" + child
 
-                    logger.info(f"Updating node {abs_path}")
+                logger.info(f"Updating node {abs_path}")
 
-                    try:
-                        while True:
-                            data, zk_stat = self._zk.get(abs_path)
+                try:
+                    while True:
+                        data, zk_stat = self._zk.get(abs_path)
 
-                            result: FetcherResult = FetcherResult.from_binary(data)
+                        result: FetcherResult = FetcherResult.from_binary(data)
 
-                            # The guy is final - it will not take long for us to cancel it.
-                            # The job is finished.
-                            # So now we are in a race with a zookeeper listener, that will pass the results downstream.
-                            if result.status.final:
-                                logger.info(f"{abs_path}: not to be canceled - already finished")
-                                break
-                            result.status = FetcherStatus.CANCELED
-
-                            new_data = result.to_binary()
-                            try:
-                                self._zk.set(abs_path, new_data, version=zk_stat.version)
-                            except BadVersionError:
-                                logger.info(f"{abs_path}: the node was updated meanwhile")
-                                continue
-                            logger.info(f"{abs_path}: canceled")
+                        # The guy is final - it will not take long for us to cancel it.
+                        # The job is finished.
+                        # So now we are in a race with a zookeeper listener, that will pass the results downstream.
+                        if result.status.final:
+                            logger.info(f"{abs_path}: not to be canceled - already finished")
                             break
+                        result.status = FetcherStatus.CANCELED
 
-                    except NoNodeError:
-                        logger.info(f"{abs_path}: the node was deleted meanwhile")
-                        # The task was just finished - status was repopted to customer and the node got deleted.
-                        # OK. It's not our deal anymore
-                        continue
+                        new_data = result.to_binary()
+                        try:
+                            self._zk.set(abs_path, new_data, version=zk_stat.version)
+                        except BadVersionError:
+                            logger.info(f"{abs_path}: the node was updated meanwhile")
+                            continue
+                        logger.info(f"{abs_path}: canceled")
+                        break
+
+                except NoNodeError:
+                    logger.info(f"{abs_path}: the node was deleted meanwhile")
+                    # The task was just finished - status was repopted to customer and the node got deleted.
+                    # OK. It's not our deal anymore
+                    continue
         except NoNodeError:
             # Absorb NoNodeError
             logger.info(f"{zk_node_path}: node not found")
