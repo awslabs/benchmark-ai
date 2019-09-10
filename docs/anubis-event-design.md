@@ -185,10 +185,10 @@ System topic: **BAI_APP_STATUS**
   date: "1554901873677" //millis epoch
   visited: [{svc:"fetcher", tstamp:"1554901873677", version:"v0.1.0-481dad1"}],
   type: "BAI_APP_STATUS"
-  message: "Invalid digest|404|501 and failed to get|Timeout"
-  status: [ SUBMITTED | ERROR | INITIALIZING | RUNNING | FAILED | SUCCEEDED | ...],
   payload:{
-    ...
+    message: "Invalid digest|404|501 and failed to get|Timeout" // Intended for the user to see
+    status: [ SUBMITTED | ERROR | INITIALIZING | RUNNING | FAILED | SUCCEEDED | ...],
+    src_event: <FULL_ORIGINATING_EVENT> // the event that led to this status being generated
   },
 }
 ```
@@ -225,8 +225,8 @@ System topic: **CMD_RETURN**
   date: "1554901873677" //millis epoch
   visited: [{svc:"fetcher", tstamp:"1554901873677", version:"v0.1.0-481dad1", node:"example-node-1"}],
   type: "CMD_RETURN"
-  message: "" // Intended for the user to see
   payload:{
+    message: "" // Intended for the user to see
     return_code: <NUMBER> // Unix-like: 0 for SUCCESS, else failure
     return_value: {} // Actual output of the command
     cmd_submit: <FULL_CMD_SUBMIT_EVENT>

@@ -137,7 +137,7 @@ class BenchmarkEvent:
     payload: Any = _REQUIRED
 
     def __post_init__(self):
-        # We cannot add parent_action_id as an optional with default value
+        # We cannot add BenchmarkEvent.parent_action_id as an optional with default value
         # as this breaks the sub-classes. Therefore, we attach default values
         # to all fields and simulate the required fields.
         for field in self.__dict__.keys():
@@ -174,6 +174,7 @@ class CommandRequestEvent(BenchmarkEvent):
 @dataclass
 class CommandResponsePayload:
     return_code: int
+    message: str
     cmd_submit: CommandRequestEvent
     return_value: Optional[Any] = None
 
@@ -181,11 +182,10 @@ class CommandResponsePayload:
 @dataclass_json
 @dataclass
 class CommandResponseEvent(BenchmarkEvent):
-    message: str = _REQUIRED
     payload: CommandResponsePayload = _REQUIRED
 
     def __post_init__(self):
-        # We cannot add parent_action_id as an optional with default value
+        # We cannot add BenchmarkEvent.parent_action_id as an optional with default value
         # as this breaks the sub-classes. Therefore, we attach default values
         # to all fields and simulate the required fields.
         for field in self.__dict__.keys():
@@ -254,6 +254,14 @@ class Status(Enum):
 
 @dataclass_json
 @dataclass
+class StatusMessageBenchmarkEventPayload:
+    message: str
+    status: Status
+    src_event: Optional[BenchmarkEvent] = None
+
+
+@dataclass_json
+@dataclass
 class StatusMessageBenchmarkEvent(BenchmarkEvent):
     """
     Status events represent what the user will receive as the status of their benchmark.
@@ -262,18 +270,20 @@ class StatusMessageBenchmarkEvent(BenchmarkEvent):
     regarding her benchmark.
     """
 
-    message: str = _REQUIRED
-    status: Status = _REQUIRED
-    payload: Any = _REQUIRED
+    payload: StatusMessageBenchmarkEventPayload = _REQUIRED
 
     def __post_init__(self):
+        # We cannot add BenchmarkEvent.parent_action_id as an optional with default value
+        # as this breaks the sub-classes. Therefore, we attach default values
+        # to all fields and simulate the required fields.
         for field in self.__dict__.keys():
             if self.__dict__[field] == _REQUIRED:
                 raise TypeError(f"__init__ missing 1 required argument: '{field}'")
 
     @classmethod
     def create_from_event(cls, status: Status, message: str, event: BenchmarkEvent):
-        return create_from_object(StatusMessageBenchmarkEvent, event, message=message, status=status)
+        payload = StatusMessageBenchmarkEventPayload(message=message, status=status, src_event=event)
+        return create_from_object(StatusMessageBenchmarkEvent, event, payload=payload, visited=[])
 
 
 T = TypeVar("T")

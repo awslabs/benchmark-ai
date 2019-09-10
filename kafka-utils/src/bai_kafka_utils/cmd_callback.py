@@ -98,8 +98,8 @@ class KafkaCommandCallback(KafkaServiceCallback):
                 code = KafkaCommandCallback.CODE_COMMAND_ERROR
                 msg = self._get_message(KafkaCommandCallback.UNKNOWN_ERROR, command, str(e))
 
-            response_payload = CommandResponsePayload(code, event, result)
-            response_event = create_from_object(CommandResponseEvent, event, payload=response_payload, message=msg)
+            response_payload = CommandResponsePayload(code, msg, event, result)
+            response_event = create_from_object(CommandResponseEvent, event, payload=response_payload)
             kafka_service.send_event(response_event, self.cmd_return_topic)
         else:
             logger.info(f"Uncallable {command} member requested")

@@ -74,11 +74,11 @@ def check_for_benchmark_completion(bai_client, action_id):
     for status_message in status_messages:
         print()
         service = status_message.visited[-1].svc
-        print(f"Benchmark Status: [{service}] - {status_message.status}: {status_message.message}")
-        if status_message.status in [Status.FAILED, Status.ERROR]:
-            print(f"Benchmark finished with error in {service}: {status_message.status}")
+        print(f"Benchmark Status: [{service}] - {status_message.payload.status}: {status_message.payload.message}")
+        if status_message.payload.status in [Status.FAILED, Status.ERROR]:
+            print(f"Benchmark finished with error in {service}: {status_message.payload.status}")
             return False
-        if service == "watcher" and status_message.status == Status.SUCCEEDED:
+        if service == "watcher" and status_message.payload.status == Status.SUCCEEDED:
             print("Benchmark finished with success")
             return True
         sys.stdout.flush()
@@ -134,7 +134,8 @@ def test_sample_benchmarks(client, descriptor_filename):
     # Events statuses
     ServiceAndStatus = namedtuple("T", ("visited_service", "status"))
     events = (
-        ServiceAndStatus(visited_service=message.visited[-1].svc, status=message.status) for message in status_messages
+        ServiceAndStatus(visited_service=message.visited[-1].svc, status=message.payload.status)
+        for message in status_messages
     )
     events = unique_justseen(events)
     events = set(events)
