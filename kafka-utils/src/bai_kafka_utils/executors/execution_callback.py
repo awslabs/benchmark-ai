@@ -1,7 +1,7 @@
 import abc
 import logging
 
-from typing import Dict, List
+from typing import Dict, List, Optional, Any
 
 from bai_kafka_utils.events import (
     FetcherBenchmarkEvent,
@@ -23,12 +23,29 @@ class ExecutionEngine(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def cancel(self, client_id: str, action_id: str, cascade: bool = False):
+    def cancel(self, client_id: str, action_id: str, cascade: bool = False) -> Optional[Any]:
+        """
+        Attempts to delete resources related to the supplied action_id
+        :param client_id: The client requesting the deletion
+        :param action_id: The action id of the resources to be deleted
+        :param cascade:  Whether or not to cascade the deletion to resources created by the resources related to
+        "action_id". E.g. if a the action id related to a scheduled (periodic) benchmark, if "cascade" is True,
+        any spawned benchmarks will also be deleted.
+        :return: An optional and implementation dependent arbitrary object carrying information regarding the
+        underlying deletion commands. This should be used for additional debug information.
+        :raises: ExecutionEngineException in case there is an error deleting the resources.
+        :raises: NoResourcesFoundException in case no resources for the supplied action_id could be found
+        """
         pass
 
 
 class ExecutionEngineException(Exception):
     pass
+
+
+class NoResourcesFoundException(ExecutionEngineException):
+    def __init__(self, action_id: str):
+        super().__init__(f"No resources found for '{action_id}'")
 
 
 class ExecutorEventHandler(KafkaServiceCallback):

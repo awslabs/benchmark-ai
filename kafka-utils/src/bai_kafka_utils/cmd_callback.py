@@ -23,7 +23,7 @@ class KafkaCommandCallback(KafkaServiceCallback):
 
     OK = "{} command processed successfully"
     INVALID_ARGS = "{} command failed: Invalid args {}"
-    UNKNOWN_ERROR = "{} command failed: Unknown error with message '{}'"
+    UNKNOWN_ERROR = "{} command failed: {}"
 
     def __init__(self, cmd_object: Any, cmd_return_topic: str):
         self.cmd_object = cmd_object

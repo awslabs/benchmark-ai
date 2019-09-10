@@ -1,17 +1,20 @@
 import logging
 import re
 import tempfile
+from math import ceil
+from typing import Callable
 
 import boto3
 import botocore
 import sagemaker
-
-from botocore.exceptions import ClientError
 from bai_kafka_utils.events import FetcherBenchmarkEvent, BenchmarkJob
 from bai_kafka_utils.executors.descriptor import DescriptorConfig, Descriptor, DescriptorError
-from bai_kafka_utils.executors.execution_callback import ExecutionEngine, ExecutionEngineException
-from math import ceil
-from typing import Callable
+from bai_kafka_utils.executors.execution_callback import (
+    ExecutionEngine,
+    ExecutionEngineException,
+    NoResourcesFoundException,
+)
+from botocore.exceptions import ClientError
 
 from sm_executor.args import SageMakerExecutorConfig
 from sm_executor.estimator_factory import EstimatorFactory, TENSORFLOW_FRAMEWORK, MXNET_FRAMEWORK
@@ -100,7 +103,7 @@ class SageMakerExecutionEngine(ExecutionEngine):
         job_name = SageMakerExecutionEngine._get_job_name(action_id)
         try:
             self.sagemaker_client.stop_training_job(TrainingJobName=job_name)
-        except botocore.exceptions.ClientError as e:
-            if self._is_not_found_error(e):
-                return
-            raise e
+        except botocore.exceptions.ClientError as err:
+            if self._is_not_found_error(err):
+                raise NoResourcesFoundException(action_id) from err
+            raise ExecutionEngineException(str(err)) from err
