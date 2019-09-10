@@ -76,7 +76,7 @@ VERBOSE=${VERBOSE:-0}
 # ci/anubis-pipeline.py --region=us-west-1
 
 main() {
-    (cd ${ANUBIS_REPO_HOME}/ci; ./anubis-driver.py $@)
+    (cd ci; ./anubis-driver.py $@)
 }
 
 main $@
