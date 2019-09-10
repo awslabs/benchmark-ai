@@ -132,7 +132,5 @@
       :client_username (some-> event :client_username)
       :tstamp          tstamp                                     ; <--
       :visited         (some-> event :visited)
-      :payload         (some-> event :payload)
-      :message         status-message                             ; <--
-      :status          (status-keyword status-map)                ; <--
+      :payload         {:message status-message :status (status-keyword status-map) :srv_event (some-> event :payload)}
       :type            "BAI_APP_STATUS"})))
