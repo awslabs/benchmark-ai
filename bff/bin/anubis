@@ -776,6 +776,7 @@ main() {
                 --results | --result)
                     shift
                     get_results ${1} ; shift
+                    exit $?
                     ;;
                 --last-action-id)
                     shift
@@ -809,9 +810,11 @@ main() {
                 --upgrade)
                     shift
                     upgrade
+                    exit $?
                     ;;
                 --sync-version)
-                    shift
+                    echo "Implement me..."; shift
+                    exit $?
                     ;;
                 --register)
                     shift
@@ -826,11 +829,12 @@ main() {
                 --unregister)
                     shift
                     unregister_service_endpoint
-                    exit 0
+                    exit $?
                     ;;
                 --show-registered-service-endpoint)
                     shift
                     show_registered_service_endpoint
+                    exit $?
                     ;;
                 --help | -h)
                     shift
