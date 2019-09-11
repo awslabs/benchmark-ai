@@ -3,7 +3,7 @@ from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
 from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService, KafkaServiceConfig
 from bai_kafka_utils.utils import get_pod_name
 
-from metrics_cloudwatch_exporter import SERVICE_NAME, __version__, service_logger
+from cloudwatch_exporter import SERVICE_NAME, __version__, service_logger
 
 logger = service_logger.getChild(__name__)
 
