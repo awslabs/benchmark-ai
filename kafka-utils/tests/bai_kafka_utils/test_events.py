@@ -16,7 +16,8 @@ from bai_kafka_utils.events import (
     CommandRequestPayload,
     BenchmarkJob,
     FileSystemObject,
-    MetricsEvent)
+    MetricsEvent,
+)
 
 
 @pytest.fixture
@@ -42,12 +43,7 @@ def base_event(base_event_as_dict):
 
 @pytest.fixture
 def metrics_event_as_dict():
-    return{
-        "name": "metric-name",
-        "value": 58,
-        "timestamp": 1000,
-        "labels": {"label": "value"},
-    }
+    return {"name": "metric-name", "value": 58, "timestamp": 1000, "labels": {"label": "value"}}
 
 
 @pytest.fixture

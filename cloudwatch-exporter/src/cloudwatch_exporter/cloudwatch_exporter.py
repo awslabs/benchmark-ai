@@ -1,5 +1,5 @@
-from bai_kafka_utils.events import BenchmarkEvent
-from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
+from bai_kafka_utils.events import MetricsEvent
+from bai_kafka_utils.kafka_client import create_kafka_consumer, create_kafka_producer, metrics_json_deserializer
 from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService, KafkaServiceConfig
 from bai_kafka_utils.utils import get_pod_name
 
@@ -12,7 +12,7 @@ class CloudWatchExporterHandler(KafkaServiceCallback):
     def __init__(self):
         pass
 
-    def handle_event(self, event: BenchmarkEvent, kafka_service: KafkaService):
+    def handle_event(self, event: MetricsEvent, kafka_service: KafkaService):
         logger.info(event)
 
     def cleanup(self):
@@ -21,7 +21,16 @@ class CloudWatchExporterHandler(KafkaServiceCallback):
 
 def create_service(common_kafka_cfg: KafkaServiceConfig) -> KafkaService:
     callbacks = {common_kafka_cfg.consumer_topic: [CloudWatchExporterHandler()]}
-    consumer, producer = create_kafka_consumer_producer(common_kafka_cfg, SERVICE_NAME)
+
+    consumer = create_kafka_consumer(
+        bootstrap_servers=common_kafka_cfg.bootstrap_servers,
+        group_id=common_kafka_cfg.consumer_group_id,
+        topics=[common_kafka_cfg.consumer_topic],
+        value_deserializer=metrics_json_deserializer,
+    )
+
+    producer = create_kafka_producer(common_kafka_cfg.bootstrap_servers)
+
     return KafkaService(
         name=SERVICE_NAME,
         version=__version__,
