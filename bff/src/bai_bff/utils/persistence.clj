@@ -12,10 +12,10 @@
 (def query-limit 100)
 
 (defn make-client-job-status-table-sort-key [event] 
-	(str (event :tstamp) ":" (event :message_id)))
+ (str (event :tstamp) ":" (event :message_id)))
 
 (defn make-client-job-table-sort-key [event] 
-	(str (event :tstamp) ":" (event :action_id)))
+ (str (event :tstamp) ":" (event :action_id)))
 
 (defn save-client-job-status [client-id action-id status-event]
  "Stores an event in the event table. The action-id is used
@@ -31,7 +31,11 @@
    :Event status-event
   }]
    (log/trace "Saving job status with client_id: " (:ClientId item) " and action_id: " (:ActionId item))
-   (ddb/put-item :table-name client-job-status-table :item item)))
+   (try 
+    (ddb/put-item :table-name client-job-status-table :item item)
+    (catch Exception ex
+     (log/error ex "Error inserting client job status")
+     (log/error "Client job status: " (str item))))))
 
 (defn get-client-job-status
  "Queries the client job status table for status events against the supplied client_id and action_id.
@@ -79,7 +83,11 @@
    :Timestamp (client-job-submission-event :tstamp)
   }]
    (log/trace "Saving job with client_id: " (:ClientId item) " and action_id: " (:ActionId item))
-   (ddb/put-item :table-name client-jobs-table :item item)))
+   (try 
+    (ddb/put-item :table-name client-jobs-table :item item)
+    (catch Exception ex
+     (log/error ex "Error saving client job")
+     (log/error "Client job: " (str item))))))
 
 (defn get-client-jobs
  "Queries the jobs table for action ids against the supplied client_id.
@@ -105,8 +113,8 @@
      })]
 
    (log/trace (str "Querying jobs for client_id: " client-id))
-  	(map (fn [item] {:action_id (:ActionId item) :timestamp (:Timestamp item)})
-	   (map #(select-keys % [:ActionId :Timestamp]) 
-	   	(:items (if (= from-sort-key-str "0") 
-	    	(client-jobs-query)
-	    	(client-jobs-query :exclusive-start-key { :ClientId client-id :TimestampActionId from-sort-key-str })))))))
+   (map (fn [item] {:action_id (:ActionId item) :timestamp (:Timestamp item)})
+    (map #(select-keys % [:ActionId :Timestamp]) 
+     (:items (if (= from-sort-key-str "0") 
+      (client-jobs-query)
+      (client-jobs-query :exclusive-start-key { :ClientId client-id :TimestampActionId from-sort-key-str })))))))
