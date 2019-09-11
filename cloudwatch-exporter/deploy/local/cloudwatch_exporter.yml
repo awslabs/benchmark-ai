@@ -1,12 +1,12 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: metrics-cloudwatch-exporter
+  name: cloudwatch-exporter
 spec:
   template:
     spec:
       containers:
-        - name: metrics-cloudwatch-exporter
+        - name: cloudwatch-exporter
           imagePullPolicy: Never
           env:
             - name: NUM_PARTITIONS

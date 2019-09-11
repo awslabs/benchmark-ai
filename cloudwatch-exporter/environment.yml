@@ -1,4 +1,4 @@
-name: metrics-cloudwatch-exporter
+name: cloudwatch-exporter
 channels:
   - conda-forge
   - defaults

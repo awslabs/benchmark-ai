@@ -1,6 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: metrics-cloudwatch-exporter
+  name: cloudwatch-exporter
 spec:
   replicas: 3

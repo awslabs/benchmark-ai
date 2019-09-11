@@ -1,9 +1,9 @@
-ENV_NAME = metrics-cloudwatch-exporter
+ENV_NAME = cloudwatch-exporter
 
 include ../etc/base-common.mk
 include ../etc/python-common.mk
 
-PROJECT=metrics-cloudwatch-exporter
+PROJECT=cloudwatch-exporter
 
 include ../etc/docker-common.mk
 include ../etc/deploy-common.mk
