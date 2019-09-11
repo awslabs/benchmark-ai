@@ -12,7 +12,7 @@ from bai_metrics_pusher.kubernetes_pod_watcher import start_kubernetes_pod_watch
 
 
 logger = logging.getLogger(__name__)
-FIFO_FILEPATH = os.environ.get("BENCHMARK_AI_FIFO_FILEPATH", "/tmp/benchmark-ai-fifo")
+FIFO_FILEPATH = os.environ.get("BENCHMARK_AI_FIFO_FILEPATH", "/tmp/benchmark-ai/fifo")
 
 
 def _deserialize(line):

@@ -101,7 +101,7 @@ waits for some time before giving up and throwing an exception `FifoNotCreatedIn
 These environment variables control the behavior of the client library:
 
 - `BENCHMARK_AI_FIFO_FILEPATH`: The path to the file that will be created as a *named pipe*.
-                                Default value: `/tmp/benchmark-ai-fifo`
+                                Default value: `/tmp/benchmark-ai/fifo`
 - `BENCHMARK_AI_FIFO_MAX_WAIT_TIME`: The maximum amount of time that the client library will wait for the
                                      *named pipe file* to be created.
                                      Type is **float**, unit is **seconds**, default value: `10`.

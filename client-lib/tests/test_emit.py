@@ -50,5 +50,5 @@ def test_emit_to_fifo_waits_for_file_creation_then_succeed_after_file_exists():
             with mock.patch("os.path.exists", side_effect=[False, True]):
                 _emit_to_fifo({"metric": 1})
 
-    mock_open.assert_called_once_with("/tmp/benchmark-ai-fifo", "w")
+    mock_open.assert_called_once_with("/tmp/benchmark-ai/fifo", "w")
     assert mock_sleep.call_count == 1
