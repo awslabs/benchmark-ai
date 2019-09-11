@@ -12,6 +12,8 @@ from bai_kafka_utils.events import (
     FetcherBenchmarkEvent,
     Status,
     FetcherStatus,
+    CommandRequestEvent,
+    CommandRequestPayload,
 )
 from bai_kafka_utils.kafka_service import KafkaService, KafkaServiceConfig
 from bai_zk_utils.zk_locker import DistributedRWLockManager
@@ -45,6 +47,8 @@ CONSUMER_TOPIC = "IN_TOPIC"
 
 CMD_RETURN_TOPIC = "CMD_RETURN"
 
+CMD_REQUEST_TOPIC = "CMD_REQUEST"
+
 POD_NAME = "POD_NAME"
 
 S3_BUCKET = "some_bucket"
@@ -54,6 +58,8 @@ KUBECONFIG = "path/cfg"
 NAMESPACE = "namespace"
 
 FETCHER_JOB_CONFIG = FetcherJobConfig(image=FETCHER_JOB_IMAGE, namespace=NAMESPACE)
+
+TARGET_ACTION_ID = "TARGET_ACTION_ID"
 
 
 @fixture
@@ -106,6 +112,27 @@ def fetcher_callback(data_set_manager) -> FetcherEventHandler:
     return FetcherEventHandler(PRODUCER_TOPIC, data_set_manager, S3_BUCKET)
 
 
+@fixture
+def command_request_payload():
+    return CommandRequestPayload(command="cancel", args={"target_action_id": TARGET_ACTION_ID, "cascade": False})
+
+
+@pytest.fixture
+def command_request_event(command_request_payload: CommandRequestPayload):
+    return CommandRequestEvent(
+        action_id="ACTION_ID",
+        message_id="MESSAGE_ID",
+        client_id="CLIENT_ID",
+        client_version="CLIENT_VERSION",
+        client_username="CLIENT_USER",
+        authenticated=False,
+        tstamp=42,
+        visited=[],
+        type=CMD_REQUEST_TOPIC,
+        payload=command_request_payload,
+    )
+
+
 def get_benchmark_event(payload: FetcherPayload):
     return FetcherBenchmarkEvent(
         action_id="ACTION_ID",
@@ -133,7 +160,7 @@ def collect_send_event_calls(kafka_service: KafkaService, cls: Type[BenchmarkEve
 @pytest.mark.parametrize(
     ["fetch_status", "expected_total_status"],
     [
-        (FetcherStatus.DONE, Status.SUCCEEDED),
+        (FetcherStatus.DONE, Status.PENDING),
         (FetcherStatus.CANCELED, Status.CANCELED),
         (FetcherStatus.FAILED, Status.FAILED),
     ],
@@ -154,7 +181,7 @@ def test_fetcher_event_handler_fetch(
     # Nothing yet fetched, but sent for fetching
     validate_sent_events(kafka_service, [])
 
-    expected_sent_statuses_before = [call(ANY, Status.PENDING, "Start fetching datasets")] + [
+    expected_sent_statuses_before = [call(ANY, Status.PENDING, "Initiating dataset download...")] + [
         call(ANY, Status.PENDING, f"Dataset {d.src} sent to fetch") for d in datasets
     ]
 
@@ -170,10 +197,13 @@ def test_fetcher_event_handler_fetch(
     )
     validate_sent_events(kafka_service, expected_sent_events)
 
-    expected_sent_statuses_after = [call(ANY, Status.PENDING, f"Dataset {d.src} processed") for d in datasets] + [
-        call(ANY, expected_total_status, "All data sets processed")
-    ]
-
+    expected_sent_statuses_after = [call(ANY, expected_total_status, ANY) for d in datasets]
+    if fetch_status == FetcherStatus.DONE:
+        expected_sent_statuses_after.append(call(ANY, Status.SUCCEEDED, "All data sets processed"))
+    elif fetch_status == FetcherStatus.FAILED:
+        expected_sent_statuses_after.append(call(ANY, Status.FAILED, "Aborting execution"))
+    elif fetch_status == FetcherStatus.CANCELED:
+        expected_sent_statuses_after.append(call(ANY, Status.CANCELED, "Aborting execution"))
     validate_send_status_message_calls(kafka_service, expected_sent_statuses_before + expected_sent_statuses_after)
 
 
@@ -277,10 +307,83 @@ def test_create_data_set_manager(
 
 
 @patch.object(fetcher_dispatcher_service, "DataSetManager", autospec=True)
-def test_cmd_object(mockDataSetManager):
+def test_cmd_object_successful_delete(
+    mockDataSetManager: DataSetManager, kafka_service: KafkaService, command_request_event: CommandRequestEvent
+):
+
+    k8s_deletion_results = ["deleted pods", "deleted jobs"]
+    num_zk_nodes_updates = 1
+
+    mockDataSetManager.cancel.return_value = (k8s_deletion_results, num_zk_nodes_updates)
     cmd_object = DataSetCmdObject(mockDataSetManager)
-    cmd_object.cancel("CLIENT_ID", "ACTION_ID")
-    mockDataSetManager.cancel.assert_called_once_with("CLIENT_ID", "ACTION_ID")
+    results = cmd_object.cancel(
+        kafka_service,
+        command_request_event,
+        "CLIENT_ID",
+        command_request_event.payload.args.get("target_action_id"),
+        bool(command_request_event.payload.args.get("cascade")),
+    )
+    assert results == {
+        "k8s_deletion_results": k8s_deletion_results,
+        "num_zookeeper_nodes_updated": num_zk_nodes_updates,
+    }
+    mockDataSetManager.cancel.assert_called_once_with("CLIENT_ID", "TARGET_ACTION_ID")
+    kafka_service.send_status_message_event.assert_called_once_with(
+        command_request_event, Status.PENDING, "Canceling downloads...", "TARGET_ACTION_ID"
+    )
+
+
+@patch.object(fetcher_dispatcher_service, "DataSetManager", autospec=True)
+def test_cmd_object_nothing_to_delete(
+    mockDataSetManager: DataSetManager, kafka_service: KafkaService, command_request_event: CommandRequestEvent
+):
+
+    k8s_deletion_results = []
+    num_zk_nodes_updates = 0
+
+    mockDataSetManager.cancel.return_value = (k8s_deletion_results, num_zk_nodes_updates)
+    cmd_object = DataSetCmdObject(mockDataSetManager)
+    results = cmd_object.cancel(
+        kafka_service,
+        command_request_event,
+        "CLIENT_ID",
+        command_request_event.payload.args.get("target_action_id"),
+        bool(command_request_event.payload.args.get("cascade")),
+    )
+    assert results == {
+        "k8s_deletion_results": k8s_deletion_results,
+        "num_zookeeper_nodes_updated": num_zk_nodes_updates,
+    }
+    mockDataSetManager.cancel.assert_called_once_with("CLIENT_ID", "TARGET_ACTION_ID")
+
+    assert kafka_service.send_status_message_event.mock_calls == [
+        mock.call(command_request_event, Status.PENDING, "Canceling downloads...", "TARGET_ACTION_ID"),
+        mock.call(command_request_event, Status.SUCCEEDED, "No downloads to cancel...", "TARGET_ACTION_ID"),
+    ]
+
+
+@patch.object(fetcher_dispatcher_service, "DataSetManager", autospec=True)
+def test_cmd_object_emits_status_and_raises(
+    mockDataSetManager: DataSetManager, kafka_service: KafkaService, command_request_event: CommandRequestEvent
+):
+    mockDataSetManager.cancel.side_effect = Exception("oh noes, something happen...")
+    cmd_object = DataSetCmdObject(mockDataSetManager)
+
+    with pytest.raises(Exception):
+        cmd_object.cancel(
+            kafka_service,
+            command_request_event,
+            "CLIENT_ID",
+            command_request_event.payload.args.get("target_action_id"),
+            bool(command_request_event.payload.args.get("cascade")),
+        )
+
+    mockDataSetManager.cancel.assert_called_once_with("CLIENT_ID", "TARGET_ACTION_ID")
+
+    assert kafka_service.send_status_message_event.mock_calls == [
+        mock.call(command_request_event, Status.PENDING, "Canceling downloads...", "TARGET_ACTION_ID"),
+        mock.call(command_request_event, Status.FAILED, ANY, "TARGET_ACTION_ID"),
+    ]
 
 
 @pytest.mark.parametrize(
