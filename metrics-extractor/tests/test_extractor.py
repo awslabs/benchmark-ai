@@ -7,6 +7,7 @@ from unittest.mock import ANY, MagicMock
 import kubernetes
 import kubernetes.watch
 import pytest
+from mock import call
 
 from anubis_metrics_extractor import log_listener
 from anubis_metrics_extractor.log_listener import EnvironmentReader, LogExtractor, LogExtractorOptions, Metric
@@ -56,7 +57,7 @@ def api_mock(mocker, client_mock):
 @pytest.fixture
 def stream_mock(api_mock):
     mock = MagicMock()
-    mock.stream.return_value = iter([b"lalala", b"accuracy=20.34"])
+    mock.stream.return_value = iter([b"lalala", b"accuracy=20.34", b"dududu", b"accuracy=0.35"])
     api_mock.read_namespaced_pod_log.return_value = mock
     return mock
 
@@ -116,4 +117,8 @@ def test_stream(real_options, client_mock, api_mock, stream_mock, pusher_mock):
     extractor.listen()
     client_mock.CoreV1Api.assert_called_once()
     api_mock.read_namespaced_pod_log.assert_called_once()
-    pusher_mock.assert_called_once_with({"accuracy": "20.34"})
+    calls = [
+        call({"accuracy": "20.34"}),
+        call({"accuracy": "0.35"}),
+    ]
+    pusher_mock.assert_has_calls(calls)

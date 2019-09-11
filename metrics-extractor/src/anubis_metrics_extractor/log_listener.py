@@ -15,7 +15,7 @@ from benchmarkai import emit
 logger = logging.getLogger("metrics-extractor")
 Pattern = type(re.compile("", 0))
 
-Metric = namedtuple("Metric", ["name", "pattern"])
+Metric = namedtuple("Metric", ["name", "pattern", "units"])
 
 
 @dataclass
@@ -72,12 +72,17 @@ class LogExtractor:
             ).stream()
         else:
             stream = v1.read_namespaced_pod_log(
-                name=self.options.pod_name, namespace=self.options.pod_namespace, follow=True, _preload_content=False
+                name=self.options.pod_name, namespace=self.options.pod_namespace, follow=True,
+                _preload_content=False
             ).stream()
+
+        for metric, pattern in self.metrics.items():
+            logger.info(f"metric, pattern: {metric}, {pattern}")
 
         for line in stream:
             line = line.decode("utf-8")
+            logger.info(f"{line}")
             for metric, pattern in self.metrics.items():
                 for m in pattern.findall(line):
                     emit({metric.name: m})
-                    logger.debug(f"match: {metric.name}{m}")
+                    logger.debug(f"match: {metric.name}:{m}")

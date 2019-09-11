@@ -26,7 +26,7 @@ def _sleep(seconds):
 def _getfifo():
     global __fifo
     if __fifo is None:
-        pathname = os.environ.get("BENCHMARK_AI_FIFO_FILEPATH", "/tmp/benchmark-ai-fifo")
+        pathname = os.environ.get("BENCHMARK_AI_FIFO_FILEPATH", "/tmp/benchmark-ai/fifo")
 
         max_wait_time = float(os.environ.get("BENCHMARK_AI_FIFO_MAX_WAIT_TIME", "10"))
         step_time = float(os.environ.get("BENCHMARK_AI_FIFO_WAIT_TIME_STEP", "0.5"))

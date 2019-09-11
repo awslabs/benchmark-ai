@@ -231,6 +231,10 @@ spec:
               fieldPath: metadata.namespace
         - name: ANUBIS_METRICS
           value: '{metrics}'
+        - name: BENCHMARK_AI
+          value: "fifo"
+        - name: BENCHMARK_AI_FIFO_FILEPATH
+          value: "/tmp/benchmark-ai/fifo"
         volumeMounts:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
