@@ -31,7 +31,7 @@
               :Event status-event}]
     (log/trace "Saving job status with client_id: " (:ClientId item) " and action_id: " (:ActionId item))
     (try
-      (ddb/put-item :table-name client-job-status-table :item item)
+      (ddb/put-item {:table-name client-job-status-table :item item})
       (catch Exception ex
         (log/error ex "Error inserting client job status")
         (log/error "Client job status: " (str item))))))
@@ -72,7 +72,7 @@
               :Timestamp (client-job-submission-event :tstamp)}]
     (log/trace "Saving job with client_id: " (:ClientId item) " and action_id: " (:ActionId item))
     (try
-      (ddb/put-item :table-name client-jobs-table :item item)
+      (ddb/put-item {:table-name client-jobs-table :item item})
       (catch Exception ex
         (log/error ex "Error saving client job")
         (log/error "Client job: " (str item))))))
