@@ -23,7 +23,7 @@ patterns = dict(
 @pytest.fixture
 def default_options():
     reader = EnvironmentReader(
-        '[{{"name": "mama", "pattern": "{}"}}, {{"name": "papa", "pattern": "{}"}}]'.format(
+        '[{{"name": "mama", "pattern": "{}", "units": ""}}, {{"name": "papa", "pattern": "{}", "units": ""}}]'.format(
             patterns["one"], patterns["another"]
         )
     )
@@ -35,7 +35,7 @@ def default_options():
 
 @pytest.fixture
 def real_options():
-    reader = EnvironmentReader('{{"name": "accuracy", "pattern": "{}"}}'.format(patterns["accuracy"]))
+    reader = EnvironmentReader('{{"name": "accuracy", "pattern": "{}", "units": ""}}'.format(patterns["accuracy"]))
     metrics = reader.get_metrics()
     return LogExtractorOptions(
         pod_name="pod_name", pod_namespace="pod_namespace", pod_container="pod_container", metrics=metrics
@@ -57,7 +57,9 @@ def api_mock(mocker, client_mock):
 @pytest.fixture
 def stream_mock(api_mock):
     mock = MagicMock()
-    mock.stream.return_value = iter([b"lalala", b"accuracy=20.34", b"dududu", b"accuracy=0.35"])
+    mock.stream.return_value = iter(
+        [b"lalala", b"accuracy=20.34", b"dududu", b"accuracy=0.35, something something, accuracy=0.88"]
+    )
     api_mock.read_namespaced_pod_log.return_value = mock
     return mock
 
@@ -84,7 +86,7 @@ def test_empty(default_options):
 
 def test_invalid(default_options):
     options = default_options
-    options.metrics = [Metric(name="name", pattern=patterns["invalid"])]
+    options.metrics = [Metric(name="name", pattern=patterns["invalid"], units="")]
     with pytest.raises(re.error):
         _ = LogExtractor(options)
 
@@ -117,8 +119,5 @@ def test_stream(real_options, client_mock, api_mock, stream_mock, pusher_mock):
     extractor.listen()
     client_mock.CoreV1Api.assert_called_once()
     api_mock.read_namespaced_pod_log.assert_called_once()
-    calls = [
-        call({"accuracy": "20.34"}),
-        call({"accuracy": "0.35"}),
-    ]
+    calls = [call({"accuracy": "20.34"}), call({"accuracy": "0.35"}), call({"accuracy": "0.88"})]
     pusher_mock.assert_has_calls(calls)

@@ -72,8 +72,7 @@ class LogExtractor:
             ).stream()
         else:
             stream = v1.read_namespaced_pod_log(
-                name=self.options.pod_name, namespace=self.options.pod_namespace, follow=True,
-                _preload_content=False
+                name=self.options.pod_name, namespace=self.options.pod_namespace, follow=True, _preload_content=False
             ).stream()
 
         for metric, pattern in self.metrics.items():
