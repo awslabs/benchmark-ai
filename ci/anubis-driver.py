@@ -219,6 +219,7 @@ def undeploy_services():
 def get_service_endpoint(region, session):
     codepipeline = session.client("codepipeline")
     dots = ""
+    codepipeline_bff_status = "Unknown"
 
     while True:
         resp = codepipeline.get_pipeline_state(name="Anubis")
@@ -228,8 +229,9 @@ def get_service_endpoint(region, session):
             if stage["stageName"].lower() == "deploy":
                 if "latestExecution" in stage:
                     for action in stage["actionStates"]:
-                        if "bff" in action["actionName"]:
-                            codepipeline_bff_status = action["latestExecution"]["status"]
+                        if "bai-bff" in action["actionName"]:
+                            if "latestExecution" in action:
+                                codepipeline_bff_status = action["latestExecution"]["status"]
                 else:
                     codepipeline_bff_status = "NotRunYet"
 
@@ -250,9 +252,9 @@ def get_service_endpoint(region, session):
             service_endpoint = json.loads(service_endpoint_json)["status"]["loadBalancer"]["ingress"][0]["hostname"]
             service_port = json.loads(service_endpoint_json)["spec"]["ports"][0]["port"]
             print(f"=> Your Anubis service endpoint: {service_endpoint}")
-            return service_endpoint+":"+str(service_port)
+            return service_endpoint + ":" + str(service_port)
         elif codepipeline_bff_status == "Failed":
-            raise Exception(f"Unable to get service endpoint since `bff` deploy stage failed")
+            raise Exception(f"Unable to get service endpoint since `bai-bff` deploy stage failed")
 
         dots = dots + "."
         print(f"-> Waiting for BFF Deploy step to finish {dots}", end="\r", flush=True)
@@ -262,7 +264,7 @@ def get_service_endpoint(region, session):
 def register_service_endpoint(service_endpoint):
     anubis_srse_output = subprocess.run(
         ["./bin/anubis", "--show-registered-service-endpoint"],
-        cwd="../bff",
+        cwd="../bai-bff",
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
@@ -272,7 +274,7 @@ def register_service_endpoint(service_endpoint):
     user_response = input(f"Do you want to register this service endpoint now? ([y]/n)?: ").lower().strip()
     if not user_response == "y" and not user_response == "yes" and not user_response == "":
         return
-    return_code = subprocess.call(["./bin/anubis", "--register", f"{service_endpoint}"], cwd="../bff")
+    return_code = subprocess.call(["./bin/anubis", "--register", f"{service_endpoint}:80"], cwd="../bai-bff")
     if return_code != 0:
         raise Exception(
             f"Failure registering service endpoint to bff `/bin/anubis --register {service_endpoint}`: {return_code}"

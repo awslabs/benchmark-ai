@@ -8,5 +8,7 @@ phases:
     commands:
       - env
       - cd ${PROJECT_NAME}
+      # HACK since pipeline does not treat repository as a git tree
+      - if [ "${PROJECT_NAME}" = "bai-bff" ]; then export VERSION=$(cat bin/anubis | grep VERSION= | cut -d \" -f2); fi
       - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
-      - make publish COMMIT_SHORT_HASH=${CODEBUILD_RESOLVED_SOURCE_VERSION} VERSION=latest DOCKER_REGISTRY=${DOCKER_REGISTRY}
+      - make publish COMMIT_SHORT_HASH=${CODEBUILD_RESOLVED_SOURCE_VERSION} DOCKER_REGISTRY=${DOCKER_REGISTRY}

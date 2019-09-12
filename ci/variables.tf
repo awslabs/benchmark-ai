@@ -11,7 +11,7 @@ variable "projects" {
     "puller",
     "executor",
     "watcher",
-    "bff",
+    "bai-bff",
     "metrics-extractor",
     "prometheus-kafka-topic-exporter",
     "sm-executor",
@@ -31,19 +31,9 @@ variable "region" {
   default = "us-east-1"
 }
 
-variable "ci_docker_image" {
-  type = map(string)
-  default = {
-    "default" = "benchmarkai/ci:kind"
-    "bff"     = "gavin/bai-bff-dev"
-  }
-}
-
-variable "ecr_repo" {
-  type = map(string)
-  default = {
-    "bff" = "bai-bff"
-  }
+variable "bootstrap_docker_image_tag" {
+  type    = string
+  default = "bootstrap-image:latest"
 }
 
 variable "github_organization" {
