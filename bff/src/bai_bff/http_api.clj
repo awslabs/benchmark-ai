@@ -104,7 +104,6 @@
        (str "<hr><CENTER><h1> BAI-BFF HTTP Service API (v"VERSION")</h1><a href=\"http://foobar.com/api\">docs</a></CENTER><hr>"))
   (context "/api/job" []
            (defroutes job-routes
-             (GET  "/" [] (response #_(eventbus/get-all-jobs)))
              (GET  "/script/:filename" [filename] (response (if (eventbus/has-file? filename) (str "true") (str "false"))))
              (GET  "/results/:client-id/:action-id" [client-id action-id] (response (eventbus/get-job-results client-id action-id)))
              (POST "/" {body :body :as request} (post-proc-results (log/info (pprint request)) #_(create-job body)));TODO - implement me
