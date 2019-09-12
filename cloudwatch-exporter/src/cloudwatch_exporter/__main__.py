@@ -3,8 +3,8 @@ import logging
 from bai_kafka_utils.kafka_service_args import get_kafka_service_config
 from bai_kafka_utils.logging import configure_logging
 
-from metrics_cloudwatch_exporter import SERVICE_NAME, SERVICE_DESCRIPTION
-from metrics_cloudwatch_exporter.metrics_cloudwatch_exporter import create_service
+from cloudwatch_exporter import SERVICE_NAME, SERVICE_DESCRIPTION
+from cloudwatch_exporter.cloudwatch_exporter import create_service
 
 
 def main(argv=None):
@@ -15,8 +15,8 @@ def main(argv=None):
     logger.info(f"Starting {SERVICE_NAME} Service: {SERVICE_DESCRIPTION}")
     logger.info(f"common_args = {common_kafka_cfg}")
 
-    metrics_cloudwatch_exporter = create_service(common_kafka_cfg)
-    metrics_cloudwatch_exporter.run_loop()
+    cloudwatch_exporter = create_service(common_kafka_cfg)
+    cloudwatch_exporter.run_loop()
 
 
 if __name__ == "__main__":

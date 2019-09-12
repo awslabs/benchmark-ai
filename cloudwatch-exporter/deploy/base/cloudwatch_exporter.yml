@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: metrics-cloudwatch-exporter
+  name: cloudwatch-exporter
   labels:
     app: benchmark-ai
 spec:
@@ -13,7 +13,7 @@ spec:
     metadata:
       labels:
         app: benchmark-ai
-        service: metrics-cloudwatch-exporter
+        service: cloudwatch-exporter
     spec:
       affinity:
         podAntiAffinity:
@@ -23,11 +23,11 @@ spec:
                   - key: service
                     operator: In
                     values:
-                      - metrics-cloudwatch-exporter
+                      - cloudwatch-exporter
               topologyKey: kubernetes.io/hostname
       containers:
-        - name: metrics-cloudwatch-exporter
-          image: "benchmarkai/metrics-cloudwatch-exporter"
+        - name: cloudwatch-exporter
+          image: "benchmarkai/cloudwatch-exporter"
           env:
           - name: KAFKA_BOOTSTRAP_SERVERS
             valueFrom:
@@ -37,22 +37,22 @@ spec:
           - name: CONSUMER_GROUP_ID
             valueFrom:
                configMapKeyRef:
-                 name: metrics-cloudwatch-exporter
+                 name: cloudwatch-exporter
                  key: consumer_group_id
           - name: CONSUMER_TOPIC
             valueFrom:
               configMapKeyRef:
-                name: metrics-cloudwatch-exporter
+                name: cloudwatch-exporter
                 key: consumer_topic
           - name: PRODUCER_TOPIC
             valueFrom:
               configMapKeyRef:
-                name: metrics-cloudwatch-exporter
+                name: cloudwatch-exporter
                 key: producer_topic
           - name: STATUS_TOPIC
             valueFrom:
               configMapKeyRef:
-                name: metrics-cloudwatch-exporter
+                name: cloudwatch-exporter
                 key: status_topic
           - name: LOGGING_LEVEL
             value: "INFO"
