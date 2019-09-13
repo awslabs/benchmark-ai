@@ -42,5 +42,5 @@ def s3_estimate_size(src: str, s3: Any = None) -> DataSetSizeInfo:
             total_size += sub_obj.size
             max_size = max(max_size, sub_obj.size)
     except ClientError as e:
-        raise S3Error from e
+        raise S3Error(str(e)) from e
     return DataSetSizeInfo(int(total_size), cnt, int(max_size))

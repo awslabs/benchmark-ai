@@ -95,8 +95,9 @@ class DataSetManager:
             try:
                 data_set.size_info = self._size_estimator(data_set.src)
             except Exception as e:
-                logger.exception(f"Failed to estimate the size of the dataset {data_set.src}.")
-                FetcherResult(FetcherStatus.FAILED, None, str(e)).update(data_set)
+                msg = f"Failed to estimate the size of dataset {data_set.src}: {str(e)}"
+                logger.exception(f"{msg}")
+                FetcherResult(FetcherStatus.FAILED, None, msg).update(data_set)
                 on_done(data_set)
                 lock.release()
                 return
