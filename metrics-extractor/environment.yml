@@ -5,6 +5,7 @@ channels:
 dependencies:
   - python 3.7.*
   - python-kubernetes 8.0.*
+  - mock 3.0.*
   - pip
   - pip:
       - dataclasses-json==0.2.11

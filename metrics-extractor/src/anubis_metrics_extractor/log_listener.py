@@ -5,9 +5,9 @@ import json
 import logging
 import re
 from collections import namedtuple
+from dataclasses import dataclass
 from typing import List, Optional
 
-from attr import dataclass
 from kubernetes import client
 
 from benchmarkai import emit
@@ -15,7 +15,7 @@ from benchmarkai import emit
 logger = logging.getLogger("metrics-extractor")
 Pattern = type(re.compile("", 0))
 
-Metric = namedtuple("Metric", ["name", "pattern"])
+Metric = namedtuple("Metric", ["name", "pattern", "units"])
 
 
 @dataclass
@@ -31,8 +31,10 @@ class EnvironmentReader:
     environment: str
 
     def get_metrics(self) -> List[Metric]:
-        json_object = json.loads(self.environment)
         metrics: List[Metric] = []
+        if not self.environment:
+            return metrics
+        json_object = json.loads(self.environment)
         if isinstance(json_object, list):
             for m_object in json_object:
                 metrics.append(Metric(**m_object))
@@ -46,7 +48,8 @@ class LogExtractor:
         self.options: LogExtractorOptions = options
         self.metrics = {}
         if not options.metrics:
-            raise ValueError("At least 1 metric should be defined")
+            logger.info(f"no metrics requested")
+            return
         for metric in options.metrics:
             self.add_metric(metric)
 
@@ -54,6 +57,10 @@ class LogExtractor:
         self.metrics[metric] = re.compile(base64.b64decode(metric.pattern).decode("utf-8"))
 
     def listen(self):
+        if not self.metrics:
+            logger.info(f"no metrics requested")
+            return
+
         v1 = client.CoreV1Api()
         if self.options.pod_container:
             stream = v1.read_namespaced_pod_log(
@@ -68,9 +75,13 @@ class LogExtractor:
                 name=self.options.pod_name, namespace=self.options.pod_namespace, follow=True, _preload_content=False
             ).stream()
 
+        for metric, pattern in self.metrics.items():
+            logger.info(f"metric, pattern: {metric}, {pattern}")
+
         for line in stream:
             line = line.decode("utf-8")
+            logger.info(f"{line}")
             for metric, pattern in self.metrics.items():
                 for m in pattern.findall(line):
                     emit({metric.name: m})
-                    logger.debug(f"match: {metric.name}{m}")
+                    logger.debug(f"match: {metric.name}:{m}")

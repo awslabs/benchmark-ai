@@ -10,7 +10,7 @@ metadata:
   namespace: default
 rules:
 - apiGroups: [""]
-  resources: ["pods/status"]
+  resources: ["pods/log", "pods/status"]
   verbs: ["get"]
 ---
 kind: RoleBinding

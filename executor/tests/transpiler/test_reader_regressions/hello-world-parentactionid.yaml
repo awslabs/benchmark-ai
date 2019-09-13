@@ -92,6 +92,27 @@ spec:
         volumeMounts:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
+      - name: extractor-sidecar
+        image: benchmarkai/metrics-extractor:b0b9185
+        env:
+        - name: ANUBIS_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: ANUBIS_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: ANUBIS_METRICS
+          value: '[{"name": "accuracy", "pattern": "YWNjdXJhY3k9KFstK10/XGQqXC5cZCt8XGQrKQ=="},
+            {"name": "throughput", "pattern": "dGhyb3VnaHB1dD0oWy0rXT9cZCpcLlxkK3xcZCsp"}]'
+        - name: BENCHMARK_AI
+          value: fifo
+        - name: BENCHMARK_AI_FIFO_FILEPATH
+          value: /tmp/benchmark-ai/fifo
+        volumeMounts:
+        - mountPath: /tmp/benchmark-ai
+          name: benchmark-ai
       nodeSelector:
         beta.kubernetes.io/instance-type: t2.small
         node.type: bai-worker

@@ -35,4 +35,13 @@ benchmark_code = "python3 hello-world.py"
 # 4. Output
 [output]
 # Define which metrics will be tracked in this benchmark
-metrics = ["throughput", "time"]
+[[output.metrics]]
+# Name of the metric that will appear in the dashboards.
+name = "accuracy"
+# Pattern for log parsing for this metric.
+pattern = "accuracy=([-+]?\\d*\\.\\d+|\\d+)"
+[[output.metrics]]
+# Name of the metric that will appear in the dashboards.
+name = "throughput"
+# Pattern for log parsing for this metric.
+pattern = "throughput=([-+]?\\d*\\.\\d+|\\d+)"

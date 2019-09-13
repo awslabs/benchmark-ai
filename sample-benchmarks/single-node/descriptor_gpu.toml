@@ -66,6 +66,26 @@ path = "/data/mnist/t10k-labels-idx1-ubyte.gz"
 
 # 5. Output
 [output]
-# Define which metrics will be tracked in this benchmark
-metrics = ["accuracy"]
+
+# [Opt] Custom metrics descriptions
+# List all required metrics descriptions below.
+# Make an entry in same format as the one below.
+[[output.metrics]]
+# Name of the metric that will appear in the dashboards.
+name = "accuracy"
+# Pattern for log parsing for this metric.
+pattern = "accuracy=([-+]?\\d*\\.\\d+|\\d+)"
+# [Opt] Units for the metric (can be used in the dashboard as well)
+units = "%"
+
+# [Opt] Custom metrics descriptions
+# List all required metrics descriptions below.
+# Make an entry in same format as the one below.
+[[output.metrics]]
+# Name of the metric that will appear in the dashboards.
+name = "throughput"
+# Pattern for log parsing for this metric.
+pattern = "throughput=([-+]?\\d*\\.\\d+|\\d+)"
+# [Opt] Units for the metric (can be used in the dashboard as well)
+units = "img/sec"
 

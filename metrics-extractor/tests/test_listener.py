@@ -7,22 +7,23 @@ from anubis_metrics_extractor.log_listener import EnvironmentReader
 
 
 def test_empty():
-    with pytest.raises(ValueError):
-        reader = EnvironmentReader("")
-        _ = reader.get_metrics()
+    reader = EnvironmentReader("")
+    metrics = reader.get_metrics()
+    assert len(metrics) == 0
 
 
 patterns = dict(one="Lio=", another="Lis=", digit="XGQ=")  # .* | .+ | \d
 
 
 def test_single():
-    reader = EnvironmentReader('{{"name": "mama", "pattern": "{}"}}'.format(patterns["one"]))
+    reader = EnvironmentReader('{{"name": "mama", "pattern": "{}", "units": "$"}}'.format(patterns["one"]))
     metrics = reader.get_metrics()
     assert len(metrics) == 1
 
     metric = metrics[0]
     assert metric.name == "mama"
     assert metric.pattern == patterns["one"]
+    assert metric.units == "$"
 
 
 def test_incomplete():
@@ -33,9 +34,8 @@ def test_incomplete():
 
 def test_multiple():
     reader = EnvironmentReader(
-        '[{{"name": "mama", "pattern": "{}"}}, {{"name": "papa", "pattern": "{}"}}]'.format(
-            patterns["one"], patterns["another"]
-        )
+        '[{{"name": "mama", "pattern": "{}", "units": "sec"}}, '
+        '{{"name": "papa", "pattern": "{}", "units": "%"}}]'.format(patterns["one"], patterns["another"])
     )
     metrics = reader.get_metrics()
     assert len(metrics) == 2
@@ -43,10 +43,12 @@ def test_multiple():
     metric = metrics[0]
     assert metric.name == "mama"
     assert metric.pattern == patterns["one"]
+    assert metric.units == "sec"
 
     metric = metrics[1]
     assert metric.name == "papa"
     assert metric.pattern == patterns["another"]
+    assert metric.units == "%"
 
 
 def test_bad_json():
@@ -56,7 +58,7 @@ def test_bad_json():
 
 
 def test_json_escape():
-    reader = EnvironmentReader('{{"name": "mama", "pattern": "{}"}}'.format(patterns["digit"]))
+    reader = EnvironmentReader('{{"name": "mama", "pattern": "{}", "units": "%"}}'.format(patterns["digit"]))
     metrics = reader.get_metrics()
     assert len(metrics) == 1
 

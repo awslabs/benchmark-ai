@@ -6,5 +6,6 @@ transpiler-cron-job-docker-image: benchmarkai/anubis-cron-job:3115770
 transpiler-valid-strategies: single_node,horovod
 
 transpiler-metrics-pusher-docker-image: benchmarkai/metrics-pusher:ffed580
+transpiler-metrics-extractor-docker-image: benchmarkai/metrics-extractor:b0b9185
 # Include empty string as a valid value
 transpiler-valid-frameworks: tensorflow,mxnet,

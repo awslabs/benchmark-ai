@@ -56,7 +56,6 @@ def fetched_data_sources(base_data_sources):
 
 @pytest.fixture
 def config_args(shared_datadir):
-
     required_args = "--descriptor=descriptor.toml " + "--kubectl=kubectl/path"
     return f'{required_args} -c {str(shared_datadir / "default_config.yaml")}'
 
@@ -81,6 +80,7 @@ def bai_config():
         puller_mount_chmod="700",
         puller_docker_image="test/puller:image",
         metrics_pusher_docker_image="test/metrics_pusher:image",
+        metrics_extractor_docker_image="test/metrics_extractor:image",
         cron_job_docker_image="test/cron_job:image",
         suppress_job_affinity=True,
     )
@@ -90,11 +90,11 @@ def bai_config():
 def descriptor_as_dict(descriptor_config, base_data_sources):
     return toml.loads(
         textwrap.dedent(
-            f"""\
-        spec_version = '0.1.0'
+            fr"""
+        spec_version = "0.1.0"
         [info]
-        task_name = 'Title'
-        description = 'Description'
+        task_name = "Title"
+        description = "Description"
         [hardware]
         instance_type = 'p3.8xlarge'
         strategy = 'single_node'
@@ -113,6 +113,13 @@ def descriptor_as_dict(descriptor_config, base_data_sources):
         [[data.sources]]
         src = '{base_data_sources[1]['src']}'
         path = '{base_data_sources[1]['path']}'
+        [output]
+        [[output.metrics]]
+        name = "accuracy"
+        pattern = "accuracy=([-+]?\\d*\\.\\d+|\\d+)"
+        [[output.metrics]]
+        name = "throughput"
+        pattern = "throughput=([-+]?\\d*\\.\\d+|\\d+)"
         """
         )
     )
