@@ -67,7 +67,7 @@ SYNC_DATA=${SYNC_DATA:-0}
 WATCH=0
 WATCH_PERIOD=5
 
-declare -r VERSION="0.1.0-481dad2"
+declare -r VERSION="v0.5.0"
 declare -r SERVICE_NAME="anubis-client"
 declare -r MY_SHA1=$(sha1sum "${0}" | awk '{print $1}')
 declare -r ANUBIS_HOME=${HOME}/.anubis
@@ -211,6 +211,26 @@ _construct_endpoint_URL() {
 
 get_client_id() {
     echo -n "$(printf "$(whoami)+$(hostname)" | sha1sum | awk '{print $1}')"
+}
+
+service_version_check() {
+    local server_version
+    while read -r header_line
+    do
+        ((DEBUG)) && echo "inspecting header line: $header_line" >&2
+        server_version="$(sed -n -e 's#^Server-Version:[ ]*\(v[a-zA-Z0-9.]*\).*#\1#p' <<<${header_line})"
+        if [[ "${VERSION}" ==  "${server_version}" ]]; then
+            ((match++))
+        fi
+    done
+    if ((match <= 0)); then
+        printf "
+\033[01;31m[WARNING]\033[0m THE VERSION OF THE CLIENT IS NOT COMPATIBLE WITH THE SERVER
+          Client Version = [%s]
+          Server Version = [%s]
+          Please use the \033[01;33m--sync-version\033[0m option to get a compatible client tool
+          \n\n" "${VERSION}" "${server_version}" >&2
+    fi
 }
 
 ping_service_endpoint() {
@@ -446,7 +466,7 @@ submit() {
     if [[ -n "${data}" ]]; then
         [[ -n "${script_artifact}" ]] && echo "Using Script: ${script_artifact##*/}" 1>&2
 
-        cmd="curl -s -F submit-event='"${data}"'"
+        cmd="curl -s -D >(service_version_check) -F submit-event='"${data}"'"
         msg="sending ${descriptor_filename}"
         if [[ -n "${script_artifact}" ]]; then
             if ((FORCE)) || ! $(_has_script "${script_artifact##*/}") ; then
@@ -536,7 +556,7 @@ _read_remote_submission_status() {
 
     local since_tstamp=$(get_latest_event_timestamp "${action_id}")
 
-    cmd="curl -s -X GET -G -H Content-Type: application/json --data-urlencode since="${since_tstamp}" http://"${current_service_endpoint}"/api/job/"${path}
+    cmd="curl -s -D >(service_version_check) -X GET -G -H Content-Type: application/json --data-urlencode since="${since_tstamp}" http://"${current_service_endpoint}"/api/job/"${path}
     ((VERBOSE)) && echo ${cmd}
     local response=$(eval ${cmd})
 
@@ -636,7 +656,7 @@ get_results() {
 
     local cmd
     local returned
-    cmd="curl -s -X GET -H Content-Type: application/json http://"${current_service_endpoint}"/api/job/results/$(get_client_id)/${action_id}"
+    cmd="curl -s -D >(service_version_check) -X GET -H Content-Type: application/json http://"${current_service_endpoint}"/api/job/results/$(get_client_id)/${action_id}"
     ((VERBOSE)) && echo ${cmd} >&2
     returned=$(eval "${cmd}" | jq --raw-output '.[]._source.log')
     echo "${returned}"
@@ -667,7 +687,7 @@ abort_submission() {
     local returned
     local data=$(_generate_command_event "cancel" ${action_id} "--json" $*)
     if [[ -n "${data}" ]]; then
-        cmd="curl -s -X DELETE -H Content-Type: application/json -d '"${data}"' http://"${current_service_endpoint}"/api/job/$(get_client_id)/${action_id}"
+        cmd="curl -s -D >(service_version_check) -X DELETE -H Content-Type: application/json -d '"${data}"' http://"${current_service_endpoint}"/api/job/$(get_client_id)/${action_id}"
         ((VERBOSE)) && echo ${cmd}
         returned=$(eval "${cmd}")
         echo "${returned}"
