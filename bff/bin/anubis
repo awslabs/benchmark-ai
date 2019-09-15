@@ -234,7 +234,7 @@ service_version_check() {
 }
 
 ping_service_endpoint() {
-    if show_registered_service_endpoint && curl "$(_construct_endpoint_URL)"/ready >& /dev/null ; then
+    if show_registered_service_endpoint && curl "-s -D >(service_version_check) $(_construct_endpoint_URL)"/ready >& /dev/null ; then
         printf "%b \033[01;32mR\033[0meady \033[01;32mA\033[0mnd \033[01;32mW\033[0milling like Big Daddy Kane\n\n" "${emoji[GOOD]}" >&2
         return 0
     else
