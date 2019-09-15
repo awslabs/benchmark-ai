@@ -284,7 +284,9 @@ show_registered_service_endpoint_history() {
 }
 
 check_version() {
-    echo "+"; #TODO - make this check against the service's supported version
+    if curl "-s -D >(service_version_check) $(_construct_endpoint_URL)"/ready >& /dev/null; then
+        echo ${VERSION}
+    fi
 }
 
 
