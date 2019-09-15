@@ -214,7 +214,6 @@ get_client_id() {
 }
 
 service_version_check() {
-    local service_version
     while read -r header_line
     do
         ((DEBUG)) && echo "inspecting header line: $header_line" >&2
@@ -385,15 +384,17 @@ EOF
 upgrade() {
     #TODO - upgrading this tool itself...
     #TODO - implement how to upgrade to the version supported by the service directly?
-    printf "Sync'ing versions with that of the current service endpoint [\033[01;33m%s\033[0m] \n" "$(_get_current_service_endpoint)"
-    echo "Implement me!!!!!"
+    printf "Upgrading to the latest client version... " >&2
+    local cmd="curl $(_construct_endpoint_URL)/downloads/${0##*/}-latest --output $(realpath ${0})"
+    $cmd && chmod 755 "$(realpath "${0}")"
 }
 
 #REST API call
 sync_version() {
     #TODO - implement how to upgrade to the version supported by the service directly?
-    printf "Sync'ing versions with that of the current service endpoint [\033[01;33m%s\033[0m] \n" "$(_get_current_service_endpoint)"
-    echo "Implement me!!!!!"
+    printf "Sync'ing client version to that of the current service endpoint [\033[01;33m%s\033[0m] \n" "$current_service_endpoint"
+    local cmd="curl -D >(service_version_check) $(_construct_endpoint_URL)/downloads/${0##*/}-${service_version} --output $(realpath ${0})"
+    $cmd && chmod 755 "$(realpath "${0}")"
 }
 
 script_artifact=""
@@ -857,7 +858,8 @@ main() {
                     exit $?
                     ;;
                 --sync-version)
-                    echo "Implement me..."; shift
+                    shift
+                    sync_version
                     exit $?
                     ;;
                 --register)
