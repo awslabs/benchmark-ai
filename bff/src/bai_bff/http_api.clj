@@ -122,8 +122,14 @@
 (def core-routes
   (routes info-routes k8s-routes api-routes))
 
+(defn wrap-with-service-version-header [handler version]
+  (fn [request]
+    (let [response (handler request)]
+      (assoc-in response [:headers "X-Service-Version"] version))))
+
 (defn create-application-routes[]
   (-> #'core-routes
+      (wrap-with-service-version-header VERSION)
       (wrap-reload)
       (wrap-canonical-redirect)
       (wrap-json-response)

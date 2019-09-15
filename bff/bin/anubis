@@ -67,7 +67,7 @@ SYNC_DATA=${SYNC_DATA:-0}
 WATCH=0
 WATCH_PERIOD=5
 
-declare -r VERSION="v0.5.0"
+declare -r VERSION="0.5.0"
 declare -r SERVICE_NAME="anubis-client"
 declare -r MY_SHA1=$(sha1sum "${0}" | awk '{print $1}')
 declare -r ANUBIS_HOME=${HOME}/.anubis
@@ -214,22 +214,22 @@ get_client_id() {
 }
 
 service_version_check() {
-    local server_version
+    local service_version
     while read -r header_line
     do
         ((DEBUG)) && echo "inspecting header line: $header_line" >&2
-        server_version="$(sed -n -e 's#^Server-Version:[ ]*\(v[a-zA-Z0-9.]*\).*#\1#p' <<<${header_line})"
-        if [[ "${VERSION}" ==  "${server_version}" ]]; then
+        service_version="$(sed -n -e 's#^X-Service-Version:[ ]*\([a-zA-Z0-9.]*\).*#\1#p' <<<${header_line})"
+        if [[ "${VERSION}" ==  "${service_version}" ]]; then
             ((match++))
         fi
     done
     if ((match <= 0)); then
         printf "
-\033[01;31m[WARNING]\033[0m THE VERSION OF THE CLIENT IS NOT COMPATIBLE WITH THE SERVER
-          Client Version = [%s]
-          Server Version = [%s]
+\033[01;31m[WARNING]\033[0m THE VERSION OF THE CLIENT IS NOT COMPATIBLE WITH THAT OF THE SERVICE
+          Client  Version = [%s]
+          Service Version = [%s]
           Please use the \033[01;33m--sync-version\033[0m option to get a compatible client tool
-          \n\n" "${VERSION}" "${server_version}" >&2
+          \n\n" "${VERSION}" "${service_version}" >&2
     fi
 }
 
