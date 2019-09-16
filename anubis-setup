@@ -80,7 +80,7 @@ fi
 
 DEBUG=${DEBUG:-0}
 VERBOSE=${VERBOSE:-0}
-_t=$(realpath ${BASH_SOURCE})
+_t=$(realpath "${BASH_SOURCE}")
 ANUBIS_REPO_HOME=${ANUBIS_REPO_HOME:="${_t%/*}"}
 unset _t
 
