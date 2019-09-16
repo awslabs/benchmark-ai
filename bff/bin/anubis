@@ -201,8 +201,12 @@ _setup() {
 # Util functions
 #---------------------------------------------------------
 
+_get_current_service_endpoint() {
+    sed -n -e '$p' "${ANUBIS_SERVICE_ENDPOINT_CONFIG}"
+}
+
 _construct_endpoint_URL() {
-    printf "http://%s" "$(cat "${ANUBIS_SERVICE_ENDPOINT_CONFIG}")"
+    printf "http://%s" "$(_get_current_service_endpoint)"
 }
 
 get_client_id() {
@@ -223,16 +227,25 @@ register_service_endpoint() {
     local service_endpoint=${1:?"register() -> You MUST supply the service endpoint hostname|IP and PORT"}
     #TODO - Do basic sanity checking on format and then write it to file;
 
-    echo "${service_endpoint}" > "${ANUBIS_SERVICE_ENDPOINT_CONFIG}"
+    if [ -n "$(sed -ne '/^'${service_endpoint}'$/p' ${ANUBIS_SERVICE_ENDPOINT_CONFIG})" ]; then
+        echo "${service_endpoint} has been registered before, setting as current endpoint..." >&2
+        sed -i '/^'${service_endpoint}'$/d' "${ANUBIS_SERVICE_ENDPOINT_CONFIG}"
+    else
+        echo "Adding new anubis service endpoint entry: ${service_endpoint}" >&2
+    fi
+
+    echo "${service_endpoint}" >> "${ANUBIS_SERVICE_ENDPOINT_CONFIG}"
     show_registered_service_endpoint
 }
 
 unregister_service_endpoint() {
-    cat /dev/null > "${ANUBIS_SERVICE_ENDPOINT_CONFIG}"
+    local current_service_endpoint=${1:-$(_get_current_service_endpoint)}
+    ((DEBUG)) && echo "unregister_service_endpoint -> removing ${current_service_endpoint}"
+    sed -i.bak '/'${current_service_endpoint}'/d' "${ANUBIS_SERVICE_ENDPOINT_CONFIG}"
 }
 
 show_registered_service_endpoint() {
-    local current_service_endpoint=$(cat "${ANUBIS_SERVICE_ENDPOINT_CONFIG}")
+    local current_service_endpoint=$(_get_current_service_endpoint)
     if [[ -n "${current_service_endpoint}" ]]; then
         printf "Current service endpoint is: [\033[01;33m%s\033[0m] \n\n" "$current_service_endpoint" >&2
         return 0
@@ -242,6 +255,12 @@ show_registered_service_endpoint() {
           Please do so.  (use --register to set one)\n\n" >&2
         return 1
     fi
+}
+
+show_registered_service_endpoint_history() {
+    ((DEBUG)) && echo "show_registered_service_endpoint_history ..." >&2
+    #TODO -- It would be nice to do a loop through each and format the current
+    cat "${ANUBIS_SERVICE_ENDPOINT_CONFIG}"
 }
 
 check_version() {
@@ -344,14 +363,14 @@ EOF
 upgrade() {
     #TODO - upgrading this tool itself...
     #TODO - implement how to upgrade to the version supported by the service directly?
-    printf "Sync'ing versions with that of the current service endpoint [\033[01;33m%s\033[0m] \n" "$current_service_endpoint"
+    printf "Sync'ing versions with that of the current service endpoint [\033[01;33m%s\033[0m] \n" "$(_get_current_service_endpoint)"
     echo "Implement me!!!!!"
 }
 
 #REST API call
 sync_version() {
     #TODO - implement how to upgrade to the version supported by the service directly?
-    printf "Sync'ing versions with that of the current service endpoint [\033[01;33m%s\033[0m] \n" "$current_service_endpoint"
+    printf "Sync'ing versions with that of the current service endpoint [\033[01;33m%s\033[0m] \n" "$(_get_current_service_endpoint)"
     echo "Implement me!!!!!"
 }
 
@@ -401,7 +420,7 @@ submit() {
         descriptor_filename=$(_write_descriptor "${descriptor_filename}")
     fi
     local script_filename=${2:-""}
-    local current_service_endpoint=$(cat "${ANUBIS_SERVICE_ENDPOINT_CONFIG}" | tail -n 1)
+    local current_service_endpoint=$(_get_current_service_endpoint)
 
     if [ ! -f "${descriptor_filename}" ]; then echo "file [${descriptor_filename}], does not exist"; exit 1; fi
     if [[ -z "${current_service_endpoint}" ]]; then
@@ -510,7 +529,7 @@ _read_remote_submission_status() {
     current_action_id=$action_id
 
     local path=$(get_client_id)"/"${action_id}
-    local current_service_endpoint=$(cat "${ANUBIS_SERVICE_ENDPOINT_CONFIG}")
+    local current_service_endpoint=$(_get_current_service_endpoint)
     local cmd
 
     ((VERBOSE)) && echo "database = ${ANUBIS_DATABASE}"
@@ -521,7 +540,7 @@ _read_remote_submission_status() {
     ((VERBOSE)) && echo ${cmd}
     local response=$(eval ${cmd})
 
-    if [[ -n "${response}" ]]; then 
+    if [[ -n "${response}" ]]; then
         [[ ! -d "${ANUBIS_DATABASE}/${path}" ]] && mkdir -p "${ANUBIS_DATABASE}/${path}"
         echo "${response}" | jq '.[]' | tee $( [[ ${since_tstamp} != "0" ]] && echo -n "-a") ${ANUBIS_DATABASE}/${path}/data 2> /dev/null | jq --compact-output '{src: .visited[-1].svc , id: .message_id, msg: .payload.message, tstamp: .visited[-1].tstamp} +{"new" : "1"}' | while read line; do _as_status_line $line; done;
     fi
@@ -612,7 +631,7 @@ _as_status_line() {
 #command event
 get_results() {
     local action_id=${1:-$(use_last_action_id)}
-    local current_service_endpoint=$(cat "${ANUBIS_SERVICE_ENDPOINT_CONFIG}" | tail -n 1)
+    local current_service_endpoint=$(_get_current_service_endpoint)
     ((VERBOSE)) && echo "get_results ${action_id}" >&2
 
     local cmd
@@ -632,7 +651,7 @@ abort_submission() {
         printf "%b You MUST provide a valid, well-formed action_id \033[01;31mtry again buddy\033[0m\n\n" "${emoji[FAIL]}" >&2
         exit 9
     fi
-    local current_service_endpoint=$(cat "${ANUBIS_SERVICE_ENDPOINT_CONFIG}" | tail -n 1)
+    local current_service_endpoint=$(_get_current_service_endpoint)
     shift
     ((VERBOSE)) && echo "abort submisson ${action_id}"
 
@@ -831,12 +850,17 @@ main() {
                     ;;
                 --unregister)
                     shift
-                    unregister_service_endpoint
+                    unregister_service_endpoint "${1}"
                     exit $?
                     ;;
                 --show-registered-service-endpoint)
                     shift
                     show_registered_service_endpoint
+                    exit $?
+                    ;;
+                --show-registered-service-endpoint-history)
+                    shift
+                    show_registered_service_endpoint_history
                     exit $?
                     ;;
                 --help | -h)
@@ -880,6 +904,7 @@ main() {
             ((SUBMIT)) && submit "${descriptor_filename}" "${script}"
             ((STATUS)) && get_submission_status "${id_status_is_desired_for}"
         fi
+
 }
 
 main "$@"
