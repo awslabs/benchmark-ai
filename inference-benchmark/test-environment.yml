@@ -1,0 +1,7 @@
+name: inference-benchmark
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pytest
+  - pytest-mock

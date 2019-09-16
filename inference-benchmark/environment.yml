@@ -1,0 +1,12 @@
+name: inference-benchmark
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python 3.7.*
+  - python-kubernetes 9.0.*
+  - pip
+  - pip:
+    - ConfigArgParse
+    - dataclasses-json==0.2.7
+    - flake8-black
