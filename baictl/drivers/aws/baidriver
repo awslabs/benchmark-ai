@@ -530,7 +530,7 @@ get_benchmark_logs() {
     [ -z "$benchmark_name" ] && printf "Missing required argument --name\n" && return 1
     [ -z "$page_size" ] && page_size=10000
 
-    _query_fluentd_logs_from_elasticsearch --key "kubernetes.labels.action-id" --value $benchmark_name
+    _query_fluentd_logs_from_elasticsearch --key="kubernetes.labels.action-id" --value=$benchmark_name
 }
 
 get_pod_logs() {
