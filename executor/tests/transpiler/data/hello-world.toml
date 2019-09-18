@@ -38,10 +38,16 @@ benchmark_code = "python3 hello-world.py"
 [[output.metrics]]
 # Name of the metric that will appear in the dashboards.
 name = "accuracy"
+
+unit = "%"
+
 # Pattern for log parsing for this metric.
 pattern = "accuracy=([-+]?\\d*\\.\\d+|\\d+)"
-[[output.metrics]]
 # Name of the metric that will appear in the dashboards.
+[[output.metrics]]
 name = "throughput"
+
+unit = "images/sec"
+
 # Pattern for log parsing for this metric.
 pattern = "throughput=([-+]?\\d*\\.\\d+|\\d+)"

@@ -152,10 +152,14 @@ class KafkaService:
         self._pod_name = pod_name
 
     def safe_handle_msg(self, msg, callback: KafkaServiceCallback):
+        # noinspection PyBroadException
         try:
             self.handle_event(msg.value, callback)
         except KafkaServiceCallbackException:
             logger.exception(f"Failed to handle message: {msg}")
+        except Exception:
+            # TODO: Stop catching this and push failed submissions to a dead letter queue
+            logger.exception(f"Unknown error handling message: {msg}")
 
     def handle_event(self, event: BenchmarkEvent, callback: KafkaServiceCallback):
         """

@@ -116,9 +116,11 @@ def descriptor_as_dict(descriptor_config, base_data_sources):
         [output]
         [[output.metrics]]
         name = "accuracy"
+        unit = "%"
         pattern = "accuracy=([-+]?\\d*\\.\\d+|\\d+)"
         [[output.metrics]]
         name = "throughput"
+        unit = "images/sec"
         pattern = "throughput=([-+]?\\d*\\.\\d+|\\d+)"
         """
         )
