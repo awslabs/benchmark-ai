@@ -102,8 +102,8 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: ANUBIS_METRICS
-          value: '[{"name": "accuracy", "pattern": "YWNjdXJhY3k9KFstK10/XGQqXC5cZCt8XGQrKQ=="},
-            {"name": "throughput", "pattern": "dGhyb3VnaHB1dD0oWy0rXT9cZCpcLlxkK3xcZCsp"}]'
+          value: '[{"name": "accuracy", "unit": "%", "pattern": "YWNjdXJhY3k9KFstK10/XGQqXC5cZCt8XGQrKQ=="},
+            {"name": "throughput", "unit": "images/sec", "pattern": "dGhyb3VnaHB1dD0oWy0rXT9cZCpcLlxkK3xcZCsp"}]'
         - name: BENCHMARK_AI
           value: fifo
         - name: BENCHMARK_AI_FIFO_FILEPATH
