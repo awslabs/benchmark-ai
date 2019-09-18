@@ -95,6 +95,20 @@ unset _t
 # ci/anubis-pipeline.py --region=us-west-1
 
 main() {
+    while [ -n "${1}" ]; do
+        local unshift=0
+        case "${1}" in
+            --whoami)
+                shift
+                ;;
+            *)
+                shift
+                echo "Unknown flag ${1}"
+                ;;
+        esac
+        ((!unshift)) && shift
+    done
+
     (cd ${ANUBIS_REPO_HOME}/ci; ./anubis-driver.py $@)
 }
 
