@@ -5,3 +5,4 @@ channels:
 dependencies:
   - pytest
   - pytest-mock
+  - pytest-datadir

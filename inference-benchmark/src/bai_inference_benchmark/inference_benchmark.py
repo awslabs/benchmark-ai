@@ -8,11 +8,11 @@ from typing import Optional
 
 import kubernetes
 import yaml
-from kubernetes.client import CoreV1Api, V1Pod
+from kubernetes.client import ApiClient, CoreV1Api, V1Pod
 from kubernetes.client.rest import ApiException
 
-from inference_benchmark import app_logger
-from inference_benchmark.args import InferenceBenchmarkConfig
+from bai_inference_benchmark import app_logger
+from bai_inference_benchmark.args import InferenceBenchmarkConfig
 
 logger = app_logger.getChild(__name__)
 
@@ -44,23 +44,34 @@ class InferenceBenchmark:
 
     SLEEP_TIME = 5
 
-    def __init__(self, config: InferenceBenchmarkConfig):
-
-        self._namespace = config.benchmark_namespace
-        self._benchmark_pod_spec = config.benchmark_pod_spec
-        self._server_pod_spec = config.server_pod_spec
-
-        kubeconfig = Path(os.environ.get("KUBECONFIG", Path.home().joinpath(".kube", "kubeconfig")))
+    @staticmethod
+    def _create_api_client_instance() -> ApiClient:
+        """
+        Creates a new Kubernetes API client.
+        Will attempt to load the client configuration from $KUBECONFIG,
+        or ~/.kube/config, if it's not set. If not kubeconfig file is found,
+        load_incluster_config will be executed.
+        :return: A kubernetes.ApiClient instance configured against the current
+        execution environment.
+        """
+        kubeconfig_path = os.environ.get("KUBECONFIG", Path.home().joinpath(".kube", "config"))
+        kubeconfig = Path(kubeconfig_path)
 
         if kubeconfig.exists():
-            logger.info(f"Loading kubeconfig from {kubeconfig}")
+            logger.info(f"Loading kubeconfig from {kubeconfig_path}")
             kubernetes.config.load_kube_config(str(kubeconfig))
         else:
             logger.info(f"Loading kubeconfig from in the cluster")
             kubernetes.config.load_incluster_config()
 
-        configuration = kubernetes.client.Configuration()
-        self._api_client = kubernetes.client.ApiClient(configuration)
+        return ApiClient(kubernetes.client.Configuration())
+
+    def __init__(self, config: InferenceBenchmarkConfig):
+        self._namespace = config.benchmark_namespace
+        self._benchmark_pod_spec = config.benchmark_pod_spec
+        self._server_pod_spec = config.server_pod_spec
+
+        self._api_client = self._create_api_client_instance()
         self._corev1_api = CoreV1Api(api_client=self._api_client)
 
     def _create_pod(self, namespace: str, pod_spec: Path):
@@ -121,7 +132,7 @@ class InferenceBenchmark:
     def _clean_up(self, server_pod_name: Optional[str] = None, benchmark_pod_name: Optional[str] = None):
         """
         Deletes server and/or benchmark pods. To be called before the benchmark execution finishes to
-        clean up any kubernetes resources.
+        clean up any kubernetes data.
         :param server_pod_name: Server pod name, or None
         :param benchmark_pod_name: Benchmark pod name, or None
         """
@@ -167,18 +178,21 @@ class InferenceBenchmark:
 
         try:
             logging.info(f"Executing benchmark: {self._benchmark_pod_spec} against server: {self._server_pod_spec}.")
-
+            logging.info(f"Starting pods...")
             server_pod_name = self._create_pod(namespace=self._namespace, pod_spec=self._server_pod_spec)
             benchmark_pod_name = self._create_pod(namespace=self._namespace, pod_spec=self._benchmark_pod_spec)
 
-            # Use itertools.count() so that tests can mock the infinite loop
             for _ in itertools.count():
-                benchmark_pod_status = self._get_pod_status(pod_name=benchmark_pod_name)
-                server_pod_status = self._get_pod_status(pod_name=server_pod_name)
+                server_status = self._get_pod_status(pod_name=server_pod_name)
+                benchmark_status = self._get_pod_status(pod_name=benchmark_pod_name)
 
-                if self._is_benchmark_finished(benchmark_pod_status, server_pod_status):
-                    logger.info("Benchmark finished successfully")
+                if self._is_benchmark_finished(benchmark_status, server_status):
+                    logging.info("Successfully completed benchmark")
                     break
+
+                logging.info("Benchmark still running...")
                 time.sleep(self.SLEEP_TIME)
+        except Exception as err:
+            raise InferenceBenchmarkFailedError(str(err)) from err
         finally:
             self._clean_up(server_pod_name=server_pod_name, benchmark_pod_name=benchmark_pod_name)

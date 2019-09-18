@@ -1,12 +1,10 @@
 import os
-
-
 from dataclasses import dataclass
 from pathlib import Path
 
 from configargparse import ArgParser
 
-from inference_benchmark import NAME
+from bai_inference_benchmark import NAME
 
 
 @dataclass
