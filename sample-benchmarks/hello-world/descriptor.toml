@@ -35,5 +35,9 @@ benchmark_code = "python3 hello-world.py"
 [[output.metrics]]
 # Name of the metric that will appear in the dashboards.
 name = "accuracy"
+
+# Metric unit (required)
+units = "%"
+
 # Pattern for log parsing for this metric.
 pattern = "accuracy=([-+]?\\d*\\.\\d+|\\d+)"
