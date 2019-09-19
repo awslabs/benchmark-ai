@@ -132,7 +132,6 @@ This is the command-line, client-side interface to the Bechmark AI service...
           --last-action-id         : displays the last action id from a valid submission
           --cancel   <action id>   : cancels the current, in progress, submission
           --purge    <action id>   : cancels the current, in progress, submission and all descendant processes
-          --check-version          : checks to see if the version you are running is the latest posted (not yet implemented)
           --upgrade                : fetches latest version of this tool [%s]
           --sync-version           : synchronized this tool with that of the service endpoint
           --tail                   : when showing status, only show the latest from the service
@@ -382,6 +381,20 @@ EOF
 
 #---------------------------------------------------------
 
+_get_service_version() {
+    #TODO Check to see if this is the latest version of the client
+    while read -r header_line
+    do
+        ((DEBUG)) && echo "inspecting header line: $header_line" >&2
+        service_version="$(sed -n -e 's#^X-Service-Version:[ ]*\([a-zA-Z0-9.]*\).*#\1#p' <<<${header_line})"
+        if [[ "${VERSION%.*}" ==  "${service_version%.*}" ]]; then
+            ((match++))
+        fi
+        [ -n "${service_version}" ] && break
+    done < <(curl -s -I $(_construct_endpoint_URL)/ready)
+    printf "%s" "${service_version}"
+}
+
 upgrade() {
     #TODO - upgrading this tool itself...
     #TODO - implement how to upgrade to the version supported by the service directly?
@@ -394,7 +407,7 @@ upgrade() {
 sync_version() {
     #TODO - implement how to upgrade to the version supported by the service directly?
     printf "Sync'ing client version to that of the current service endpoint [\033[01;33m%s\033[0m] \n" "$current_service_endpoint"
-    local cmd=curl -D >(service_version_check) $(_construct_endpoint_URL)/downloads/"${0##*/}"-"${service_version}" --output $(realpath "${0}")
+    local cmd="curl -D >(service_version_check) $(_construct_endpoint_URL)/downloads/${0##*/}-$(_get_service_version) --output $(realpath ${0})"
     $cmd && chmod 755 "$(realpath "${0}")"
 }
 
