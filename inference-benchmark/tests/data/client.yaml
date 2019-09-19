@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: benchmark-client
+  labels:
+    name: benchmark-client
+    app: inference-benchmark-integration-test
+spec:
+  restartPolicy: Never
+  containers:
+  - name: client
+    image: ubuntu:18.04
+    command: ["/bin/bash"]
+    args: ["-c", "sleep 15"]

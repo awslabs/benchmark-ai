@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: benchmark-server
+  labels:
+    name: benchmark-server
+    app: inference-benchmark-integration-test
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    ports:
+    - containerPort: 80
