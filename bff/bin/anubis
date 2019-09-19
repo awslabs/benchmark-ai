@@ -214,6 +214,7 @@ get_client_id() {
 }
 
 service_version_check() {
+    local match=0
     while read -r header_line
     do
         ((DEBUG)) && echo "inspecting header line: $header_line" >&2
@@ -221,6 +222,7 @@ service_version_check() {
         if [[ "${VERSION}" ==  "${service_version}" ]]; then
             ((match++))
         fi
+        [ -n "${service_version}" ] && break
     done
     if ((match <= 0)); then
         printf "
@@ -233,7 +235,7 @@ service_version_check() {
 }
 
 ping_service_endpoint() {
-    if show_registered_service_endpoint && curl "-s -D >(service_version_check) $(_construct_endpoint_URL)"/ready >& /dev/null ; then
+    if show_registered_service_endpoint && curl -s -D >(service_version_check) $(_construct_endpoint_URL)/ready >& /dev/null ; then
         printf "%b \033[01;32mR\033[0meady \033[01;32mA\033[0mnd \033[01;32mW\033[0milling like Big Daddy Kane\n\n" "${emoji[GOOD]}" >&2
         return 0
     else
@@ -280,12 +282,6 @@ show_registered_service_endpoint_history() {
     ((DEBUG)) && echo "show_registered_service_endpoint_history ..." >&2
     #TODO -- It would be nice to do a loop through each and format the current
     cat "${ANUBIS_SERVICE_ENDPOINT_CONFIG}"
-}
-
-check_version() {
-    if curl "-s -D >(service_version_check) $(_construct_endpoint_URL)"/ready >& /dev/null; then
-        echo ${VERSION}
-    fi
 }
 
 
@@ -393,7 +389,7 @@ upgrade() {
 sync_version() {
     #TODO - implement how to upgrade to the version supported by the service directly?
     printf "Sync'ing client version to that of the current service endpoint [\033[01;33m%s\033[0m] \n" "$current_service_endpoint"
-    local cmd="curl -D >(service_version_check) $(_construct_endpoint_URL)/downloads/${0##*/}-${service_version} --output $(realpath ${0})"
+    local cmd=curl -D >(service_version_check) $(_construct_endpoint_URL)/downloads/"${0##*/}"-"${service_version}" --output $(realpath "${0}")
     $cmd && chmod 755 "$(realpath "${0}")"
 }
 
@@ -845,11 +841,6 @@ main() {
                 --check-prerequisites) # hidden option
                     shift
                     check_tools
-                    exit $?
-                    ;;
-                --check-version)
-                    shift
-                    check_version
                     exit $?
                     ;;
                 --upgrade)
