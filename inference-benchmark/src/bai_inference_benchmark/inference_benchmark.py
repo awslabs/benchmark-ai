@@ -1,6 +1,7 @@
 import itertools
 import logging
 import os
+import signal
 import time
 from enum import Enum, unique
 from pathlib import Path
@@ -74,21 +75,20 @@ class InferenceBenchmark:
         self._api_client = self._create_api_client_instance()
         self._corev1_api = CoreV1Api(api_client=self._api_client)
 
-    def _create_pod(self, namespace: str, pod_spec: Path):
+    def _create_pod(self, pod_spec: Path):
         """
         Creates a pod defined by the pod_spec in the specified namespace.
-        :param namespace: Namespace to start pod in
         :param pod_spec: Path to Pod Spec yaml file
         :return: The name of the pod
         :raises ApiException: When there is an error calling the Kubernetes API
         :raises FileNotFoundError: If the Pod Spec yaml file could not be found
         :raises IsADirectoryError: If the Pod Spec yaml file path points to a directory
         """
-        logger.info(f"Creating pod {pod_spec} in namespace {namespace}")
+        logger.info(f"Creating pod {pod_spec} in namespace {self._namespace}")
         with open(str(pod_spec)) as f:
             pod_spec = yaml.safe_load(f)
 
-        pod: V1Pod = self._corev1_api.create_namespaced_pod(namespace=namespace, body=pod_spec)
+        pod: V1Pod = self._corev1_api.create_namespaced_pod(namespace=self._namespace, body=pod_spec)
         logger.info(f"Created pod with name {pod.metadata.name}")
         return pod.metadata.name
 
@@ -179,8 +179,16 @@ class InferenceBenchmark:
         try:
             logging.info(f"Executing benchmark: {self._benchmark_pod_spec} against server: {self._server_pod_spec}.")
             logging.info(f"Starting pods...")
-            server_pod_name = self._create_pod(namespace=self._namespace, pod_spec=self._server_pod_spec)
-            benchmark_pod_name = self._create_pod(namespace=self._namespace, pod_spec=self._benchmark_pod_spec)
+
+            server_pod_name = self._create_pod(pod_spec=self._server_pod_spec)
+            benchmark_pod_name = self._create_pod(pod_spec=self._benchmark_pod_spec)
+
+            # try to clean up in case of sigterm
+            def process_sigterm(signum, frame):
+                logger.info("sigterm received attempting to clean up")
+                self._clean_up(server_pod_name=server_pod_name, benchmark_pod_name=benchmark_pod_name)
+
+            signal.signal(signal.SIGTERM, process_sigterm)
 
             for _ in itertools.count():
                 server_status = self._get_pod_status(pod_name=server_pod_name)
