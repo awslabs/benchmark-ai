@@ -58,12 +58,12 @@ def mock_corev1_api(mocker):
 
 @fixture
 def empty_env(mocker):
-    return mocker.patch.dict(os.environ, {})
+    return mocker.patch.dict(os.environ, {}, clear=True)
 
 
 @fixture
 def kubeconfig_env(mocker):
-    return mocker.patch.dict(os.environ, {"KUBECONFIG": KUBECONFIG_PATH})
+    return mocker.patch.dict(os.environ, {"KUBECONFIG": KUBECONFIG_PATH}, clear=True)
 
 
 @fixture
