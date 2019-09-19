@@ -400,6 +400,7 @@ upgrade() {
     #TODO - implement how to upgrade to the version supported by the service directly?
     printf "Upgrading to the latest client version... " >&2
     local cmd="curl $(_construct_endpoint_URL)/downloads/${0##*/}-latest --output $(realpath ${0})"
+    ((DEBUG)) && echo "${cmd}" >&2
     $cmd && chmod 755 "$(realpath "${0}")"
 }
 
@@ -408,6 +409,7 @@ sync_version() {
     #TODO - implement how to upgrade to the version supported by the service directly?
     printf "Sync'ing client version to that of the current service endpoint [\033[01;33m%s\033[0m] \n" "$current_service_endpoint"
     local cmd="curl -D >(service_version_check) $(_construct_endpoint_URL)/downloads/${0##*/}-$(_get_service_version) --output $(realpath ${0})"
+    ((DEBUG)) && echo "${cmd}" >&2
     $cmd && chmod 755 "$(realpath "${0}")"
 }
 
@@ -435,10 +437,6 @@ _prepare_script() {
     fi
 
     script_artifact=$( [[ -n "${artifact_hashname}" ]] && printf "${artifact%/*}/${artifact_hashname}.tar")
-
-    #5 Add hash name to event or toml (hmmm?)
-    #6 ask server if file is already present,
-    #  (if not send file along as well when submitting.)
 }
 
 # Ping the server endpoint with name of script artifact to see if the file exists already on the server.
