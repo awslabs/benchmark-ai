@@ -67,7 +67,7 @@ SYNC_DATA=${SYNC_DATA:-0}
 WATCH=0
 WATCH_PERIOD=5
 
-declare -r VERSION="0.1.0-481dad2"
+declare -r VERSION="0.5.0"
 declare -r SERVICE_NAME="anubis-client"
 declare -r MY_SHA1=$(sha1sum "${0}" | awk '{print $1}')
 declare -r ANUBIS_HOME=${HOME}/.anubis
@@ -132,7 +132,6 @@ This is the command-line, client-side interface to the Bechmark AI service...
           --last-action-id         : displays the last action id from a valid submission
           --cancel   <action id>   : cancels the current, in progress, submission
           --purge    <action id>   : cancels the current, in progress, submission and all descendant processes
-          --check-version          : checks to see if the version you are running is the latest posted (not yet implemented)
           --upgrade                : fetches latest version of this tool [%s]
           --sync-version           : synchronized this tool with that of the service endpoint
           --tail                   : when showing status, only show the latest from the service
@@ -213,8 +212,34 @@ get_client_id() {
     echo -n "$(printf "$(whoami)+$(hostname)" | sha1sum | awk '{print $1}')"
 }
 
+service_version_check() {
+    # Receives a stream of HTTP header data (this function can be treated as a file with >(service_version_check) invocation)
+    # Looks for service header value: X-Service-Version
+    # Checks to see if compatible with this scripts version: $VERSION
+    # If not prints warning information to STDERR
+    local service_version="<no version>"
+    local match=0
+    while read -r header_line
+    do
+        ((DEBUG)) && echo "inspecting header line: $header_line" >&2
+        service_version="$(sed -n -e 's#^X-Service-Version:[ ]*\([a-zA-Z0-9.]*\).*#\1#p' <<<${header_line})"
+        if [[ "${VERSION%.*}" ==  "${service_version%.*}" ]]; then
+            ((match++))
+        fi
+        [ -n "${service_version}" ] && break
+    done
+    if ((match <= 0)); then
+        printf "
+\033[01;31m[WARNING]\033[0m THE VERSION OF THE CLIENT IS NOT COMPATIBLE WITH THAT OF THE SERVICE
+          Client  Version = [%s]
+          Service Version = [%s]
+          Please use the \033[01;33m--sync-version\033[0m option to get a compatible client tool
+          \n\n" "${VERSION}" "${service_version}" >&2
+    fi
+}
+
 ping_service_endpoint() {
-    if show_registered_service_endpoint && curl "$(_construct_endpoint_URL)"/ready >& /dev/null ; then
+    if show_registered_service_endpoint && curl -s -D >(service_version_check) $(_construct_endpoint_URL)/ready >& /dev/null ; then
         printf "%b \033[01;32mR\033[0meady \033[01;32mA\033[0mnd \033[01;32mW\033[0milling like Big Daddy Kane\n\n" "${emoji[GOOD]}" >&2
         return 0
     else
@@ -261,10 +286,6 @@ show_registered_service_endpoint_history() {
     ((DEBUG)) && echo "show_registered_service_endpoint_history ..." >&2
     #TODO -- It would be nice to do a loop through each and format the current
     cat "${ANUBIS_SERVICE_ENDPOINT_CONFIG}"
-}
-
-check_version() {
-    echo "+"; #TODO - make this check against the service's supported version
 }
 
 
@@ -360,18 +381,36 @@ EOF
 
 #---------------------------------------------------------
 
+_get_service_version() {
+    #TODO Check to see if this is the latest version of the client
+    while read -r header_line
+    do
+        ((DEBUG)) && echo "inspecting header line: $header_line" >&2
+        service_version="$(sed -n -e 's#^X-Service-Version:[ ]*\([a-zA-Z0-9.]*\).*#\1#p' <<<${header_line})"
+        if [[ "${VERSION%.*}" ==  "${service_version%.*}" ]]; then
+            ((match++))
+        fi
+        [ -n "${service_version}" ] && break
+    done < <(curl -s -I $(_construct_endpoint_URL)/ready)
+    printf "%s" "${service_version}"
+}
+
 upgrade() {
     #TODO - upgrading this tool itself...
     #TODO - implement how to upgrade to the version supported by the service directly?
-    printf "Sync'ing versions with that of the current service endpoint [\033[01;33m%s\033[0m] \n" "$(_get_current_service_endpoint)"
-    echo "Implement me!!!!!"
+    printf "Upgrading to the latest client version... " >&2
+    local cmd="curl $(_construct_endpoint_URL)/downloads/${0##*/}-latest --output $(realpath ${0})"
+    ((DEBUG)) && echo "${cmd}" >&2
+    $cmd && chmod 755 "$(realpath "${0}")"
 }
 
 #REST API call
 sync_version() {
     #TODO - implement how to upgrade to the version supported by the service directly?
-    printf "Sync'ing versions with that of the current service endpoint [\033[01;33m%s\033[0m] \n" "$(_get_current_service_endpoint)"
-    echo "Implement me!!!!!"
+    printf "Sync'ing client version to that of the current service endpoint [\033[01;33m%s\033[0m] \n" "$current_service_endpoint"
+    local cmd="curl -D >(service_version_check) $(_construct_endpoint_URL)/downloads/${0##*/}-$(_get_service_version) --output $(realpath ${0})"
+    ((DEBUG)) && echo "${cmd}" >&2
+    $cmd && chmod 755 "$(realpath "${0}")"
 }
 
 script_artifact=""
@@ -398,10 +437,6 @@ _prepare_script() {
     fi
 
     script_artifact=$( [[ -n "${artifact_hashname}" ]] && printf "${artifact%/*}/${artifact_hashname}.tar")
-
-    #5 Add hash name to event or toml (hmmm?)
-    #6 ask server if file is already present,
-    #  (if not send file along as well when submitting.)
 }
 
 # Ping the server endpoint with name of script artifact to see if the file exists already on the server.
@@ -446,7 +481,7 @@ submit() {
     if [[ -n "${data}" ]]; then
         [[ -n "${script_artifact}" ]] && echo "Using Script: ${script_artifact##*/}" 1>&2
 
-        cmd="curl -s -F submit-event='"${data}"'"
+        cmd="curl -s -D >(service_version_check) -F submit-event='"${data}"'"
         msg="sending ${descriptor_filename}"
         if [[ -n "${script_artifact}" ]]; then
             if ((FORCE)) || ! $(_has_script "${script_artifact##*/}") ; then
@@ -536,7 +571,7 @@ _read_remote_submission_status() {
 
     local since_tstamp=$(get_latest_event_timestamp "${action_id}")
 
-    cmd="curl -s -X GET -G -H Content-Type: application/json --data-urlencode since="${since_tstamp}" http://"${current_service_endpoint}"/api/job/"${path}
+    cmd="curl -s -D >(service_version_check) -X GET -G -H Content-Type: application/json --data-urlencode since="${since_tstamp}" http://"${current_service_endpoint}"/api/job/"${path}
     ((VERBOSE)) && echo ${cmd}
     local response=$(eval ${cmd})
 
@@ -636,7 +671,7 @@ get_results() {
 
     local cmd
     local returned
-    cmd="curl -s -X GET -H Content-Type: application/json http://"${current_service_endpoint}"/api/job/results/$(get_client_id)/${action_id}"
+    cmd="curl -s -D >(service_version_check) -X GET -H Content-Type: application/json http://"${current_service_endpoint}"/api/job/results/$(get_client_id)/${action_id}"
     ((VERBOSE)) && echo ${cmd} >&2
     returned=$(eval "${cmd}" | jq --raw-output '.[]._source.log')
     echo "${returned}"
@@ -667,7 +702,7 @@ abort_submission() {
     local returned
     local data=$(_generate_command_event "cancel" ${action_id} "--json" $*)
     if [[ -n "${data}" ]]; then
-        cmd="curl -s -X DELETE -H Content-Type: application/json -d '"${data}"' http://"${current_service_endpoint}"/api/job/$(get_client_id)/${action_id}"
+        cmd="curl -s -D >(service_version_check) -X DELETE -H Content-Type: application/json -d '"${data}"' http://"${current_service_endpoint}"/api/job/$(get_client_id)/${action_id}"
         ((VERBOSE)) && echo ${cmd}
         returned=$(eval "${cmd}")
         echo "${returned}"
@@ -824,18 +859,14 @@ main() {
                     check_tools
                     exit $?
                     ;;
-                --check-version)
-                    shift
-                    check_version
-                    exit $?
-                    ;;
                 --upgrade)
                     shift
                     upgrade
                     exit $?
                     ;;
                 --sync-version)
-                    echo "Implement me..."; shift
+                    shift
+                    sync_version
                     exit $?
                     ;;
                 --register)
