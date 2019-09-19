@@ -214,12 +214,17 @@ get_client_id() {
 }
 
 service_version_check() {
+    # Receives a stream of HTTP header data (this function can be treated as a file with >(service_version_check) invocation)
+    # Looks for service header value: X-Service-Version
+    # Checks to see if compatible with this scripts version: $VERSION
+    # If not prints warning information to STDERR
+    local service_version="<no version>"
     local match=0
     while read -r header_line
     do
         ((DEBUG)) && echo "inspecting header line: $header_line" >&2
         service_version="$(sed -n -e 's#^X-Service-Version:[ ]*\([a-zA-Z0-9.]*\).*#\1#p' <<<${header_line})"
-        if [[ "${VERSION}" ==  "${service_version}" ]]; then
+        if [[ "${VERSION%.*}" ==  "${service_version%.*}" ]]; then
             ((match++))
         fi
         [ -n "${service_version}" ] && break
