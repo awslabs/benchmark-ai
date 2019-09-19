@@ -188,8 +188,8 @@ def test_execute_happy_path(
     # Deletes pods at the end
     mock_corev1_api.delete_namespaced_pod.assert_has_calls(
         [
-            call(namespace=DEFAULT_NAMESPACE, name=SERVER_POD_NAME),
-            call(namespace=DEFAULT_NAMESPACE, name=CLIENT_POD_NAME),
+            call(namespace=DEFAULT_NAMESPACE, name=SERVER_POD_NAME, grace_period_seconds=0),
+            call(namespace=DEFAULT_NAMESPACE, name=CLIENT_POD_NAME, grace_period_seconds=0),
         ],
         any_order=True,
     )
@@ -235,8 +235,8 @@ def test_execute_benchmark_ends_successfully(
     # Deletes pods at the end
     mock_corev1_api.delete_namespaced_pod.assert_has_calls(
         [
-            call(namespace=DEFAULT_NAMESPACE, name=SERVER_POD_NAME),
-            call(namespace=DEFAULT_NAMESPACE, name=CLIENT_POD_NAME),
+            call(namespace=DEFAULT_NAMESPACE, name=SERVER_POD_NAME, grace_period_seconds=0),
+            call(namespace=DEFAULT_NAMESPACE, name=CLIENT_POD_NAME, grace_period_seconds=0),
         ],
         any_order=True,
     )
@@ -288,8 +288,8 @@ def test_execute_server_ends_successfully_fails(
     # Deletes pods at the end
     mock_corev1_api.delete_namespaced_pod.assert_has_calls(
         [
-            call(namespace=DEFAULT_NAMESPACE, name=SERVER_POD_NAME),
-            call(namespace=DEFAULT_NAMESPACE, name=CLIENT_POD_NAME),
+            call(namespace=DEFAULT_NAMESPACE, name=SERVER_POD_NAME, grace_period_seconds=0),
+            call(namespace=DEFAULT_NAMESPACE, name=CLIENT_POD_NAME, grace_period_seconds=0),
         ],
         any_order=True,
     )
@@ -341,8 +341,8 @@ def test_execute_benchmark_ends_unsuccessfully_fails(
     # Deletes pods at the end
     mock_corev1_api.delete_namespaced_pod.assert_has_calls(
         [
-            call(namespace=DEFAULT_NAMESPACE, name=SERVER_POD_NAME),
-            call(namespace=DEFAULT_NAMESPACE, name=CLIENT_POD_NAME),
+            call(namespace=DEFAULT_NAMESPACE, name=SERVER_POD_NAME, grace_period_seconds=0),
+            call(namespace=DEFAULT_NAMESPACE, name=CLIENT_POD_NAME, grace_period_seconds=0),
         ],
         any_order=True,
     )
@@ -384,8 +384,8 @@ def test_execute_benchmark_status_not_found_fails(
     # Deletes pods at the end
     mock_corev1_api.delete_namespaced_pod.assert_has_calls(
         [
-            call(namespace=DEFAULT_NAMESPACE, name=SERVER_POD_NAME),
-            call(namespace=DEFAULT_NAMESPACE, name=CLIENT_POD_NAME),
+            call(namespace=DEFAULT_NAMESPACE, name=SERVER_POD_NAME, grace_period_seconds=0),
+            call(namespace=DEFAULT_NAMESPACE, name=CLIENT_POD_NAME, grace_period_seconds=0),
         ],
         any_order=True,
     )
@@ -430,8 +430,8 @@ def test_execute_server_status_not_found_fails(
     # Deletes pods at the end
     mock_corev1_api.delete_namespaced_pod.assert_has_calls(
         [
-            call(namespace=DEFAULT_NAMESPACE, name=SERVER_POD_NAME),
-            call(namespace=DEFAULT_NAMESPACE, name=CLIENT_POD_NAME),
+            call(namespace=DEFAULT_NAMESPACE, name=SERVER_POD_NAME, grace_period_seconds=0),
+            call(namespace=DEFAULT_NAMESPACE, name=CLIENT_POD_NAME, grace_period_seconds=0),
         ],
         any_order=True,
     )
@@ -466,7 +466,7 @@ def test_execute_fails_if_cannot_create_benchmark_pod(
 
     # Deletes server pod at the end
     mock_corev1_api.delete_namespaced_pod.assert_has_calls(
-        [call(namespace=DEFAULT_NAMESPACE, name=SERVER_POD_NAME)], any_order=True
+        [call(namespace=DEFAULT_NAMESPACE, name=SERVER_POD_NAME, grace_period_seconds=0)], any_order=True
     )
 
     mock_sleep.assert_not_called()

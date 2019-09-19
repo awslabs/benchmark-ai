@@ -1,0 +1,35 @@
+# config map for the inference benchmark
+# defines the benchmark and server pods specs
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: inference-benchmark-config-map
+data:
+  benchmark_pod.yaml: |
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: benchmark-client
+      labels:
+        name: benchmark-client
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: client
+        image: ubuntu:18.04
+        command: ["/bin/bash"]
+        args: ["-c", "sleep 600"]
+
+  server_pod.yaml: |
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: benchmark-server
+      labels:
+        run: benchmark-server
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        ports:
+        - containerPort: 80

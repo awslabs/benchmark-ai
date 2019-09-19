@@ -121,7 +121,7 @@ class InferenceBenchmark:
         """
         logger.info(f"Deleting {pod_name}")
         try:
-            self._corev1_api.delete_namespaced_pod(namespace=self._namespace, name=pod_name)
+            self._corev1_api.delete_namespaced_pod(namespace=self._namespace, name=pod_name, grace_period_seconds=0)
         except ApiException as err:
             if err.status == 404 and ignore_not_found:
                 logger.debug(f"Pod {pod_name} not found in namespace {self._namespace}")

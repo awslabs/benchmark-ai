@@ -1,0 +1,51 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: inference-benchmark-job-id
+  labels:
+    app: benchmark-ai
+    action-id: my-action-id
+    client-id: my-client-id
+    created-by: executor
+spec:
+  template:
+    metadata:
+      labels:
+        app: benchmark-ai
+        action-id: my-action-id
+        client-id: my-client-id
+        created-by: executor
+      annotations:
+        iam.amazonaws.com/role: benchmark-host
+    spec:
+      serviceAccountName: inference-benchmark
+      initContainers: []
+      containers:
+      - name: inference-benchmark
+        image: benchmarkai/inference-benchmark:f2426a4
+        resources:
+          limits:
+            nvidia.com/gpu: 0
+        securityContext:
+          privileged: false
+        env:
+        - name: BENCHMARK_NAMESPACE
+          value: default
+        - name: BENCHMARK_POD_SPEC
+          value: /etc/config/benchmark_pod.yaml
+        - name: SERVER_POD_SPEC
+          value: /etc/config/server_pod.yaml
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/config
+      restartPolicy: Never
+      volumes:
+      - name: config-volume
+        configMap:
+          name: inference-benchmark-config-map
+          items:
+          - key: server_pod.yaml
+            path: server_pod.yaml
+          - key: benchmark_pod.yaml
+            path: benchmark_pod.yaml
+  backoffLimit: 4
