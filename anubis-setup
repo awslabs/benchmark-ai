@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+#--------------------------------------------------------------------
+# Conda setup
+#--------------------------------------------------------------------
+
 conda_usage() {
     printf "
 
@@ -54,6 +58,9 @@ dependencies:
   - pip
   - pip:
     - pyfiglet
+  - jq 1.6
+  - curl 7.54.1
+  - coreutils 8.31
 EOF
     cmd="${CONDA_EXE} env update -f ${tmp_environment_file}"
     ${cmd}
@@ -78,13 +85,20 @@ if ! source "${CONDA_EXE%/*}"/activate anubis-setup >& /dev/null; then
     conda_usage
 fi
 
+#--------------------------------------------------------------------
+# Environment vars...
+#--------------------------------------------------------------------
+
 DEBUG=${DEBUG:-0}
 VERBOSE=${VERBOSE:-0}
 _t=$(realpath "${BASH_SOURCE}")
 ANUBIS_REPO_HOME=${ANUBIS_REPO_HOME:="${_t%/*}"}
 unset _t
+((DEBUG)) && printf "ANUBIS_REPO_HOME: ${ANUBIS_REPO_HOME}\n\n"
 
-## put code here
+AWS_CREDIENTIALS_FILE="${HOME}/.aws/credentials"
+declare -r ANUBIS_HOME=${HOME}/.anubis
+AWS_PROFILE=${AWS_PROFILE:=$(cat ${ANUBIS_HOME}/whoami)}
 
 #TODO
 #Manual setup, (pipeline free)
@@ -94,22 +108,188 @@ unset _t
 #Pipeline setup
 # ci/anubis-pipeline.py --region=us-west-1
 
+#--------------------------------------------------------------------
+# Helper / Utility functions
+#--------------------------------------------------------------------
+
+_prepare_credentials_map() {
+    sed -r -n  's/\[(.*)\]/\1/p' "${AWS_CREDIENTIALS_FILE}"
+    for profile in $(sed -r -n  's/\[(.*)\]/\1/p' "${AWS_CREDIENTIALS_FILE}"); do
+        account=$(aws sts get-caller-identity --profile="${profile}" | jq -r '.Account')
+        echo " looking at profile "$profile
+        account-to-profile["${account}"]="${profile}"
+        profile-to-account["${profile}"]="${account}"
+    done
+}
+
+_validate_profile() {
+    ((DEBUG)) && echo "validating profile for: $@"
+    local input_profile=${1:?"You must provide a profile value to validate"}
+    local match=0
+    for profile in $(sed -r -n  's/\[(.*)\]/\1/p' "${AWS_CREDIENTIALS_FILE}"); do
+        [[ "${profile}" == "${input_profile}" ]] && ((match++))
+    done
+    if ((match <= 0 )); then
+        printf "\033[01;31m[WARNING]\033[0m Unknown profile \"${input_profile}\"- not in your credentials config file!\n" >&2
+        return 9
+    else
+        return 0
+    fi
+}
+
+#--------------------------------------------------------------------
+# Primary functions
+#--------------------------------------------------------------------
+
+usage() {
+    printf "
+usage:
+
+This is the administrative command-line tool for the Anubis system
+
+ > %s --list-profiles          : lists your aws profiles configured in %s
+                --whoami                 : tells you what the current active profile is
+                --as <profile name>      : changes your profile to the provided value
+                --sync-config-to-profile : synchronized the Anubis configuration state to match your current profile
+                --list-configmaps        : shows a listing of the current configuration maps
+                --show-configmaps <configmap name> : shows the configuration associated with the supplied configuration name
+                --query-logs             : creates connection to log search index and brings up front end in browser
+                --query-metrics          : creates connection to metrics index and rings up front end in browser
+                --snoop-events <topic name(s)> : streams event log to terminal
+      ====>>    -- | --driver            : consumes ALL subsequent args and dispatches them to Anubis \"driver\" sub command (see help below)
+                --help                   : (this output)
+
+------------------------------------------------------------
+                (\"Driver\" subsystem....)
+------------------------------------------------------------
+
+ " "${0##*/}" "${AWS_CREDIENTIALS_FILE}"
+
+    (cd ${ANUBIS_REPO_HOME}/ci; ./anubis-driver.py --help)
+    exit 0
+}
+
+list_profiles(){
+    ((DEBUG)) && echo "Calling \"list profiles\" function with: $@"
+    sed -r -n  's/\[(.*)\]/\1/p' "${AWS_CREDIENTIALS_FILE}"
+}
+
+whoami() {
+    ((DEBUG)) && echo "Calling \"whoami\" function with: $@"
+    #If that is not set then select [default]
+    #print out the sts: Ex: aws sts get-caller-identity --profile=bellgav-dev
+    echo "Profile: ${AWS_PROFILE}"
+    _validate_profile "${AWS_PROFILE}"
+    aws sts get-caller-identity --profile=${AWS_PROFILE}
+}
+
+as() {
+    ((DEBUG)) && echo "Calling \"as\" function with: $@"
+    [[ ! -f ~/.aws/credentials ]] && printf "\033[01;31m[WARNING]\033[0m CANNOT FIND YOUR AWS crendentials file!\n\n"
+    local profile_name="${1:?You must provide a profile you which to switch to}"
+
+    #_prepare_credentials_map
+
+    _validate_profile "${profile_name}"
+    echo "${profile_name}" > ${ANUBIS_HOME}/whoami
+    export AWS_PROFILE=$(cat ${ANUBIS_HOME}/whoami)
+}
+
+#TODO
+sync_config_to_profile() {
+    ((DEBUG)) && echo "Calling \"sync_config_to_profile\" function with: $@"
+    echo "Current profile: ${AWS_PROFILE}"
+}
+
+list_configmaps() {
+    ((DEBUG)) && echo "Calling \"list_configmaps\" function with: $@"
+    printf "\033[01;32m[${AWS_PROFILE}]\033[0m\n"
+    kubectl --kubeconfig="${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform/bai/kubeconfig" get configmaps
+}
+
+show_configmap() {
+    ((DEBUG)) && echo "Calling \"show_configmap\" function with: $@"
+    printf "\033[01;32m[${AWS_PROFILE}]\033[0m\n"
+    local configmap_name=${1:-"outputs-infrastructure"}
+    kubectl --kubeconfig="${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform/bai/kubeconfig" get configmap "${configmap_name}" --output yaml
+}
+
+#TODO
+query_logs() {
+    ((DEBUG)) && echo "Calling \"query_logs\" function with: $@"
+}
+
+#TODO
+query_metrics() {
+    ((DEBUG)) && echo "Calling \"query_metrics\" function with: $@"
+}
+
+#TODO
+snoop_events() {
+    ((DEBUG)) && echo "Calling \"snoop_events\" function with: $@"
+}
+
+
+
 main() {
     while [ -n "${1}" ]; do
+        myargs=()
         local unshift=0
         case "${1}" in
+            --list-profiles)
+                list_profiles
+                ;;
             --whoami)
                 shift
+                whoami "${1}"
+                ;;
+            --as)
+                shift
+                as "${1}"
+                ;;
+            --sync-config-to-profile)
+                shift
+                sync_config_to_profile "${1}"
+                ;;
+            --list-configmaps)
+                list_configmaps ""
+                ;;
+            --show-configmap)
+                shift
+                show_configmap "${1}"
+                ;;
+            --query-logs) #Kibana access (pulls up Kibana through a tunnel)
+                shift
+                query_logs "${1}"
+                ;;
+            --query-metrics) #PromDash access (play with Prometheus queries)
+                shift
+                query_metrics "${1}"
+                ;;
+            --snoop-events) #Kubectl logs (Kubernetes logs)
+                shift
+                until [[ -n "$(echo "${1}" | sed -rn '/^\s*--/p')" || -z "${1}" ]]; do
+                    ((DEBUG)) && echo "  collecting arg $1" 1>&2
+                    myargs+=" ${1}"
+                    shift
+                done
+                unshift=1
+                snoop_events "${myargs[@]}"
+                ;;
+            -- | --driver)
+                shift
+                echo "cd ${ANUBIS_REPO_HOME}/ci; ./anubis-driver.py ${@}"
+                break
+                ;;
+            --help)
+                usage | more
                 ;;
             *)
-                shift
                 echo "Unknown flag ${1}"
                 ;;
         esac
         ((!unshift)) && shift
     done
-
-    (cd ${ANUBIS_REPO_HOME}/ci; ./anubis-driver.py $@)
 }
 
 main $@

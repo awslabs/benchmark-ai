@@ -923,7 +923,6 @@ main() {
                     exit $?
                     ;;
                 *)
-                    shift
                     echo "Unknown flag $1"
                     ;;
             esac
