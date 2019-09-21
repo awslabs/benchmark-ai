@@ -124,17 +124,26 @@ _prepare_credentials_map() {
 
 _validate_profile() {
     ((DEBUG)) && echo "validating profile for: $@"
-    local input_profile=${1:?"You must provide a profile value to validate"}
+    local input_profile=${1:-"${AWS_PROFILE}"}
     local match=0
     for profile in $(sed -r -n  's/\[(.*)\]/\1/p' "${AWS_CREDIENTIALS_FILE}"); do
         [[ "${profile}" == "${input_profile}" ]] && ((match++))
     done
     if ((match <= 0 )); then
-        printf "\033[01;31m[WARNING]\033[0m Unknown profile \"${input_profile}\"- not in your credentials config file!\n" >&2
+        printf "\033[01;31m[WARNING]\033[0m Unknown profile \"${input_profile}\" is not in your credentials config file!\n" >&2
         return 9
     else
         return 0
     fi
+}
+
+_check_profile_and_config_aligned() {
+    ((DEBUG)) && echo "Checking if profile and configuration are aligned"
+    local profile="${AWS_PROFILE}"
+    _validate_profile "${profile}"
+    local account=$(aws sts get-caller-identity --profile="${profile}" | jq -r '.Account')
+
+    #TODO check if that account value is set in the terraform state.
 }
 
 #--------------------------------------------------------------------
@@ -179,13 +188,13 @@ whoami() {
     #If that is not set then select [default]
     #print out the sts: Ex: aws sts get-caller-identity --profile=bellgav-dev
     echo "Profile: ${AWS_PROFILE}"
-    _validate_profile "${AWS_PROFILE}"
-    aws sts get-caller-identity --profile=${AWS_PROFILE}
+    _validate_profile "${AWS_PROFILE}" && \
+        aws sts get-caller-identity --profile=${AWS_PROFILE}
 }
 
 as() {
     ((DEBUG)) && echo "Calling \"as\" function with: $@"
-    [[ ! -f ~/.aws/credentials ]] && printf "\033[01;31m[WARNING]\033[0m CANNOT FIND YOUR AWS crendentials file!\n\n"
+    [[ ! -f ~/.aws/credentials ]] && printf "\033[01;31m[WARNING]\033[0m CANNOT FIND YOUR AWS crendentials file!\n\n" >&2
     local profile_name="${1:?You must provide a profile you which to switch to}"
 
     #_prepare_credentials_map
@@ -199,32 +208,68 @@ as() {
 sync_config_to_profile() {
     ((DEBUG)) && echo "Calling \"sync_config_to_profile\" function with: $@"
     echo "Current profile: ${AWS_PROFILE}"
+    if _check_profile_and_config_aligned; then
+        echo "already sync'ed!"
+        return 0
+    fi
+
+    (
+        local current_aws_region=$(aws configure get region --profile "${AWS_PROFILE}") #TODO - i this bullshit?
+        cd "${ANUBIS_REPO_HOME}"/baictl
+        [[ -d "${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform" ]] && mv -v "${ANUBIS_REPO_HOME}"/baictl/drivers/aws/cluster/.terraform{,.bak}
+        ./baictl sync infra --aws-region=${current_aws_region} --mode=pull && \
+            rm -rf ${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform.bak
+    )
 }
 
 list_configmaps() {
     ((DEBUG)) && echo "Calling \"list_configmaps\" function with: $@"
+    local kubeconfig_file="${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform/bai/kubeconfig"
+    if [[ ! -f "${kubeconfig_file}" ]]; then
+        printf "\033[01;31m[WARNING]\033[0m CANNOT FIND THE REQUIRED CONFIGURATION FILE!\n\n" >&2
+        exit 1
+    fi
+
     printf "\033[01;32m[${AWS_PROFILE}]\033[0m\n"
-    kubectl --kubeconfig="${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform/bai/kubeconfig" get configmaps
+    kubectl --kubeconfig="${kubeconfig_file}" get configmaps
 }
 
 show_configmap() {
     ((DEBUG)) && echo "Calling \"show_configmap\" function with: $@"
+    local kubeconfig_file="${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform/bai/kubeconfig"
+    if [[ ! -f "${kubeconfig_file}" ]]; then
+        printf "\033[01;31m[WARNING]\033[0m CANNOT FIND THE REQUIRED CONFIGURATION FILE!\n\n" >&2
+        exit 1
+    fi
+
     printf "\033[01;32m[${AWS_PROFILE}]\033[0m\n"
     local configmap_name=${1:-"outputs-infrastructure"}
-    kubectl --kubeconfig="${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform/bai/kubeconfig" get configmap "${configmap_name}" --output yaml
+    printf "\033[01;32m[ConfigMap: ${configmap_name}]\033[0m\n"
+    kubectl --kubeconfig="${kubeconfig_file}" get configmap "${configmap_name}" --output yaml
 }
 
 #TODO
+# To connect to ElasticSearch via Kibana
 query_logs() {
     ((DEBUG)) && echo "Calling \"query_logs\" function with: $@"
+    local ssh_config_file="${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform/bai/ssh-config" >&2
+    if [[ ! -f "${ssh_config_file}" ]]; then
+        printf "\033[01;31m[WARNING]\033[0m CANNOT FIND THE REQUIRED CONFIGURATION FILE!\n\n"
+        exit 1
+    fi
+    ssh -F "${ssh_config_file}" estunnel -N &
+    sleep 2
+    open http://localhost:9200/_plugin/kibana
 }
 
 #TODO
+# To connect to Prometheus' query front end, PromDash
 query_metrics() {
     ((DEBUG)) && echo "Calling \"query_metrics\" function with: $@"
 }
 
 #TODO
+# To connect *through* the bastion host to the listen directly to specified topic on Kaffka
 snoop_events() {
     ((DEBUG)) && echo "Calling \"snoop_events\" function with: $@"
 }
