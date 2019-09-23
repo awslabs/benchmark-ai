@@ -70,9 +70,6 @@ class KubernetesJobWatcher:
             k8s_job: V1Job = self.jobs_client.read_namespaced_job_status(self.job_id, self.kubernetes_namespace)
         except kubernetes.client.rest.ApiException as e:
             if e.status == 404:
-                logger.exception(
-                    "The specified job {job_id} does not exist. Stopping thread.".format(job_id=self.job_id)
-                )
                 return BenchmarkJobStatus.JOB_NOT_FOUND
 
             logger.exception(
