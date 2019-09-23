@@ -99,9 +99,10 @@ class SingleNodeStrategyKubernetesStatusInferrer:
     """
     BENCHMARK_CONTAINER_NAME = "benchmark"
 
-    def __init__(self, k8s_job_status: V1JobStatus, pods: List[V1Pod]):
-        self.k8s_job_status = k8s_job_status
-        self.pods = pods
+    def __init__(self, k8s_job_status: V1JobStatus, pods: List[V1Pod], backoff_limit: Optional[int] = None):
+        self.k8s_job_status: V1JobStatus = k8s_job_status
+        self.backoff_limit: int = backoff_limit
+        self.pods: List[V1Pod] = pods
 
     def status(self) -> BenchmarkJobStatus:
         for status_callback in [
@@ -122,8 +123,12 @@ class SingleNodeStrategyKubernetesStatusInferrer:
         )
 
     def _infer_status_from_job(self) -> Optional[BenchmarkJobStatus]:
-        if self.k8s_job_status.succeeded is not None:
+        if self.k8s_job_status.succeeded is not None and self.k8s_job_status.succeeded > 0:
             return BenchmarkJobStatus.SUCCEEDED
+
+        # Job has failed if the number of failure is greater or equal to the backoff limit
+        if self.backoff_limit and (self.k8s_job_status.failed >= self.backoff_limit):
+            return BenchmarkJobStatus.FAILED
 
     def _infer_status_from_pod(self):
         # TODO: Handle multiple PODs for the same Job since Jobs have a retry mechanism

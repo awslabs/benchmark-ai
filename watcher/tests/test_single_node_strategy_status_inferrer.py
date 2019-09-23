@@ -1,3 +1,5 @@
+import pytest
+
 from kubernetes.client import (
     V1JobStatus,
     V1Pod,
@@ -19,9 +21,20 @@ CONTAINER_STATE_TERMINATED_AND_FAILED = V1ContainerStateTerminated(exit_code=1)
 CONTAINER_STATE_TERMINATED_AND_SUCCEEDED = V1ContainerStateTerminated(exit_code=0)
 
 
-def test_job_succeeded():
-    inferrer = SingleNodeStrategyKubernetesStatusInferrer(V1JobStatus(succeeded=1), pods=[])
-    assert inferrer.status() == BenchmarkJobStatus.SUCCEEDED
+@pytest.mark.parametrize(
+    "failed,succeeded,backoff_limit,expected_status",
+    [
+        (4, 0, 4, BenchmarkJobStatus.FAILED),
+        (5, 0, 4, BenchmarkJobStatus.FAILED),
+        (4, None, 4, BenchmarkJobStatus.FAILED),
+        (5, None, 4, BenchmarkJobStatus.FAILED),
+        (3, 1, 4, BenchmarkJobStatus.SUCCEEDED),
+    ],
+)
+def test_job_status(failed, succeeded, backoff_limit, expected_status):
+    job_status = V1JobStatus(succeeded=succeeded, failed=failed)
+    inferrer = SingleNodeStrategyKubernetesStatusInferrer(job_status, pods=[], backoff_limit=backoff_limit)
+    assert inferrer.status() == expected_status
 
 
 def test_no_pods_scheduled_for_k8s_job_yet():

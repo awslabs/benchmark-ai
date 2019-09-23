@@ -22,6 +22,8 @@ def choose_status_from_benchmark_status(job_status: BenchmarkJobStatus) -> Tuple
         BenchmarkJobStatus.FAILED_AT_INIT_CONTAINERS,
     ):
         return Status.FAILED, "Job failed"
+    elif job_status == BenchmarkJobStatus.FAILED:
+        return Status.FAILED, "Job finished with failure"
     elif job_status == BenchmarkJobStatus.SUCCEEDED:
         return Status.SUCCEEDED, "Job finished with success"
     elif job_status == BenchmarkJobStatus.NO_POD_SCHEDULED:

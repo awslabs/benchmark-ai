@@ -1,17 +1,17 @@
 from __future__ import annotations
-from typing import Callable
 
 import itertools
-import kubernetes
 import time
-from kubernetes.client import V1Job, V1JobStatus, V1PodList, BatchV1Api, CoreV1Api
 from pathlib import Path
 from threading import Thread
+from typing import Callable, Tuple, Optional
+
+import kubernetes
+from kubernetes.client import V1Job, V1JobStatus, V1PodList, BatchV1Api, CoreV1Api
 
 from bai_watcher import service_logger
 from bai_watcher.status_inferrers.single_node import SingleNodeStrategyKubernetesStatusInferrer
 from bai_watcher.status_inferrers.status import BenchmarkJobStatus
-
 
 logger = service_logger.getChild(__name__)
 
@@ -52,8 +52,18 @@ class KubernetesJobWatcher:
         self.job_start_time = None
         self.metrics_available_message_sent = False
 
+        # Run result variables
+        self._success = None
+        self._error = None
+
     def start(self):
         self.thread.start()
+
+    def wait(self):
+        self.thread.join()
+
+    def get_result(self) -> Tuple[Optional[bool], Optional[Exception]]:
+        return self._success, self._error
 
     def get_status(self):
         try:
@@ -91,8 +101,14 @@ class KubernetesJobWatcher:
     def _thread_run_loop(self):
         # Use itertools.count() so that tests can mock the infinite loop
         for _ in itertools.count():
-            status = self.get_status()
-            stop_watching = self.callback(self.job_id, status, self)
-            if stop_watching:
-                return
-            time.sleep(SLEEP_TIME_BETWEEN_CHECKING_K8S_STATUS)
+            try:
+                status = self.get_status()
+                stop_watching = self.callback(self.job_id, status, self)
+                if stop_watching:
+                    self._success = True
+                    return
+                time.sleep(SLEEP_TIME_BETWEEN_CHECKING_K8S_STATUS)
+            except Exception as err:
+                logger.exception("Watcher loop failed with uncaught exception")
+                self._success = False
+                self._error = err
