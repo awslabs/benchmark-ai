@@ -134,7 +134,7 @@ resource "aws_cloudwatch_event_target" "invoke-bot-on-codepipeline-rule" {
 resource "aws_secretsmanager_secret" "secret-chime-hook-url" {
   # Disable the secret if there is no input
   count                   = var.chime_hook_url == "" ? 0 : 1
-  name                    = "ChimeHookUrl"
+  name                    = "ChimeWebHookUrl"
   description             = "Url to post messages to MXNet Berlin Chime channel"
   recovery_window_in_days = 0
 }
