@@ -91,6 +91,7 @@ def test_thread_run_loop_when_callback_returns_raises_will_end_loop(k8s_job_watc
     k8s_job_watcher._thread_run_loop()
 
     # assertions
+    assert k8s_job_watcher.callback.call_count == 1
     assert mock_time_sleep.call_args_list == []
     assert k8s_job_watcher.get_result() == (False, err)
 
