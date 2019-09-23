@@ -1,3 +1,5 @@
+import boto3
+
 from bai_kafka_utils.events import MetricsEvent
 from bai_kafka_utils.kafka_client import create_kafka_consumer, create_kafka_producer, metrics_json_deserializer
 from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService, KafkaServiceConfig
@@ -10,10 +12,16 @@ logger = service_logger.getChild(__name__)
 
 class CloudWatchExporterHandler(KafkaServiceCallback):
     def __init__(self):
-        pass
+        self.cloudwatch_client = boto3.client("cloudwatch")
 
     def handle_event(self, event: MetricsEvent, kafka_service: KafkaService):
         logger.info(event)
+        dimensions = [{"Name": name, "Value": val} for name, val in event.labels.items()]
+        # Put custom metrics
+        self.cloudwatch_client.put_metric_data(
+            MetricData=[{"MetricName": event.name, "Dimensions": dimensions, "Unit": "None", "Value": event.value}],
+            Namespace="ANUBIS/METRICS",
+        )
 
     def cleanup(self):
         pass

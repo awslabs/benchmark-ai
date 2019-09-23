@@ -187,4 +187,10 @@ spec:
         emptyDir: {{}}
       - name: scripts-volume
         emptyDir: {{}}
+      - name: podinfo
+        downwardAPI:
+          items:
+          - path: "labels"
+            fieldRef:
+              fieldPath: metadata.labels
   backoffLimit: 4

@@ -14,6 +14,7 @@ class InputValue:
     pod_name: Optional[str]
     pod_namespace: Optional[str]
     backend_args: Dict[str, str]
+    pod_labels: Dict[str, str]
 
 
 def get_input(argv, environ: Dict[str, str] = None) -> InputValue:
@@ -32,8 +33,21 @@ def get_input(argv, environ: Dict[str, str] = None) -> InputValue:
     )
 
     return InputValue(
-        backend=args.backend, backend_args=backend_args, pod_name=args.pod_name, pod_namespace=args.pod_namespace
+        backend=args.backend, backend_args=backend_args, pod_name=args.pod_name, pod_namespace=args.pod_namespace, pod_labels=load_pod_labels()
     )
+
+
+def load_pod_labels() -> Dict[str, str]:
+    with open("/etc/podinfo/labels") as f:
+        contents = f.readlines()
+
+    labels = {}
+
+    for line in contents:
+        k, v = line.split("=")
+        labels += {k: v}
+
+    return labels
 
 
 def create_dict_of_parameter_values_for_callable(prefix: str, values: Dict[str, str], method: Callable):

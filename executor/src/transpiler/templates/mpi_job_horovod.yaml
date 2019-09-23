@@ -253,6 +253,12 @@ spec:
         emptyDir: {{}}
       - name: scripts-volume
         emptyDir: {{}}
+      - name: podinfo
+        downwardAPI:
+          items:
+          - path: "labels"
+            fieldRef:
+              fieldPath: metadata.labels
       nodeSelector:
         beta.kubernetes.io/instance-type: {descriptor.instance_type}
         node.type: bai-worker
