@@ -1,4 +1,8 @@
-#!/usr/bin/env bash
+#!/usr/bin/env bash -x
+
+DEBUG=${DEBUG:-0}
+VERBOSE=${VERBOSE:-0}
+FORCE=0
 
 #--------------------------------------------------------------------
 # Conda setup
@@ -89,8 +93,6 @@ fi
 # Environment vars...
 #--------------------------------------------------------------------
 
-DEBUG=${DEBUG:-0}
-VERBOSE=${VERBOSE:-0}
 _t=$(realpath "${BASH_SOURCE}")
 ANUBIS_REPO_HOME=${ANUBIS_REPO_HOME:="${_t%/*}"}
 unset _t
@@ -127,10 +129,13 @@ _validate_profile() {
     local input_profile=${1:-"${AWS_PROFILE}"}
     local match=0
     for profile in $(sed -r -n  's/\[(.*)\]/\1/p' "${AWS_CREDIENTIALS_FILE}"); do
-        [[ "${profile}" == "${input_profile}" ]] && ((match++))
+        if [[ "${profile}" == "${input_profile}" ]]; then
+            ((match++))
+            break
+        fi
     done
     if ((match <= 0 )); then
-        printf "\033[01;31m[WARNING]\033[0m Unknown profile \"${input_profile}\" is not in your credentials config file!\n" >&2
+        printf "\033[01;31m[WARNING]\033[0m Unknown profile \"%s\" is not in your credentials config file!\n" "${input_profile}" >&2
         return 9
     else
         return 0
@@ -141,7 +146,17 @@ _check_profile_and_config_aligned() {
     ((DEBUG)) && echo "Checking if profile and configuration are aligned"
     local profile="${AWS_PROFILE}"
     _validate_profile "${profile}"
-    local account=$(aws sts get-caller-identity --profile="${profile}" | jq -r '.Account')
+    local aws_account_id=$(aws sts get-caller-identity --profile="${profile}" | jq -r '.Account')
+    local aws_account_id_tfstate=$(jq -r '.backend.config.bucket' "${ANUBIS_REPO_HOME}"/ci/.terraform/terraform.tfstate | sed -n -r 's/bai-ci-terraform-state-([0-9]*)-.*$/\1/p')
+
+    if [[ "${aws_account_id}" == "${aws_account_id_tfstate}" ]]; then
+        printf "\033[01;32mYES\033[0m, current profile and configuration are aligned...\n\n" >&2
+        return 0
+    else
+        printf "\033[01;31mNO!!!\033[0m, current profile and configuration are NOT aligned!
+Please run \033[01;33m--sync-config-to-profile\033[0m to align configuration.\n\n" >&2
+        return 1
+    fi
 
     #TODO check if that account value is set in the terraform state.
 }
@@ -160,8 +175,9 @@ This is the administrative command-line tool for the Anubis system
                 --whoami                 : tells you what the current active profile is
                 --as <profile name>      : changes your profile to the provided value
                 --sync-config-to-profile : synchronized the Anubis configuration state to match your current profile
+                --show-service-endpoint  : displays the hostname and port of the Anubis (bff) HTTP API endpoint (used to \"--register\" with anubis client tool)
                 --list-configmaps        : shows a listing of the current configuration maps
-                --show-configmaps <configmap name> : shows the configuration associated with the supplied configuration name
+                --show-configmap <configmap name> : shows the configuration associated with the supplied configuration name (default: outputs-infrastructure)
                 --query-logs             : creates connection to log search index and brings up front end in browser
                 --query-metrics          : creates connection to metrics index and rings up front end in browser
                 --snoop-events <topic name(s)> : streams event log to terminal
@@ -199,27 +215,48 @@ as() {
 
     #_prepare_credentials_map
 
-    _validate_profile "${profile_name}"
-    echo "${profile_name}" > ${ANUBIS_HOME}/whoami
-    export AWS_PROFILE=$(cat ${ANUBIS_HOME}/whoami)
+    if _validate_profile "${profile_name}"; then
+        echo "${profile_name}" > ${ANUBIS_HOME}/whoami
+        export AWS_PROFILE=$(cat ${ANUBIS_HOME}/whoami)
+    fi
 }
 
 #TODO
 sync_config_to_profile() {
     ((DEBUG)) && echo "Calling \"sync_config_to_profile\" function with: $@"
     echo "Current profile: ${AWS_PROFILE}"
-    if _check_profile_and_config_aligned; then
+
+    if ((! FORCE)) && _check_profile_and_config_aligned; then
         echo "already sync'ed!"
         return 0
     fi
 
+    ((DEBUG)) && echo "inspecting ${ANUBIS_REPO_HOME}/ci/.terraform/terraform.tfstate"
+    local aws_region_best_guess=$(jq -r '.backend.config.bucket' "${ANUBIS_REPO_HOME}"/ci/.terraform/terraform.tfstate | sed -n -r 's/bai-ci-terraform-state-[0-9]*-(.*)$/\1/p')
+    ((DEBUG)) && echo "aws_region = ${aws_region_best_guess}"
+
     (
-        local current_aws_region=$(aws configure get region --profile "${AWS_PROFILE}") #TODO - i this bullshit?
         cd "${ANUBIS_REPO_HOME}"/baictl
         [[ -d "${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform" ]] && mv -v "${ANUBIS_REPO_HOME}"/baictl/drivers/aws/cluster/.terraform{,.bak}
-        ./baictl sync infra --aws-region=${current_aws_region} --mode=pull && \
-            rm -rf ${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform.bak
+        local cmd="./baictl sync infra --aws-region=${aws_region_best_guess} --mode=pull"
+        ((DEBUG)) && echo "sync command: $cmd"
+        if $cmd; then
+            [[ -d "${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform" ]] && rm -rf "${ANUBIS_REPO_HOME}"/baictl/drivers/aws/cluster/.terraform.bak
+        else
+            echo "\033[01;31m[WARNING]\033[0m Not able to sync... Restoring terraform state"
+            mv -v "${ANUBIS_REPO_HOME}"/baictl/drivers/aws/cluster/.terraform.bak "${ANUBIS_REPO_HOME}"/baictl/drivers/aws/cluster/.terraform
+        fi
     )
+}
+
+show_service_endpoint() {
+    local kubeconfig_file="${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform/bai/kubeconfig"
+    local service_endpoint=$(kubectl --kubeconfig="${kubeconfig_file}" get service bai-bff -o json | jq '.status.loadBalancer.ingress[].hostname')
+    if [[ -z "${service_endpoint}" ]] ; then
+        printf "\033[01;31m[WARNING]\033[0m - Could not find service endpoint value, perhaps your configuration is not in sync.\n
+Please run check your identity \033[01;33m--whoami\033[0m and synchronize it with your installation with \033[01;33m--sync-config-to-profile\033[0m\n\n"
+    fi
+
 }
 
 list_configmaps() {
@@ -242,10 +279,13 @@ show_configmap() {
         exit 1
     fi
 
-    printf "\033[01;32m[${AWS_PROFILE}]\033[0m\n"
+    printf "\033[01;32m[%s]\033[0m\n" "${AWS_PROFILE}"
     local configmap_name=${1:-"outputs-infrastructure"}
-    printf "\033[01;32m[ConfigMap: ${configmap_name}]\033[0m\n"
+    printf "\033[01;32m[ConfigMap: %s]\033[0m\n" "${configmap_name}"
     kubectl --kubeconfig="${kubeconfig_file}" get configmap "${configmap_name}" --output yaml
+
+    #TODO - put warning to instruct to set up new account under --extra-users
+    #       do you have the correct
 }
 
 #TODO
@@ -281,6 +321,9 @@ main() {
         myargs=()
         local unshift=0
         case "${1}" in
+            --force | -f)
+                FORCE=1
+                ;;
             --list-profiles)
                 list_profiles
                 ;;
@@ -288,13 +331,16 @@ main() {
                 shift
                 whoami "${1}"
                 ;;
-            --as)
+            --as | --set-profile)
                 shift
                 as "${1}"
                 ;;
             --sync-config-to-profile)
                 shift
                 sync_config_to_profile "${1}"
+                ;;
+            --show-service-endpoint)
+                show_service_endpoint
                 ;;
             --list-configmaps)
                 list_configmaps ""
@@ -323,7 +369,7 @@ main() {
                 ;;
             -- | --driver)
                 shift
-                echo "cd ${ANUBIS_REPO_HOME}/ci; ./anubis-driver.py ${@}"
+                cd ${ANUBIS_REPO_HOME}/ci; ./anubis-driver.py ${@}
                 break
                 ;;
             --help)
