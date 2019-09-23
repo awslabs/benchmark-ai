@@ -56,6 +56,11 @@ spec:
                 key: status_topic
           - name: LOGGING_LEVEL
             value: "INFO"
+          - name: AWS_DEFAULT_REGION
+            valueFrom:
+              configMapKeyRef:
+                key: region
+                name: outputs-infrastructure
       nodeSelector:
         node.type: bai-services-cheap
       restartPolicy: Always

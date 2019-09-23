@@ -199,8 +199,7 @@ class KafkaService:
             for topic_partition, record in records.items():
                 topic = topic_partition.topic
                 for msg in record:
-                    if msg.value and not msg.value.type == topic:
-                        logger.warning(f"Unexpected event type {msg.value.type} in topic {topic}")
+                    self._check_mesage_belongs_to_topic(msg, topic)
                     if topic not in self._callbacks:
                         logger.warning(
                             f"Message received but not processed: {msg} \n" f"(No callbacks assigned to topic {topic})"
@@ -213,6 +212,11 @@ class KafkaService:
         distinct_callbacks = set(itertools.chain.from_iterable(self._callbacks.values()))
         for callback in distinct_callbacks:
             callback.cleanup()
+
+    @staticmethod
+    def _check_mesage_belongs_to_topic(msg, topic):
+        if msg.value and not msg.value.type == topic:
+            logger.warning(f"Unexpected event type {msg.value.type} in topic {topic}")
 
     def stop_loop(self):
         if not self._running:
