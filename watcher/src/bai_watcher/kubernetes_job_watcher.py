@@ -55,6 +55,9 @@ class KubernetesJobWatcher:
     def start(self):
         self.thread.start()
 
+    def wait(self):
+        self.thread.join()
+
     def get_status(self):
         try:
             k8s_job: V1Job = self.jobs_client.read_namespaced_job_status(self.job_id, self.kubernetes_namespace)
