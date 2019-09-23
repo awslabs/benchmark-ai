@@ -1,4 +1,4 @@
-from enum import auto, Enum
+from enum import Enum
 
 
 class BenchmarkJobStatus(Enum):
@@ -6,22 +6,23 @@ class BenchmarkJobStatus(Enum):
     https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/
     """
 
-    NO_POD_SCHEDULED = auto()
-    JOB_NOT_FOUND = auto()
+    NO_POD_SCHEDULED = "NO_POD_SCHEDULED"
+    JOB_NOT_FOUND = "JOB_NOT_FOUND"
 
-    FAILED_AT_BENCHMARK_CONTAINER = auto()
-    FAILED_AT_SIDECAR_CONTAINER = auto()  # Should never occur, but you never know!
-    FAILED_AT_INIT_CONTAINERS = auto()
+    FAILED_AT_BENCHMARK_CONTAINER = "FAILED_AT_BENCHMARK_CONTAINER"
+    FAILED_AT_SIDECAR_CONTAINER = "FAILED_AT_SIDECAR_CONTAINER"  # Should never occur, but you never know!
+    FAILED_AT_INIT_CONTAINERS = "FAILED_AT_INIT_CONTAINERS"
 
-    PENDING_AT_BENCHMARK_CONTAINER = auto()
-    PENDING_AT_SIDECAR_CONTAINER = auto()
-    PENDING_AT_INIT_CONTAINERS = auto()
-    PENDING_NODE_SCALING = auto()
+    PENDING_AT_BENCHMARK_CONTAINER = "PENDING_AT_BENCHMARK_CONTAINER"
+    PENDING_AT_SIDECAR_CONTAINER = "PENDING_AT_SIDECAR_CONTAINER"
+    PENDING_AT_INIT_CONTAINERS = "PENDING_AT_INIT_CONTAINERS"
+    PENDING_NODE_SCALING = "PENDING_NODE_SCALING"
 
-    RUNNING_AT_INIT_CONTAINERS = auto()
-    RUNNING_AT_MAIN_CONTAINERS = auto()
+    RUNNING_AT_INIT_CONTAINERS = "RUNNING_AT_INIT_CONTAINERS"
+    RUNNING_AT_MAIN_CONTAINERS = "RUNNING_AT_MAIN_CONTAINERS"
 
-    SUCCEEDED = auto()
+    SUCCEEDED = "SUCCEEDED"
+    FAILED = "FAILED"
 
     def is_final(self):
         """
@@ -33,6 +34,7 @@ class BenchmarkJobStatus(Enum):
             BenchmarkJobStatus.FAILED_AT_BENCHMARK_CONTAINER,
             BenchmarkJobStatus.FAILED_AT_SIDECAR_CONTAINER,
             BenchmarkJobStatus.JOB_NOT_FOUND,
+            BenchmarkJobStatus.FAILED,
         )
 
     def is_running(self):
