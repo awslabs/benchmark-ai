@@ -15,6 +15,7 @@ RUN conda env create -f /tmp/environment.yml -p /opt/env
 # Frequent changes #
 ####################
 
+COPY ./watcher /data/benchmark-ai/watcher
 COPY ./kafka-utils /data/benchmark-ai/kafka-utils
 COPY ./$SERVICE /data/benchmark-ai/$SERVICE
 WORKDIR /data/benchmark-ai/$SERVICE
