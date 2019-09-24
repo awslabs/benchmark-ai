@@ -165,7 +165,21 @@ Please run \033[01;33m--sync-config-to-profile\033[0m to align configuration.\n\
 # Primary functions
 #--------------------------------------------------------------------
 
+banner() {
+    printf'
+                      _     _                     _
+                     | |   (_)                   | |
+     __ _ _ __  _   _| |__  _ ___ ______ ___  ___| |_ _   _ _ __
+    /  _ |  _ \| | | |  _ \| / __|______/ __|/ _ \ __| | | |  _ \
+   | (_| | | | | |_| | |_) | \__ \      \__ \  __/ |_| |_| | |_) |
+    \__,_|_| |_|\__,_|_.__/|_|___/      |___/\___|\__|\__,_| .__/
+                                                            | |
+                                                            |_|
+'
+}
+
 usage() {
+    banner
     printf "
 usage:
 
@@ -295,7 +309,7 @@ show_configmap() {
 # To connect to ElasticSearch via Kibana
 query_logs() {
     ((DEBUG)) && echo "Calling \"query_logs\" function with: $@"
-    local ssh_config_file="${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform/bai/ssh-config" >&2
+    local ssh_config_file="${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform/bai/ssh-config"
     if [[ ! -f "${ssh_config_file}" ]]; then
         printf "\033[01;31m[WARNING]\033[0m CANNOT FIND THE REQUIRED CONFIGURATION FILE!\n\n"
         exit 1
