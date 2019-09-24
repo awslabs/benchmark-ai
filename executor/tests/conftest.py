@@ -81,6 +81,7 @@ def bai_config():
         puller_docker_image="test/puller:image",
         metrics_pusher_docker_image="test/metrics_pusher:image",
         metrics_extractor_docker_image="test/metrics_extractor:image",
+        job_status_trigger_docker_image="test/job_status_trigger:image",
         cron_job_docker_image="test/cron_job:image",
         suppress_job_affinity=True,
     )
