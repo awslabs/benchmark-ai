@@ -33,7 +33,11 @@ def get_input(argv, environ: Dict[str, str] = None) -> InputValue:
     )
 
     return InputValue(
-        backend=args.backend, backend_args=backend_args, pod_name=args.pod_name, pod_namespace=args.pod_namespace, pod_labels=load_pod_labels()
+        backend=args.backend,
+        backend_args=backend_args,
+        pod_name=args.pod_name,
+        pod_namespace=args.pod_namespace,
+        pod_labels=load_pod_labels(),
     )
 
 

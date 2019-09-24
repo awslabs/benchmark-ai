@@ -49,7 +49,9 @@ def listen_to_fifo_and_emit_metrics(backend: Backend):
 
 
 def start_loop(metrics_pusher_input: InputValue):
-    backend = create_backend(metrics_pusher_input.backend, metrics_pusher_input.pod_labels, **metrics_pusher_input.backend_args)
+    backend = create_backend(
+        metrics_pusher_input.backend, metrics_pusher_input.pod_labels, **metrics_pusher_input.backend_args
+    )
 
     class SigtermReceived(Exception):
         pass
