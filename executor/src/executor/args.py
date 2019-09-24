@@ -60,6 +60,13 @@ def get_args(argv, env=None):
     )
 
     parser.add(
+        "--transpiler-job-status-trigger-docker-image",
+        env_var="TRANSPILER_JOB_STATUS_TRIGGER_DOCKER_IMAGE",
+        dest="job_status_trigger_docker_image",
+        help="Docker image used by inference server benchmark to sync client and server",
+    )
+
+    parser.add(
         "--transpiler-cron-job-docker-image",
         env_var="TRANSPILER_CRON_JOB_DOCKER_IMAGE",
         dest="cron_job_docker_image",
@@ -110,6 +117,7 @@ def create_bai_config(args):
         metrics_pusher_docker_image=args.metrics_pusher_docker_image,
         metrics_extractor_docker_image=args.metrics_extractor_docker_image,
         cron_job_docker_image=args.cron_job_docker_image,
+        job_status_trigger_docker_image=args.job_status_trigger_docker_image,
         suppress_job_affinity=args.suppress_job_affinity,
     )
 
