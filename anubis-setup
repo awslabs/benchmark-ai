@@ -4,6 +4,9 @@ DEBUG=${DEBUG:-0}
 VERBOSE=${VERBOSE:-0}
 FORCE=0
 
+#TODO - create a info page that goes in depth about this script and how to use it (docs/anubis-setup.md)
+#TODO - put warning to instruct users on how to set up access for a new account via --extra-users
+
 #--------------------------------------------------------------------
 # Conda setup
 #--------------------------------------------------------------------
@@ -89,6 +92,14 @@ if ! source "${CONDA_EXE%/*}"/activate anubis-setup >& /dev/null; then
     conda_usage
 fi
 
+#------
+#Misc
+#------
+#Manual setup, (without using Pipelines)
+# ci/baictl create infra --aws-prefix-list-id=pl-f8a64391 --aws-region=us-west-2
+# build-and-deploy-all-services
+#------
+
 #--------------------------------------------------------------------
 # Environment vars...
 #--------------------------------------------------------------------
@@ -96,22 +107,14 @@ fi
 _t=$(realpath "${BASH_SOURCE}")
 ANUBIS_REPO_HOME=${ANUBIS_REPO_HOME:="${_t%/*}"}
 unset _t
-((DEBUG)) && printf "ANUBIS_REPO_HOME: ${ANUBIS_REPO_HOME}\n\n"
+((DEBUG)) && printf "ANUBIS_REPO_HOME: %s\n\n" "${ANUBIS_REPO_HOME}"
 
 AWS_CREDIENTIALS_FILE="${HOME}/.aws/credentials"
 declare -r ANUBIS_HOME=${HOME}/.anubis
 export AWS_PROFILE=${AWS_PROFILE:=$(cat "${ANUBIS_HOME}"/whoami)}
 
-#TODO
-#Manual setup, (pipeline free)
-# ci/baictl create infra --aws-prefix-list-id=pl-f8a64391 --aws-region=us-west-2
-# build-and-deploy-all-services
-
-#Pipeline setup
-# ci/anubis-pipeline.py --region=us-west-1
-
 #--------------------------------------------------------------------
-# Helper / Utility functions
+# Helper / Utility functions ("private")
 #--------------------------------------------------------------------
 
 _prepare_credentials_map() {
@@ -128,7 +131,7 @@ _validate_profile() {
     ((DEBUG)) && echo "validating profile for: $*"
     local input_profile=${1:-"${AWS_PROFILE}"}
     local match=0
-    for profile in $(sed -r -n  's/\[(.*)\]/\1/p' "${AWS_CREDIENTIALS_FILE}"); do
+    for profile in $(sed -r -n  's/\[(.*)\]/\1/p' "${AWS_CREDIENTIALS_FILE}" | xargs); do
         if [[ "${profile}" == "${input_profile}" ]]; then
             ((match++))
             break
@@ -157,9 +160,20 @@ _check_profile_and_config_aligned() {
 Please run \033[01;33m--sync-config-to-profile\033[0m to align configuration.\n\n" >&2
         return 1
     fi
-
-    #TODO check if that account value is set in the terraform state.
 }
+
+_kubeconfig_file() {
+    local kubeconfig_file="${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform/bai/kubeconfig"
+    if [[ ! -f "${kubeconfig_file}" ]]; then
+        printf "\033[01;31m[WARNING]\033[0m CANNOT FIND THE REQUIRED CONFIGURATION FILE!
+          Check that...
+          1. You have completed the installation process.
+          2. Your profile and configuration are aligned (--sync-config-to-profile )\n" >&2
+        ((!DEBUG)) && exit 1
+    fi
+    echo "${kubeconfig_file}"
+}
+
 
 #--------------------------------------------------------------------
 # Primary functions
@@ -175,6 +189,16 @@ banner() {
     \__,_|_| |_|\__,_|_.__/|_|___/      |___/\___|\__|\__,_| .__/
                                                             | |
                                                             |_|
+
+Chance Bair
+Gavin Bell
+Anton Chernov
+Jose Contreras
+Edison Muenz
+Per da Silva
+Stanislav Tsukrov
+Marco Abreu
+...
 '
 }
 
@@ -212,7 +236,13 @@ This is the administrative command-line tool for the Anubis system
 
 sanity_check(){
     ((DEBUG)) && echo "Calling \"sanity_check\"..."
-    #TODO call checklist heree
+    #TODO call full sanity checklist here
+    #[ ] The user and the configuration are aligned
+    #[ ] The front end API service (BFF) can be pinged (and provide endpoint)
+    #[ ] Can sync with the latest TF state
+    #[ ] Bastion is reachable, the SSH keys work
+    #[ ] Kafka, Kubernetes, Prometheus, Grafana, ElasticSearch are alive and well
+    #[ ] Services are alive and can process a "tracer" event all the way through
 }
 
 list_profiles(){
@@ -273,7 +303,7 @@ sync_config_to_profile() {
 }
 
 show_service_endpoint() {
-    local kubeconfig_file="${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform/bai/kubeconfig"
+    local kubeconfig_file=$(_kubeconfig_file)
     local service_endpoint=$(kubectl --kubeconfig="${kubeconfig_file}" get service bai-bff -o json | jq '.status.loadBalancer.ingress[].hostname')
     if [[ -z "${service_endpoint}" ]] ; then
         printf "\033[01;31m[WARNING]\033[0m - Could not find service endpoint value, perhaps your configuration is not in sync.\n
@@ -284,35 +314,21 @@ Please run check your identity \033[01;33m--whoami\033[0m and synchronize it wit
 
 list_configmaps() {
     ((DEBUG)) && echo "Calling \"list_configmaps\" function with: $*"
-    local kubeconfig_file="${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform/bai/kubeconfig"
-    if [[ ! -f "${kubeconfig_file}" ]]; then
-        printf "\033[01;31m[WARNING]\033[0m CANNOT FIND THE REQUIRED CONFIGURATION FILE!\n\n" >&2
-        exit 1
-    fi
-
+    local kubeconfig_file=$(_kubeconfig_file)
     printf "\033[01;32m[%s]\033[0m\n" "${AWS_PROFILE}" >&2
     kubectl --kubeconfig="${kubeconfig_file}" get configmaps
 }
 
 show_configmap() {
     ((DEBUG)) && echo "Calling \"show_configmap\" function with: $*"
-    local kubeconfig_file="${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform/bai/kubeconfig"
-    if [[ ! -f "${kubeconfig_file}" ]]; then
-        printf "\033[01;31m[WARNING]\033[0m CANNOT FIND THE REQUIRED CONFIGURATION FILE!\n\n" >&2
-        exit 1
-    fi
-
+    local kubeconfig_file=$(_kubeconfig_file)
     printf "\033[01;32m[%s]\033[0m\n" "${AWS_PROFILE}"
     local configmap_name=${1:-"outputs-infrastructure"}
     printf "\033[01;32m[ConfigMap: %s]\033[0m\n" "${configmap_name}" >&2
     kubectl --kubeconfig="${kubeconfig_file}" get configmap "${configmap_name}" --output yaml
-
-    #TODO - put warning to instruct to set up new account under --extra-users
-    #       do you have the correct
 }
 
-#TODO
-# To connect to ElasticSearch via Kibana
+# To connect to Kibana front end for ElasticSearch
 query_logs() {
     ((DEBUG)) && echo "Calling \"query_logs\" function with: $*"
     local ssh_config_file="${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform/bai/ssh-config"
@@ -328,11 +344,7 @@ query_logs() {
 # To connect to Prometheus' query front end, PromDash
 query_metrics() {
     ((DEBUG)) && echo "Calling \"query_metrics\" function with: $*"
-    local kubeconfig_file="${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform/bai/kubeconfig"
-    if [[ ! -f "${kubeconfig_file}" ]]; then
-        printf "\033[01;31m[WARNING]\033[0m CANNOT FIND THE REQUIRED CONFIGURATION FILE!\n\n" >&2
-        ((!DEBUG)) && exit 1
-    fi
+    local kubeconfig_file=$(_kubeconfig_file)
     (
         if "${ANUBIS_REPO_HOME}"/baictl/baictl port-forward infra --service="prometheus"; then
             [[ $(uname) == "Darwin" ]] && open http://localhost:9090
@@ -344,11 +356,7 @@ query_metrics() {
 # To connect to Grafana dashboard
 query_graphs() {
     ((DEBUG)) && echo "Calling \"query_graphs\" function with: $*"
-    local kubeconfig_file="${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform/bai/kubeconfig"
-    if [[ ! -f "${kubeconfig_file}" ]]; then
-        printf "\033[01;31m[WARNING]\033[0m CANNOT FIND THE REQUIRED CONFIGURATION FILE!\n\n" >&2
-        ((!DEBUG)) && exit 1
-    fi
+    local kubeconfig_file=$(_kubeconfig_file)
     (
         if "${ANUBIS_REPO_HOME}"/baictl/baictl port-forward infra --service="grafana"; then
             [[ $(uname) == "Darwin" ]] && open http://localhost:3000
@@ -359,18 +367,13 @@ query_graphs() {
 # To connect to Alert Manager dashboard
 query_alerts() {
     ((DEBUG)) && echo "Calling \"query_alerts\" function with: $*"
-    local kubeconfig_file="${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform/bai/kubeconfig"
-    if [[ ! -f "${kubeconfig_file}" ]]; then
-        printf "\033[01;31m[WARNING]\033[0m CANNOT FIND THE REQUIRED CONFIGURATION FILE!\n\n" >&2
-        ((!DEBUG)) && exit 1
-    fi
+    local kubeconfig_file=$(_kubeconfig_file)
     (
         if "${ANUBIS_REPO_HOME}"/baictl/baictl port-forward infra --service="alertmanager"; then
             [[ $(uname) == "Darwin" ]] && open http://localhost:9093
         fi
     )
 }
-
 
 #TODO
 # To connect *through* the bastion host to the listen directly to specified topic on Kaffka
