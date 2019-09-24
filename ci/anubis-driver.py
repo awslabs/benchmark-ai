@@ -226,14 +226,16 @@ def get_service_endpoint(region, session):
 
         # Get CreateInfra stage status
         for stage in resp["stageStates"]:
-            if stage["stageName"].lower() == "createinfra":
+            if stage["stageName"].lower() == "deploy":
                 if "latestExecution" in stage:
-                    codepipeline_createinfra_status = stage["latestExecution"]["status"]
+                    for action in stage["actionStates"]:
+                        if "bff" in action["actionName"]:
+                            codepipeline_bff_status = action["latestExecution"]["status"]
                 else:
-                    codepipeline_createinfra_status = "NotRunYet"
+                    codepipeline_bff_status = "NotRunYet"
 
         # Pull down kubeconfig and get service endpoint
-        if codepipeline_createinfra_status == "Succeeded":
+        if codepipeline_bff_status == "Succeeded":
             sync_baictl(region, session)
             kubeconfig_path = os.path.join(
                 os.path.dirname(__file__), "../baictl/drivers/aws/cluster/.terraform/bai/kubeconfig"
@@ -249,16 +251,21 @@ def get_service_endpoint(region, session):
             service_endpoint = json.loads(service_endpoint)["status"]["loadBalancer"]["ingress"][0]["hostname"]
             print(f"=> Your Anubis service endpoint: {service_endpoint}")
             return service_endpoint
-        elif codepipeline_createinfra_status == "Failed":
-            raise Exception(f"Unable to get service endpoint since `CreateInfra` stage failed")
+        elif codepipeline_bff_status == "Failed":
+            raise Exception(f"Unable to get service endpoint since `bff` deploy stage failed")
 
         dots = dots + "."
-        print(f"-> Waiting for CreateInfra step to finish {dots}", end="\r", flush=True)
+        print(f"-> Waiting for BFF Deploy step to finish {dots}", end="\r", flush=True)
         time.sleep(60)
 
 
 def register_service_endpoint(service_endpoint):
-    anubis_srse_output = subprocess.run(["./bin/anubis", "--show-registered-service-endpoint"], cwd="../bff",stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    anubis_srse_output = subprocess.run(
+        ["./bin/anubis", "--show-registered-service-endpoint"],
+        cwd="../bff",
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
     anubis_srse_output = str(anubis_srse_output)
     if service_endpoint in anubis_srse_output:
         return
