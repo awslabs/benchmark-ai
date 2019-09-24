@@ -438,7 +438,7 @@ main() {
                 shift
                 until [[ -n "$(echo "${1}" | sed -rn '/^\s*--/p')" || -z "${1}" ]]; do
                     ((DEBUG)) && echo "  collecting arg $1" 1>&2
-                    myargs+=" ${1}"
+                    myargs+=("${1}")
                     shift
                 done
                 unshift=1
