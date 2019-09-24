@@ -1,4 +1,4 @@
-#!/usr/bin/env bash -x
+#!/usr/bin/env bash
 
 DEBUG=${DEBUG:-0}
 VERBOSE=${VERBOSE:-0}
@@ -190,7 +190,7 @@ This is the administrative command-line tool for the Anubis system
 
  " "${0##*/}" "${AWS_CREDIENTIALS_FILE}"
 
-    (cd ${ANUBIS_REPO_HOME}/ci; ./anubis-driver.py --help)
+    cd ${ANUBIS_REPO_HOME}/ci; ./anubis-driver.py --help
     exit 0
 }
 
@@ -237,11 +237,14 @@ sync_config_to_profile() {
 
     (
         cd "${ANUBIS_REPO_HOME}"/baictl
+        echo "Checking for terraform data..."
         [[ -d "${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform" ]] && mv -v "${ANUBIS_REPO_HOME}"/baictl/drivers/aws/cluster/.terraform{,.bak}
         local cmd="./baictl sync infra --aws-region=${aws_region_best_guess} --mode=pull"
-        ((DEBUG)) && echo "sync command: $cmd"
+        echo "Synchronizing terraform data: $cmd"
         if $cmd; then
-            [[ -d "${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform" ]] && rm -rf "${ANUBIS_REPO_HOME}"/baictl/drivers/aws/cluster/.terraform.bak
+            echo "Synchronization successful..."
+            [[ -d "${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform" ]] && rm -rvf "${ANUBIS_REPO_HOME}"/baictl/drivers/aws/cluster/.terraform.bak
+            echo "Housekeeping..."
         else
             echo "\033[01;31m[WARNING]\033[0m Not able to sync... Restoring terraform state"
             mv -v "${ANUBIS_REPO_HOME}"/baictl/drivers/aws/cluster/.terraform.bak "${ANUBIS_REPO_HOME}"/baictl/drivers/aws/cluster/.terraform
