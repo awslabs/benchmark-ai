@@ -1,0 +1,10 @@
+name: job-status-trigger
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pytest
+  - pytest-cov
+  - pytest-mock
+  - pip:
+    - pytest-cases

@@ -1,0 +1,14 @@
+name: job-status-trigger
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python 3.7.*
+  - python-kubernetes 8.0.*
+  - configargparse 0.14.*
+  - setuptools == 41.0.1
+  - kubernetes >= 1.13
+  - flake8
+  - pip
+  - pip:
+      - ConfigArgParse
