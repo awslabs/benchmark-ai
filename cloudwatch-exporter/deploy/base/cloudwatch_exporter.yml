@@ -28,6 +28,7 @@ spec:
       containers:
         - name: cloudwatch-exporter
           image: "benchmarkai/cloudwatch-exporter"
+          imagePullPolicy: Always
           env:
           - name: KAFKA_BOOTSTRAP_SERVERS
             valueFrom:
