@@ -100,7 +100,7 @@ unset _t
 
 AWS_CREDIENTIALS_FILE="${HOME}/.aws/credentials"
 declare -r ANUBIS_HOME=${HOME}/.anubis
-AWS_PROFILE=${AWS_PROFILE:=$(cat ${ANUBIS_HOME}/whoami)}
+export AWS_PROFILE=${AWS_PROFILE:=$(cat "${ANUBIS_HOME}"/whoami)}
 
 #TODO
 #Manual setup, (pipeline free)
@@ -116,9 +116,9 @@ AWS_PROFILE=${AWS_PROFILE:=$(cat ${ANUBIS_HOME}/whoami)}
 
 _prepare_credentials_map() {
     sed -r -n  's/\[(.*)\]/\1/p' "${AWS_CREDIENTIALS_FILE}"
-    for profile in $(sed -r -n  's/\[(.*)\]/\1/p' "${AWS_CREDIENTIALS_FILE}"); do
+    for profile in $(sed -r -n  's/\[(.*)\]/\1/p' "${AWS_CREDIENTIALS_FILE}"| xargs); do
         account=$(aws sts get-caller-identity --profile="${profile}" | jq -r '.Account')
-        echo " looking at profile "$profile
+        echo " looking at profile: ${profile}"
         account-to-profile["${account}"]="${profile}"
         profile-to-account["${profile}"]="${account}"
     done
@@ -190,7 +190,7 @@ This is the administrative command-line tool for the Anubis system
 
  " "${0##*/}" "${AWS_CREDIENTIALS_FILE}"
 
-    cd ${ANUBIS_REPO_HOME}/ci; ./anubis-driver.py --help
+    (cd ${ANUBIS_REPO_HOME}/ci; AWS_PROFILE=${AWS_PROFILE} ./anubis-driver.py --help)
     exit 0
 }
 
@@ -320,6 +320,7 @@ snoop_events() {
 
 
 main() {
+    ((DEBUG)) && echo "Hello, ${AWS_PROFILE}..."
     while [ -n "${1}" ]; do
         myargs=()
         local unshift=0
@@ -372,7 +373,8 @@ main() {
                 ;;
             -- | --driver)
                 shift
-                cd ${ANUBIS_REPO_HOME}/ci; ./anubis-driver.py ${@}
+                echo ${AWS_PROFILE}
+                (cd ${ANUBIS_REPO_HOME}/ci; AWS_PROFILE=${AWS_PROFILE} ./anubis-driver.py ${@})
                 break
                 ;;
             --help)
