@@ -322,7 +322,7 @@ query_logs() {
     fi
     ssh -F "${ssh_config_file}" estunnel -N &
     sleep 2
-    open http://localhost:9200/_plugin/kibana
+    [[ $(uname) == "Darwin" ]] && open http://localhost:9200/_plugin/kibana
 }
 
 # To connect to Prometheus' query front end, PromDash
@@ -333,8 +333,12 @@ query_metrics() {
         printf "\033[01;31m[WARNING]\033[0m CANNOT FIND THE REQUIRED CONFIGURATION FILE!\n\n" >&2
         ((!DEBUG)) && exit 1
     fi
-    ("${ANUBIS_REPO_HOME}"/baictl/baictl port-forward infra --service="prometheus" &&\
-         open http://localhost:9090)
+    (
+        if "${ANUBIS_REPO_HOME}"/baictl/baictl port-forward infra --service="prometheus"; then
+            [[ $(uname) == "Darwin" ]] && open http://localhost:9090
+        fi
+    )
+
 }
 
 # To connect to Grafana dashboard
@@ -345,8 +349,11 @@ query_graphs() {
         printf "\033[01;31m[WARNING]\033[0m CANNOT FIND THE REQUIRED CONFIGURATION FILE!\n\n" >&2
         ((!DEBUG)) && exit 1
     fi
-    ("${ANUBIS_REPO_HOME}"/baictl/baictl port-forward infra --service="grafana" &&\
-         open http://127.0.0.1:3000)
+    (
+        if "${ANUBIS_REPO_HOME}"/baictl/baictl port-forward infra --service="grafana"; then
+            [[ $(uname) == "Darwin" ]] && open http://localhost:3000
+        fi
+    )
 }
 
 # To connect to Alert Manager dashboard
@@ -357,8 +364,11 @@ query_alerts() {
         printf "\033[01;31m[WARNING]\033[0m CANNOT FIND THE REQUIRED CONFIGURATION FILE!\n\n" >&2
         ((!DEBUG)) && exit 1
     fi
-    ("${ANUBIS_REPO_HOME}"/baictl/baictl port-forward infra --service="alertmanager" &&\
-         open http://localhost:9093)
+    (
+        if "${ANUBIS_REPO_HOME}"/baictl/baictl port-forward infra --service="alertmanager"; then
+            [[ $(uname) == "Darwin" ]] && open http://localhost:9093
+        fi
+    )
 }
 
 
