@@ -104,8 +104,9 @@ class KubernetesJobWatcher:
                 if stop_watching:
                     self._success = True
                     return
-                time.sleep(SLEEP_TIME_BETWEEN_CHECKING_K8S_STATUS)
             except Exception as err:
                 logger.exception("Watcher loop failed with uncaught exception")
                 self._success = False
                 self._error = err
+                return
+            time.sleep(SLEEP_TIME_BETWEEN_CHECKING_K8S_STATUS)
