@@ -17,6 +17,7 @@ PULLER_DOCKER_IMAGE_TAG =  $(DOCKER_REGISTRY)/puller:$(DOCKER_IMAGE_LABEL)
 METRICS_PUSHER_DOCKER_IMAGE_TAG =  $(DOCKER_REGISTRY)/metrics-pusher:$(DOCKER_IMAGE_LABEL)
 METRICS_EXTRACTOR_DOCKER_IMAGE_TAG =  $(DOCKER_REGISTRY)/metrics-extractor:$(DOCKER_IMAGE_LABEL)
 CRON_JOB_DOCKER_IMAGE_TAG =  $(DOCKER_REGISTRY)/anubis-cron-job:$(DOCKER_IMAGE_LABEL)
+JOB_STATUS_TRIGGER_DOCKER_IMAGE_TAG =  $(DOCKER_REGISTRY)/job_status_trigger:$(DOCKER_IMAGE_LABEL)
 
 deploy.yml: _deploy_venv
 	echo "Kustomize deployment"
@@ -25,6 +26,7 @@ deploy.yml: _deploy_venv
 		-e 's\|@@METRICS_PUSHER_DOCKER_IMAGE_TAG@@\|$(METRICS_PUSHER_DOCKER_IMAGE_TAG)\|g' \
 		-e 's\|@@METRICS_EXTRACTOR_DOCKER_IMAGE_TAG@@\|$(METRICS_EXTRACTOR_DOCKER_IMAGE_TAG)\|g' \
 		-e 's\|@@CRON_JOB_DOCKER_IMAGE_TAG@@\|$(CRON_JOB_DOCKER_IMAGE_TAG)\|g' \
+		-e 's\|@@JOB_STATUS_TRIGGER_DOCKER_IMAGE_TAG@@\|$(JOB_STATUS_TRIGGER_DOCKER_IMAGE_TAG)\|g' \
 		-e 's\|@@STAGE@@\|$(STAGE)\|g' deploy/kustomization.tpl.yml > deploy/kustomization.yml
 	$(KUBECTL) kustomize deploy > deploy.yml
 	rm -f deploy/kustomization.yml
