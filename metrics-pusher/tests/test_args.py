@@ -6,7 +6,7 @@ from bai_metrics_pusher.args import get_input, InputValue, create_dict_of_parame
 ALL_ARGS = f"--pod-namespace pod-namespace --pod-name pod-name "
 
 
-def test_get_input_with_stdout(mocker):
+def test_get_input_with_stdout():
     expected_cfg = InputValue(backend="stdout", pod_name="pod-name", pod_namespace="pod-namespace", backend_args={})
     cfg = get_input(ALL_ARGS + " --backend stdout", environ={})
     assert cfg == expected_cfg
