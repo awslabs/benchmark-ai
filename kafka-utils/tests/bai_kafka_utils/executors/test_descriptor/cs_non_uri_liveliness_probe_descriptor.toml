@@ -1,0 +1,36 @@
+[hardware]
+instance_type = "t3.small"
+strategy = "client_server"
+
+[env]
+docker_image = "alpine"
+
+# Server definition
+[server]
+# Harware on which to run the server
+[server.hardware]
+instance_type = "p3.4xlarge"
+# The server environment definition
+[server.env]
+# The server image
+docker_image = "jlcont/server:270219"
+# Args for the docker container
+# [Opt] Whether to run the container in privileged mode (default is false)
+privileged = false
+# [Opt - default is false] Whether more than 64MB shared memory is needed for containers
+# (See docker's -shm option)
+extended_shm = true
+# array ports that are exposed by the server
+ports = [8080, 8081]
+# [Opt] Server iveliness probe url
+liveliness_probe = "blah blah"
+# [Opt] Server readiness probe url
+readiness_probe = "http://localhost:8081/iamok"
+# Server start command
+start_command = ""
+# [Opt] Arguments to pass to server start command
+start_command_args = ""
+# [Opt] Server environment variables
+[server.env.vars]
+VAR1 = "value1"
+VAR2 = "value2"

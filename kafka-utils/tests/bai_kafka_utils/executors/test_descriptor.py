@@ -3,13 +3,28 @@ import pytest
 from bai_kafka_utils.executors.descriptor import DescriptorError, Descriptor, ONE_PER_GPU, DistributedStrategy
 
 
-@pytest.mark.parametrize("filename", ["missing_keys_descriptor.toml", "missing_section_descriptor.toml"])
+@pytest.mark.parametrize(
+    "filename",
+    [
+        "missing_keys_descriptor.toml",
+        "missing_section_descriptor.toml",
+        "cs_missing_server_section_descriptor.toml",
+        "cs_missing_docker_image_descriptor.toml",
+        "cs_missing_hardware_descriptor.toml",
+        "cs_missing_ports_descriptor.toml",
+        "cs_missing_start_command_descriptor.toml",
+        "cs_non_uri_liveliness_probe_descriptor.toml",
+        "cs_non_uri_readiness_probe_descriptor.toml",
+    ],
+)
 def test_wrong_descriptor(datadir, filename, descriptor_config):
     with pytest.raises(DescriptorError):
         Descriptor.from_toml_file(str(datadir / filename), descriptor_config)
 
 
-@pytest.mark.parametrize("filename", ["minimal_descriptor.toml"])
+@pytest.mark.parametrize(
+    "filename", ["minimal_descriptor.toml", "cs_minimal_descriptor.toml", "cs_with_optionals_descriptor.toml"]
+)
 def test_minimal_descriptor(datadir, filename, descriptor_config):
     Descriptor.from_toml_file(str(datadir / filename), descriptor_config)
 

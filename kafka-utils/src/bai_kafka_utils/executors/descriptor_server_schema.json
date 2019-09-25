@@ -1,0 +1,49 @@
+{
+  "$id": "descriptor_server_schema",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "server",
+  "description": "Schema for the server component of the descriptor toml",
+  "$comment": "TODO: Extend this schema to reflect the whole descriptor",
+
+  "definitions": {
+    "server_hardware": {
+      "type": "object",
+      "properties": {
+        "instance_type": { "type":  "string" }
+      },
+      "additionalProperties": false,
+      "required": ["instance_type"]
+    },
+    "server_env": {
+      "definitions": {
+        "env_vars": {
+          "type": "object",
+          "additionalProperties": {"type": "string"}
+        }
+      },
+      "type": "object",
+      "properties": {
+        "docker_image": { "type": "string" },
+        "privileged":   { "type": "boolean" },
+        "extended_shm": { "type": "boolean" },
+        "ports": { "type":  "array", "items":  { "type": "number" } },
+        "liveliness_probe": { "type": "string", "format": "uri" },
+        "readiness_probe": { "type":  "string", "format": "uri" },
+        "start_command": { "type":  "string" },
+        "start_command_args": { "type": "string" },
+        "vars": { "$ref": "#/definitions/server_env/definitions/env_vars" }
+      },
+      "additionalProperties": false,
+      "required": ["docker_image", "ports", "start_command"]
+    }
+  },
+
+  "type": "object",
+
+  "properties": {
+    "env": { "$ref": "#/definitions/server_env" },
+    "hardware": { "$ref": "#/definitions/server_hardware" }
+  },
+  "required": ["hardware", "env"],
+  "additionalProperties": false
+}

@@ -12,6 +12,8 @@ dependencies:
   - python-kubernetes 9.0.*
   - python-crontab >= 2.3
   - addict 2.2.*
+  - jsonschema >= 3.0.2
+  - rfc3987 >= v1.3.8
   - pip:
       - ConfigArgParse
       - dataclasses-json==0.2.7

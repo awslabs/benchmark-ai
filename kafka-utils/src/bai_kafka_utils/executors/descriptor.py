@@ -1,10 +1,12 @@
+import json
 import logging
-from enum import Enum
-
-import toml
+import os
 from dataclasses import dataclass
-
+from enum import Enum
 from typing import Dict, List
+
+import jsonschema
+import toml
 from crontab import CronSlices
 
 from bai_kafka_utils.executors.util import ec2_instance_info
@@ -23,6 +25,7 @@ class DescriptorError(Exception):
 class DistributedStrategy(Enum):
     SINGLE_NODE = "single_node"
     HOROVOD = "horovod"
+    CLIENT_SERVER = "client_server"
 
 
 SINGLE_RUN_SCHEDULING = "single_run"
@@ -92,6 +95,15 @@ class Descriptor:
 
         self.env_vars = descriptor_data.get("env", {}).get("vars", {})
 
+        self.server = descriptor_data.get("server", {})
+
+        # set boolean defaults
+        if "env" in self.server:
+            self.server["env"]["privileged"] = self.server["env"].get("privileged", False)
+            self.server["env"]["extended_shm"] = self.server["env"].get("extended_shm", True)
+
+        self.is_client_server = self.strategy == DistributedStrategy.CLIENT_SERVER
+
         self._validate()
 
     def __eq__(self, other):
@@ -116,6 +128,12 @@ class Descriptor:
         descriptor_toml = toml.load(toml_file)
         return Descriptor(descriptor_toml, config)
 
+    @classmethod
+    def get_server_schema(cls):
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(current_dir, "descriptor_server_schema.json"), encoding="utf-8") as f:
+            return json.loads(f.read(), encoding="utf-8")
+
     def _validate(self):
         """
         Validates that this descriptor is valid
@@ -128,6 +146,14 @@ class Descriptor:
 
         if self.framework_version and not self.framework:
             raise DescriptorError("Framework version is present, but not framework")
+
+        if self.is_client_server:
+            try:
+                jsonschema.validate(
+                    self.server, schema=Descriptor.get_server_schema(), format_checker=jsonschema.draft7_format_checker
+                )
+            except jsonschema.ValidationError as err:
+                raise DescriptorError(f"Invalid [server] definition: {err}") from err
 
         if self.distributed:
             if self.num_instances <= 1:

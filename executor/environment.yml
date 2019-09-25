@@ -13,6 +13,7 @@ dependencies:
   - python-crontab >= 2.3
   - flake8
   - kafka-python 1.4.6
+  - jsonschema >= 3.0.2
   - pip
   - pip:
     - dataclasses-json==0.2.7
