@@ -80,9 +80,9 @@ def mock_kubernetes_job_matcher_class(mocker, mock_kubernetes_job_matcher):
 
 
 @fixture
-def mock_setup_kubernetes_apis(mocker, mock_core_api, mock_batch_api):
+def mock_get_kubernetes_api_clients(mocker, mock_core_api, mock_batch_api):
     return mocker.patch(
-        "bai_job_status_trigger.__main__.setup_kubernetes_apis", return_value=(mock_core_api, mock_batch_api)
+        "bai_job_status_trigger.__main__.get_kubernetes_api_clients", return_value=(mock_core_api, mock_batch_api)
     )
 
 
@@ -114,7 +114,7 @@ def test_get_kubernetes_api_clients(
 
 
 def test_main_happy_path(
-    mock_setup_kubernetes_apis,
+    mock_get_kubernetes_api_clients,
     mock_kubernetes_job_matcher_class,
     mock_kubernetes_job_matcher,
     mock_core_api,
@@ -127,7 +127,7 @@ def test_main_happy_path(
     main()
 
     # assertions
-    mock_setup_kubernetes_apis.assert_called_once()
+    mock_get_kubernetes_api_clients.assert_called_once()
 
     # Job watcher properly initialised
     assert mock_kubernetes_job_matcher_class.call_args_list == [
@@ -146,7 +146,7 @@ def test_main_happy_path(
 
 
 def test_main_error(
-    mock_setup_kubernetes_apis,
+    mock_get_kubernetes_api_clients,
     mock_kubernetes_job_matcher_class,
     mock_kubernetes_job_matcher,
     mock_core_api,
