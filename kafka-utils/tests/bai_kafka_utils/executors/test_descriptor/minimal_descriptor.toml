@@ -1,3 +1,5 @@
+# Minimal descriptor to get a single_node benchmark going
+
 [hardware]
 instance_type = "t3.small"
 strategy = "single_node"

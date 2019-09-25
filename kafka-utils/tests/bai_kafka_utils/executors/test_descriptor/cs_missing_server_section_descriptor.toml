@@ -1,0 +1,7 @@
+[hardware]
+instance_type = "t3.small"
+strategy = "client_server"
+
+[env]
+docker_image = "alpine"
+

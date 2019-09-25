@@ -1,0 +1,18 @@
+[hardware]
+instance_type = "t3.small"
+strategy = "client_server"
+
+[env]
+docker_image = "alpine"
+
+# Server definition
+[server]
+# Harware on which to run the server
+[server.hardware]
+instance_type = "p3.4xlarge"
+# The server environment definition
+[server.env]
+# array ports that are exposed by the server
+ports = [8080, 8081]
+# Server start command
+start_command = ""

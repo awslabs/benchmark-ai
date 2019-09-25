@@ -2,4 +2,4 @@ transpiler_puller_mount_chmod: 777
 transpiler_puller_docker_image: stsukrov/s3dataprovider
 
 # descriptor config
-transpiler_valid_strategies: single_node,horovod
+transpiler_valid_strategies: single_node,horovod,client_server
