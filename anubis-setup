@@ -165,11 +165,15 @@ Please run \033[01;33m--sync-config-to-profile\033[0m to align configuration.\n\
 _kubeconfig_file() {
     local kubeconfig_file="${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform/bai/kubeconfig"
     if [[ ! -f "${kubeconfig_file}" ]]; then
-        printf "\033[01;31m[WARNING]\033[0m CANNOT FIND THE REQUIRED CONFIGURATION FILE!
+        printf "\033[01;31m[WARNING]\033[0m CANNOT FIND THE REQUIRED CONFIGURATION FILE!" >&2
+        ((DEBUG)) && printf "\n          (%s)" "${kubeconfig_file}" >&2
+        printf "
           Check that...
-          1. You have completed the installation process.
-          2. Your profile and configuration are aligned (--sync-config-to-profile )\n" >&2
-        ((!DEBUG)) && exit 1
+          1. You have completed the (re)installation process.
+             (\033[01;33manubis-setup -- --region us-west-2 --prefix-list pl-xxxxxxxx\033[0m)
+          2. Your profile and configuration are aligned
+             (\033[01;33manubis-setup --sync-config-to-profile\033[0m)\n" >&2
+        if ((DEBUG == 0)); then exit 1; fi
     fi
     echo "${kubeconfig_file}"
 }
@@ -198,7 +202,6 @@ Edison Muenz
 Per da Silva
 Stanislav Tsukrov
 Marco Abreu
-...
 '
 }
 
