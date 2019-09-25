@@ -1,5 +1,0 @@
-bases:
-  - @@STAGE@@
-images:
-  - name: benchmarkai/metrics-cloudwatch-exporter
-    newName: @@DOCKER_IMAGE_TAG@@

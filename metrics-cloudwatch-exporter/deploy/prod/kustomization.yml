@@ -1,4 +1,0 @@
-bases:
-  - ../base
-patchesStrategicMerge:
-  - metrics-cloudwatch-executor.yml
