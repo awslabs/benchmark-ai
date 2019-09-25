@@ -11,7 +11,6 @@ logger = logging.getLogger("backend.elasticsearch")
 
 
 class ElasticsearchBackend(Backend):
-
     def __init__(self, action_id: str, client_id: str, *, hostname: str = "localhost", port: int = 9200):
         self.action_id = action_id
         self.client_id = client_id
