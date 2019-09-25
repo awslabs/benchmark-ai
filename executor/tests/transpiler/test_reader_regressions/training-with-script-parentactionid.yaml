@@ -182,12 +182,6 @@ spec:
         emptyDir: {}
       - name: scripts-volume
         emptyDir: {}
-      - name: podinfo
-        downwardAPI:
-          items:
-          - path: labels
-            fieldRef:
-              fieldPath: metadata.labels
       - name: dshm
         emptyDir:
           medium: Memory

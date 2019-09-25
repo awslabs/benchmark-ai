@@ -4,7 +4,6 @@ from typing import List
 from bai_metrics_pusher.args import get_input, InputValue, create_dict_of_parameter_values_for_callable
 
 ALL_ARGS = f"--pod-namespace pod-namespace --pod-name pod-name "
-POD_LABELS_DICT = {"action-id": "1"}
 
 
 def test_get_input_with_stdout(mocker):

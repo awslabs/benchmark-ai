@@ -24,11 +24,7 @@ def freeze_time_to_1_second_after_epoch(mocker):
     yield
 
 
-POD_LABELS = {"action-id": "1", "client-id": "2"}
-
-
 def test_1_metric(mock_kafka_producer):
-<<<<<<< HEAD
     kafka_backend = KafkaBackend("action-id", "client-id", topic="KAFKA_TOPIC", key="KAFKA_KEY")
 
     kafka_backend.emit({"metric": 0.1})
@@ -36,20 +32,12 @@ def test_1_metric(mock_kafka_producer):
     expected_metric_object = KafkaExporterMetric(
         name="metric", value=0.1, timestamp=1000, labels={"action-id": "action-id", "client-id": "client-id"}
     )
-=======
-    kafka_backend = KafkaBackend(POD_LABELS, topic="KAFKA_TOPIC", key="KAFKA_KEY")
-
-    kafka_backend.emit({"metric": 0.1})
-
-    expected_metric_object = KafkaExporterMetric(name="metric", value=0.1, timestamp=1000, labels=POD_LABELS)
->>>>>>> [metrics-pusher] get pod labels
     assert mock_kafka_producer.send.call_args_list == [
         call("KAFKA_TOPIC", value=expected_metric_object, key="KAFKA_KEY")
     ]
 
 
 def test_2_metrics(mock_kafka_producer):
-<<<<<<< HEAD
     kafka_backend = KafkaBackend("action-id", "client-id", topic="KAFKA_TOPIC", key="KAFKA_KEY")
     kafka_backend.emit({"metric1": 0.1, "metric2": 0.2})
 
@@ -59,13 +47,6 @@ def test_2_metrics(mock_kafka_producer):
     expected_metric_object2 = KafkaExporterMetric(
         name="metric2", value=0.2, timestamp=1000, labels={"action-id": "action-id", "client-id": "client-id"}
     )
-=======
-    kafka_backend = KafkaBackend(POD_LABELS, topic="KAFKA_TOPIC", key="KAFKA_KEY")
-    kafka_backend.emit({"metric1": 0.1, "metric2": 0.2})
-
-    expected_metric_object1 = KafkaExporterMetric(name="metric1", value=0.1, timestamp=1000, labels=POD_LABELS)
-    expected_metric_object2 = KafkaExporterMetric(name="metric2", value=0.2, timestamp=1000, labels=POD_LABELS)
->>>>>>> [metrics-pusher] get pod labels
     assert mock_kafka_producer.send.call_args_list == [
         call("KAFKA_TOPIC", value=expected_metric_object1, key="KAFKA_KEY"),
         call("KAFKA_TOPIC", value=expected_metric_object2, key="KAFKA_KEY"),
@@ -73,10 +54,6 @@ def test_2_metrics(mock_kafka_producer):
 
 
 def test_close(mock_kafka_producer):
-<<<<<<< HEAD
     kafka_backend = KafkaBackend("action-id", "client-id", topic="KAFKA_TOPIC", key="KAFKA_KEY")
-=======
-    kafka_backend = KafkaBackend(POD_LABELS, topic="KAFKA_TOPIC", key="KAFKA_KEY")
->>>>>>> [metrics-pusher] get pod labels
     kafka_backend.close()
     assert mock_kafka_producer.close.call_args_list == [call()]

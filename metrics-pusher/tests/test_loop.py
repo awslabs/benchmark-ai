@@ -35,7 +35,7 @@ def test_listen_to_fifo_and_emit_metrics():
 
 def test_start_loop(mock_start_kubernetes_pod_watcher):
     metrics_pusher_input = InputValue(
-        backend="stdout", pod_name="pod-name", pod_namespace="pod-namespace", backend_args={"pod_labels": {}}
+        backend="stdout", pod_name="pod-name", pod_namespace="pod-namespace", backend_args={}
     )
     with create_mock_for_get_fifo_from_string('{"metric1": 1}\n{"metric2": 2}\n'):
         start_loop(metrics_pusher_input)
