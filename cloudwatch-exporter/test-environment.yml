@@ -1,0 +1,12 @@
+name: cloudwatch-exporter
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pytest
+  - mock
+  - pytest-mock
+  - pytest-datadir
+  - pytest-regressions
+  - timeout-decorator
+  - boto3 1.9.*

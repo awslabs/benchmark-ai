@@ -16,6 +16,7 @@ from bai_kafka_utils.events import (
     CommandRequestPayload,
     BenchmarkJob,
     FileSystemObject,
+    MetricsEvent,
 )
 
 
@@ -41,8 +42,26 @@ def base_event(base_event_as_dict):
 
 
 @pytest.fixture
+def metrics_event_as_dict():
+    return {"name": "metric-name", "value": 58, "timestamp": 1000, "labels": {"label": "value"}}
+
+
+@pytest.fixture
+def metrics_event(metrics_event_as_dict):
+    return MetricsEvent.from_json(json.dumps(metrics_event_as_dict))
+
+
+@pytest.fixture
 def dataset():
     return DataSet("http://foo.com")
+
+
+def test_metrics_event(metrics_event, metrics_event_as_dict):
+    assert metrics_event.name == metrics_event_as_dict["name"]
+    assert metrics_event.value == metrics_event_as_dict["value"]
+    assert metrics_event.timestamp == metrics_event_as_dict["timestamp"]
+    for k in metrics_event.labels.keys():
+        assert metrics_event.labels[k] == metrics_event_as_dict["labels"][k]
 
 
 # Rather a boundary test for DataSet optional

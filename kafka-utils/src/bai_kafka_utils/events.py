@@ -286,6 +286,17 @@ class StatusMessageBenchmarkEvent(BenchmarkEvent):
         return create_from_object(StatusMessageBenchmarkEvent, event, payload=payload, visited=[])
 
 
+@dataclass_json
+@dataclass
+class MetricsEvent:
+    name: str
+    # When an argument is annotated as having type float, an argument of type int is acceptable
+    # https://www.python.org/dev/peps/pep-0484/#id27
+    value: float
+    timestamp: int
+    labels: Optional[Dict[str, str]] = None
+
+
 T = TypeVar("T")
 
 
@@ -310,5 +321,6 @@ def get_topic_event_type(topic: str):
         "BAI_APP_STATUS": StatusMessageBenchmarkEvent,
         "CMD_SUBMIT": CommandRequestEvent,
         "CMD_RETURN": CommandResponseEvent,
+        "BAI_METRICS": MetricsEvent,
     }
     return topic_to_event_type[topic]

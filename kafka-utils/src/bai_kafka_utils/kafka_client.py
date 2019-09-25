@@ -7,7 +7,7 @@ from kafka import KafkaConsumer, KafkaProducer
 from kafka.admin import KafkaAdminClient, NewTopic
 from kafka.errors import TopicAlreadyExistsError
 
-from bai_kafka_utils.events import BenchmarkEvent
+from bai_kafka_utils.events import BenchmarkEvent, MetricsEvent
 from bai_kafka_utils.events import get_topic_event_type
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
 from bai_kafka_utils.utils import DEFAULT_ENCODING
@@ -53,7 +53,9 @@ def create_kafka_consumer_producer(
     )
 
 
-def create_kafka_consumer(bootstrap_servers: List[str], group_id: str, topics: List[str]) -> kafka.KafkaConsumer:
+def create_kafka_consumer(
+    bootstrap_servers: List[str], group_id: str, topics: List[str], value_deserializer=None
+) -> kafka.KafkaConsumer:
     def json_deserializer(msg_value):
         try:
             envelope = BenchmarkEvent.from_json(msg_value.decode(DEFAULT_ENCODING))
@@ -74,14 +76,28 @@ def create_kafka_consumer(bootstrap_servers: List[str], group_id: str, topics: L
             logger.exception("Failed to deserialize key %s", key)
             return None
 
+    value_deserializer = value_deserializer if value_deserializer is not None else json_deserializer
+
     return kafka.KafkaConsumer(
         *topics,
         bootstrap_servers=bootstrap_servers,
         group_id=group_id,
-        value_deserializer=json_deserializer,
+        value_deserializer=value_deserializer,
         key_deserializer=key_deserializer,
         connections_max_idle_ms=MAX_IDLE_TIME_MS,
     )
+
+
+def metrics_json_deserializer(msg_value):
+    # JSON deserializer for metric events
+    try:
+        return MetricsEvent.from_json(msg_value.decode(DEFAULT_ENCODING))
+    # Our json deserializer can raise anything - constructor can raise anything).
+    # Handling JsonDecodeError and KeyError is not enough
+    # For example TypeError is possible as well. So let's play safe.
+    except Exception:
+        logger.exception("Failed to deserialize %s", msg_value)
+        return None
 
 
 def create_kafka_producer(bootstrap_servers: List[str]) -> kafka.KafkaProducer:

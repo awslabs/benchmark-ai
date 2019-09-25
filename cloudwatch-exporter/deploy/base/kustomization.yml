@@ -1,0 +1,3 @@
+resources:
+  - cloudwatch_exporter.yml
+  - config.yml

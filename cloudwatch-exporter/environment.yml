@@ -1,0 +1,15 @@
+name: cloudwatch-exporter
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python 3.7.*
+  - setuptools == 41.0.1
+  - ConfigArgParse >= 0.13
+  - python-crontab >= 2.3
+  - flake8
+  - kafka-python 1.4.6
+  - pip
+  - pip:
+    - dataclasses-json==0.2.7
+    - dacite
