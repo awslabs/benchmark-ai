@@ -43,8 +43,10 @@ class KafkaBackend(Backend):
     <kafka_topic_name>_<metric_name>{foolabel="foolabelvalue", barlabel="barlabelvalue"} <metric_value> <epoch_value>
     """
 
-    def __init__(self, job_id: str, *, topic: str, bootstrap_servers: List[str] = None, key: str = None):
-        self._job_id = job_id
+    def __init__(
+        self, action_id: str, client_id: str, *, topic: str, bootstrap_servers: List[str] = None, key: str = None
+    ):
+        self.labels = {"action-id": action_id, "client-id": client_id}
         if bootstrap_servers is None:
             bootstrap_servers = ["localhost:9092"]
         self._producer = create_kafka_producer(bootstrap_servers)
@@ -56,10 +58,7 @@ class KafkaBackend(Backend):
         timestamp_in_millis = int(now.timestamp()) * 1000
         for metric_name, metric_value in metrics.items():
             metric_object = KafkaExporterMetric(
-                name=metric_name,
-                value=metric_value,
-                timestamp=timestamp_in_millis,
-                labels={"job_id": self._job_id, "sender": "metrics-pusher"},
+                name=metric_name, value=metric_value, timestamp=timestamp_in_millis, labels=self.labels
             )
 
             # TODO: Handle KafkaTimeoutError

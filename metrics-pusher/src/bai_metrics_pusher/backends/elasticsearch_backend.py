@@ -11,8 +11,9 @@ logger = logging.getLogger("backend.elasticsearch")
 
 
 class ElasticsearchBackend(Backend):
-    def __init__(self, job_id: str, *, hostname: str = "localhost", port: int = 9200):
-        self.job_id = job_id
+    def __init__(self, action_id: str, client_id: str, *, hostname: str = "localhost", port: int = 9200):
+        self.action_id = action_id
+        self.client_id = client_id
 
         verify_certs = True
 
@@ -25,7 +26,8 @@ class ElasticsearchBackend(Backend):
     def emit(self, metrics: Dict[str, AcceptedMetricTypes]):
         timestamp = datetime.datetime.utcnow().isoformat()
         doc = {
-            "job-id": self.job_id,
+            "action-id": self.action_id,
+            "client-id": self.client_id,
             "timestamp": timestamp,
             "metrics": metrics,
             "tracing": {"service": "metrics-pusher"},

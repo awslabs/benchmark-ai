@@ -18,7 +18,8 @@ def test_get_input_with_kafka():
         pod_name="pod-name",
         pod_namespace="pod-namespace",
         backend_args={
-            "job_id": "123",
+            "action_id": "123",
+            "client_id": "456",
             "key": "value",
             "topic": "KAFKA_TOPIC",
             "bootstrap_servers": ["server1:9092", "server2:9092"],
@@ -27,7 +28,8 @@ def test_get_input_with_kafka():
     cfg = get_input(
         ALL_ARGS + " --backend kafka",
         environ={
-            "BACKEND_ARG_JOB_ID": "123",
+            "BACKEND_ARG_ACTION_ID": "123",
+            "BACKEND_ARG_CLIENT_ID": "456",
             "BACKEND_ARG_TOPIC": "KAFKA_TOPIC",
             "BACKEND_ARG_KEY": "value",
             "BACKEND_ARG_BOOTSTRAP_SERVERS": "server1:9092,server2:9092",
@@ -41,11 +43,16 @@ def test_get_input_with_elasticsearch():
         backend="elasticsearch",
         pod_name="pod-name",
         pod_namespace="pod-namespace",
-        backend_args={"job_id": "123", "hostname": "es-hostname", "port": 9200},
+        backend_args={"action_id": "123", "client_id": "456", "hostname": "es-hostname", "port": 9200},
     )
     cfg = get_input(
         ALL_ARGS + " --backend elasticsearch",
-        environ={"BACKEND_ARG_JOB_ID": "123", "BACKEND_ARG_HOSTNAME": "es-hostname", "BACKEND_ARG_PORT": "9200"},
+        environ={
+            "BACKEND_ARG_ACTION_ID": "123",
+            "BACKEND_ARG_CLIENT_ID": "456",
+            "BACKEND_ARG_HOSTNAME": "es-hostname",
+            "BACKEND_ARG_PORT": "9200",
+        },
     )
     assert cfg == expected_cfg
 
