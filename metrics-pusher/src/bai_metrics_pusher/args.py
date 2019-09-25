@@ -14,12 +14,17 @@ class InputValue:
     pod_name: Optional[str]
     pod_namespace: Optional[str]
     backend_args: Dict[str, str]
-    pod_labels: Dict[str, str]
 
 
-def get_input(argv, environ: Dict[str, str] = None) -> InputValue:
+def get_input(argv, environ: Dict[str, str] = None, pod_labels: Dict[str, str] = None) -> InputValue:
+    prefix = "backend_arg_"
+
     if environ is None:
         environ = os.environ
+
+    if pod_labels is None:
+        pod_labels = load_pod_labels()
+
     parser = configargparse.ArgumentParser(auto_env_var_prefix="", prog="bai-metrics-pusher")
     parser.add_argument("--backend", default="stdout", choices=list(BACKENDS.keys()))
     parser.add_argument("--pod-name")
@@ -28,16 +33,14 @@ def get_input(argv, environ: Dict[str, str] = None) -> InputValue:
     args = parser.parse_args(argv)
 
     environ = {key.lower(): value for key, value in environ.items()}
+    environ[prefix + "pod_labels"] = pod_labels
+
     backend_args = create_dict_of_parameter_values_for_callable(
-        prefix="backend_arg_", values=environ, method=BACKENDS[args.backend]
+        prefix=prefix, values=environ, method=BACKENDS[args.backend]
     )
 
     return InputValue(
-        backend=args.backend,
-        backend_args=backend_args,
-        pod_name=args.pod_name,
-        pod_namespace=args.pod_namespace,
-        pod_labels=load_pod_labels(),
+        backend=args.backend, backend_args=backend_args, pod_name=args.pod_name, pod_namespace=args.pod_namespace
     )
 
 
@@ -105,7 +108,9 @@ def create_dict_of_parameter_values_for_callable(prefix: str, values: Dict[str, 
 
         string_value = values[key]
 
-        if parameter_type == typing.List[str]:
+        if parameter_type == typing.Dict[str, str]:
+            value = string_value
+        elif parameter_type == typing.List[str]:
             value = string_value.split(",")
         elif parameter_type == typing.List[int]:
             value = map(int, string_value.split(","))

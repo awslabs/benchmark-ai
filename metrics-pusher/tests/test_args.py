@@ -4,10 +4,15 @@ from typing import List
 from bai_metrics_pusher.args import get_input, InputValue, create_dict_of_parameter_values_for_callable
 
 ALL_ARGS = f"--pod-namespace pod-namespace --pod-name pod-name "
+POD_LABELS_DICT = {"action-id": "1"}
 
 
-def test_get_input_with_stdout():
-    expected_cfg = InputValue(backend="stdout", pod_name="pod-name", pod_namespace="pod-namespace", backend_args={})
+def test_get_input_with_stdout(mocker):
+    mocker.patch("bai_metrics_pusher.args.load_pod_labels", return_value={})
+
+    expected_cfg = InputValue(
+        backend="stdout", pod_name="pod-name", pod_namespace="pod-namespace", backend_args={}
+    )
     cfg = get_input(ALL_ARGS + " --backend stdout", environ={})
     assert cfg == expected_cfg
 
