@@ -16,7 +16,8 @@ variable "projects" {
     "prometheus-kafka-topic-exporter",
     "sm-executor",
     "anubis-cron-job",
-    "job-status-trigger"
+    "job-status-trigger",
+    "cloudwatch-exporter"
   ]
 }
 

@@ -14,6 +14,8 @@ spec:
       labels:
         app: benchmark-ai
         service: cloudwatch-exporter
+      annotations:
+        iam.amazonaws.com/role: cloudwatch-exporter
     spec:
       affinity:
         podAntiAffinity:
@@ -28,6 +30,7 @@ spec:
       containers:
         - name: cloudwatch-exporter
           image: "benchmarkai/cloudwatch-exporter"
+          imagePullPolicy: Always
           env:
           - name: KAFKA_BOOTSTRAP_SERVERS
             valueFrom:
@@ -56,6 +59,11 @@ spec:
                 key: status_topic
           - name: LOGGING_LEVEL
             value: "INFO"
+          - name: AWS_DEFAULT_REGION
+            valueFrom:
+              configMapKeyRef:
+                key: region
+                name: outputs-infrastructure
       nodeSelector:
         node.type: bai-services-cheap
       restartPolicy: Always
