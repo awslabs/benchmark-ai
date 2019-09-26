@@ -131,7 +131,7 @@ class Descriptor:
         self.is_client_server = self.strategy == DistributedStrategy.CLIENT_SERVER
 
         if self.is_client_server:
-            self.server = self._make_service(descriptor_data.get("server", {}))
+            self.server = self._make_server_descriptor(descriptor_data.get("server", {}))
 
         self._validate()
 
@@ -164,7 +164,7 @@ class Descriptor:
             return json.loads(f.read(), encoding="utf-8")
 
     @staticmethod
-    def _make_service(server_dict: Dict[str, Any]):
+    def _make_server_descriptor(server_dict: Dict[str, Any]):
         # Validate against schema
         try:
             jsonschema.validate(

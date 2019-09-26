@@ -1,0 +1,279 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: benchmark-job-id
+  labels:
+    app: benchmark-ai
+    action-id: ACTION_ID
+    client-id: CLIENT_ID
+    created-by: executor
+    parent-action-id: parentactionid
+spec:
+  template:
+    metadata:
+      labels:
+        app: benchmark-ai
+        action-id: ACTION_ID
+        client-id: CLIENT_ID
+        created-by: executor
+        parent-action-id: parentactionid
+      annotations:
+        iam.amazonaws.com/role: benchmark-host
+    spec:
+      serviceAccountName: metrics-pusher
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - benchmark-ai
+            topologyKey: kubernetes.io/hostname
+      initContainers:
+      - name: data-puller
+        image: benchmarkai/puller:3115770
+        env:
+        - name: S3_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: outputs-infrastructure
+              key: s3_endpoint
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            configMapKeyRef:
+              name: s3
+              key: access-key-id
+              optional: true
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: s3
+              key: secret-access-key
+              optional: true
+        volumeMounts:
+        - name: datasets-volume
+          mountPath: /data
+        args:
+        - puller-data
+        - object-name/dir0,777,p0:object-name/dir1,777,p1
+      - name: inference-server-lock
+        image: benchmarkai/job-status-trigger:3115770
+        env:
+        - name: JOB_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: JOB_NAME
+          value: isbenchmark-job-id
+        - name: TRIGGER_STATUSES
+          value: '[RUNNING_AT_MAIN_CONTAINERS]'
+        - name: COMMAND
+          value: exit 0
+        - name: JOB_NOT_FOUND_GRACE_PERIOD_SECONDS
+          value: '30'
+      containers:
+      - name: benchmark
+        image: jlcont/benchmarking:270219
+        resources:
+          limits:
+            nvidia.com/gpu: 0
+        command:
+        - python
+        - /home/benchmark/benchmark_server.py
+        - --host=${INFERENCE_SERVER_HOST}
+        - --port=${INFERENCE_SERVER_PORT}
+        - --request-timeout=5
+        securityContext:
+          privileged: false
+        env:
+        - name: BENCHMARK_AI
+          value: fifo
+        - name: BENCHMARK_AI_FIFO_FILEPATH
+          value: /tmp/benchmark-ai/fifo
+        - name: BENCHMARK_AI_FIFO_MAX_WAIT_TIME
+          value: '60'
+        - name: INFERENCE_SERVER_HOST
+          value: default.isbenchmark-job-id
+        - name: INFERENCE_SERVER_PORT
+          value: '8080'
+        - name: INFERENCE_SERVER_PORT_1
+          value: '8081'
+        volumeMounts:
+        - mountPath: /tmp/benchmark-ai
+          name: benchmark-ai
+        - name: datasets-volume
+          mountPath: ~/data/tf-imagenet/train
+          subPath: p0
+        - name: datasets-volume
+          mountPath: ~/data/tf-imagenet/validation
+          subPath: p1
+        - name: dshm
+          mountPath: /dev/shm
+      - name: sidecar
+        image: benchmarkai/metrics-pusher:ffed580
+        env:
+        - name: BENCHMARK_AI_FIFO_FILEPATH
+          value: /tmp/benchmark-ai/fifo
+        - name: BACKEND
+          value: kafka
+        - name: BACKEND_ARG_JOB_ID
+          value: benchmark-job-id
+        - name: BACKEND_ARG_BOOTSTRAP_SERVERS
+          valueFrom:
+            configMapKeyRef:
+              name: outputs-infrastructure
+              key: msk_bootstrap_brokers
+        - name: BACKEND_ARG_KEY
+          value: CLIENT_ID
+        - name: BACKEND_ARG_TOPIC
+          value: BAI_METRICS
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        volumeMounts:
+        - mountPath: /tmp/benchmark-ai
+          name: benchmark-ai
+      - name: extractor-sidecar
+        image: benchmarkai/metrics-extractor:b0b9185
+        env:
+        - name: ANUBIS_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: ANUBIS_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: ANUBIS_METRICS
+          value: '[]'
+        - name: BENCHMARK_AI
+          value: fifo
+        - name: BENCHMARK_AI_FIFO_FILEPATH
+          value: /tmp/benchmark-ai/fifo
+        volumeMounts:
+        - mountPath: /tmp/benchmark-ai
+          name: benchmark-ai
+      nodeSelector:
+        beta.kubernetes.io/instance-type: t3.medium
+        node.type: bai-worker
+        failure-domain.beta.kubernetes.io/zone: us-east-1a
+      restartPolicy: Never
+      volumes:
+      - name: benchmark-ai
+        emptyDir: {}
+      - name: datasets-volume
+        emptyDir: {}
+      - name: dshm
+        emptyDir:
+          medium: Memory
+  backoffLimit: 4
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: isbenchmark-job-id
+  labels:
+    action-id: ACTION_ID
+    client-id: CLIENT_ID
+    created-by: executor
+    parent-action-id: parentactionid
+spec:
+  selector:
+    inference_server_name: isbenchmark-job-id
+  ports:
+  - protocol: TCP
+    port: 8080
+  - protocol: TCP
+    port: 8081
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: isbenchmark-job-id
+  labels:
+    app: benchmark-ai
+    action-id: ACTION_ID
+    client-id: CLIENT_ID
+    created-by: executor
+    inference_server_name: isbenchmark-job-id
+    parent-action-id: parentactionid
+spec:
+  template:
+    metadata:
+      labels:
+        app: benchmark-ai
+        action-id: ACTION_ID
+        client-id: CLIENT_ID
+        created-by: executor
+        parent-action-id: parentactionid
+      annotations:
+        iam.amazonaws.com/role: benchmark-host
+    spec:
+      serviceAccountName: metrics-pusher
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - benchmark-ai
+            topologyKey: kubernetes.io/hostname
+      initContainers: []
+      containers:
+      - name: inference-server
+        image: jlcont/server:270219
+        resources:
+          limits:
+            nvidia.com/gpu: 4
+        command:
+        - /opt/bin/server
+        - --model=mnist
+        securityContext:
+          privileged: false
+        volumeMounts:
+        - mountPath: /bai/scripts
+          name: scripts-volume
+        - name: dshm
+          mountPath: /dev/shm
+        env:
+        - name: VAR1
+          value: value1
+        - name: VAR2
+          value: value2
+      - name: client-lock
+        image: benchmarkai/job-status-trigger:3115770
+        env:
+        - name: JOB_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: JOB_NAME
+          value: benchmark-job-id
+        - name: TRIGGER_STATUSES
+          value: '[SUCCEEDED, FAILED]'
+        - name: COMMAND
+          value: /opt/env/bin/kubectl delete job,service isbenchmark-job-id
+        - name: JOB_NOT_FOUND_GRACE_PERIOD_SECONDS
+          value: '30'
+        volumeMounts: []
+      nodeSelector:
+        beta.kubernetes.io/instance-type: p3.8xlarge
+        node.type: bai-worker
+        failure-domain.beta.kubernetes.io/zone: us-east-1c
+      restartPolicy: Never
+      volumes:
+      - name: scripts-volume
+        emptyDir: {}
+      - name: dshm
+        emptyDir:
+          medium: Memory
+  backoffLimit: 4

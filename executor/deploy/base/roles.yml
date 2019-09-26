@@ -11,7 +11,7 @@ metadata:
   namespace: default
 rules:
 - apiGroups: ["","batch"]
-  resources: ["jobs"]
+  resources: ["jobs", "services"]
   verbs: ["create", "get"]
 ---
 kind: RoleBinding

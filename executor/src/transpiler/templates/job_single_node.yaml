@@ -82,6 +82,24 @@ spec:
               name: s3
               key: secret-access-key
               optional: true
+      # This container is only active
+      # for inference benchmarks (when strategy is client-server)
+      # It ensures the benchmark only starts after the inference server is running
+      - name: inference-server-lock
+        image: {config.job_status_trigger_docker_image}
+        env:
+          - name: JOB_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: JOB_NAME
+            value: {inference_server_job_id}
+          - name: TRIGGER_STATUSES
+            value: "[RUNNING_AT_MAIN_CONTAINERS]"
+          - name: COMMAND
+            value: 'exit 0'
+          - name: JOB_NOT_FOUND_GRACE_PERIOD_SECONDS
+            value: '30'
       containers:
       - name: benchmark
         image: {descriptor.docker_image}
