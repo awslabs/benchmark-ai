@@ -1,6 +1,7 @@
 import kafka
 
-from cloudwatch_exporter.cloudwatch_exporter import CloudWatchExporterService, create_service
+from unittest.mock import MagicMock
+from cloudwatch_exporter.cloudwatch_exporter import CloudWatchExporterService, CloudWatchExporterHandler, create_service
 
 
 def test_create_service(mocker, kafka_service_config):
@@ -22,3 +23,25 @@ def test_create_service(mocker, kafka_service_config):
     assert isinstance(service, CloudWatchExporterService)
     mock_create_consumer.assert_called_once()
     mock_create_producer.assert_called_once()
+
+
+def test_handle_event(mocker, metrics_event, mock_kafka_service):
+    mock_boto_cloudwatch = MagicMock()
+    mock_boto_cloudwatch.put_metric_data = MagicMock()
+    mocker.patch("cloudwatch_exporter.cloudwatch_exporter.boto3.client", return_value=mock_boto_cloudwatch)
+
+    cw_exporter_handler = CloudWatchExporterHandler()
+    cw_exporter_handler.handle_event(metrics_event, mock_kafka_service)
+
+    expected_dimensions = [{"Name": name, "Value": val} for name, val in metrics_event.labels.items()]
+    mock_boto_cloudwatch.put_metric_data.assert_called_with(
+        MetricData=[
+            {
+                "MetricName": metrics_event.name,
+                "Dimensions": expected_dimensions,
+                "Unit": "None",
+                "Value": metrics_event.value,
+            }
+        ],
+        Namespace="ANUBIS/METRICS",
+    )
