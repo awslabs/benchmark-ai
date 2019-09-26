@@ -17,7 +17,6 @@ from kubernetes.client import (
 from bai_watcher import service_logger
 from bai_watcher.status_inferrers.status import BenchmarkJobStatus
 
-
 ContainerInfo = collections.namedtuple("ContainerInfo", ("container_name", "message"))
 
 logger = service_logger.getChild(__name__)
@@ -99,7 +98,11 @@ class SingleNodeStrategyKubernetesStatusInferrer:
     """
     BENCHMARK_CONTAINER_NAME = "benchmark"
 
-    def __init__(self, k8s_job_status: V1JobStatus, pods: List[V1Pod], backoff_limit: Optional[int] = None):
+    def __init__(self, k8s_job_status: V1JobStatus, pods: List[V1Pod], backoff_limit: int):
+
+        if backoff_limit <= 0:
+            raise ValueError(f"backoff_limit({backoff_limit}) must be > 0")
+
         self.k8s_job_status: V1JobStatus = k8s_job_status
         self.backoff_limit: int = backoff_limit
         self.pods: List[V1Pod] = pods
@@ -127,7 +130,7 @@ class SingleNodeStrategyKubernetesStatusInferrer:
             return BenchmarkJobStatus.SUCCEEDED
 
         # Job has failed if the number of failure is greater or equal to the backoff limit
-        if self.backoff_limit and (self.k8s_job_status.failed >= self.backoff_limit):
+        if self.k8s_job_status.failed is not None and (self.k8s_job_status.failed >= self.backoff_limit):
             return BenchmarkJobStatus.FAILED
 
     def _infer_status_from_pod(self):

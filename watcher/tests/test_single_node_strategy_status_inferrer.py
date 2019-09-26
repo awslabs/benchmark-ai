@@ -20,6 +20,15 @@ CONTAINER_STATE_WAITING = V1ContainerStateWaiting(reason=".", message="...")
 CONTAINER_STATE_TERMINATED_AND_FAILED = V1ContainerStateTerminated(exit_code=1)
 CONTAINER_STATE_TERMINATED_AND_SUCCEEDED = V1ContainerStateTerminated(exit_code=0)
 
+JOB_BACKOFF_LIMIT = 5
+
+
+@pytest.mark.parametrize("backoff_limit", [-1, 0])
+def test_raises_backoff_limit_le_zero(backoff_limit):
+    job_status = V1JobStatus(succeeded=0, failed=0)
+    with pytest.raises(ValueError):
+        SingleNodeStrategyKubernetesStatusInferrer(job_status, pods=[], backoff_limit=backoff_limit)
+
 
 @pytest.mark.parametrize(
     "failed,succeeded,backoff_limit,expected_status",
@@ -39,20 +48,24 @@ def test_job_status(failed, succeeded, backoff_limit, expected_status):
 
 def test_no_pods_scheduled_for_k8s_job_yet():
     k8s_job_status = V1JobStatus(active=1)
-    inferrer = SingleNodeStrategyKubernetesStatusInferrer(k8s_job_status, pods=[])
+    inferrer = SingleNodeStrategyKubernetesStatusInferrer(k8s_job_status, pods=[], backoff_limit=JOB_BACKOFF_LIMIT)
     assert inferrer.status() == BenchmarkJobStatus.NO_POD_SCHEDULED
 
 
 def test_pod_in_running_phase():
     pod = V1Pod(status=V1PodStatus(phase="Running"))
-    inferrer = SingleNodeStrategyKubernetesStatusInferrer(V1JobStatus(active=1), pods=[pod])
+    inferrer = SingleNodeStrategyKubernetesStatusInferrer(
+        V1JobStatus(active=1), pods=[pod], backoff_limit=JOB_BACKOFF_LIMIT
+    )
     assert inferrer.status() == BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS
 
 
 def test_pod_scaling_nodes():
     condition = V1PodCondition(type="PodScheduled", reason="Unschedulable", status="False")
     status = V1PodStatus(phase="Pending", conditions=[condition])
-    inferrer = SingleNodeStrategyKubernetesStatusInferrer(V1JobStatus(active=1), pods=[V1Pod(status=status)])
+    inferrer = SingleNodeStrategyKubernetesStatusInferrer(
+        V1JobStatus(active=1), pods=[V1Pod(status=status)], backoff_limit=JOB_BACKOFF_LIMIT
+    )
     assert inferrer.status() == BenchmarkJobStatus.PENDING_NODE_SCALING
 
 
@@ -73,7 +86,9 @@ def test_init_containers_waiting():
     )
 
     pod = V1Pod(metadata=V1ObjectMeta(name="pod-name"), status=status)
-    inferrer = SingleNodeStrategyKubernetesStatusInferrer(V1JobStatus(active=1), pods=[pod])
+    inferrer = SingleNodeStrategyKubernetesStatusInferrer(
+        V1JobStatus(active=1), pods=[pod], backoff_limit=JOB_BACKOFF_LIMIT
+    )
     assert inferrer.status() == BenchmarkJobStatus.PENDING_AT_INIT_CONTAINERS
 
 
@@ -94,7 +109,9 @@ def test_init_containers_running():
     )
 
     pod = V1Pod(metadata=V1ObjectMeta(name="pod-name"), status=status)
-    inferrer = SingleNodeStrategyKubernetesStatusInferrer(V1JobStatus(active=1), pods=[pod])
+    inferrer = SingleNodeStrategyKubernetesStatusInferrer(
+        V1JobStatus(active=1), pods=[pod], backoff_limit=JOB_BACKOFF_LIMIT
+    )
     assert inferrer.status() == BenchmarkJobStatus.RUNNING_AT_INIT_CONTAINERS
 
 
@@ -115,7 +132,9 @@ def test_init_containers_failed():
     )
 
     pod = V1Pod(metadata=V1ObjectMeta(name="pod-name"), status=status)
-    inferrer = SingleNodeStrategyKubernetesStatusInferrer(V1JobStatus(active=1), pods=[pod])
+    inferrer = SingleNodeStrategyKubernetesStatusInferrer(
+        V1JobStatus(active=1), pods=[pod], backoff_limit=JOB_BACKOFF_LIMIT
+    )
     assert inferrer.status() == BenchmarkJobStatus.FAILED_AT_INIT_CONTAINERS
 
 
@@ -143,7 +162,9 @@ def test_waiting_for_sidecar_container():
     )
 
     pod = V1Pod(metadata=V1ObjectMeta(name="pod-name"), status=status)
-    inferrer = SingleNodeStrategyKubernetesStatusInferrer(V1JobStatus(active=1), pods=[pod])
+    inferrer = SingleNodeStrategyKubernetesStatusInferrer(
+        V1JobStatus(active=1), pods=[pod], backoff_limit=JOB_BACKOFF_LIMIT
+    )
     assert inferrer.status() == BenchmarkJobStatus.PENDING_AT_SIDECAR_CONTAINER
 
 
@@ -171,7 +192,9 @@ def test_waiting_for_benchmark_container():
     )
 
     pod = V1Pod(metadata=V1ObjectMeta(name="pod-name"), status=status)
-    inferrer = SingleNodeStrategyKubernetesStatusInferrer(V1JobStatus(active=1), pods=[pod])
+    inferrer = SingleNodeStrategyKubernetesStatusInferrer(
+        V1JobStatus(active=1), pods=[pod], backoff_limit=JOB_BACKOFF_LIMIT
+    )
     assert inferrer.status() == BenchmarkJobStatus.PENDING_AT_BENCHMARK_CONTAINER
 
 
@@ -199,7 +222,9 @@ def test_failed_at_benchmark_container_but_sidecar_still_running():
     )
 
     pod = V1Pod(metadata=V1ObjectMeta(name="pod-name"), status=status)
-    inferrer = SingleNodeStrategyKubernetesStatusInferrer(V1JobStatus(active=1), pods=[pod])
+    inferrer = SingleNodeStrategyKubernetesStatusInferrer(
+        V1JobStatus(active=1), pods=[pod], backoff_limit=JOB_BACKOFF_LIMIT
+    )
     # TODO: Not sure if this is the status we want
     assert inferrer.status() == BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS
 
@@ -228,7 +253,9 @@ def test_failed_at_benchmark_container_and_pod_terminated():
     )
 
     pod = V1Pod(metadata=V1ObjectMeta(name="pod-name"), status=status)
-    inferrer = SingleNodeStrategyKubernetesStatusInferrer(V1JobStatus(active=1), pods=[pod])
+    inferrer = SingleNodeStrategyKubernetesStatusInferrer(
+        V1JobStatus(active=1), pods=[pod], backoff_limit=JOB_BACKOFF_LIMIT
+    )
     assert inferrer.status() == BenchmarkJobStatus.FAILED_AT_BENCHMARK_CONTAINER
 
 
@@ -256,5 +283,7 @@ def test_failed_at_sidecar_container_and_pod_terminated():
     )
 
     pod = V1Pod(metadata=V1ObjectMeta(name="pod-name"), status=status)
-    inferrer = SingleNodeStrategyKubernetesStatusInferrer(V1JobStatus(active=1), pods=[pod])
+    inferrer = SingleNodeStrategyKubernetesStatusInferrer(
+        V1JobStatus(active=1), pods=[pod], backoff_limit=JOB_BACKOFF_LIMIT
+    )
     assert inferrer.status() == BenchmarkJobStatus.FAILED_AT_SIDECAR_CONTAINER
