@@ -1,0 +1,87 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {inference_server_job_id}
+  labels:
+    action-id: {event.action_id}
+    client-id: {event.client_id}
+    created-by: {service_name}
+spec:
+  selector:
+    inference_server_name: {inference_server_job_id}
+  ports: []
+---
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {inference_server_job_id}
+  labels:
+    app: benchmark-ai
+    action-id: {event.action_id}
+    client-id: {event.client_id}
+    created-by: {service_name}
+
+    # label for service
+    inference_server_name: {inference_server_job_id}
+spec:
+  template:
+    metadata:
+      labels:
+        app: benchmark-ai
+        action-id: {event.action_id}
+        client-id: {event.client_id}
+        created-by: {service_name}
+      annotations:
+        iam.amazonaws.com/role: benchmark-host
+    spec:
+      serviceAccountName: metrics-pusher
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - benchmark-ai
+            topologyKey: kubernetes.io/hostname
+      initContainers: []
+      containers:
+      - name: inference-server
+        image: {descriptor.server.env.docker_image}
+        resources:
+          limits:
+            nvidia.com/gpu: {descriptor.server.hardware.gpus_per_instance}
+        command: []
+        args: []
+        securityContext:
+          privileged: {descriptor.server.env.privileged}
+        volumeMounts:
+        - mountPath: /bai/scripts
+          name: scripts-volume
+      # If no client job can be found - delete yourself
+      - name: client-lock
+        image: {config.job_status_trigger_docker_image}
+        env:
+        - name: JOB_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: JOB_NAME
+          value: {job_id}
+        - name: TRIGGER_STATUSES
+          value: "[SUCCEEDED, FAILED]"
+        - name: COMMAND
+          value: '/opt/env/bin/kubectl delete job,service {inference_server_job_id}'
+        - name: JOB_NOT_FOUND_GRACE_PERIOD_SECONDS
+          value: '30'
+      nodeSelector:
+        beta.kubernetes.io/instance-type: {descriptor.server.hardware.instance_type}
+        node.type: bai-worker
+        failure-domain.beta.kubernetes.io/zone: {availability_zone}
+      restartPolicy: Never
+      volumes:
+      - name: scripts-volume
+        emptyDir: {{}}
+  backoffLimit: 4

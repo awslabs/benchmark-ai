@@ -28,6 +28,7 @@ JOB_ID = "benchmark-JOB-ID"
         ("training.toml", "training-with-script", ANUBIS_SCRIPTS),
         ("horovod.toml", "horovod", []),
         ("horovod.toml", "horovod-with-script", ANUBIS_SCRIPTS),
+        ("inference_benchmark.toml", "inference-benchmark", []),
     ],
 )
 @pytest.mark.parametrize("parent_action_id", ["parentactionid", None])
