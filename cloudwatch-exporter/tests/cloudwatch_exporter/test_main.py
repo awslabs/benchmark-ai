@@ -16,7 +16,7 @@ def test_main(mocker):
     mock_create_service = mocker.patch("cloudwatch_exporter.cloudwatch_exporter.create_service")
     mock_cloudwatch_service = Mock()
     mock_create_service.return_value = mock_cloudwatch_service
-    from bai_watcher.__main__ import main
+    from cloudwatch_exporter.__main__ import main
 
     main(
         f" --consumer-topic {CONSUMER_TOPIC} "

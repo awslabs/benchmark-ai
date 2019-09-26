@@ -12,7 +12,7 @@ def test_create_service(mocker, kafka_service_config):
         autospec=True,
     )
     mock_create_producer = mocker.patch(
-        "cloudwatch_exporter.cloudwatch_exporter.create_kafka_consumer",
+        "cloudwatch_exporter.cloudwatch_exporter.create_kafka_producer",
         return_value=(kafka_producer_class),
         autospec=True,
     )
