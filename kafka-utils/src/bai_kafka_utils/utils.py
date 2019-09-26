@@ -7,6 +7,7 @@ import time
 import uuid
 
 DEFAULT_ENCODING = encodings.utf_8.getregentry().name
+METRICS_PUSHER_BACKEND_ARG_PREFIX = "backend_arg_"
 
 
 def id_generator(size=8, chars=string.ascii_lowercase + string.digits):

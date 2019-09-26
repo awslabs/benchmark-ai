@@ -212,9 +212,9 @@ class Descriptor:
             raise DescriptorError(f"Invalid type in field ml.args: it must be a string")
 
         for label, value in self.custom_labels.items():
-            if not LABEL_VALIDATION_REGEX.fullmatch(label):
+            if not LABEL_VALIDATION_REGEX.fullmatch(label) or len(label) > 63:
                 raise DescriptorError(f"Invalid custom label key: {label}. " + INVALID_LABEL_MESSAGE)
-            if value and not LABEL_VALIDATION_REGEX.fullmatch(value):
+            if value and not LABEL_VALIDATION_REGEX.fullmatch(value) or len(value) > 63:
                 raise DescriptorError(f"Invalid value for label {label}: {value} " + INVALID_LABEL_MESSAGE)
 
     def find_data_source(self, src: str):

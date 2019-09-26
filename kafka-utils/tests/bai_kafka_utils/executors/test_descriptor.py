@@ -36,6 +36,14 @@ def test_invalid_scheduling(descriptor, scheduling):
         descriptor._validate()
 
 
+@pytest.mark.parametrize("labels", [{"-invalid": ""}, {"invalid_": ""}, {"valid": "_invalid"}, {"": "aa"},
+                                    {"more-than-63-chars-00025-00000-00038-00000-00000-00056-00000-00066": ""},
+                                    {"a": "more-than-63-chars-00025-00000-00038-00000-00000-00056-00000-00066"}])
+def test_invalid_custom_labels(descriptor, labels):
+    descriptor.custom_labels = labels
+    with pytest.raises(DescriptorError):
+        descriptor._validate()
+
 def test_descriptor_config(descriptor_config):
     strategies = [e.value for e in DistributedStrategy]
     assert descriptor_config.valid_strategies == strategies

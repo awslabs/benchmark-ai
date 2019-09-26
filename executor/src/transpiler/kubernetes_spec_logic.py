@@ -5,7 +5,7 @@ import ruamel.yaml as yaml
 
 from itertools import chain
 from typing import Dict, Any, List
-from bai_metrics_pusher.args import BACKEND_ARG_PREFIX
+from bai_kafka_utils.utils import METRICS_PUSHER_BACKEND_ARG_PREFIX
 
 # Using the official Kubernetes Model classes (https://github.com/kubernetes-client/python) is avoided here
 # because it presents some problems:
@@ -191,8 +191,8 @@ class KubernetesRootObjectHelper:
 
                 nodes.extend(current.values())
 
-    def _add_metrics_pusher_backend_arg(self, key: str, value:str):
-        env_var_name = BACKEND_ARG_PREFIX.upper() + key
+    def _add_metrics_pusher_backend_arg(self, key: str, value: str):
+        env_var_name = METRICS_PUSHER_BACKEND_ARG_PREFIX.upper() + key.upper()
         metrics_pusher_container = self.find_container("sidecar")
         metrics_pusher_env = metrics_pusher_container.get("env", [])
         metrics_pusher_env.append({"name": env_var_name, "value": value})
