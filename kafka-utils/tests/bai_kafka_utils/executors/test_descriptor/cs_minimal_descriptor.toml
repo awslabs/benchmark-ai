@@ -11,7 +11,7 @@ docker_image = "jlcont/inference_server_benchmark:270219"
 [server]
 # Harware on which to run the server
 [server.hardware]
-instance_type = "p3.4xlarge"
+instance_type = "p3.8xlarge"
 # The server environment definition
 [server.env]
 # The server image
