@@ -23,6 +23,13 @@ CONTAINER_STATE_TERMINATED_AND_SUCCEEDED = V1ContainerStateTerminated(exit_code=
 JOB_BACKOFF_LIMIT = 5
 
 
+@pytest.mark.parametrize("backoff_limit", [-1, 0])
+def test_raises_backoff_limit_le_zero(backoff_limit):
+    job_status = V1JobStatus(succeeded=0, failed=0)
+    with pytest.raises(ValueError):
+        SingleNodeStrategyKubernetesStatusInferrer(job_status, pods=[], backoff_limit=backoff_limit)
+
+
 @pytest.mark.parametrize(
     "failed,succeeded,backoff_limit,expected_status",
     [

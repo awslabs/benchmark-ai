@@ -99,7 +99,10 @@ class SingleNodeStrategyKubernetesStatusInferrer:
     BENCHMARK_CONTAINER_NAME = "benchmark"
 
     def __init__(self, k8s_job_status: V1JobStatus, pods: List[V1Pod], backoff_limit: int):
-        assert backoff_limit > 0
+
+        if backoff_limit <= 0:
+            raise ValueError(f"backoff_limit({backoff_limit}) must be > 0")
+
         self.k8s_job_status: V1JobStatus = k8s_job_status
         self.backoff_limit: int = backoff_limit
         self.pods: List[V1Pod] = pods
