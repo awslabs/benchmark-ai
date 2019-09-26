@@ -165,6 +165,11 @@ class KubernetesRootObjectHelper:
             for port in ports:
                 service_ports.append({"protocol": "TCP", "port": port})
 
+    def add_container_ports_to_container(self, container_name: str, ports: List[int]):
+        container = self.find_container(container_name)
+        if container:
+            container.ports = [{"containerPort": port} for port in ports] + (container.get("ports") or [])
+
     @staticmethod
     def _add_label(k8s_obj: Dict[Any, Any], key: str, value: str):
         if not k8s_obj:

@@ -246,6 +246,9 @@ spec:
           value: value1
         - name: VAR2
           value: value2
+        ports:
+        - containerPort: 8080
+        - containerPort: 8081
       - name: client-lock
         image: benchmarkai/job-status-trigger:3115770
         env:
