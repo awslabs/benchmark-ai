@@ -118,8 +118,10 @@ spec:
           value: /tmp/benchmark-ai/fifo
         - name: BACKEND
           value: kafka
-        - name: BACKEND_ARG_JOB_ID
-          value: benchmark-job-id
+        - name: BACKEND_ARG_ACTION_ID
+          value: ACTION_ID
+        - name: BACKEND_ARG_CLIENT_ID
+          value: CLIENT_ID
         - name: BACKEND_ARG_BOOTSTRAP_SERVERS
           valueFrom:
             configMapKeyRef:
