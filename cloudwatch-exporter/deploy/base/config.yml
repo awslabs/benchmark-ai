@@ -3,10 +3,9 @@ kind: ConfigMap
 data:
   consumer_group_id: cloudwatch-exporter
   consumer_topic: BAI_METRICS
-  # Not sure we even need a producer topic
+  # We don't need a producer topic
   # KafkaService expects it tho - setting it to garbage here
-  # TODO: Figure this out...
-  producer_topic: BAI_APP_EXECUTOR
+  producer_topic: NO_TOPIC
   status_topic: BAI_APP_STATUS
 metadata:
   name: cloudwatch-exporter
