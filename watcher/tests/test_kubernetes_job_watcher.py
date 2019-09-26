@@ -1,14 +1,35 @@
-import kubernetes
-import pytest
 from unittest.mock import Mock, create_autospec, call, MagicMock
 
+import kubernetes
+import pytest
+from kubernetes.client import V1Job, V1JobSpec, V1Pod, V1ObjectMeta, V1PodList, V1JobStatus, V1PodTemplate
+
 from bai_watcher.kubernetes_job_watcher import KubernetesJobWatcher, SLEEP_TIME_BETWEEN_CHECKING_K8S_STATUS
-
-from bai_watcher.status_inferrers.status import BenchmarkJobStatus
 from bai_watcher.status_inferrers.single_node import SingleNodeStrategyKubernetesStatusInferrer
-
+from bai_watcher.status_inferrers.status import BenchmarkJobStatus
 
 JOB_START_TIME = 1000
+JOB_BACKOFF_LIMIT = 10
+
+
+@pytest.fixture
+def mock_job() -> V1Job:
+    meta = V1ObjectMeta(namespace="default", name="some-job")
+    spec = V1JobSpec(backoff_limit=JOB_BACKOFF_LIMIT, template=V1PodTemplate())
+    status = V1JobStatus(conditions=[])
+    return V1Job(metadata=meta, spec=spec, status=status)
+
+
+@pytest.fixture()
+def mock_pod_list() -> V1PodList:
+    meta = V1ObjectMeta(namespace="default", name="some-pod")
+    pod = V1Pod(metadata=meta)
+    return V1PodList(items=[pod])
+
+
+@pytest.fixture
+def mock_single_node_strategy_kubernetes_status_inferrer(mocker):
+    return mocker.patch("bai_watcher.kubernetes_job_watcher.SingleNodeStrategyKubernetesStatusInferrer", auto_spec=True)
 
 
 def mock_loop_dependencies(mocker, *, iterations, kubernetes_job_status):
@@ -55,6 +76,20 @@ def test_get_status_when_kubernetes_raises_a_server_error(k8s_job_watcher, error
     with pytest.raises(kubernetes.client.rest.ApiException) as e:
         k8s_job_watcher.get_status()
     assert e.value.status == error_code
+
+
+def test_get_status_passes_job_backofflimit(
+    k8s_job_watcher, mock_job, mock_pod_list, mock_single_node_strategy_kubernetes_status_inferrer
+):
+    k8s_job_watcher.jobs_client.read_namespaced_job_status.return_value = mock_job
+    k8s_job_watcher.pod_client.list_namespaced_pod.return_value = mock_pod_list
+    mock_inferrer_instance = mock_single_node_strategy_kubernetes_status_inferrer.return_value
+    mock_inferrer_instance.status.return_value = BenchmarkJobStatus.SUCCEEDED
+
+    assert k8s_job_watcher.get_status() == BenchmarkJobStatus.SUCCEEDED
+    assert mock_single_node_strategy_kubernetes_status_inferrer.call_args_list == [
+        call(mock_job.status, mock_pod_list.items, backoff_limit=JOB_BACKOFF_LIMIT)
+    ]
 
 
 def test_thread_run_loop_when_callback_returns_true_will_end_loop(k8s_job_watcher, mocker):
