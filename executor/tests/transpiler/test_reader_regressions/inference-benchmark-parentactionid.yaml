@@ -95,7 +95,7 @@ spec:
         - name: BENCHMARK_AI_FIFO_MAX_WAIT_TIME
           value: '60'
         - name: INFERENCE_SERVER_HOST
-          value: default.isbenchmark-job-id
+          value: isbenchmark-job-id.default
         - name: INFERENCE_SERVER_PORT
           value: '8080'
         - name: INFERENCE_SERVER_PORT_1
