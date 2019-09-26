@@ -21,8 +21,6 @@ metadata:
     action-id: {event.action_id}
     client-id: {event.client_id}
     created-by: {service_name}
-
-    # label for service
     inference_server_name: {inference_server_job_id}
 spec:
   template:
@@ -32,6 +30,7 @@ spec:
         action-id: {event.action_id}
         client-id: {event.client_id}
         created-by: {service_name}
+        inference_server_name: {inference_server_job_id}
       annotations:
         iam.amazonaws.com/role: benchmark-host
     spec:

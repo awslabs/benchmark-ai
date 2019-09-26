@@ -214,6 +214,7 @@ spec:
         action-id: ACTION_ID
         client-id: CLIENT_ID
         created-by: executor
+        inference_server_name: isbenchmark-job-id
         parent-action-id: parentactionid
       annotations:
         iam.amazonaws.com/role: benchmark-host
