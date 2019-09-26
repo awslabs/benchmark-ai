@@ -211,7 +211,7 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         # TODO: Maybe the k8s namespace should be a parameter to the configuration
         namespace = "default"
 
-        env_vars = {"INFERENCE_SERVER_HOST": f"{namespace}.{self.inference_server_job_id}"}
+        env_vars = {"INFERENCE_SERVER_HOST": f"{self.inference_server_job_id}.{namespace}"}
         ports = self.descriptor.server.env.ports
         env_vars["INFERENCE_SERVER_PORT"] = ports[0]
         for index, port in enumerate(ports[1:]):
