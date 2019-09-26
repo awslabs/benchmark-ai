@@ -405,6 +405,7 @@ class InferenceServerJobKubernetedObjectBuilder(SingleRunBenchmarkKubernetesObje
         self.add_server_command_to_container()
         self.root.add_env_vars(INFERENCE_SERVER_CONTAINER, self.descriptor.server.env.vars)
         self.root.add_tcp_ports_to_service(self.inference_server_job_id, self.descriptor.server.env.ports)
+        self.root.add_container_ports_to_container(INFERENCE_SERVER_CONTAINER, self.descriptor.server.env.ports)
         if self.event.parent_action_id:
             self.root.add_label("parent-action-id", self.event.parent_action_id)
 
