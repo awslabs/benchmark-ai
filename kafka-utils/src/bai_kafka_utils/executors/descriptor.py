@@ -3,6 +3,7 @@ import json
 import logging
 import os
 
+import re
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Any
@@ -33,6 +34,13 @@ class DistributedStrategy(Enum):
 SINGLE_RUN_SCHEDULING = "single_run"
 
 ONE_PER_GPU = "gpus"
+
+LABEL_VALIDATION_REGEX = re.compile("([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]")
+INVALID_LABEL_MESSAGE = (
+    f"(RegExp used for validation is ([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9] "
+    f"Please use Kubernetes label syntax: "
+    f"https://kubernetes.io/docs/concepts/overview/working-with-objects/labels"
+)
 
 
 @dataclass
@@ -89,6 +97,7 @@ class Descriptor:
         except KeyError as e:
             raise DescriptorError(f"Required field is missing in the descriptor toml file: {e.args[0]}") from e
 
+        self.custom_labels = descriptor_data.get("info", {}).get("labels", {})
         self.scheduling = descriptor_data.get("info", {}).get("scheduling", SINGLE_RUN_SCHEDULING)
 
         self.distributed = "distributed" in descriptor_data["hardware"]
@@ -201,6 +210,12 @@ class Descriptor:
 
         if not isinstance(self.ml_args, str):
             raise DescriptorError(f"Invalid type in field ml.args: it must be a string")
+
+        for label, value in self.custom_labels.items():
+            if not LABEL_VALIDATION_REGEX.fullmatch(label):
+                raise DescriptorError(f"Invalid custom label key: {label}. " + INVALID_LABEL_MESSAGE)
+            if value and not LABEL_VALIDATION_REGEX.fullmatch(value):
+                raise DescriptorError(f"Invalid value for label {label}: {value} " + INVALID_LABEL_MESSAGE)
 
     def find_data_source(self, src: str):
         for source in self.data_sources:

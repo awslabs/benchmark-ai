@@ -21,6 +21,10 @@ description = """ \
     """
 scheduling = 'single_run'
 
+[info.labels]
+custom_label = "my value"
+another_custom_label = "other value"
+
 # 1. Hardware
 [hardware]
 instance_type = "p3.8xlarge"
@@ -82,6 +86,7 @@ path = "/data/tf-imagenet/val"
 | info                   | task_name          | Name of the benchmark job                                                                                                                            | String                                                      | Required          |
 | info                   | description        | Description (informative field)                                                                                                                      | String                                                      | Required          |
 | info                   | scheduling         | Job scheduling: whether to run it a single time or periodically and when    | [Cron expression](https://kubernetes.io/docs/tasks/job/automated-tasks-with-cron-jobs/#schedule) to schedule a job, 'single_run' to run it right away (default)| Optional |
+| info                   | labels             | Custom labels to be applied to the pod running the benchmark. They are exported as labels for the metrics produced by the job    | Key=value pairs (must comply with [Kubernetes label syntax](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set) . | Optional |
 | hardware               | instance_type      | Type of EC2 instance where the job is to run                                                                                                         | EC2 instance [API name](https://ec2instances.info)          | Required          |
 | hardware               | strategy           | Whether to run on single node or distributed. In the latter case, a distributed strategy, such as horovod or mxnet_parameter_server, must be specified | One of ['single_node', 'horovod', 'client_server', 'mxnet_parameter_server'] | Required          |
 | hardware > distributed | num_instances      | Number of nodes to use for distributed training                                                                                                      | Int                                                         | Optional          |

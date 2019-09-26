@@ -5,6 +5,7 @@ import ruamel.yaml as yaml
 
 from itertools import chain
 from typing import Dict, Any, List
+from bai_metrics_pusher.args import BACKEND_ARG_PREFIX
 
 # Using the official Kubernetes Model classes (https://github.com/kubernetes-client/python) is avoided here
 # because it presents some problems:
@@ -152,11 +153,14 @@ class KubernetesRootObjectHelper:
             )
         )
 
-    def add_label(self, key, value):
+    def add_label(self, key, value, add_to_metrics_pusher: bool = True):
         k8s_objs = list(chain([self._root], self.config_maps, self.role_bindings, self.services))
 
         for k8s_obj in k8s_objs:
             self._add_label(k8s_obj, key, value)
+
+        if add_to_metrics_pusher:
+            self._add_metrics_pusher_backend_arg(key, value)
 
     def add_tcp_ports_to_service(self, name: str, ports: List[int]):
         service = list(filter(lambda x: name == x["metadata"]["name"], self.services))
@@ -186,6 +190,12 @@ class KubernetesRootObjectHelper:
                     current.metadata["labels"][key] = value
 
                 nodes.extend(current.values())
+
+    def _add_metrics_pusher_backend_arg(self, key: str, value:str):
+        env_var_name = BACKEND_ARG_PREFIX.upper() + key
+        metrics_pusher_container = self.find_container("sidecar")
+        metrics_pusher_env = metrics_pusher_container.get("env", [])
+        metrics_pusher_env.append({"name": env_var_name, "value": value})
 
     def remove_volume(self, volume_name: str):
         """

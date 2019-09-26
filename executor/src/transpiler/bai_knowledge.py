@@ -105,6 +105,10 @@ class BaiKubernetesObjectBuilder(metaclass=abc.ABCMeta):
 
         self._feed_additional_template_values()
         self.root = self.config_template.build()
+
+        for label, value in self.descriptor.custom_labels.items():
+            self.root.add_label(label, value)
+
         self._update_root_k8s_object()
         return self
 
