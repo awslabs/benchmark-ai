@@ -1,5 +1,6 @@
 import addict
 import itertools
+import logging
 
 import ruamel.yaml as yaml
 
@@ -47,6 +48,8 @@ EmptyDirVolumeSource = addict.Dict
 HostPath = addict.Dict
 ConfigMap = addict.Dict
 EnvVar = addict.Dict
+
+logger = logging.getLogger(__name__)
 
 
 class KubernetesRootObjectHelper:
@@ -193,7 +196,11 @@ class KubernetesRootObjectHelper:
 
     def _add_metrics_pusher_backend_arg(self, key: str, value: str):
         env_var_name = METRICS_PUSHER_BACKEND_ARG_PREFIX.upper() + key.upper()
-        metrics_pusher_container = self.find_container("sidecar")
+        try:
+            metrics_pusher_container = self.find_container("sidecar")
+        except ValueError as e:
+            logger.debug(f"Could not add backend arg {env_var_name} to metrics pusher sidecar.")
+            return
         metrics_pusher_env = metrics_pusher_container.get("env", [])
         metrics_pusher_env.append({"name": env_var_name, "value": value})
 
