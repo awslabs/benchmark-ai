@@ -66,7 +66,6 @@ path = "/data/mnist/t10k-labels-idx1-ubyte.gz"
 
 # 5. Output
 [output]
-
 # [Opt] Custom metrics descriptions
 # List all required metrics descriptions below.
 # Make an entry in same format as the one below.
@@ -76,11 +75,8 @@ name = "accuracy"
 # Pattern for log parsing for this metric.
 pattern = "accuracy=([-+]?\\d*\\.\\d+|\\d+)"
 # [Opt] Units for the metric (can be used in the dashboard as well)
-units = "%"
+units = "ratio"
 
-# [Opt] Custom metrics descriptions
-# List all required metrics descriptions below.
-# Make an entry in same format as the one below.
 [[output.metrics]]
 # Name of the metric that will appear in the dashboards.
 name = "throughput"
