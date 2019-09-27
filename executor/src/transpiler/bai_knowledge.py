@@ -57,7 +57,7 @@ class BaiKubernetesObjectBuilder(metaclass=abc.ABCMeta):
         self, job_id: str, descriptor: Descriptor, config: BaiConfig, template_name: str, event: BenchmarkEvent
     ):
         self.job_id = job_id.lower()
-        self.inference_server_job_id = f"is{self.job_id}"
+        self.inference_server_job_id = f"is-{self.job_id}"
         self.descriptor = descriptor
         self.config_template = ConfigTemplate(self.read_template(template_name))
         self.config = config
