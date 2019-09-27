@@ -64,7 +64,7 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: JOB_NAME
-          value: isbenchmark-job-id
+          value: is-benchmark-job-id
         - name: TRIGGER_STATUSES
           value: '[RUNNING_AT_MAIN_CONTAINERS]'
         - name: COMMAND
@@ -93,7 +93,7 @@ spec:
         - name: BENCHMARK_AI_FIFO_MAX_WAIT_TIME
           value: '60'
         - name: INFERENCE_SERVER_HOST
-          value: isbenchmark-job-id.default
+          value: is-benchmark-job-id.default
         - name: INFERENCE_SERVER_PORT
           value: '8080'
         - name: INFERENCE_SERVER_PORT_1
@@ -178,14 +178,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: isbenchmark-job-id
+  name: is-benchmark-job-id
   labels:
     action-id: ACTION_ID
     client-id: CLIENT_ID
     created-by: executor
 spec:
   selector:
-    inference_server_name: isbenchmark-job-id
+    inference_server_name: is-benchmark-job-id
   ports:
   - protocol: TCP
     port: 8080
@@ -195,13 +195,13 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: isbenchmark-job-id
+  name: is-benchmark-job-id
   labels:
     app: benchmark-ai
     action-id: ACTION_ID
     client-id: CLIENT_ID
     created-by: executor
-    inference_server_name: isbenchmark-job-id
+    inference_server_name: is-benchmark-job-id
 spec:
   template:
     metadata:
@@ -210,7 +210,7 @@ spec:
         action-id: ACTION_ID
         client-id: CLIENT_ID
         created-by: executor
-        inference_server_name: isbenchmark-job-id
+        inference_server_name: is-benchmark-job-id
       annotations:
         iam.amazonaws.com/role: benchmark-host
     spec:
@@ -262,7 +262,7 @@ spec:
         - name: TRIGGER_STATUSES
           value: '[SUCCEEDED, FAILED]'
         - name: COMMAND
-          value: /opt/env/bin/kubectl delete job,service isbenchmark-job-id
+          value: /opt/env/bin/kubectl delete job,service is-benchmark-job-id
         - name: JOB_NOT_FOUND_GRACE_PERIOD_SECONDS
           value: '30'
         volumeMounts: []
