@@ -15,6 +15,9 @@ from bai_kafka_utils.executors.descriptor import DescriptorError, Descriptor, ON
         "cs_missing_start_command_descriptor.toml",
         "cs_non_uri_liveliness_probe_descriptor.toml",
         "cs_non_uri_readiness_probe_descriptor.toml",
+        "cs_missing_data_source_path_descriptor.toml",
+        "cs_missing_data_source_src_descriptor.toml",
+        "cs_missing_data_id_descriptor.toml",
     ],
 )
 def test_wrong_descriptor(datadir, filename, descriptor_config):
@@ -23,7 +26,13 @@ def test_wrong_descriptor(datadir, filename, descriptor_config):
 
 
 @pytest.mark.parametrize(
-    "filename", ["minimal_descriptor.toml", "cs_minimal_descriptor.toml", "cs_with_optionals_descriptor.toml"]
+    "filename",
+    [
+        "minimal_descriptor.toml",
+        "cs_minimal_descriptor.toml",
+        "cs_with_optionals_descriptor.toml",
+        "cs_minimal_with_data_descriptor.toml",
+    ],
 )
 def test_minimal_descriptor(datadir, filename, descriptor_config):
     Descriptor.from_toml_file(str(datadir / filename), descriptor_config)

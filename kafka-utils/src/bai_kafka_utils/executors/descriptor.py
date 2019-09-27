@@ -36,6 +36,18 @@ ONE_PER_GPU = "gpus"
 
 
 @dataclass
+class DataSourceDescriptor:
+    src: str
+    path: str
+
+
+@dataclass
+class DataDescriptor:
+    id: str
+    sources: Optional[List[DataSourceDescriptor]] = field(default_factory=list)
+
+
+@dataclass
 class ServerHardwareDescriptor:
     instance_type: str
     gpus_per_instance: int = field(init=False)
@@ -64,6 +76,7 @@ class ServerEnvDescriptor:
 class ServerDescriptor:
     hardware: ServerHardwareDescriptor
     env: ServerEnvDescriptor
+    data: Optional[DataDescriptor] = None
 
 
 class Descriptor:

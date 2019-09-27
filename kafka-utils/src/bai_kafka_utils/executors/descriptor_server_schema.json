@@ -6,6 +6,25 @@
   "$comment": "TODO: Extend this schema to reflect the whole descriptor",
 
   "definitions": {
+    "data_source": {
+      "type": "object",
+      "properties": {
+        "src": { "type": "string" },
+        "path": { "type": "string" }
+      },
+      "additionalProperties": false,
+      "required": ["src", "path"]
+    },
+    "data": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "md5": { "type":  "string" },
+        "sources": { "type":  "array", "items":  { "$ref": "#/definitions/data_source" } }
+      },
+      "additionalProperties": false,
+      "required": ["id"]
+    },
     "server_hardware": {
       "type": "object",
       "properties": {
@@ -42,7 +61,8 @@
 
   "properties": {
     "env": { "$ref": "#/definitions/server_env" },
-    "hardware": { "$ref": "#/definitions/server_hardware" }
+    "hardware": { "$ref": "#/definitions/server_hardware" },
+    "data": { "$ref": "#/definitions/data" }
   },
   "required": ["hardware", "env"],
   "additionalProperties": false
