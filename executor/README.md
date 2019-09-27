@@ -22,8 +22,8 @@ description = """ \
 scheduling = 'single_run'
 
 [info.labels]
-custom_label = "my value"
-another_custom_label = "other value"
+custom_label = "my-value"
+another_custom_label = "other-value"
 
 # 1. Hardware
 [hardware]
