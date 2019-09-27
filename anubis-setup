@@ -2,7 +2,7 @@
 
 DEBUG=${DEBUG:-0}
 VERBOSE=${VERBOSE:-0}
-FORCE=0
+FORCE=${FORCE:-0}
 
 #TODO - create a info page that goes in depth about this script and how to use it (docs/anubis-setup.md)
 #TODO - put warning to instruct users on how to set up access for a new account via --extra-users
@@ -279,9 +279,9 @@ sync_config_to_profile() {
     ((DEBUG)) && echo "Calling \"sync_config_to_profile\" function with: $*"
     echo "Current profile: ${AWS_PROFILE}"
 
-    if ((! FORCE)) && _check_profile_and_config_aligned; then
+    if _check_profile_and_config_aligned; then
         echo "already sync'ed!"
-        return 0
+        ((!FORCE)) && return 0
     fi
 
     ((DEBUG)) && echo "inspecting ${ANUBIS_REPO_HOME}/ci/.terraform/terraform.tfstate"
@@ -392,8 +392,11 @@ main() {
         myargs=()
         local unshift=0
         case "${1}" in
-            --force | -f)
+            --force)
                 FORCE=1
+                ;;
+            --debug)
+                DEBUG=1
                 ;;
             --check| --sanity-check)
                 sanity_check
