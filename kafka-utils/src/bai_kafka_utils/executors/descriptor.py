@@ -1,9 +1,11 @@
+import dacite
 import json
 import logging
 import os
-from dataclasses import dataclass
+
+from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List
+from typing import Dict, List, Optional, Any
 
 import jsonschema
 import toml
@@ -31,6 +33,37 @@ class DistributedStrategy(Enum):
 SINGLE_RUN_SCHEDULING = "single_run"
 
 ONE_PER_GPU = "gpus"
+
+
+@dataclass
+class ServerHardwareDescriptor:
+    instance_type: str
+    gpus_per_instance: int = field(init=False)
+
+    def __post_init__(self):
+        self.gpus_per_instance = ec2_instance_info.get_instance_gpus(self.instance_type)
+
+
+@dataclass
+class ServerEnvDescriptor:
+    # required
+    docker_image: str
+    ports: List[int]
+    start_command: str
+
+    # optional
+    privileged: Optional[bool] = False
+    extended_shm: Optional[bool] = True
+    liveliness_probe: Optional[str] = None
+    readiness_probe: Optional[str] = None
+    start_command_args: Optional[str] = None
+    vars: Optional[Dict[str, str]] = None
+
+
+@dataclass
+class ServerDescriptor:
+    hardware: ServerHardwareDescriptor
+    env: ServerEnvDescriptor
 
 
 class Descriptor:
@@ -95,14 +128,10 @@ class Descriptor:
 
         self.env_vars = descriptor_data.get("env", {}).get("vars", {})
 
-        self.server = descriptor_data.get("server", {})
-
-        # set boolean defaults
-        if "env" in self.server:
-            self.server["env"]["privileged"] = self.server["env"].get("privileged", False)
-            self.server["env"]["extended_shm"] = self.server["env"].get("extended_shm", True)
-
         self.is_client_server = self.strategy == DistributedStrategy.CLIENT_SERVER
+
+        if self.is_client_server:
+            self.server = self._make_server_descriptor(descriptor_data.get("server", {}))
 
         self._validate()
 
@@ -134,6 +163,18 @@ class Descriptor:
         with open(os.path.join(current_dir, "descriptor_server_schema.json"), encoding="utf-8") as f:
             return json.loads(f.read(), encoding="utf-8")
 
+    @staticmethod
+    def _make_server_descriptor(server_dict: Dict[str, Any]):
+        # Validate against schema
+        try:
+            jsonschema.validate(
+                server_dict, schema=Descriptor.get_server_schema(), format_checker=jsonschema.draft7_format_checker
+            )
+        except jsonschema.ValidationError as err:
+            raise DescriptorError(f"Invalid [server] definition: {err.message}") from err
+
+        return dacite.from_dict(data_class=ServerDescriptor, data=server_dict)
+
     def _validate(self):
         """
         Validates that this descriptor is valid
@@ -146,14 +187,6 @@ class Descriptor:
 
         if self.framework_version and not self.framework:
             raise DescriptorError("Framework version is present, but not framework")
-
-        if self.is_client_server:
-            try:
-                jsonschema.validate(
-                    self.server, schema=Descriptor.get_server_schema(), format_checker=jsonschema.draft7_format_checker
-                )
-            except jsonschema.ValidationError as err:
-                raise DescriptorError(f"Invalid [server] definition: {err}") from err
 
         if self.distributed:
             if self.num_instances <= 1:

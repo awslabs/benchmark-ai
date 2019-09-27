@@ -4,7 +4,7 @@ import itertools
 import ruamel.yaml as yaml
 
 from itertools import chain
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 # Using the official Kubernetes Model classes (https://github.com/kubernetes-client/python) is avoided here
 # because it presents some problems:
@@ -65,6 +65,7 @@ class KubernetesRootObjectHelper:
         docs = yaml.load_all(contents, Loader=yaml.RoundTripLoader)
         self.config_maps = []
         self.role_bindings = []
+        self.services = []
 
         # TODO: Improve generalization here
         for d in docs:
@@ -75,6 +76,8 @@ class KubernetesRootObjectHelper:
                 self._root = addict.Dict(d)
             elif kind == "RoleBinding":
                 self.role_bindings.append(addict.Dict(d))
+            elif kind == "Service":
+                self.services.append(addict.Dict(d))
             else:
                 raise ValueError("Kubernetes yaml object is of an unsupported kind type: {}".format(d["kind"]))
 
@@ -150,10 +153,22 @@ class KubernetesRootObjectHelper:
         )
 
     def add_label(self, key, value):
-        k8s_objs = list(chain([self._root], self.config_maps, self.role_bindings))
+        k8s_objs = list(chain([self._root], self.config_maps, self.role_bindings, self.services))
 
         for k8s_obj in k8s_objs:
             self._add_label(k8s_obj, key, value)
+
+    def add_tcp_ports_to_service(self, name: str, ports: List[int]):
+        service = list(filter(lambda x: name == x["metadata"]["name"], self.services))
+        if service:
+            service_ports = service[0].get("spec", {}).get("ports", [])
+            for port in ports:
+                service_ports.append({"protocol": "TCP", "port": port})
+
+    def add_container_ports_to_container(self, container_name: str, ports: List[int]):
+        container = self.find_container(container_name)
+        if container:
+            container.ports = [{"containerPort": port} for port in ports] + (container.get("ports") or [])
 
     @staticmethod
     def _add_label(k8s_obj: Dict[Any, Any], key: str, value: str):
@@ -227,8 +242,10 @@ class KubernetesRootObjectHelper:
         root_as_dict = self._root.to_dict()
         config_maps_as_dicts = [cm.to_dict() for cm in self.config_maps]
         role_bindings_as_dicts = [rb.to_dict() for rb in self.role_bindings]
+        services_as_dicts = [svc.to_dict() for svc in self.services]
         return yaml.dump_all(
-            itertools.chain(role_bindings_as_dicts, config_maps_as_dicts, [root_as_dict]), Dumper=yaml.RoundTripDumper
+            itertools.chain(role_bindings_as_dicts, config_maps_as_dicts, services_as_dicts, [root_as_dict]),
+            Dumper=yaml.RoundTripDumper,
         )
 
 
