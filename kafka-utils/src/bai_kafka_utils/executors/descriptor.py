@@ -76,7 +76,7 @@ class ServerEnvDescriptor:
 class ServerDescriptor:
     hardware: ServerHardwareDescriptor
     env: ServerEnvDescriptor
-    data: Optional[DataDescriptor] = None
+    data: Optional[DataDescriptor] = field(default_factory=list)
 
 
 class Descriptor:
