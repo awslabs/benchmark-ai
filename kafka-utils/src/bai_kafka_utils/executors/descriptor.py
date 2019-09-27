@@ -171,7 +171,7 @@ class Descriptor:
                 server_dict, schema=Descriptor.get_server_schema(), format_checker=jsonschema.draft7_format_checker
             )
         except jsonschema.ValidationError as err:
-            raise DescriptorError(f"Invalid [server] definition: {err}") from err
+            raise DescriptorError(f"Invalid [server] definition: {err.message}") from err
 
         return dacite.from_dict(data_class=ServerDescriptor, data=server_dict)
 
