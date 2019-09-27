@@ -55,7 +55,7 @@
   not do any in place changes, such as when these data sources are
   fetched and augmented with additional information.</i>"
   [event]
-  (assoc-in event [:payload :datasets] (remove empty? (mapv #(select-keys % [:src :md5 :id]) (some-> event :payload :toml :contents :data :sources)))))
+  (assoc-in event [:payload :datasets] (remove empty? (mapv #(select-keys % [:src :md5 :id]) (concat (some-> event :payload :toml :contents :data :sources) (some-> event :payload :toml :contents :server :data :sources))))))
 
 (defn glean-script-info
   "Pulls out the script file information from the TOML and writes it to the \"payload\" map."
