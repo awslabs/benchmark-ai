@@ -1,6 +1,6 @@
 import pytest
 
-from bai_kafka_utils.events import DownloadableContent, BenchmarkEvent, DataSetSizeInfo
+from bai_kafka_utils.events import DownloadableContent, BenchmarkEvent, ContentSizeInfo
 from fetcher_dispatcher.args import FetcherJobConfig
 from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
 
@@ -18,8 +18,8 @@ SOMEDATA_BIG_WITH_DELAY = "http://dataserver:8080/big-file?delay=120"
 BIG_FILE_SIZE = 64 * 1024 * 1024
 SMALL_FILE_SIZE = 1024
 
-BIG_SIZE = DataSetSizeInfo(BIG_FILE_SIZE, 1, BIG_FILE_SIZE)
-SMALL_SIZE = DataSetSizeInfo(SMALL_FILE_SIZE, 1, SMALL_FILE_SIZE)
+BIG_SIZE = ContentSizeInfo(BIG_FILE_SIZE, 1, BIG_FILE_SIZE)
+SMALL_SIZE = ContentSizeInfo(SMALL_FILE_SIZE, 1, SMALL_FILE_SIZE)
 
 
 @pytest.mark.parametrize("size_info", [BIG_SIZE, SMALL_SIZE], ids=["big", "small"])
@@ -28,7 +28,7 @@ def test_kubernetes_client(
     benchmark_event_dummy_payload: BenchmarkEvent,
     k8s_test_client: KubernetesTestUtilsClient,
     fetcher_job_config: FetcherJobConfig,
-    size_info: DataSetSizeInfo,
+    size_info: ContentSizeInfo,
 ):
     data_set = DownloadableContent(src=SOMEDATA_BIG, dst=S3_DST, md5=None, size_info=size_info)
 
@@ -44,7 +44,7 @@ def test_kubernetes_cancel(
     benchmark_event_dummy_payload: BenchmarkEvent,
     k8s_test_client: KubernetesTestUtilsClient,
     fetcher_job_config: FetcherJobConfig,
-    size_info: DataSetSizeInfo,
+    size_info: ContentSizeInfo,
 ):
     data_set = DownloadableContent(src=SOMEDATA_BIG_WITH_DELAY, dst=S3_DST, md5=None, size_info=size_info)
     k8s_dispatcher.dispatch_fetch(data_set, benchmark_event_dummy_payload, "/data/sets/fake")
@@ -62,7 +62,7 @@ def test_kubernetes_cleanup(
     benchmark_event_dummy_payload: BenchmarkEvent,
     k8s_test_client: KubernetesTestUtilsClient,
     fetcher_job_config: FetcherJobConfig,
-    size_info: DataSetSizeInfo,
+    size_info: ContentSizeInfo,
 ):
     data_set = DownloadableContent(src=SOMEDATA_BIG_WITH_DELAY, dst=S3_DST, md5=None, size_info=size_info)
     k8s_dispatcher.dispatch_fetch(data_set, benchmark_event_dummy_payload, "/data/sets/fake")

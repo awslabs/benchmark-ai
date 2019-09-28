@@ -11,8 +11,8 @@ from kazoo.client import KazooClient
 
 from fetcher_dispatcher import SERVICE_NAME, __version__
 from fetcher_dispatcher.args import FetcherServiceConfig, FetcherJobConfig
-from fetcher_dispatcher.data_set_manager import DownloadableContent, DataSetManager, get_lock_name
-from fetcher_dispatcher.data_set_pull import get_dataset_dst
+from fetcher_dispatcher.download_manager import DownloadableContent, DownloadManager, get_lock_name
+from fetcher_dispatcher.content_pull import get_content_dst
 from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
 
 LOCK_MANAGER_PREFIX = "fetcher_lock_manager"
@@ -20,24 +20,24 @@ LOCK_MANAGER_PREFIX = "fetcher_lock_manager"
 logger = logging.getLogger(__name__)
 
 
-def create_data_set_manager(zookeeper_ensemble_hosts: str, kubeconfig: str, fetcher_job: FetcherJobConfig):
+def create_download_manager(zookeeper_ensemble_hosts: str, kubeconfig: str, fetcher_job: FetcherJobConfig):
     zk_client = KazooClient(zookeeper_ensemble_hosts)
     job_dispatcher = KubernetesDispatcher(SERVICE_NAME, kubeconfig, zookeeper_ensemble_hosts, fetcher_job)
 
     lock_manager = DistributedRWLockManager(zk_client, LOCK_MANAGER_PREFIX, get_lock_name)
 
-    return DataSetManager(zk_client, job_dispatcher, lock_manager)
+    return DownloadManager(zk_client, job_dispatcher, lock_manager)
 
 
 class FetcherEventHandler(KafkaServiceCallback):
-    def __init__(self, producer_topic: str, data_set_mgr: DataSetManager, s3_data_set_bucket: str):
-        self.data_set_mgr = data_set_mgr
-        self.s3_data_set_bucket = s3_data_set_bucket
+    def __init__(self, producer_topic: str, data_set_mgr: DownloadManager, s3_download_bucket: str):
+        self.download_mgr = data_set_mgr
+        self.s3_download_bucket = s3_download_bucket
         self.producer_topic = producer_topic
 
     @staticmethod
-    def _collect_status(data_sets: List[DownloadableContent]) -> Status:
-        fetch_statuses = {d.status for d in data_sets}
+    def _collect_status(downloads: List[DownloadableContent]) -> Status:
+        fetch_statuses = {d.status for d in downloads}
         if FetcherStatus.CANCELED in fetch_statuses:
             return Status.CANCELED
         if FetcherStatus.FAILED in fetch_statuses:
@@ -50,45 +50,45 @@ class FetcherEventHandler(KafkaServiceCallback):
         return Status.SUCCEEDED
 
     def handle_event(self, event: FetcherBenchmarkEvent, kafka_service: KafkaService):
-        def extract_datasets(event) -> List[DownloadableContent]:
+        def extract_downloads(event) -> List[DownloadableContent]:
             return event.payload.datasets + event.payload.models
 
         def execute(task: DownloadableContent, callback) -> None:
 
-            task.dst = get_dataset_dst(task, self.s3_data_set_bucket)
+            task.dst = get_content_dst(task, self.s3_download_bucket)
 
-            kafka_service.send_status_message_event(event, Status.PENDING, f"{task.src} sent for download")
+            kafka_service.send_status_message_event(event, Status.PENDING, f"Preparing {task.src} for download...")
 
-            self.data_set_mgr.fetch(task, event, callback)
+            self.download_mgr.fetch(task, event, callback)
 
         def execute_all(tasks: List[DownloadableContent], callback: Callable) -> None:
-            kafka_service.send_status_message_event(event, Status.PENDING, "Initiating download...")
+            kafka_service.send_status_message_event(event, Status.PENDING, "Initiating downloads...")
 
             pending = list(tasks)
 
-            def on_done(data_set: DownloadableContent):
-                if data_set.status == FetcherStatus.DONE:
-                    msg, status = f"{data_set.src} downloaded...", Status.PENDING
-                elif data_set.status == FetcherStatus.CANCELED:
-                    msg, status = f"{data_set.src} download canceled...", Status.CANCELED
-                elif data_set.status == FetcherStatus.FAILED:
-                    msg, status = f"{data_set.src} download failed: '{data_set.message}'...", Status.FAILED
-                elif data_set.status in {FetcherStatus.RUNNING, FetcherStatus.PENDING}:
-                    msg, status = f"Downloading {data_set.src}...", Status.PENDING
+            def on_done(content: DownloadableContent):
+                if content.status == FetcherStatus.DONE:
+                    msg, status = f"{content.src} downloaded...", Status.PENDING
+                elif content.status == FetcherStatus.CANCELED:
+                    msg, status = f"{content.src} download canceled...", Status.CANCELED
+                elif content.status == FetcherStatus.FAILED:
+                    msg, status = f"{content.src} download failed: '{content.message}'...", Status.FAILED
+                elif content.status in {FetcherStatus.RUNNING, FetcherStatus.PENDING}:
+                    msg, status = f"Downloading {content.src}...", Status.PENDING
                 else:
-                    msg, status = f"Unknown status {data_set.status} issued for {data_set.src}", Status.ERROR
+                    msg, status = f"Unknown status {content.status} issued for {content.src}", Status.ERROR
 
                 if msg and status:
                     kafka_service.send_status_message_event(event, status, msg)
 
-                pending.remove(data_set)
+                pending.remove(content)
                 if not pending:
                     callback()
 
             for tsk in tasks:
                 execute(tsk, on_done)
 
-        tasks = extract_datasets(event)
+        tasks = extract_downloads(event)
         tasks = list(filter(lambda t: not t.dst, tasks))
 
         if not tasks:
@@ -110,12 +110,12 @@ class FetcherEventHandler(KafkaServiceCallback):
         execute_all(tasks, on_all_done)
 
     def cleanup(self):
-        self.data_set_mgr.stop()
+        self.download_mgr.stop()
 
 
-class DataSetCmdObject:
-    def __init__(self, data_set_mgr: DataSetManager):
-        self.data_set_mgr = data_set_mgr
+class DownloadCmdObject:
+    def __init__(self, download_mgr: DownloadManager):
+        self.download_mgr = download_mgr
 
     def cancel(
         self,
@@ -128,7 +128,7 @@ class DataSetCmdObject:
 
         kafka_service.send_status_message_event(event, Status.PENDING, "Canceling downloads...", target_action_id)
         try:
-            k8s_delete_results, num_zk_nodes_updated = self.data_set_mgr.cancel(client_id, target_action_id)
+            k8s_delete_results, num_zk_nodes_updated = self.download_mgr.cancel(client_id, target_action_id)
         except Exception as err:
             kafka_service.send_status_message_event(
                 event,
@@ -149,17 +149,17 @@ class DataSetCmdObject:
 
 
 def create_fetcher_dispatcher(common_kafka_cfg: KafkaServiceConfig, fetcher_cfg: FetcherServiceConfig) -> KafkaService:
-    data_set_mgr = create_data_set_manager(
+    download_mgr = create_download_manager(
         fetcher_cfg.zookeeper_ensemble_hosts, fetcher_cfg.kubeconfig, fetcher_cfg.fetcher_job
     )
-    data_set_mgr.start()
+    download_mgr.start()
 
     callbacks = {
         common_kafka_cfg.consumer_topic: [
-            FetcherEventHandler(common_kafka_cfg.producer_topic, data_set_mgr, fetcher_cfg.s3_data_set_bucket)
+            FetcherEventHandler(common_kafka_cfg.producer_topic, download_mgr, fetcher_cfg.s3_download_bucket)
         ],
         common_kafka_cfg.cmd_submit_topic: [
-            KafkaCommandCallback(DataSetCmdObject(data_set_mgr), common_kafka_cfg.cmd_return_topic)
+            KafkaCommandCallback(DownloadCmdObject(download_mgr), common_kafka_cfg.cmd_return_topic)
         ],
     }
 

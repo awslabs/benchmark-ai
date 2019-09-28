@@ -10,7 +10,7 @@ from bai_kafka_utils.events import (
     FetcherPayload,
     FileSystemObject,
     DownloadableContent,
-    DataSetSizeInfo,
+    ContentSizeInfo,
     FetchedType,
     BenchmarkDoc,
     BenchmarkJob,
@@ -124,7 +124,7 @@ def fetcher_event(descriptor_as_dict: Dict[str, Any]) -> FetcherBenchmarkEvent:
                     src="http://someserver.com/somedata.zip",
                     dst=DATASET_S3_URI,
                     id=DATASET_ID,
-                    size_info=DataSetSizeInfo(total_size=42, file_count=1, max_size=42),
+                    size_info=ContentSizeInfo(total_size=42, file_count=1, max_size=42),
                     type=FetchedType.FILE,
                 )
             ],

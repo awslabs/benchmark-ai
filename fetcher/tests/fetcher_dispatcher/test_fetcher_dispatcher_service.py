@@ -22,12 +22,12 @@ from pytest import fixture
 
 from fetcher_dispatcher import fetcher_dispatcher_service, SERVICE_NAME
 from fetcher_dispatcher.args import FetcherServiceConfig, FetcherJobConfig
-from fetcher_dispatcher.data_set_manager import DataSetManager
+from fetcher_dispatcher.download_manager import DownloadManager
 from fetcher_dispatcher.fetcher_dispatcher_service import (
-    create_data_set_manager,
+    create_download_manager,
     FetcherEventHandler,
     create_fetcher_dispatcher,
-    DataSetCmdObject,
+    DownloadCmdObject,
 )
 from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
 
@@ -63,8 +63,8 @@ TARGET_ACTION_ID = "TARGET_ACTION_ID"
 
 
 @fixture
-def data_set_manager() -> DataSetManager:
-    return create_autospec(DataSetManager)
+def download_manager() -> DownloadManager:
+    return create_autospec(DownloadManager)
 
 
 @fixture
@@ -108,8 +108,8 @@ def benchmark_event_without_datasets(benchmark_doc: BenchmarkDoc) -> BenchmarkEv
 
 
 @fixture
-def fetcher_callback(data_set_manager) -> FetcherEventHandler:
-    return FetcherEventHandler(PRODUCER_TOPIC, data_set_manager, S3_BUCKET)
+def fetcher_callback(download_manager) -> FetcherEventHandler:
+    return FetcherEventHandler(PRODUCER_TOPIC, download_manager, S3_BUCKET)
 
 
 @fixture
@@ -167,7 +167,7 @@ def collect_send_event_calls(kafka_service: KafkaService, cls: Type[BenchmarkEve
 )
 def test_fetcher_event_handler_fetch(
     fetcher_callback: FetcherEventHandler,
-    data_set_manager: DataSetManager,
+    download_manager,
     benchmark_event_with_datasets: FetcherBenchmarkEvent,
     kafka_service: KafkaService,
     datasets: List[DownloadableContent],
@@ -177,19 +177,19 @@ def test_fetcher_event_handler_fetch(
     fetcher_callback.handle_event(benchmark_event_with_datasets, kafka_service)
 
     # All datasets fetched
-    assert data_set_manager.fetch.call_count == len(benchmark_event_with_datasets.payload.datasets)
+    assert download_manager.fetch.call_count == len(benchmark_event_with_datasets.payload.datasets)
     # Nothing yet fetched, but sent for fetching
     validate_sent_events(kafka_service, [])
 
-    expected_sent_statuses_before = [call(ANY, Status.PENDING, "Initiating download...")] + [
-        call(ANY, Status.PENDING, f"{d.src} sent for download") for d in datasets
+    expected_sent_statuses_before = [call(ANY, Status.PENDING, "Initiating downloads...")] + [
+        call(ANY, Status.PENDING, f"Preparing {d.src} for download...") for d in datasets
     ]
 
     validate_send_status_message_calls(kafka_service, expected_sent_statuses_before)
 
     validate_populated_dst(benchmark_event_with_datasets)
 
-    simulate_fetched_datasets(data_set_manager, fetch_status)
+    simulate_fetched_datasets(download_manager, fetch_status)
 
     # Validate the event was sent downstream
     expected_sent_events = (
@@ -235,7 +235,7 @@ def validate_populated_dst(benchmark_event):
         assert data_set.dst
 
 
-def simulate_fetched_datasets(data_set_manager: DataSetManager, fetch_status: FetcherStatus):
+def simulate_fetched_datasets(data_set_manager: DownloadManager, fetch_status: FetcherStatus):
     for kall in data_set_manager.fetch.call_args_list:
         args, _ = kall
         data_set, _, on_done = args
@@ -243,18 +243,18 @@ def simulate_fetched_datasets(data_set_manager: DataSetManager, fetch_status: Fe
         on_done(data_set)
 
 
-def test_fetcher_cleanup(data_set_manager: DataSetManager):
-    fetcher_callback = FetcherEventHandler(PRODUCER_TOPIC, data_set_manager, S3_BUCKET)
+def test_fetcher_cleanup(download_manager):
+    fetcher_callback = FetcherEventHandler(PRODUCER_TOPIC, download_manager, S3_BUCKET)
     fetcher_callback.cleanup()
-    data_set_manager.stop.assert_called_once()
+    download_manager.stop.assert_called_once()
 
 
-@patch.object(fetcher_dispatcher_service, "create_data_set_manager", autospec=True)
+@patch.object(fetcher_dispatcher_service, "create_download_manager", autospec=True)
 @patch.object(kafka, "KafkaProducer", autospec=True)
 @patch.object(kafka, "KafkaConsumer", autospec=True)
-def test_create_fetcher_dispatcher(mockKafkaConsumer, mockKafkaProducer, mock_create_data_set_manager, mocker):
-    mock_data_set_manager = create_autospec(DataSetManager)
-    mock_create_data_set_manager.return_value = mock_data_set_manager
+def test_create_fetcher_dispatcher(mockKafkaConsumer, mockKafkaProducer, mock_create_download_manager, mocker):
+    mock_download_manager = create_autospec(DownloadManager)
+    mock_create_download_manager.return_value = mock_download_manager
     mock_create_consumer_producer = mocker.patch(
         "fetcher_dispatcher.fetcher_dispatcher_service.create_kafka_consumer_producer",
         return_value=(mockKafkaConsumer, mockKafkaProducer),
@@ -269,23 +269,23 @@ def test_create_fetcher_dispatcher(mockKafkaConsumer, mockKafkaProducer, mock_cr
     )
     fetcher_cfg = FetcherServiceConfig(
         zookeeper_ensemble_hosts=ZOOKEEPER_ENSEMBLE_HOSTS,
-        s3_data_set_bucket=S3_BUCKET,
+        s3_download_bucket=S3_BUCKET,
         fetcher_job=FetcherJobConfig(image=FETCHER_JOB_IMAGE, namespace=NAMESPACE),
     )
     fetcher_service = create_fetcher_dispatcher(common_cfg, fetcher_cfg)
 
     mock_create_consumer_producer.assert_called_once()
-    mock_data_set_manager.start.assert_called_once()
+    mock_download_manager.start.assert_called_once()
 
     assert fetcher_service
 
 
 @patch.object(fetcher_dispatcher_service, "DistributedRWLockManager", autospec=True)
-@patch.object(fetcher_dispatcher_service, "DataSetManager", autospec=True)
+@patch.object(fetcher_dispatcher_service, "DownloadManager", autospec=True)
 @patch.object(fetcher_dispatcher_service, "KubernetesDispatcher", autospec=True)
 @patch.object(fetcher_dispatcher_service, "KazooClient", autospec=True)
-def test_create_data_set_manager(
-    mockKazooClient, mockKubernetesDispatcher, mockDataSetManager, mockDistributedRWLockManager
+def test_create_download_manager(
+    mockKazooClient, mockKubernetesDispatcher, mockDownloadManager, mockDistributedRWLockManager
 ):
     mock_zk_client = create_autospec(KazooClient)
     mock_job_dispatcher = create_autospec(KubernetesDispatcher)
@@ -295,7 +295,7 @@ def test_create_data_set_manager(
     mockKubernetesDispatcher.return_value = mock_job_dispatcher
     mockDistributedRWLockManager.return_value = mock_lock_manager
 
-    create_data_set_manager(ZOOKEEPER_ENSEMBLE_HOSTS, KUBECONFIG, FETCHER_JOB_CONFIG)
+    create_download_manager(ZOOKEEPER_ENSEMBLE_HOSTS, KUBECONFIG, FETCHER_JOB_CONFIG)
 
     mockKazooClient.assert_called_once_with(ZOOKEEPER_ENSEMBLE_HOSTS)
     mockKubernetesDispatcher.assert_called_once_with(
@@ -303,19 +303,19 @@ def test_create_data_set_manager(
     )
     mockDistributedRWLockManager.assert_called_once_with(mock_zk_client, ANY, ANY)
 
-    mockDataSetManager.assert_called_once_with(mock_zk_client, mock_job_dispatcher, mock_lock_manager)
+    mockDownloadManager.assert_called_once_with(mock_zk_client, mock_job_dispatcher, mock_lock_manager)
 
 
-@patch.object(fetcher_dispatcher_service, "DataSetManager", autospec=True)
+@patch.object(fetcher_dispatcher_service, "DownloadManager", autospec=True)
 def test_cmd_object_successful_delete(
-    mockDataSetManager: DataSetManager, kafka_service: KafkaService, command_request_event: CommandRequestEvent
+    mockDownloadManager: DownloadManager, kafka_service: KafkaService, command_request_event: CommandRequestEvent
 ):
 
     k8s_deletion_results = ["deleted pods", "deleted jobs"]
     num_zk_nodes_updates = 1
 
-    mockDataSetManager.cancel.return_value = (k8s_deletion_results, num_zk_nodes_updates)
-    cmd_object = DataSetCmdObject(mockDataSetManager)
+    mockDownloadManager.cancel.return_value = (k8s_deletion_results, num_zk_nodes_updates)
+    cmd_object = DownloadCmdObject(mockDownloadManager)
     results = cmd_object.cancel(
         kafka_service,
         command_request_event,
@@ -327,22 +327,22 @@ def test_cmd_object_successful_delete(
         "k8s_deletion_results": k8s_deletion_results,
         "num_zookeeper_nodes_updated": num_zk_nodes_updates,
     }
-    mockDataSetManager.cancel.assert_called_once_with("CLIENT_ID", "TARGET_ACTION_ID")
+    mockDownloadManager.cancel.assert_called_once_with("CLIENT_ID", "TARGET_ACTION_ID")
     kafka_service.send_status_message_event.assert_called_once_with(
         command_request_event, Status.PENDING, "Canceling downloads...", "TARGET_ACTION_ID"
     )
 
 
-@patch.object(fetcher_dispatcher_service, "DataSetManager", autospec=True)
+@patch.object(fetcher_dispatcher_service, "DownloadManager", autospec=True)
 def test_cmd_object_nothing_to_delete(
-    mockDataSetManager: DataSetManager, kafka_service: KafkaService, command_request_event: CommandRequestEvent
+    mockDownloadManager: DownloadManager, kafka_service: KafkaService, command_request_event: CommandRequestEvent
 ):
 
     k8s_deletion_results = []
     num_zk_nodes_updates = 0
 
-    mockDataSetManager.cancel.return_value = (k8s_deletion_results, num_zk_nodes_updates)
-    cmd_object = DataSetCmdObject(mockDataSetManager)
+    mockDownloadManager.cancel.return_value = (k8s_deletion_results, num_zk_nodes_updates)
+    cmd_object = DownloadCmdObject(mockDownloadManager)
     results = cmd_object.cancel(
         kafka_service,
         command_request_event,
@@ -354,7 +354,7 @@ def test_cmd_object_nothing_to_delete(
         "k8s_deletion_results": k8s_deletion_results,
         "num_zookeeper_nodes_updated": num_zk_nodes_updates,
     }
-    mockDataSetManager.cancel.assert_called_once_with("CLIENT_ID", "TARGET_ACTION_ID")
+    mockDownloadManager.cancel.assert_called_once_with("CLIENT_ID", "TARGET_ACTION_ID")
 
     assert kafka_service.send_status_message_event.mock_calls == [
         mock.call(command_request_event, Status.PENDING, "Canceling downloads...", "TARGET_ACTION_ID"),
@@ -362,12 +362,12 @@ def test_cmd_object_nothing_to_delete(
     ]
 
 
-@patch.object(fetcher_dispatcher_service, "DataSetManager", autospec=True)
+@patch.object(fetcher_dispatcher_service, "DownloadManager", autospec=True)
 def test_cmd_object_emits_status_and_raises(
-    mockDataSetManager: DataSetManager, kafka_service: KafkaService, command_request_event: CommandRequestEvent
+    mockDownloadManager: DownloadManager, kafka_service: KafkaService, command_request_event: CommandRequestEvent
 ):
-    mockDataSetManager.cancel.side_effect = Exception("oh noes, something happen...")
-    cmd_object = DataSetCmdObject(mockDataSetManager)
+    mockDownloadManager.cancel.side_effect = Exception("oh noes, something happen...")
+    cmd_object = DownloadCmdObject(mockDownloadManager)
 
     with pytest.raises(Exception):
         cmd_object.cancel(
@@ -378,7 +378,7 @@ def test_cmd_object_emits_status_and_raises(
             bool(command_request_event.payload.args.get("cascade")),
         )
 
-    mockDataSetManager.cancel.assert_called_once_with("CLIENT_ID", "TARGET_ACTION_ID")
+    mockDownloadManager.cancel.assert_called_once_with("CLIENT_ID", "TARGET_ACTION_ID")
 
     assert kafka_service.send_status_message_event.mock_calls == [
         mock.call(command_request_event, Status.PENDING, "Canceling downloads...", "TARGET_ACTION_ID"),

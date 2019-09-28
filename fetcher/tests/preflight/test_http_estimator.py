@@ -5,7 +5,7 @@ from unittest.mock import call
 from mock import create_autospec
 from pytest import fixture
 
-from bai_kafka_utils.events import DataSetSizeInfo
+from bai_kafka_utils.events import ContentSizeInfo
 from preflight import http_estimator
 
 from preflight.http_estimator import http_estimate_size
@@ -41,4 +41,4 @@ def test_http_estimator(mock_curl):
     )
     mock_curl.getinfo.assert_called_with(pycurl.CONTENT_LENGTH_DOWNLOAD)
 
-    assert size_info == DataSetSizeInfo(DATA_SIZE, 1, DATA_SIZE)
+    assert size_info == ContentSizeInfo(DATA_SIZE, 1, DATA_SIZE)

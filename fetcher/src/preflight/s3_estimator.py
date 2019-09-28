@@ -6,12 +6,12 @@ import boto3
 from botocore.exceptions import ClientError
 
 from bai_io_utils.failures import S3Error
-from bai_kafka_utils.events import DataSetSizeInfo
+from bai_kafka_utils.events import ContentSizeInfo
 
 logger = logging.getLogger(__name__)
 
 
-def s3_estimate_size(src: str, s3: Any = None) -> DataSetSizeInfo:
+def s3_estimate_size(src: str, s3: Any = None) -> ContentSizeInfo:
     s3 = s3 or boto3.resource("s3")
 
     dst_url = urlparse(src)
@@ -25,7 +25,7 @@ def s3_estimate_size(src: str, s3: Any = None) -> DataSetSizeInfo:
     obj = bucket.Object(key)
     try:
         if obj.content_length > 0:
-            return DataSetSizeInfo(obj.content_length, 1, obj.content_length)
+            return ContentSizeInfo(obj.content_length, 1, obj.content_length)
     except ClientError:
         logger.info(f"Failed to get content_length for {obj}. May be not an object at all")
 
@@ -43,4 +43,4 @@ def s3_estimate_size(src: str, s3: Any = None) -> DataSetSizeInfo:
             max_size = max(max_size, sub_obj.size)
     except ClientError as e:
         raise S3Error(str(e)) from e
-    return DataSetSizeInfo(int(total_size), cnt, int(max_size))
+    return ContentSizeInfo(int(total_size), cnt, int(max_size))

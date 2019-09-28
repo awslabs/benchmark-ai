@@ -37,7 +37,7 @@ class FetchedType(Enum):
 
 @dataclass_json
 @dataclass
-class DataSetSizeInfo:
+class ContentSizeInfo:
     total_size: int
     file_count: int
     max_size: int
@@ -52,7 +52,7 @@ class DownloadableContent:
     status: Optional[FetcherStatus] = None
     type: Optional[FetchedType] = None
     message: Optional[str] = None
-    size_info: Optional[DataSetSizeInfo] = None
+    size_info: Optional[ContentSizeInfo] = None
     id: Optional[str] = None
 
 

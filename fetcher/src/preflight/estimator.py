@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 from retrying import retry
 
 from bai_io_utils.failures import RetryableError
-from bai_kafka_utils.events import DataSetSizeInfo
+from bai_kafka_utils.events import ContentSizeInfo
 from preflight.http_estimator import http_estimate_size
 from preflight.s3_estimator import s3_estimate_size
 
@@ -24,7 +24,7 @@ class UnknownSchemeException(Exception):
     wait_exponential_max=WAIT_EXPONENTIAL_MAX_MS,
     stop_max_attempt_number=MAX_ATTEMPTS,
 )
-def estimate_fetch_size(src: str) -> DataSetSizeInfo:
+def estimate_fetch_size(src: str) -> ContentSizeInfo:
     parsed = urlparse(src)
     if parsed.scheme == "http" or parsed.scheme == "https":
         return http_estimate_size(src)

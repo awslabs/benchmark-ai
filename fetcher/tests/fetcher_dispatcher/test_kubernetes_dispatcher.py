@@ -8,7 +8,7 @@ from kubernetes.client import V1Job
 from pytest import fixture, mark
 
 from bai_k8s_utils.service_labels import ServiceLabels
-from bai_kafka_utils.events import DownloadableContent, BenchmarkEvent, DataSetSizeInfo
+from bai_kafka_utils.events import DownloadableContent, BenchmarkEvent, ContentSizeInfo
 from fetcher_dispatcher import kubernetes_dispatcher, SERVICE_NAME
 from fetcher_dispatcher.args import FetcherJobConfig, FetcherVolumeConfig
 from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
@@ -57,8 +57,8 @@ SMALL_DATA_SET_SIZE = 1 * MB
 MIN_VOLUME_SIZE_MB = 64
 
 
-SMALL_DATA_SET_SIZE_INFO = DataSetSizeInfo(SMALL_DATA_SET_SIZE, 1, SMALL_DATA_SET_SIZE)
-BIG_DATA_SET_SIZE_INFO = DataSetSizeInfo(MIN_VOLUME_SIZE_MB * MB, 1, MIN_VOLUME_SIZE_MB * MB)
+SMALL_DATA_SET_SIZE_INFO = ContentSizeInfo(SMALL_DATA_SET_SIZE, 1, SMALL_DATA_SET_SIZE)
+BIG_DATA_SET_SIZE_INFO = ContentSizeInfo(MIN_VOLUME_SIZE_MB * MB, 1, MIN_VOLUME_SIZE_MB * MB)
 
 FETCHER_JOB_CONFIG = FetcherJobConfig(
     namespace=NAMESPACE,
@@ -214,7 +214,7 @@ def test_call_dispatcher(
     mock_core_api_instance: kubernetes.client.CoreV1Api,
     mock_k8s_config,
     data_set: DownloadableContent,
-    size_info: DataSetSizeInfo,
+    size_info: ContentSizeInfo,
 ):
     data_set_with_size = dataclasses.replace(data_set, size_info=size_info)
 

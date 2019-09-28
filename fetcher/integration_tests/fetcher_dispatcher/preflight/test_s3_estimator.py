@@ -3,7 +3,7 @@ import os
 import boto3
 from pytest import fixture
 
-from bai_kafka_utils.events import DataSetSizeInfo
+from bai_kafka_utils.events import ContentSizeInfo
 from preflight.s3_estimator import s3_estimate_size
 
 SINGLE_FILE_KEY = "single-file"
@@ -44,10 +44,10 @@ def s3_with_a_folder(s3):
 
 
 def test_s3_with_a_file(s3_with_a_file):
-    assert DataSetSizeInfo(FILE_SIZE, 1, FILE_SIZE) == s3_estimate_size(S3_SINGLE_FILE, s3_with_a_file)
+    assert ContentSizeInfo(FILE_SIZE, 1, FILE_SIZE) == s3_estimate_size(S3_SINGLE_FILE, s3_with_a_file)
 
 
 def test_s3_with_a_folder(s3_with_a_folder):
-    assert DataSetSizeInfo(FILE_SIZE * FILE_COUNT, FILE_COUNT, FILE_SIZE) == s3_estimate_size(
+    assert ContentSizeInfo(FILE_SIZE * FILE_COUNT, FILE_COUNT, FILE_SIZE) == s3_estimate_size(
         S3_FOLDER, s3_with_a_folder
     )
