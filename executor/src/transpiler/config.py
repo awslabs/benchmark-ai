@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from urllib.parse import urlparse
 
-from bai_kafka_utils.events import DataSet, FileSystemObject
+from bai_kafka_utils.events import DownloadableContent, FileSystemObject
 from bai_kafka_utils.executors.descriptor import DescriptorError
 from typing import Dict
 
@@ -34,7 +34,7 @@ class BaiDataSource:
     object: str
     path: str
 
-    def __init__(self, fetched_data_source: DataSet, path: str):
+    def __init__(self, fetched_data_source: DownloadableContent, path: str):
         parsed_uri = urlparse(fetched_data_source.dst)
         self.src = fetched_data_source.src
         self.scheme = parsed_uri.scheme

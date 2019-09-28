@@ -2,7 +2,7 @@ import random
 
 import pytest
 import toml
-from bai_kafka_utils.events import DataSet, FetchedType, FileSystemObject
+from bai_kafka_utils.events import DownloadableContent, FetchedType, FileSystemObject
 from pytest_regressions.file_regression import FileRegressionFixture
 from typing import List
 
@@ -87,11 +87,11 @@ def test_scheduled_job_regressions(
     file_regression.check(yaml_spec, basename=expected_yaml, extension=".yaml")
 
 
-def generate_fetched_data_sources(descriptor_data) -> List[DataSet]:
+def generate_fetched_data_sources(descriptor_data) -> List[DownloadableContent]:
     data_sources = descriptor_data.get("data", {}).get("sources", [])
     if data_sources:
         return [
-            DataSet(src=source["src"], md5="md5", dst=PULLER_S3_URI + str(inx), type=FetchedType.DIRECTORY)
+            DownloadableContent(src=source["src"], md5="md5", dst=PULLER_S3_URI + str(inx), type=FetchedType.DIRECTORY)
             # Fake different destinations
             for inx, source in enumerate(data_sources)
         ]

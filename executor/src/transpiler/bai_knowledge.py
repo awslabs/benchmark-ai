@@ -8,7 +8,7 @@ import shlex
 from dataclasses import dataclass
 from typing import List, Dict
 
-from bai_kafka_utils.events import DataSet, BenchmarkEvent
+from bai_kafka_utils.events import DownloadableContent, BenchmarkEvent
 from bai_kafka_utils.events import FileSystemObject
 from bai_kafka_utils.executors.descriptor import DescriptorError, Descriptor, DistributedStrategy
 from ruamel import yaml
@@ -438,8 +438,10 @@ class InferenceServerJobKubernetedObjectBuilder(SingleRunBenchmarkKubernetesObje
         server_container.pop("args", None)
 
 
-def create_bai_data_sources(fetched_data_sources: List[DataSet], descriptor: Descriptor) -> List[BaiDataSource]:
-    def find_destination_path(fetched_source: DataSet) -> str:
+def create_bai_data_sources(
+    fetched_data_sources: List[DownloadableContent], descriptor: Descriptor
+) -> List[BaiDataSource]:
+    def find_destination_path(fetched_source: DownloadableContent) -> str:
         return descriptor.find_data_source(fetched_source.src)["path"]
 
     return [BaiDataSource(fetched, find_destination_path(fetched)) for fetched in fetched_data_sources]
@@ -452,7 +454,7 @@ def create_scripts(scripts: List[FileSystemObject]) -> List[BaiScriptSource]:
 def create_single_run_benchmark_bai_k8s_builder(
     descriptor: Descriptor,
     bai_config: BaiConfig,
-    fetched_data_sources: List[DataSet],
+    fetched_data_sources: List[DownloadableContent],
     scripts: List[FileSystemObject],
     job_id: str,
     *,
@@ -550,7 +552,7 @@ def create_scheduled_benchmark_bai_k8s_builder(
 def create_job_yaml_spec(
     descriptor_contents: Dict,
     executor_config: ExecutorConfig,
-    fetched_data_sources: List[DataSet],
+    fetched_data_sources: List[DownloadableContent],
     scripts: List[FileSystemObject],
     job_id: str,
     *,
