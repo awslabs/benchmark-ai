@@ -9,7 +9,7 @@ from bai_kafka_utils.events import (
     FetcherBenchmarkEvent,
     FetcherPayload,
     FileSystemObject,
-    DataSet,
+    DownloadableContent,
     DataSetSizeInfo,
     FetchedType,
     BenchmarkDoc,
@@ -120,7 +120,7 @@ def fetcher_event(descriptor_as_dict: Dict[str, Any]) -> FetcherBenchmarkEvent:
             toml=BenchmarkDoc(contents=descriptor_as_dict, doc="", sha1="SHA"),
             scripts=SCRIPTS,
             datasets=[
-                DataSet(
+                DownloadableContent(
                     src="http://someserver.com/somedata.zip",
                     dst=DATASET_S3_URI,
                     id=DATASET_ID,
