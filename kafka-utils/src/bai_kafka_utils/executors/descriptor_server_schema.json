@@ -9,6 +9,7 @@
     "model_source": {
       "type": "object",
       "properties": {
+        "id": { "type": "string" },
         "src": { "type": "string" },
         "path": { "type": "string" },
         "md5": { "type":  "string", "pattern": "^([^:]+:[a-fA-F0-9]+|[a-fA-F0-9]{32}|)$" }

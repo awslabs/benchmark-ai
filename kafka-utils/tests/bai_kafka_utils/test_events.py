@@ -3,7 +3,7 @@ import json
 import pytest
 
 from bai_kafka_utils.events import (
-    DataSet,
+    DownloadableContent,
     FetcherPayload,
     ExecutorPayload,
     BenchmarkDoc,
@@ -53,7 +53,7 @@ def metrics_event(metrics_event_as_dict):
 
 @pytest.fixture
 def dataset():
-    return DataSet("http://foo.com")
+    return DownloadableContent("http://foo.com")
 
 
 def test_metrics_event(metrics_event, metrics_event_as_dict):
@@ -68,31 +68,31 @@ def test_metrics_event(metrics_event, metrics_event_as_dict):
 def test_data_set_optional_fields_just_src():
     json = '{"src":"http://foo.com"}'
     with pytest.warns(None) as record:
-        dataset = DataSet.from_json(json)
-        assert dataset == DataSet(src="http://foo.com")
+        dataset = DownloadableContent.from_json(json)
+        assert dataset == DownloadableContent(src="http://foo.com")
     assert not record.list
 
 
 def test_data_set_optional_missing_src():
     json = '{"dst":"http://foo.com", "md5":"42"}'
     with pytest.raises(KeyError):
-        DataSet.from_json(json)
+        DownloadableContent.from_json(json)
 
 
 def test_data_set_dont_fail_unknown_fields():
     json = '{"src":"http://foo.com","foo":"bar"}'
-    dataset = DataSet.from_json(json)
+    dataset = DownloadableContent.from_json(json)
     assert not hasattr(dataset, "foo")
 
 
 def test_data_set_with_enums():
     json = '{"src":"http://foo.com","type":"FILE", "status": "DONE"}'
-    dataset = DataSet.from_json(json)
-    assert dataset == DataSet(src="http://foo.com", type=FetchedType.FILE, status=FetcherStatus.DONE)
+    dataset = DownloadableContent.from_json(json)
+    assert dataset == DownloadableContent(src="http://foo.com", type=FetchedType.FILE, status=FetcherStatus.DONE)
 
 
 def test_data_set_with_enums_serialize():
-    dataset = DataSet(src="http://foo.com", type=FetchedType.FILE, status=FetcherStatus.DONE)
+    dataset = DownloadableContent(src="http://foo.com", type=FetchedType.FILE, status=FetcherStatus.DONE)
     jsons = dataset.to_json()
     dict = json.loads(jsons)
     assert dict["type"] == "FILE"
@@ -135,6 +135,7 @@ def test_fetcher_event_scripts(base_event_as_dict):
 def test_executor_event(base_event_as_dict):
     executor_event_as_dict = base_event_as_dict
     executor_event_as_dict["payload"]["datasets"] = [{"src": "http://foo.com", "md5": "None", "dst": "None"}]
+    executor_event_as_dict["payload"]["models"] = [{"src": "http://foo.com", "md5": "None", "dst": "None"}]
     executor_event_as_dict["payload"]["job"] = {"id": "job_id", "extras": {"some_var": "some_val"}}
 
     event_as_json_string = json.dumps(executor_event_as_dict)

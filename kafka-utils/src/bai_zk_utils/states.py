@@ -3,7 +3,7 @@ from typing import Optional
 
 from dataclasses_json import dataclass_json
 
-from bai_kafka_utils.events import FetcherStatus, FetchedType, DataSet
+from bai_kafka_utils.events import FetcherStatus, FetchedType, DownloadableContent
 
 DEFAULT_ENCODING = "utf-8"
 
@@ -22,7 +22,7 @@ class FetcherResult:
     def from_binary(cls, bin_data):
         return FetcherResult.from_json(bin_data.decode(DEFAULT_ENCODING))
 
-    def update(self, data_set: DataSet):
+    def update(self, data_set: DownloadableContent):
         data_set.status = self.status
         data_set.type = self.type
 
