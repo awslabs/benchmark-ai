@@ -51,32 +51,32 @@ class FetcherEventHandler(KafkaServiceCallback):
 
     def handle_event(self, event: FetcherBenchmarkEvent, kafka_service: KafkaService):
         def extract_datasets(event) -> List[DownloadableContent]:
-            return event.payload.datasets
+            return event.payload.datasets + event.payload.models
 
         def execute(task: DownloadableContent, callback) -> None:
 
             task.dst = get_dataset_dst(task, self.s3_data_set_bucket)
 
-            kafka_service.send_status_message_event(event, Status.PENDING, f"Dataset {task.src} sent to fetch")
+            kafka_service.send_status_message_event(event, Status.PENDING, f"{task.src} sent for download")
 
             self.data_set_mgr.fetch(task, event, callback)
 
         def execute_all(tasks: List[DownloadableContent], callback: Callable) -> None:
-            kafka_service.send_status_message_event(event, Status.PENDING, "Initiating dataset download...")
+            kafka_service.send_status_message_event(event, Status.PENDING, "Initiating download...")
 
             pending = list(tasks)
 
             def on_done(data_set: DownloadableContent):
                 if data_set.status == FetcherStatus.DONE:
-                    msg, status = f"Dataset {data_set.src} downloaded...", Status.PENDING
+                    msg, status = f"{data_set.src} downloaded...", Status.PENDING
                 elif data_set.status == FetcherStatus.CANCELED:
-                    msg, status = f"Dataset {data_set.src} download canceled...", Status.CANCELED
+                    msg, status = f"{data_set.src} download canceled...", Status.CANCELED
                 elif data_set.status == FetcherStatus.FAILED:
-                    msg, status = f"Dataset {data_set.src} download failed: '{data_set.message}'...", Status.FAILED
+                    msg, status = f"{data_set.src} download failed: '{data_set.message}'...", Status.FAILED
                 elif data_set.status in {FetcherStatus.RUNNING, FetcherStatus.PENDING}:
-                    msg, status = f"Downloading dataset {data_set.src}...", Status.PENDING
+                    msg, status = f"Downloading {data_set.src}...", Status.PENDING
                 else:
-                    msg, status = f"Unknown status {data_set.status} issued for dataset {data_set.src}", Status.ERROR
+                    msg, status = f"Unknown status {data_set.status} issued for {data_set.src}", Status.ERROR
 
                 if msg and status:
                     kafka_service.send_status_message_event(event, status, msg)
@@ -101,7 +101,7 @@ class FetcherEventHandler(KafkaServiceCallback):
             # Any failed/canceled fetching is not actionable - so we don't send it down the pipeline
             if total_status == Status.SUCCEEDED:
                 kafka_service.send_event(event, self.producer_topic)
-                kafka_service.send_status_message_event(event, total_status, "All data sets processed")
+                kafka_service.send_status_message_event(event, total_status, "All downloads processed")
             elif total_status in [Status.CANCELED, Status.FAILED]:
                 kafka_service.send_status_message_event(event, total_status, "Aborting execution")
             else:

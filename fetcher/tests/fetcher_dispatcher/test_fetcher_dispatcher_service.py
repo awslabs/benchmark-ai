@@ -181,8 +181,8 @@ def test_fetcher_event_handler_fetch(
     # Nothing yet fetched, but sent for fetching
     validate_sent_events(kafka_service, [])
 
-    expected_sent_statuses_before = [call(ANY, Status.PENDING, "Initiating dataset download...")] + [
-        call(ANY, Status.PENDING, f"Dataset {d.src} sent to fetch") for d in datasets
+    expected_sent_statuses_before = [call(ANY, Status.PENDING, "Initiating download...")] + [
+        call(ANY, Status.PENDING, f"{d.src} sent for download") for d in datasets
     ]
 
     validate_send_status_message_calls(kafka_service, expected_sent_statuses_before)
@@ -199,7 +199,7 @@ def test_fetcher_event_handler_fetch(
 
     expected_sent_statuses_after = [call(ANY, expected_total_status, ANY) for d in datasets]
     if fetch_status == FetcherStatus.DONE:
-        expected_sent_statuses_after.append(call(ANY, Status.SUCCEEDED, "All data sets processed"))
+        expected_sent_statuses_after.append(call(ANY, Status.SUCCEEDED, "All downloads processed"))
     elif fetch_status == FetcherStatus.FAILED:
         expected_sent_statuses_after.append(call(ANY, Status.FAILED, "Aborting execution"))
     elif fetch_status == FetcherStatus.CANCELED:
