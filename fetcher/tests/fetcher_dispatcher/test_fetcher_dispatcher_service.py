@@ -8,7 +8,7 @@ from bai_kafka_utils.events import (
     BenchmarkDoc,
     BenchmarkEvent,
     FetcherPayload,
-    DataSet,
+    DownloadableContent,
     FetcherBenchmarkEvent,
     Status,
     FetcherStatus,
@@ -92,7 +92,7 @@ def benchmark_doc() -> BenchmarkDoc:
 
 @fixture
 def datasets():
-    return [DataSet(src="src1"), DataSet(src="src2")]
+    return [DownloadableContent(src="src1"), DownloadableContent(src="src2")]
 
 
 @fixture
@@ -170,7 +170,7 @@ def test_fetcher_event_handler_fetch(
     data_set_manager: DataSetManager,
     benchmark_event_with_datasets: FetcherBenchmarkEvent,
     kafka_service: KafkaService,
-    datasets: List[DataSet],
+    datasets: List[DownloadableContent],
     fetch_status: FetcherStatus,
     expected_total_status: Status,
 ):
@@ -398,5 +398,5 @@ def test_cmd_object_emits_status_and_raises(
 )
 def test_collect_status(fetch_statuses, expected_status):
     assert expected_status == FetcherEventHandler._collect_status(
-        [DataSet(src="some/path", status=fetch_status) for fetch_status in fetch_statuses]
+        [DownloadableContent(src="some/path", status=fetch_status) for fetch_status in fetch_statuses]
     )

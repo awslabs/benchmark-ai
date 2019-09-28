@@ -10,7 +10,7 @@ from typing import Any
 from unittest.mock import create_autospec
 
 from bai_io_utils.failures import UnRetryableError
-from bai_kafka_utils.events import DataSet, BenchmarkEvent, FetcherStatus, DataSetSizeInfo
+from bai_kafka_utils.events import DownloadableContent, BenchmarkEvent, FetcherStatus, DataSetSizeInfo
 from bai_zk_utils.states import FetcherResult
 from bai_zk_utils.zk_locker import RWLockManager, OnLockCallback, RWLock
 from fetcher_dispatcher.data_set_manager import DataSetManager, DataSetDispatcher, DataSetOnDone, DataSetSizeEstimator
@@ -39,7 +39,7 @@ def failing_size_estimator() -> DataSetSizeEstimator:
     return mock
 
 
-def data_set_to_path(client_id: str, action_id: str = None, dataset: DataSet = None) -> str:
+def data_set_to_path(client_id: str, action_id: str = None, dataset: DownloadableContent = None) -> str:
     return SOME_PATH
 
 
@@ -142,8 +142,8 @@ def data_set_manager(
 
 
 @fixture
-def some_data_set() -> DataSet:
-    return DataSet("http://imagenet.org/bigdata.zip", size_info=SOME_SIZE_INFO)
+def some_data_set() -> DownloadableContent:
+    return DownloadableContent("http://imagenet.org/bigdata.zip", size_info=SOME_SIZE_INFO)
 
 
 @fixture
@@ -199,7 +199,7 @@ def test_pass_through_stop(
 
 def test_first_fast_success(
     zoo_keeper_client_with_done_node: KazooClient,
-    some_data_set: DataSet,
+    some_data_set: DownloadableContent,
     enclosing_event: BenchmarkEvent,
     kubernetes_job_starter: DataSetDispatcher,
     mock_lock_manager: RWLockManager,
@@ -229,7 +229,7 @@ def _test_fetch(zoo_keeper_client, enclosing_event, kubernetes_job_starter, mock
 
 def test_first_wait_success(
     zoo_keeper_client_with_running_node: KazooClient,
-    some_data_set: DataSet,
+    some_data_set: DownloadableContent,
     enclosing_event: BenchmarkEvent,
     kubernetes_job_starter: DataSetDispatcher,
     mock_lock_manager: RWLockManager,
@@ -247,7 +247,7 @@ def test_first_wait_success(
 def _verify_fetch(
     enclosing_event: BenchmarkEvent,
     kubernetes_job_starter: DataSetDispatcher,
-    some_data_set: DataSet,
+    some_data_set: DownloadableContent,
     lock_manager: RWLockManager,
 ):
     kubernetes_job_starter.dispatch_fetch.assert_called_with(some_data_set, enclosing_event, SOME_PATH)
@@ -266,7 +266,7 @@ def _verify_wait_success(zoo_keeper_client: KazooClient):
 
 def _verify_success(
     on_done: DataSetOnDone,
-    data_set: DataSet,
+    data_set: DownloadableContent,
     kubernetes_job_starter: DataSetDispatcher,
     zoo_keeper_client: KazooClient,
     lock: RWLock,
@@ -388,7 +388,7 @@ def test_cancel_no_node(
 
 def test_pass_through_estimator_error(
     enclosing_event: BenchmarkEvent,
-    some_data_set: DataSet,
+    some_data_set: DownloadableContent,
     failing_size_estimator: DataSetSizeEstimator,
     zoo_keeper_client: KazooClient,
     kubernetes_job_starter: DataSetDispatcher,

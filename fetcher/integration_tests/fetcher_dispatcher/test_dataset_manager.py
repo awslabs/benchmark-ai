@@ -4,7 +4,7 @@ from kazoo.client import KazooClient
 from pytest import fixture
 from typing import NamedTuple
 
-from bai_kafka_utils.events import BenchmarkEvent, DataSet, FetchedType, FetcherStatus
+from bai_kafka_utils.events import BenchmarkEvent, DownloadableContent, FetchedType, FetcherStatus
 from bai_zk_utils.zk_locker import DistributedRWLockManager
 from fetcher_dispatcher.args import FetcherServiceConfig
 from fetcher_dispatcher.data_set_manager import DataSetManager
@@ -29,7 +29,7 @@ def data_set_manager(zk_client: KazooClient, k8s_dispatcher: KubernetesDispatche
     data_set_manager.stop()
 
 
-DataSetWithEvent = NamedTuple("DataSetWithEvent", [("data_set", DataSet), ("event", threading.Event)])
+DataSetWithEvent = NamedTuple("DataSetWithEvent", [("data_set", DownloadableContent), ("event", threading.Event)])
 
 # Repeat 2 - regression test.
 # Checks that unlocking works as expected
@@ -42,14 +42,14 @@ def test_fetch(
 ):
     data_sets_with_events = [
         DataSetWithEvent(
-            DataSet(
+            DownloadableContent(
                 src=EXISTING_DATASET, dst=f"s3://{fetcher_service_config.s3_data_set_bucket}/it/test.file", md5=None
             ),
             threading.Event(),
         )
     ]
 
-    def on_done_test(data_set: DataSet, completed: threading.Event):
+    def on_done_test(data_set: DownloadableContent, completed: threading.Event):
         assert data_set.src
         assert data_set.type == FetchedType.FILE
         assert data_set.dst
@@ -76,13 +76,13 @@ def test_cancel(
     fetcher_service_config: FetcherServiceConfig,
     benchmark_event_dummy_payload: BenchmarkEvent,
 ):
-    data_set = DataSet(
+    data_set = DownloadableContent(
         src=VERY_LARGE_DATASET, dst=f"s3://{fetcher_service_config.s3_data_set_bucket}/it/test.file", md5=None
     )
 
     completed = threading.Event()
 
-    def on_done_test(data_set: DataSet):
+    def on_done_test(data_set: DownloadableContent):
         assert data_set.src
         assert data_set.status == FetcherStatus.CANCELED
         assert not data_set.dst

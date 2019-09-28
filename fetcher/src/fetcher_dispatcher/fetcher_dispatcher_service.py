@@ -11,7 +11,7 @@ from kazoo.client import KazooClient
 
 from fetcher_dispatcher import SERVICE_NAME, __version__
 from fetcher_dispatcher.args import FetcherServiceConfig, FetcherJobConfig
-from fetcher_dispatcher.data_set_manager import DataSet, DataSetManager, get_lock_name
+from fetcher_dispatcher.data_set_manager import DownloadableContent, DataSetManager, get_lock_name
 from fetcher_dispatcher.data_set_pull import get_dataset_dst
 from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
 
@@ -36,7 +36,7 @@ class FetcherEventHandler(KafkaServiceCallback):
         self.producer_topic = producer_topic
 
     @staticmethod
-    def _collect_status(data_sets: List[DataSet]) -> Status:
+    def _collect_status(data_sets: List[DownloadableContent]) -> Status:
         fetch_statuses = {d.status for d in data_sets}
         if FetcherStatus.CANCELED in fetch_statuses:
             return Status.CANCELED
@@ -50,10 +50,10 @@ class FetcherEventHandler(KafkaServiceCallback):
         return Status.SUCCEEDED
 
     def handle_event(self, event: FetcherBenchmarkEvent, kafka_service: KafkaService):
-        def extract_datasets(event) -> List[DataSet]:
+        def extract_datasets(event) -> List[DownloadableContent]:
             return event.payload.datasets
 
-        def execute(task: DataSet, callback) -> None:
+        def execute(task: DownloadableContent, callback) -> None:
 
             task.dst = get_dataset_dst(task, self.s3_data_set_bucket)
 
@@ -61,12 +61,12 @@ class FetcherEventHandler(KafkaServiceCallback):
 
             self.data_set_mgr.fetch(task, event, callback)
 
-        def execute_all(tasks: List[DataSet], callback: Callable) -> None:
+        def execute_all(tasks: List[DownloadableContent], callback: Callable) -> None:
             kafka_service.send_status_message_event(event, Status.PENDING, "Initiating dataset download...")
 
             pending = list(tasks)
 
-            def on_done(data_set: DataSet):
+            def on_done(data_set: DownloadableContent):
                 if data_set.status == FetcherStatus.DONE:
                     msg, status = f"Dataset {data_set.src} downloaded...", Status.PENDING
                 elif data_set.status == FetcherStatus.CANCELED:
