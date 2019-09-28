@@ -57,6 +57,12 @@
   [event]
   (assoc-in event [:payload :datasets] (remove empty? (mapv #(select-keys % [:src :md5 :id]) (some-> event :payload :toml :contents :data :sources)))))
 
+(defn glean-server-model-info
+  "Pulls out the server.models information out of the TOML and raises it in the \"payload\" map."
+  [event]
+  (assoc-in event [:payload :models] (remove empty? (mapv #(select-keys % [:src :md5 :id]) (some-> event :payload :toml :contents :server :models)))))
+
+
 (defn glean-script-info
   "Pulls out the script file information from the TOML and writes it to the \"payload\" map."
   [event]
@@ -99,6 +105,7 @@
      (decode-document)
      (validate-toml-crontab)
      (glean-dataset-info)
+     (glean-server-model-info)
      (glean-script-info)
      (add-my-visited-entry))))
 
