@@ -4,6 +4,7 @@ from unittest.mock import patch, call, ANY, create_autospec
 
 import kafka
 import pytest
+from pytest_cases import pytest_parametrize_plus, pytest_fixture_plus, fixture_ref
 from bai_kafka_utils.events import (
     BenchmarkDoc,
     BenchmarkEvent,
@@ -96,13 +97,30 @@ def datasets():
 
 
 @fixture
+def models():
+    return [DownloadableContent(src="model1"), DownloadableContent(src="model2")]
+
+
+@fixture
 def benchmark_event_with_datasets(benchmark_doc: BenchmarkDoc, datasets) -> BenchmarkEvent:
     payload = FetcherPayload(toml=benchmark_doc, datasets=datasets)
     return get_benchmark_event(payload)
 
 
 @fixture
-def benchmark_event_without_datasets(benchmark_doc: BenchmarkDoc) -> BenchmarkEvent:
+def benchmark_event_with_models(benchmark_doc: BenchmarkDoc, models) -> BenchmarkEvent:
+    payload = FetcherPayload(toml=benchmark_doc, models=models, datasets=[])
+    return get_benchmark_event(payload)
+
+
+@fixture
+def benchmark_event_with_datasets_and_models(benchmark_doc: BenchmarkDoc, datasets, models) -> BenchmarkEvent:
+    payload = FetcherPayload(toml=benchmark_doc, datasets=datasets, models=models)
+    return get_benchmark_event(payload)
+
+
+@fixture
+def benchmark_event_without_datasets_or_models(benchmark_doc: BenchmarkDoc) -> BenchmarkEvent:
     payload = FetcherPayload(toml=benchmark_doc, datasets=[])
     return get_benchmark_event(payload)
 
@@ -157,27 +175,36 @@ def collect_send_event_calls(kafka_service: KafkaService, cls: Type[BenchmarkEve
     return calls
 
 
-@pytest.mark.parametrize(
-    ["fetch_status", "expected_total_status"],
+@pytest_fixture_plus
+@pytest_parametrize_plus(
+    "benchmark_event,fetch_status,expected_total_status",
     [
-        (FetcherStatus.DONE, Status.PENDING),
-        (FetcherStatus.CANCELED, Status.CANCELED),
-        (FetcherStatus.FAILED, Status.FAILED),
+        (fixture_ref(benchmark_event_with_datasets), FetcherStatus.DONE, Status.PENDING),
+        (fixture_ref(benchmark_event_with_datasets), FetcherStatus.CANCELED, Status.CANCELED),
+        (fixture_ref(benchmark_event_with_datasets), FetcherStatus.FAILED, Status.FAILED),
+        (fixture_ref(benchmark_event_with_models), FetcherStatus.DONE, Status.PENDING),
+        (fixture_ref(benchmark_event_with_models), FetcherStatus.CANCELED, Status.CANCELED),
+        (fixture_ref(benchmark_event_with_models), FetcherStatus.FAILED, Status.FAILED),
+        (fixture_ref(benchmark_event_with_datasets_and_models), FetcherStatus.DONE, Status.PENDING),
+        (fixture_ref(benchmark_event_with_datasets_and_models), FetcherStatus.CANCELED, Status.CANCELED),
+        (fixture_ref(benchmark_event_with_datasets_and_models), FetcherStatus.FAILED, Status.FAILED),
     ],
 )
 def test_fetcher_event_handler_fetch(
     fetcher_callback: FetcherEventHandler,
     download_manager,
-    benchmark_event_with_datasets: FetcherBenchmarkEvent,
+    benchmark_event: FetcherBenchmarkEvent,
     kafka_service: KafkaService,
     datasets: List[DownloadableContent],
     fetch_status: FetcherStatus,
     expected_total_status: Status,
 ):
-    fetcher_callback.handle_event(benchmark_event_with_datasets, kafka_service)
+    fetcher_callback.handle_event(benchmark_event, kafka_service)
 
     # All datasets fetched
-    assert download_manager.fetch.call_count == len(benchmark_event_with_datasets.payload.datasets)
+    assert download_manager.fetch.call_count == len(benchmark_event.payload.datasets) + len(
+        benchmark_event.payload.models
+    )
     # Nothing yet fetched, but sent for fetching
     validate_sent_events(kafka_service, [])
 
@@ -217,9 +244,9 @@ def validate_send_status_message_calls(kafka_service, expected_sent_statuses_bef
 
 
 def test_fetcher_event_handler_nothing_to_do(
-    fetcher_callback: FetcherEventHandler, benchmark_event_without_datasets: BenchmarkEvent, kafka_service: KafkaService
+    fetcher_callback: FetcherEventHandler, benchmark_event_without_datasets_or_models, kafka_service: KafkaService
 ):
-    fetcher_callback.handle_event(benchmark_event_without_datasets, kafka_service)
+    fetcher_callback.handle_event(benchmark_event_without_datasets_or_models, kafka_service)
 
     assert kafka_service.send_status_message_event.call_args_list == [call(ANY, Status.SUCCEEDED, "Nothing to fetch")]
 

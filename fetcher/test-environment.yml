@@ -8,3 +8,5 @@ dependencies:
   - pytest-mock
   - pytest-timeout
   - timeout-decorator
+  - pip:
+      - pytest-cases

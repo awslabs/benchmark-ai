@@ -58,7 +58,7 @@ def test_fetch(
 
     for data_sets_with_event in data_sets_with_events:
         download_manager.fetch(
-            data_sets_with_event.data_set,
+            data_sets_with_event.content,
             benchmark_event_dummy_payload,
             lambda d: on_done_test(d, data_sets_with_event.event),
         )
