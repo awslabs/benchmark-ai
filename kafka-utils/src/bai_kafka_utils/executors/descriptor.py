@@ -39,6 +39,7 @@ ONE_PER_GPU = "gpus"
 class ModelSourceDescriptor:
     src: str
     path: str
+    md5: Optional[str] = None
 
 
 @dataclass

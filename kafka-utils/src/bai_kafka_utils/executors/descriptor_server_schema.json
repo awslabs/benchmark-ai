@@ -10,7 +10,8 @@
       "type": "object",
       "properties": {
         "src": { "type": "string" },
-        "path": { "type": "string" }
+        "path": { "type": "string" },
+        "md5": { "type":  "string", "pattern": "^([^:]+:[a-fA-F0-9]+|[a-fA-F0-9]{32}|)$" }
       },
       "additionalProperties": false,
       "required": ["src", "path"]
