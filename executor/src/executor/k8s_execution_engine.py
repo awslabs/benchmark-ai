@@ -42,12 +42,13 @@ class K8SExecutionEngine(ExecutionEngine):
         """
         descriptor_contents = event.payload.toml.contents
         fetched_data_sources = event.payload.datasets
+        fetched_models = event.payload.models
         scripts = event.payload.scripts
         job_id = K8SExecutionEngine.JOB_ID_PREFIX + event.action_id
 
         try:
             yaml = create_job_yaml_spec(
-                descriptor_contents, self.config, fetched_data_sources, scripts, job_id, event=event
+                descriptor_contents, self.config, fetched_data_sources, fetched_models, scripts, job_id, event=event
             )
             self._kubernetes_apply(yaml)
         except DescriptorError as e:

@@ -52,12 +52,13 @@ def test_single_job_regressions(
 
     descriptor_data = toml.load(str(shared_datadir / descriptor_filename))
     fetched_data_sources = generate_fetched_data_sources(descriptor_data)
+    fetched_models = generate_fetched_models(descriptor_data)
     transpiler_config = create_executor_config(config_args, config_env)
-
     yaml_spec = create_job_yaml_spec(
         descriptor_data,
         transpiler_config,
         fetched_data_sources,
+        fetched_models,
         scripts,
         JOB_ID,
         extra_bai_config_args=dict(random_object=random_object),
@@ -89,6 +90,18 @@ def test_scheduled_job_regressions(
 
 def generate_fetched_data_sources(descriptor_data) -> List[DownloadableContent]:
     data_sources = descriptor_data.get("data", {}).get("sources", [])
+    if data_sources:
+        return [
+            DownloadableContent(src=source["src"], md5="md5", dst=PULLER_S3_URI + str(inx), type=FetchedType.DIRECTORY)
+            # Fake different destinations
+            for inx, source in enumerate(data_sources)
+        ]
+    else:
+        return []
+
+
+def generate_fetched_models(descriptor_data) -> List[DownloadableContent]:
+    data_sources = descriptor_data.get("server", {}).get("models", [])
     if data_sources:
         return [
             DownloadableContent(src=source["src"], md5="md5", dst=PULLER_S3_URI + str(inx), type=FetchedType.DIRECTORY)
