@@ -2,7 +2,7 @@ from bai_kafka_utils.events import (
     BenchmarkDoc,
     VisitedService,
     FetcherBenchmarkEvent,
-    DataSet,
+    DownloadableContent,
     FetcherPayload,
     FileSystemObject,
 )
@@ -63,6 +63,17 @@ BIG_FETCHER_JSON = """{
                            "src": "s3://bucket/imagenet/validation"
                        }
                    ],
+                   "models": [
+                       {
+                           "path": "~/data/models/",
+                           "src": "s3://bucket/model/inception",
+                           "md5": "5d41402abc4b2a76b9719d911017c592"
+                       },
+                       {
+                           "path": "~/data/models/",
+                           "src": "s3://bucket/models/mnist"
+                       }
+                   ],
                    "scripts": [
                         {
                             "dst": "s3://script-exchange/foo.tar"
@@ -119,9 +130,17 @@ EXPECTED_FETCHER_VISITED = [
     VisitedService(svc="bai-bff", tstamp=1556814924121, version="0.0.2"),
 ]
 
-EXPECTED_FETCHER_DATASETS = [DataSet("s3://bucket/imagenet/train"), DataSet("s3://bucket/imagenet/validation")]
+EXPECTED_FETCHER_DATASETS = [
+    DownloadableContent("s3://bucket/imagenet/train"),
+    DownloadableContent("s3://bucket/imagenet/validation"),
+]
 
 EXPECTED_FETCHER_SCRIPTS = [FileSystemObject(dst="s3://script-exchange/foo.tar")]
+
+EXPECTED_FETCHER_MODELS = [
+    DownloadableContent("s3://bucket/model/inception", md5="5d41402abc4b2a76b9719d911017c592"),
+    DownloadableContent("s3://bucket/models/mnist"),
+]
 
 EXPECTED_FETCHER_EVENT = FetcherBenchmarkEvent(
     action_id="ffea52eb-c24b-4dd0-b32e-61230db34ad5",
@@ -134,11 +153,16 @@ EXPECTED_FETCHER_EVENT = FetcherBenchmarkEvent(
     visited=EXPECTED_FETCHER_VISITED,
     type="BAI_APP_BFF",
     payload=FetcherPayload(
-        datasets=EXPECTED_FETCHER_DATASETS, scripts=EXPECTED_FETCHER_SCRIPTS, toml=EXPECTED_FETCHER_DOC
+        datasets=EXPECTED_FETCHER_DATASETS,
+        scripts=EXPECTED_FETCHER_SCRIPTS,
+        models=EXPECTED_FETCHER_MODELS,
+        toml=EXPECTED_FETCHER_DOC,
     ),
 )
 
 
 def test_big_fetcher_json():
     event = FetcherBenchmarkEvent.from_json(BIG_FETCHER_JSON)
+    print(event)
+    print(EXPECTED_FETCHER_EVENT)
     assert event == EXPECTED_FETCHER_EVENT

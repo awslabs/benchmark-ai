@@ -54,7 +54,7 @@ spec:
                 {"metrics": [{"name": "accuracy", "unit": "%", "pattern": "accuracy=([-+]?\\d*\\.\\d+|\\d+)"},
                 {"name": "throughput", "unit": "images/sec", "pattern": "throughput=([-+]?\\d*\\.\\d+|\\d+)"}]}},
                 "doc": "doc", "sha1": "SHA1", "descriptor_filename": null, "verified":
-                false}, "datasets": [], "scripts": []}}'
+                false}, "datasets": [], "models": [], "scripts": []}}'
             volumeMounts: []
           nodeSelector:
             node.type: bai-services-cheap

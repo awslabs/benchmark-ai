@@ -8,7 +8,7 @@ from kubernetes.client import V1Job
 from pytest import fixture, mark
 
 from bai_k8s_utils.service_labels import ServiceLabels
-from bai_kafka_utils.events import DataSet, BenchmarkEvent, DataSetSizeInfo
+from bai_kafka_utils.events import DownloadableContent, BenchmarkEvent, DataSetSizeInfo
 from fetcher_dispatcher import kubernetes_dispatcher, SERVICE_NAME
 from fetcher_dispatcher.args import FetcherJobConfig, FetcherVolumeConfig
 from fetcher_dispatcher.kubernetes_dispatcher import KubernetesDispatcher
@@ -20,7 +20,7 @@ CLIENT_ID = "CLIENT_ID"
 
 ACTION_ID = "ACTION_ID"
 
-DATA_SET = DataSet(src="http://some.com/src", dst="s3://bucket/dst/")
+DATA_SET = DownloadableContent(src="http://some.com/src", dst="s3://bucket/dst/")
 DATA_SET_WITH_MD5 = dataclasses.replace(DATA_SET, md5="42")
 
 BENCHMARK_EVENT = BenchmarkEvent(
@@ -143,7 +143,7 @@ def k8s_dispatcher(
     )
 
 
-def validate_namespaced_job(namespace: str, job: V1Job, data_set: DataSet):
+def validate_namespaced_job(namespace: str, job: V1Job, data_set: DownloadableContent):
     assert namespace == NAMESPACE
 
     metadata: kubernetes.client.V1ObjectMeta = job.metadata
@@ -213,7 +213,7 @@ def test_call_dispatcher(
     mock_batch_api_instance: kubernetes.client.BatchV1Api,
     mock_core_api_instance: kubernetes.client.CoreV1Api,
     mock_k8s_config,
-    data_set: DataSet,
+    data_set: DownloadableContent,
     size_info: DataSetSizeInfo,
 ):
     data_set_with_size = dataclasses.replace(data_set, size_info=size_info)

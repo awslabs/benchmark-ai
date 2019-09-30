@@ -7,7 +7,7 @@ from bai_kafka_utils.executors.descriptor import Descriptor, DescriptorConfig, D
 
 from unittest.mock import create_autospec
 
-from bai_kafka_utils.events import DataSet, BenchmarkDoc, FetcherPayload, BenchmarkEvent
+from bai_kafka_utils.events import DownloadableContent, BenchmarkDoc, FetcherPayload, BenchmarkEvent
 from bai_kafka_utils.kafka_service import KafkaServiceConfig, KafkaService
 from transpiler.bai_knowledge import EnvironmentInfo
 from transpiler.config import BaiConfig
@@ -50,7 +50,7 @@ def fetched_data_sources(base_data_sources):
     sources = []
 
     for source in base_data_sources:
-        sources.append(DataSet(src=source["src"], md5=source["md5"], dst=source["puller_uri"]))
+        sources.append(DownloadableContent(src=source["src"], md5=source["md5"], dst=source["puller_uri"]))
     return sources
 
 

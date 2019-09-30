@@ -3,7 +3,7 @@ import abc
 import logging
 from typing import Callable, List, Optional, Tuple
 
-from bai_kafka_utils.events import DataSet, BenchmarkEvent, FetcherStatus, DataSetSizeInfo
+from bai_kafka_utils.events import DownloadableContent, BenchmarkEvent, FetcherStatus, DataSetSizeInfo
 from bai_kafka_utils.utils import md5sum
 from bai_zk_utils.states import FetcherResult
 from bai_zk_utils.zk_locker import RWLockManager, RWLock
@@ -13,12 +13,12 @@ from kazoo.protocol.states import WatchedEvent, EventType
 
 from preflight.estimator import estimate_fetch_size
 
-DataSetDispatcher = Callable[[DataSet, BenchmarkEvent, str], None]
+DataSetDispatcher = Callable[[DownloadableContent, BenchmarkEvent, str], None]
 
 
 class DataSetDispatcher(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def dispatch_fetch(self, task: DataSet, event: BenchmarkEvent, zk_node_path: str):
+    def dispatch_fetch(self, task: DownloadableContent, event: BenchmarkEvent, zk_node_path: str):
         pass
 
     @abc.abstractmethod
@@ -26,28 +26,28 @@ class DataSetDispatcher(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def cleanup(self, task: DataSet, event: BenchmarkEvent):
+    def cleanup(self, task: DownloadableContent, event: BenchmarkEvent):
         pass
 
 
 # client_id/action_id/dataset
-NodePathSource = Callable[[str, Optional[str], Optional[DataSet]], str]
+NodePathSource = Callable[[str, Optional[str], Optional[DownloadableContent]], str]
 
 
-DataSetOnDone = Callable[[DataSet], None]
+DataSetOnDone = Callable[[DownloadableContent], None]
 
 DataSetSizeEstimator = Callable[[str], DataSetSizeInfo]
 
 logger = logging.getLogger(__name__)
 
 
-def get_lock_name(data_set: DataSet) -> str:
+def get_lock_name(data_set: DownloadableContent) -> str:
     return md5sum(data_set.src)
 
 
 class DataSetManager:
     @staticmethod
-    def __get_node_path(client_id: str, action_id: str = None, data_set: DataSet = None) -> str:
+    def __get_node_path(client_id: str, action_id: str = None, data_set: DownloadableContent = None) -> str:
         # MD5 has impact on the node - so different locks etc.
         path = f"/data_sets/{client_id}"
         if action_id:
@@ -59,7 +59,7 @@ class DataSetManager:
     INITIAL_DATA = FetcherResult(FetcherStatus.PENDING).to_binary()
 
     @staticmethod
-    def _set_failed(data_set: DataSet, message: str):
+    def _set_failed(data_set: DownloadableContent, message: str):
         data_set.message = message
         data_set.status = FetcherStatus.FAILED
         data_set.dst = None
@@ -83,11 +83,11 @@ class DataSetManager:
         logger.info("Start")
         self._zk.start()
 
-    def fetch(self, data_set: DataSet, event: BenchmarkEvent, on_done: DataSetOnDone) -> None:
+    def fetch(self, data_set: DownloadableContent, event: BenchmarkEvent, on_done: DataSetOnDone) -> None:
         logger.info("Fetch request %s", data_set)
 
-        def on_data_set_locked(data_set: DataSet, lock: RWLock):
-            def _on_done_and_unlock(data_set: DataSet):
+        def on_data_set_locked(data_set: DownloadableContent, lock: RWLock):
+            def _on_done_and_unlock(data_set: DownloadableContent):
                 on_done(data_set)
                 self._data_set_dispatcher.cleanup(data_set, event)
                 lock.release()
@@ -114,7 +114,7 @@ class DataSetManager:
 
         self._lock_manager.acquire_write_lock(data_set, on_data_set_locked)
 
-    def __on_zk_changed(self, event: WatchedEvent, on_done: DataSetOnDone, data_set: DataSet):
+    def __on_zk_changed(self, event: WatchedEvent, on_done: DataSetOnDone, data_set: DownloadableContent):
         if event.type == EventType.DELETED:
             if not data_set.status:  # Something not final - and deleted???
                 logger.error("Deleted node %s for the not finalized data_set %s", event.path, data_set)
@@ -123,7 +123,7 @@ class DataSetManager:
 
         self.__handle_node_state(event.path, on_done, data_set)
 
-    def __handle_node_state(self, zk_node_path: str, on_done: DataSetOnDone, data_set: DataSet):
+    def __handle_node_state(self, zk_node_path: str, on_done: DataSetOnDone, data_set: DownloadableContent):
         def _on_zk_changed(evt):
             self.__on_zk_changed(evt, on_done, data_set)
 

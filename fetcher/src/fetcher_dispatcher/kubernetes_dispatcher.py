@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 
 import kubernetes
 from bai_k8s_utils.service_labels import ServiceLabels
-from bai_kafka_utils.events import DataSet, BenchmarkEvent, DataSetSizeInfo
+from bai_kafka_utils.events import DownloadableContent, BenchmarkEvent, DataSetSizeInfo
 from bai_kafka_utils.utils import id_generator, md5sum
 
 from fetcher_dispatcher.args import FetcherJobConfig
@@ -66,7 +66,7 @@ class KubernetesDispatcher(DataSetDispatcher):
         self.core_api_instance = kubernetes.client.CoreV1Api(api_client)
 
     def _get_fetcher_job(
-        self, task: DataSet, event: BenchmarkEvent, zk_node_path: str, volume_claim_name: Optional[str]
+        self, task: DownloadableContent, event: BenchmarkEvent, zk_node_path: str, volume_claim_name: Optional[str]
     ) -> kubernetes.client.V1Job:
 
         job_metadata = kubernetes.client.V1ObjectMeta(
@@ -83,14 +83,14 @@ class KubernetesDispatcher(DataSetDispatcher):
         )
 
     # TODO Implement some human readable name from DataSet
-    def _get_job_name(self, task: DataSet) -> str:
+    def _get_job_name(self, task: DownloadableContent) -> str:
         return "fetcher-" + id_generator()
 
-    def _get_volume_name(self, task: DataSet) -> str:
+    def _get_volume_name(self, task: DownloadableContent) -> str:
         return "fetcher-pv-" + id_generator()
 
     def _get_fetcher_pod_template(
-        self, task: DataSet, event: BenchmarkEvent, zk_node_path: str, volume_claim_name: Optional[str]
+        self, task: DownloadableContent, event: BenchmarkEvent, zk_node_path: str, volume_claim_name: Optional[str]
     ) -> kubernetes.client.V1PodTemplateSpec:
         pod_spec = self._get_fetcher_pod_spec(task, zk_node_path, volume_claim_name)
         return kubernetes.client.V1PodTemplateSpec(
@@ -100,7 +100,7 @@ class KubernetesDispatcher(DataSetDispatcher):
             ),
         )
 
-    def _get_fetcher_pod_spec(self, task: DataSet, zk_node_path: str, volume_claim_name: Optional[str]):
+    def _get_fetcher_pod_spec(self, task: DownloadableContent, zk_node_path: str, volume_claim_name: Optional[str]):
         volume = self._get_fetcher_volume(volume_claim_name)
         container = self._get_fetcher_container(task, zk_node_path)
 
@@ -120,7 +120,7 @@ class KubernetesDispatcher(DataSetDispatcher):
             empty_dir=None if volume_claim_name else kubernetes.client.V1EmptyDirVolumeSource(),
         )
 
-    def _get_fetcher_container(self, task: DataSet, zk_node_path: str) -> kubernetes.client.V1Container:
+    def _get_fetcher_container(self, task: DownloadableContent, zk_node_path: str) -> kubernetes.client.V1Container:
         job_args = self._get_args(task, zk_node_path)
         env_list = self._get_env()
         return kubernetes.client.V1Container(
@@ -139,7 +139,7 @@ class KubernetesDispatcher(DataSetDispatcher):
     def _get_fetcher_pod_annotations(self):
         return {"iam.amazonaws.com/role": "fetcher"}
 
-    def _get_args(self, task: DataSet, zk_node_path: str) -> List[str]:
+    def _get_args(self, task: DownloadableContent, zk_node_path: str) -> List[str]:
         return [
             KubernetesDispatcher.SRC_ARG,
             task.src,
@@ -157,22 +157,24 @@ class KubernetesDispatcher(DataSetDispatcher):
             kubernetes.client.V1EnvVar(name=KubernetesDispatcher.TMP_DIR, value=KubernetesDispatcher.TMP_MOUNT_PATH),
         ]
 
-    def _get_labels(self, task: DataSet, event: BenchmarkEvent) -> Dict[str, str]:
+    def _get_labels(self, task: DownloadableContent, event: BenchmarkEvent) -> Dict[str, str]:
         labels = ServiceLabels.get_labels(self.service_name, event.client_id, event.action_id)
         labels[KubernetesDispatcher.DATA_SET_HASH_LABEL] = md5sum(task.src)
         return labels
 
     @staticmethod
-    def get_label_selector(service_name: str, client_id: str, action_id: str = None, data_set: DataSet = None):
+    def get_label_selector(
+        service_name: str, client_id: str, action_id: str = None, data_set: DownloadableContent = None
+    ):
         selector = ServiceLabels.get_label_selector(service_name, client_id, action_id)
         if action_id and data_set:
             selector += f",{KubernetesDispatcher.DATA_SET_HASH_LABEL}={md5sum(data_set.src)}"
         return selector
 
-    def _get_label_selector(self, client_id: str, action_id: str = None, data_set: DataSet = None):
+    def _get_label_selector(self, client_id: str, action_id: str = None, data_set: DownloadableContent = None):
         return KubernetesDispatcher.get_label_selector(self.service_name, client_id, action_id, data_set)
 
-    def dispatch_fetch(self, task: DataSet, event: BenchmarkEvent, zk_node_path: str):
+    def dispatch_fetch(self, task: DownloadableContent, event: BenchmarkEvent, zk_node_path: str):
         try:
             volume_claim: str = None
 
@@ -233,7 +235,7 @@ class KubernetesDispatcher(DataSetDispatcher):
 
         return results
 
-    def cleanup(self, task: DataSet, event: BenchmarkEvent):
+    def cleanup(self, task: DownloadableContent, event: BenchmarkEvent):
         delete_selector = self._get_label_selector(event.client_id, event.action_id, task)
         logger.info(delete_selector)
 

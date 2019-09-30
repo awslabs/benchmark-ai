@@ -9,13 +9,13 @@ from bai_kafka_utils.events import (
     StatusMessageBenchmarkEvent,
     StatusMessageBenchmarkEventPayload,
     VisitedService,
-    DataSet,
+    DownloadableContent,
     FetcherPayload,
     FetcherBenchmarkEvent,
     Status,
 )
 
-FETCHER_PAYLOAD = FetcherPayload(datasets=[DataSet(src="SRC")], toml=None)
+FETCHER_PAYLOAD = FetcherPayload(datasets=[DownloadableContent(src="SRC")], toml=None)
 
 FETCHER_EVENT = FetcherBenchmarkEvent(
     action_id="OTHER_ACTION_ID",

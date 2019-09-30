@@ -8,7 +8,7 @@ from typing import Callable
 from bai_kafka_utils.cmd_callback import KafkaCommandCallback
 from bai_kafka_utils.events import (
     BenchmarkEvent,
-    DataSet,
+    DownloadableContent,
     BenchmarkDoc,
     FetcherPayload,
     FetchedType,
@@ -25,7 +25,7 @@ from bai_kafka_utils.integration_tests.test_loop import (
 )
 from bai_kafka_utils.kafka_service import KafkaServiceConfig
 
-DataSetFilter = Callable[[DataSet], bool]
+DataSetFilter = Callable[[DownloadableContent], bool]
 
 
 # Should be successful in any environment - has delay of 10s for consumer group to setup
@@ -42,11 +42,11 @@ def get_salted_src(src: str) -> str:
 
 def get_fetcher_benchmark_event(template_event: BenchmarkEvent, src: str):
     doc = BenchmarkDoc({"var": "val"}, "var = val", "")
-    fetch_payload = FetcherPayload(toml=doc, datasets=[DataSet(src=get_salted_src(src))])
+    fetch_payload = FetcherPayload(toml=doc, datasets=[DownloadableContent(src=get_salted_src(src))])
     return dataclasses.replace(template_event, payload=fetch_payload)
 
 
-def is_dataset_successful(data_set: DataSet) -> bool:
+def is_dataset_successful(data_set: DownloadableContent) -> bool:
     return data_set.dst is not None and data_set.type == FetchedType.FILE and data_set.status == FetcherStatus.DONE
 
 

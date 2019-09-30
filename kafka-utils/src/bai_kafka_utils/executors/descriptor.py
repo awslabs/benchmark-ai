@@ -47,6 +47,7 @@ INVALID_LABEL_MESSAGE = (
 class ModelSourceDescriptor:
     src: str
     path: str
+    id: Optional[str] = None
     md5: Optional[str] = None
 
 

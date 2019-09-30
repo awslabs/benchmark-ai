@@ -45,7 +45,7 @@ class DataSetSizeInfo:
 
 @dataclass_json
 @dataclass
-class DataSet:
+class DownloadableContent:
     src: str
     md5: Optional[str] = None
     dst: Optional[str] = None
@@ -89,7 +89,8 @@ class FileSystemObject(object):
 @dataclass_json
 @dataclass
 class FetcherPayload(BenchmarkPayload):
-    datasets: List[DataSet]
+    datasets: List[DownloadableContent]
+    models: List[DownloadableContent] = dataclasses.field(default_factory=list)
     scripts: List[FileSystemObject] = dataclasses.field(default_factory=list)
 
 
@@ -98,11 +99,17 @@ class FetcherPayload(BenchmarkPayload):
 class ExecutorPayload(FetcherPayload):
     # This ugly constructor enables default behaviour on FetcherPayload.scripts
     def __init__(
-        self, toml: BenchmarkDoc, datasets: List[DataSet], job: BenchmarkJob, scripts: List[FileSystemObject] = []
+        self,
+        toml: BenchmarkDoc,
+        datasets: List[DownloadableContent],
+        job: BenchmarkJob,
+        models: List[DownloadableContent] = None,
+        scripts: List[FileSystemObject] = None,
     ):
         self.toml = toml
         self.datasets = datasets
-        self.scripts = scripts
+        self.models = models or []
+        self.scripts = scripts or []
         self.job = job
 
     job: BenchmarkJob
