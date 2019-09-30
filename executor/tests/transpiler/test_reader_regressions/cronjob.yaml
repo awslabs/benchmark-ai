@@ -46,7 +46,8 @@ spec:
                 42, "visited": [], "type": "BAI_APP_FETCHER", "payload": {"toml":
                 {"contents": {"spec_version": "0.1.0", "info": {"task_name": "Hello
                 world", "description": " A hello world example of using Benchmark
-                AI"}, "hardware": {"instance_type": "t2.small", "strategy": "single_node"},
+                AI", "labels": {"custom_label": "my-value", "other_label": "other-value"}},
+                "hardware": {"instance_type": "t2.small", "strategy": "single_node"},
                 "env": {"docker_image": "edisongustavo/bai-benchmarks-hello-world:latest",
                 "vars": {"FIST_VAL": "VAR", "SECOND_VAL": "VAR", "INT_VAL": 11, "FOO":
                 "bar"}}, "ml": {"benchmark_code": "python3 hello-world.py"}, "output":

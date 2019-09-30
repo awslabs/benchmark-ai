@@ -4,6 +4,7 @@ import typing
 
 import configargparse
 from bai_metrics_pusher.backends import BACKENDS
+from bai_kafka_utils.utils import METRICS_PUSHER_BACKEND_ARG_PREFIX
 from dataclasses import dataclass
 from typing import Optional, Dict, Callable
 
@@ -28,7 +29,7 @@ def get_input(argv, environ: Dict[str, str] = None) -> InputValue:
 
     environ = {key.lower(): value for key, value in environ.items()}
     backend_args = create_dict_of_parameter_values_for_callable(
-        prefix="backend_arg_", values=environ, method=BACKENDS[args.backend]
+        prefix=METRICS_PUSHER_BACKEND_ARG_PREFIX, values=environ, method=BACKENDS[args.backend]
     )
 
     return InputValue(

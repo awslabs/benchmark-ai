@@ -10,6 +10,10 @@ description = """ \
     A hello world example of using Benchmark AI\
     """
 
+[info.labels]
+custom_label = "my-value"
+other_label = "other-value"
+
 # 1. Hardware
 [hardware]
 instance_type = "t2.small"
