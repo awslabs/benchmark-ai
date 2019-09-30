@@ -115,7 +115,7 @@ class ServerDescriptor:
 class Descriptor:
     """
     The model class for a Descriptor.
-    It validates and contains all data the descriptor contains.
+    It validates and contains all data present in the descriptor.
     """
 
     def __init__(self, descriptor_data: Dict, config: DescriptorConfig):
@@ -165,7 +165,6 @@ class Descriptor:
         self.framework = ml.get("framework", "")
         self.framework_version = ml.get("framework_version", "")
 
-        self.dataset = descriptor_data.get("data", {}).get("id", "")
         self.data_sources = descriptor_data.get("data", {}).get("sources", [])
 
         self.metrics = descriptor_data.get("output", {}).get("metrics", [])

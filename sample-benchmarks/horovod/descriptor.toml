@@ -36,9 +36,6 @@ args = "8"
 
 # [Opt] 4. Dataset 
 [data]
-# Dataset ID
-id = "MNIST"
-
 # [Opt] Data sources
 # List all required data sources below. 
 # Make an entry for each with the same format as the ones below.
