@@ -5,9 +5,12 @@ A descriptor file defines a benchmark job. This directory contains a template de
 
 The file is divided in sections: info, hardware, env, ml, data and output. See the example descriptor below for reference.
 
-## Example descriptor
+## Example descriptors
 
-The following example shows what the descriptor file for a horovod-based benchmark looks like.
+
+### Training 
+
+The following example shows what the descriptor file for a horovod-based training benchmark looks like.
 
 ```toml
 # BenchmarkAI meta
@@ -22,8 +25,10 @@ description = """ \
 scheduling = 'single_run'
 
 [info.labels]
-custom_label = "my-value"
-another_custom_label = "other-value"
+# Labels and values must be 63 characters or less, beginning and ending with an alphanumeric character
+# ([a-z0-9A-Z]) with dashes (-), underscores (_), dots (.), and alphanumerics between
+custom-label = "value"
+other-label = "other-value"
 
 # 1. Hardware
 [hardware]
@@ -75,8 +80,131 @@ path = "/data/tf-imagenet/train"
 uri = "s3://bucket/imagenet/validation"
 # Path where the dataset is stored in the container FS
 path = "/data/tf-imagenet/val"
+
+# 5. Output
+[output]
+# [Opt] Custom metrics descriptions
+# List all required metrics descriptions below.
+# Make an entry in same format as the one below.
+[[output.metrics]]
+# Name of the metric that will appear in the dashboards.
+name = "accuracy"
+
+# Metric unit (required)
+units = "ratio"
+
+# Pattern for log parsing for this metric.
+pattern = "accuracy=([-+]?\\d*\\.\\d+|\\d+)"
+
 ```
 
+### Inference
+
+Inference benchmarks use a client-server architecture, where the client sends requests to the host, which contains the ML model.
+To describe such a job, specify `strategy = "client_server"` and add a section describing the server:
+
+```toml
+# BenchmarkAI meta
+spec_version = "0.1.0"
+
+# These fields don't have any impact on the job to run, they contain
+# merely informative data so the benchmark can be categorized when displayed
+# in the dashboard.
+[info]
+task_name = "Example inference job"
+description = "A sample scheduled inference benchmark"
+scheduling = "*/1 * * * *" 
+
+[info.labels]
+# Labels and values must be 63 characters or less, beginning and ending with an alphanumeric character
+# ([a-z0-9A-Z]) with dashes (-), underscores (_), dots (.), and alphanumerics between
+custom-label = "value"
+other-label = "other-value"
+
+# Benchmark definition
+# 1. Hardware
+[hardware]
+instance_type = "t3.medium"
+strategy = "client_server"
+
+# 2. Environment
+[env]
+# Docker hub <hub-user>/<repo-name>:<tag>
+docker_image = "user/repo:tag"
+# Args for the docker container
+# [Opt] Whether to run the container in privileged mode (default is false)
+privileged = false
+# [Opt - default is false] Whether more than 64MB shared memory is needed for containers
+# (See docker's -shm option)
+extended_shm = true
+
+# 3. Machine learning related settings:
+# dataset, benchmark code and parameters it takes
+[ml]
+benchmark_code = "python /home/benchmark/benchmark_server.py"
+# [Opt] Arguments to pass to the script in ml.benchmark_code
+# The code is called as defined in ml.benchmark_code, plus the args defined here
+# INFERENCE_SERVER_HOST and INFERENCE_SERVER_PORT(_X), where X >= 1, environment variables are
+# injected into the benchmark container
+args = "--host=${INFERENCE_SERVER_HOST} --port=${INFERENCE_SERVER_PORT} --request-timeout=5 "
+
+# [Opt] 4. Dataset
+[data]
+
+# [Opt] Data sources
+# List all required data sources below.
+# Make an entry for each with the same format as the ones below.
+[[data.sources]]
+# Data download URI.
+src = "s3://example/imagenet/train"
+# Path where the dataset is stored in the container FS
+path = "/data/imagenet/train"
+md5 = "5df9f63916ebf8528697b629022993e8"
+
+# Second data source
+[[data.sources]]
+# Data download URI.
+src = "s3://example/imagenet/validation"
+# Path where the dataset is stored in the container FS
+path = "/data/imagenet/validation"
+
+# 6. Server definition
+[server]
+# Harware on which to run the server
+[server.hardware]
+instance_type = "p3.8xlarge"
+
+[[server.models]]
+src = "uri://path/to/model1"
+path = "/models/model1"
+
+# The server environment definition
+[server.env]
+# The server image
+docker_image = "user/repo:tag"
+# Args for the docker container
+# [Opt] Whether to run the container in privileged mode (default is false)
+privileged = false
+# [Opt - default is false] Whether more than 64MB shared memory is needed for containers
+# (See docker's -shm option)
+extended_shm = true
+# array ports that are exposed by the server
+ports = [8080, 8081]
+# [Opt] Server iveliness probe url
+liveliness_probe = "http://localhost:8080/iamhere"
+# [Opt] Server readiness probe url
+readiness_probe = "http://localhost:8081/iamok"
+# Server start command
+start_command = "/opt/bin/server"
+# [Opt] Arguments to pass to server start command
+start_command_args = "--model=mnist"
+# [Opt] Server environment variables
+
+[server.env.vars]
+VAR1 = "value1"
+VAR2 = "value2"
+
+```
 
 ## Fields
 
@@ -124,16 +252,6 @@ For any required data source, users can provide a download URI and a destination
 * **Server**: This section must specify the inference server hardware and environment. It is only relevant to the *client_server* strategy.
 * (Upcoming) **Output**: Section for users to declare the metrics they will be tracking with this benchmark, along with the alarming information: thresholds (can be dynamic, such as 2-sigma) and who should be notified when they are triggered.
 
-
-## Descriptor reader
-
-The descriptor_reader Python script is provided to parse descriptor files and generate the corresponding Kubernetes job configuration YAML file. It is called as follows:
-
-```
-python descriptor_reader.py path_to_descriptor.toml
-```
-
-This utility is used by the baictl CLI to run Kubernetes jobs.
 
 ## Integration tests
 
