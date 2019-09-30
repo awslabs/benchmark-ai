@@ -42,6 +42,9 @@ SCRIPTS_MOUNT_PATH = "/bai/scripts"
 SHARED_MEMORY_VOLUME = "dshm"
 SHARED_MEMORY_VOLUME_MOUNT = "/dev/shm"
 
+BENCHMARK_SERVICE_ACCOUNT = "benchmark"
+INFERENCE_SERVER_SERVICE_ACCOUNT = "inference-benchmark"
+
 
 @dataclass
 class PullerDataSource:
@@ -168,6 +171,7 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         self.config_template.feed({"availability_zone": availability_zone})
 
     def _update_root_k8s_object(self):
+        self.root.set_service_account(BENCHMARK_SERVICE_ACCOUNT)
         self.add_data_volume_mounts(self.data_sources)
         self.add_scripts(self.scripts)
         self.add_shared_memory()
@@ -181,6 +185,8 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
             self.root.remove_affinity()
 
         if self.descriptor.is_client_server:
+            # Use inference server service account
+            self.root.set_service_account(INFERENCE_SERVER_SERVICE_ACCOUNT)
             # add server environment variables
             self.add_server_env_vars()
 
@@ -405,6 +411,7 @@ class InferenceServerJobKubernetedObjectBuilder(SingleRunBenchmarkKubernetesObje
         super()._feed_additional_template_values()
 
     def _update_root_k8s_object(self):
+        self.root.set_service_account(INFERENCE_SERVER_SERVICE_ACCOUNT)
         self.add_shared_memory()
         self.add_server_command_to_container()
         self.root.add_env_vars(INFERENCE_SERVER_CONTAINER, self.descriptor.server.env.vars)

@@ -1,0 +1,57 @@
+# ServiceAccount with RoleBindings required for the executor service to function
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: inference-benchmark
+---
+# This role is required by the job-status-trigger sidecar
+# to get the status of the benchmark pod and for the
+# job-status-trigger init container to to hold the benchmark pod
+# until the inference server is up
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: inference-benchmark-pod-log-observer-binding
+subjects:
+- kind: ServiceAccount
+  name: inference-benchmark
+  namespace: default
+roleRef:
+  kind: Role
+  name: pod-log-observer
+  apiGroup: rbac.authorization.k8s.io
+---
+# This role is required by the job-status-trigger sidecar
+# to get the status of the benchmark pod and for the
+# job-status-trigger init container to to hold the benchmark pod
+# until the inference server is up
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: inference-benchmark-job-status-observer-binding
+subjects:
+- kind: ServiceAccount
+  name: inference-benchmark
+  namespace: default
+roleRef:
+  kind: Role
+  name: job-status-observer
+  apiGroup: rbac.authorization.k8s.io
+---
+# This role is required by the job-status-trigger sidecar
+# to get the status of the benchmark pod and for the
+# job-status-trigger init container to to hold the benchmark pod
+# until the inference server is up
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: inference-benchmark-inference-benchmark-janitor-binding
+subjects:
+- kind: ServiceAccount
+  name: inference-benchmark
+  namespace: default
+roleRef:
+  kind: Role
+  name: inference-benchmark-janitor
+  apiGroup: rbac.authorization.k8s.io
+---

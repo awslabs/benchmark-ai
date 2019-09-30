@@ -1,29 +1,30 @@
 # Example service account, role, and role binding
 # with minimal required authorizations
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: metrics-pusher
----
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: pod-status
+  name: inference-benchmark
   namespace: default
 rules:
-- apiGroups: [""]
-  resources: ["pods/log", "pods/status"]
+- apiGroups: ["batch"]
+  resources: ["jobs/status"]
   verbs: ["get"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["list"]
+- apiGroups: ["", "batch"]
+  resources: ["jobs", "pods", "services"]
+  verbs: ["delete"]
 ---
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: metrics-pusher-pod-status-binding
+  name: inference-benchamrk-role-binding
 subjects:
 - kind: ServiceAccount
   name: metrics-pusher
   namespace: default
 roleRef:
   kind: Role
-  name: pod-status
-  apiGroup: ""
+  name: inference-benchmark
+  apiGroup: rbac.authorization.k8s.io

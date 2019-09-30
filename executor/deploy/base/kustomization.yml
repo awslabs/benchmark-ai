@@ -2,3 +2,7 @@ resources:
   - roles.yml
   - executor.yml
   - config.yml
+  - sa_benchmark.yml
+  - sa_executor.yml
+  - sa_inference_benchmark.yml
+  - sa_scheduled_benchmark.yml

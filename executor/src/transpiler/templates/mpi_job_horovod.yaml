@@ -61,7 +61,7 @@ spec:
         client-id: {event.client_id}
         created-by: {service_name}
     spec:
-      serviceAccountName: metrics-pusher
+      serviceAccountName: benchmark
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

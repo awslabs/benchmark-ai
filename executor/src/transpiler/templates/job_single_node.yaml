@@ -18,7 +18,10 @@ spec:
       annotations:
         iam.amazonaws.com/role: benchmark-host
     spec:
-      serviceAccountName: metrics-pusher
+      # The service account used depends on whether
+      # this is a benchmark or server pod
+      # it is set programmatically by the transpiler
+      serviceAccountName: TBD
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

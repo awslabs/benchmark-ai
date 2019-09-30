@@ -1,3 +1,5 @@
+# Example service account, role, and role binding
+# with minimal required authorizations
 apiVersion: v1
 kind: ServiceAccount
 metadata:

@@ -1,0 +1,40 @@
+# ServiceAccount with RoleBindings required for a single-node and MPI (Horovod) benchmark
+# The pods running the actual benchmarks (user-submitted code) are running with this service
+# account
+# ServiceAccount with RoleBindings required for the executor service to function
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: benchmark
+---
+# Role for observing pod status
+# This role is required by the metrics-pusher sidecar
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: benchmark-pod-status-observer-binding
+subjects:
+- kind: ServiceAccount
+  name: benchmark
+  namespace: default
+roleRef:
+  kind: Role
+  name: pod-status-observer
+  apiGroup: rbac.authorization.k8s.io
+---
+# Role for observing pod logs
+# This role is required by the metrics-extractor
+# and metrics-pusher sidecars
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: executor-pod-log-observer-binding
+subjects:
+- kind: ServiceAccount
+  name: benchmark
+  namespace: default
+roleRef:
+  kind: Role
+  name: pod-log-observer
+  apiGroup: rbac.authorization.k8s.io
+---

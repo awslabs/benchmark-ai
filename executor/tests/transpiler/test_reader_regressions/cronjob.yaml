@@ -19,7 +19,7 @@ spec:
             client-id: CLIENT_ID
             created-by: executor
         spec:
-          serviceAccountName: metrics-pusher
+          serviceAccountName: scheduled-benchmark
           containers:
           - name: benchmark-starter
             image: benchmarkai/anubis-cron-job

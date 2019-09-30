@@ -18,7 +18,7 @@ spec:
       annotations:
         iam.amazonaws.com/role: benchmark-host
     spec:
-      serviceAccountName: metrics-pusher
+      serviceAccountName: inference-benchmark
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -214,7 +214,7 @@ spec:
       annotations:
         iam.amazonaws.com/role: benchmark-host
     spec:
-      serviceAccountName: metrics-pusher
+      serviceAccountName: inference-benchmark
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
