@@ -173,6 +173,11 @@ path = "/data/imagenet/validation"
 # Harware on which to run the server
 [server.hardware]
 instance_type = "p3.8xlarge"
+
+[[server.models]]
+src = "uri://path/to/model1"
+path = "/models/model1"
+
 # The server environment definition
 [server.env]
 # The server image
@@ -194,6 +199,7 @@ start_command = "/opt/bin/server"
 # [Opt] Arguments to pass to server start command
 start_command_args = "--model=mnist"
 # [Opt] Server environment variables
+
 [server.env.vars]
 VAR1 = "value1"
 VAR2 = "value2"
