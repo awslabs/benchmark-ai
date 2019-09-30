@@ -29,7 +29,7 @@ class K8SExecutionEngine(ExecutionEngine):
 
     JOB_ID_PREFIX = "b-"
 
-    ALL_K8S_RESOURCE_TYPES = ["jobs", "cronjobs", "mpijobs", "configmaps", "rolebindings"]
+    ALL_K8S_RESOURCE_TYPES = ["jobs", "cronjobs", "mpijobs", "configmaps", "rolebindings", "services"]
 
     def __init__(self, config: ExecutorConfig):
         self.config = config

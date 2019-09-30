@@ -106,7 +106,7 @@ metadata:
   name: delete-resources
 rules:
 - apiGroups: ["","batch", "kubeflow.org", "rbac.authorization.k8s.io"]
-  resources: ["pods", "jobs", "cronjobs", "mpijobs", "configmaps","rolebindings"]
+  resources: ["pods", "jobs", "cronjobs", "mpijobs", "configmaps","rolebindings", "services"]
   verbs: ["list", "get", "update", "delete"]
 ---
 kind: RoleBinding
