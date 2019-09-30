@@ -85,7 +85,7 @@
 ;;----------------------
 (defroutes info-routes
   (GET "/" req
-       (str "<hr><CENTER><h1>Welcome To The BAI-BFF Service (v"VERSION")</h1><a href=\"https://github.com/MXNetEdge/benchmark-ai/\">https://github.com/MXNetEdge/benchmark-ai</a></CENTER><hr><p>")))
+       (str "<hr><CENTER><h1>Welcome To The Anubis (BFF) Service (v"VERSION")</h1><a href=\"https://github.com/MXNetEdge/benchmark-ai/\">https://github.com/MXNetEdge/benchmark-ai</a></CENTER><hr><p>")))
 
 ;; Kubernetes Liveliness and Readiness endpoints
 (defroutes k8s-routes
@@ -101,7 +101,7 @@
 ;; API for BFF to post and query data
 (defroutes api-routes
   (GET "/api" []
-       (str "<hr><CENTER><h1> BAI-BFF HTTP Service API (v"VERSION")</h1><a href=\"http://foobar.com/api\">docs</a></CENTER><hr>"))
+       (str "<hr><CENTER><h1> Anubis (BFF) HTTP Service API (v"VERSION")</h1><a href=\"http://foobar.com/api\">docs</a></CENTER><hr>"))
   (context "/api/job" []
            (defroutes job-routes
              (GET  "/script/:filename" [filename] (response (if (eventbus/has-file? filename) (str "true") (str "false"))))
