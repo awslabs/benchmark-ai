@@ -173,7 +173,7 @@ _kubeconfig_file() {
              (\033[01;33manubis-setup -- --region us-west-2 --prefix-list pl-xxxxxxxx\033[0m)
           2. Your profile and configuration are aligned
              (\033[01;33manubis-setup --sync-config-to-profile\033[0m)\n" >&2
-        if ((DEBUG == 0)); then exit 1; fi
+        exit 1
     fi
     echo "${kubeconfig_file}"
 }
@@ -184,7 +184,7 @@ _kubeconfig_file() {
 #--------------------------------------------------------------------
 
 banner() {
-    printf'
+    printf '
                       _     _                     _
                      | |   (_)                   | |
      __ _ _ __  _   _| |__  _ ___ ______ ___  ___| |_ _   _ _ __
@@ -219,6 +219,7 @@ This is the administrative command-line tool for the Anubis system
                 --show-service-endpoint  : displays the hostname and port of the Anubis (bff) HTTP API endpoint (used to \"--register\" with anubis client tool)
                 --list-configmaps        : shows a listing of the current configuration maps
                 --show-configmap <configmap name> : shows the configuration associated with the supplied configuration name (default: outputs-infrastructure)
+                --connect-anubis-shell   : get a shell on the anubis installation (basiton host)
                 --query-logs             : creates connection to log search index and brings up front end in browser
                 --query-metrics          : creates connection to metrics index (and brings up front end in browser interface)
                 --query-graphs           : creates connection to dashboard server (and brings up front end browser interface)
@@ -307,10 +308,9 @@ sync_config_to_profile() {
 
 show_service_endpoint() {
     local kubeconfig_file=$(_kubeconfig_file)
-    local service_endpoint=$(kubectl --kubeconfig="${kubeconfig_file}" get service bai-bff -o json | jq '.status.loadBalancer.ingress[].hostname')
-    if [[ -z "${service_endpoint}" ]] ; then
-        printf "\033[01;31m[WARNING]\033[0m - Could not find service endpoint value, perhaps your configuration is not in sync.\n
-Please run check your identity \033[01;33m--whoami\033[0m and synchronize it with your installation with \033[01;33m--sync-config-to-profile\033[0m\n\n" >&2
+    local configured_service_endpoint=$(kubectl --kubeconfig="${kubeconfig_file}" get service bai-bff -o json | jq '.status.loadBalancer.ingress[].hostname')
+    if [[ -n "${configured_service_endpoint}" ]] ; then
+        printf "\nConfigured service endpoint is: [\033[01;33m%s\033[0m] \n\n" "$configured_service_endpoint" >&2
     fi
 
 }
@@ -331,6 +331,25 @@ show_configmap() {
     kubectl --kubeconfig="${kubeconfig_file}" get configmap "${configmap_name}" --output yaml
 }
 
+jump_to_bastion() {
+    ((DEBUG)) && echo "Calling \"jump_to_bastion\" function with: $*"
+    local ssh_config_file="${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform/bai/ssh-config"
+    if [[ ! -f "${ssh_config_file}" ]]; then
+        printf "\033[01;31m[WARNING]\033[0m CANNOT FIND THE REQUIRED CONFIGURATION FILE!\n\n"
+        exit 1
+    fi
+
+    local ssh_pem_file="${ANUBIS_REPO_HOME}"/baictl/drivers/aws/cluster/.terraform/bai/bastion_private.pem
+    if [[ ! -f "${ssh_pem_file}" ]]; then
+        printf "\033[01;31m[WARNING]\033[0m CANNOT FIND THE REQUIRED KEY FILE!\n\n"
+        exit 1
+    else
+        chmod 600 "${ssh_pem_file}"
+    fi
+    ssh -F "${ssh_config_file}" -i "${ssh_pem_file}" bastion
+
+}
+
 # To connect to Kibana front end for ElasticSearch
 query_logs() {
     ((DEBUG)) && echo "Calling \"query_logs\" function with: $*"
@@ -339,20 +358,23 @@ query_logs() {
         printf "\033[01;31m[WARNING]\033[0m CANNOT FIND THE REQUIRED CONFIGURATION FILE!\n\n"
         exit 1
     fi
-    ssh -F "${ssh_config_file}" estunnel -N &
-    sleep 2
-    [[ $(uname) == "Darwin" ]] && open http://localhost:9200/_plugin/kibana
+
+    local ssh_pem_file="${ANUBIS_REPO_HOME}"/baictl/drivers/aws/cluster/.terraform/bai/bastion_private.pem
+    if [[ ! -f "${ssh_pem_file}" ]]; then
+        printf "\033[01;31m[WARNING]\033[0m CANNOT FIND THE REQUIRED KEY FILE!\n\n"
+        exit 1
+    else
+        chmod 600 "${ssh_pem_file}"
+    fi
+    ssh -F "${ssh_config_file}" -i "${ssh_pem_file}" estunnel -N
+    #[[ $(uname) == "Darwin" ]] && open http://127.0.0.1:9200/_plugin/kibana
 }
 
 # To connect to Prometheus' query front end, PromDash
 query_metrics() {
     ((DEBUG)) && echo "Calling \"query_metrics\" function with: $*"
     local kubeconfig_file=$(_kubeconfig_file)
-    (
-        if "${ANUBIS_REPO_HOME}"/baictl/baictl port-forward infra --service="prometheus"; then
-            [[ $(uname) == "Darwin" ]] && open http://localhost:9090
-        fi
-    )
+    ("${ANUBIS_REPO_HOME}"/baictl/baictl port-forward infra --service="prometheus")
 
 }
 
@@ -360,22 +382,13 @@ query_metrics() {
 query_graphs() {
     ((DEBUG)) && echo "Calling \"query_graphs\" function with: $*"
     local kubeconfig_file=$(_kubeconfig_file)
-    (
-        if "${ANUBIS_REPO_HOME}"/baictl/baictl port-forward infra --service="grafana"; then
-            [[ $(uname) == "Darwin" ]] && open http://localhost:3000
-        fi
-    )
+    ("${ANUBIS_REPO_HOME}"/baictl/baictl port-forward infra --service="grafana")
 }
 
 # To connect to Alert Manager dashboard
 query_alerts() {
     ((DEBUG)) && echo "Calling \"query_alerts\" function with: $*"
-    local kubeconfig_file=$(_kubeconfig_file)
-    (
-        if "${ANUBIS_REPO_HOME}"/baictl/baictl port-forward infra --service="alertmanager"; then
-            [[ $(uname) == "Darwin" ]] && open http://localhost:9093
-        fi
-    )
+    (KUBECONFIG=$(_kubeconfig_file) "${ANUBIS_REPO_HOME}"/baictl/baictl port-forward infra --service="alertmanager")
 }
 
 #TODO
@@ -426,6 +439,11 @@ main() {
             --show-configmap)
                 shift
                 show_configmap "${1}"
+                ;;
+            --jump-to-bastion | --connect-anubis-shell)
+                shift
+                jump_to_bastion ""
+                exit $?
                 ;;
             --query-logs) #Kibana access (pulls up Kibana through a tunnel)
                 shift
