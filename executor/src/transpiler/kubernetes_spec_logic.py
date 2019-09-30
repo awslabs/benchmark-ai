@@ -198,7 +198,7 @@ class KubernetesRootObjectHelper:
         env_var_name = METRICS_PUSHER_BACKEND_ARG_PREFIX.upper() + key.upper()
         try:
             metrics_pusher_container = self.find_container("sidecar")
-        except ValueError as e:
+        except ValueError:
             logger.debug(f"Could not add backend arg {env_var_name} to metrics pusher sidecar.")
             return
         metrics_pusher_env = metrics_pusher_container.get("env", [])
