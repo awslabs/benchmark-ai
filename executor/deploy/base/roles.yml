@@ -60,7 +60,7 @@ metadata:
 rules:
 - apiGroups: ["","batch", "kubeflow.org", "rbac.authorization.k8s.io"]
   resources: ["pods", "jobs", "cronjobs", "mpijobs", "configmaps","rolebindings", "services"]
-  verbs: ["delete"]
+  verbs: ["list", "delete"]
 ---
 # Role for observing pod status
 kind: Role
@@ -119,4 +119,4 @@ metadata:
 rules:
   - apiGroups: ["","batch"]
     resources: ["jobs", "services"]
-    verbs: ["delete"]
+    verbs: ["list", "delete"]
