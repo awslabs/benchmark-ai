@@ -10,7 +10,6 @@ import argparse
 import boto3
 import sys
 import time
-from pyfiglet import Figlet
 from pathlib import Path
 from collections import namedtuple
 from typing import Dict
@@ -330,7 +329,6 @@ def destroy_infrastructure(region):
 
 
 def main():
-    #print(Figlet().renderText("anubis setup"))
     # Set up configuration and parse args
     parser = argparse.ArgumentParser()
     parser.add_argument("--clean", action="store_true", help="Removes current state and configured values")

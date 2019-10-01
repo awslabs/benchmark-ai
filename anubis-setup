@@ -63,8 +63,6 @@ dependencies:
   - boto3
   - requests
   - pip
-  - pip:
-    - pyfiglet
   - jq 1.6
   - curl 7.54.1
   - coreutils 8.31
