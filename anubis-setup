@@ -238,7 +238,7 @@ This is the administrative command-line tool for the Anubis system
     exit 0
 }
 
-sanity_check(){
+sanity_check() {
     ((DEBUG)) && echo "Calling \"sanity_check\"..."
     #TODO call full sanity checklist here
     #[ ] The user and the configuration are aligned
@@ -249,7 +249,7 @@ sanity_check(){
     #[ ] Services are alive and can process a "tracer" event all the way through
 }
 
-list_profiles(){
+list_profiles() {
     ((DEBUG)) && echo "Calling \"list profiles\" function with: $*"
     sed -r -n  's/\[(.*)\]/\1/p' "${AWS_CREDIENTIALS_FILE}"
 }
