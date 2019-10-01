@@ -44,6 +44,18 @@ INVALID_LABEL_MESSAGE = (
 
 
 @dataclass
+class MetricDescriptor:
+    name: str
+    units: str
+    pattern: str
+
+
+@dataclass
+class OutputDescriptor:
+    metrics: List[MetricDescriptor] = field(default_factory=list)
+
+
+@dataclass
 class ModelSourceDescriptor:
     src: str
     path: str
@@ -81,6 +93,7 @@ class ServerDescriptor:
     hardware: ServerHardwareDescriptor
     env: ServerEnvDescriptor
     models: Optional[List[ModelSourceDescriptor]] = field(default_factory=list)
+    output: Optional[OutputDescriptor] = None
 
 
 class Descriptor:

@@ -6,6 +6,27 @@
   "$comment": "TODO: Extend this schema to reflect the whole descriptor",
 
   "definitions": {
+    "output" : {
+      "type": "object",
+      "properties": {
+        "metrics": { "type":  "array", "items":  { "$ref": "#/definitions/metric" } }
+      },
+      "additionalProperties": false,
+      "required": ["metrics"]
+    },
+    "metric": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "units": { "type" : "string" },
+        "pattern": {
+          "type" : "string",
+          "format": "regex"
+        }
+      },
+      "additionalProperties": false,
+      "required": ["name", "units", "pattern"]
+    },
     "model_source": {
       "type": "object",
       "properties": {
@@ -54,7 +75,8 @@
   "properties": {
     "env": { "$ref": "#/definitions/server_env" },
     "hardware": { "$ref": "#/definitions/server_hardware" },
-    "models": { "type":  "array", "items":  { "$ref": "#/definitions/model_source" } }
+    "models": { "type":  "array", "items":  { "$ref": "#/definitions/model_source" } },
+    "output": { "$ref": "#/definitions/output" }
   },
   "required": ["hardware", "env"],
   "additionalProperties": false

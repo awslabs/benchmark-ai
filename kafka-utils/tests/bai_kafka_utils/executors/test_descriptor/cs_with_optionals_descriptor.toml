@@ -44,3 +44,9 @@ md5 = "5d41402abc4b2a76b9719d911017c593"
 id = "the2ndmodel"
 src = "src2"
 path = "path2"
+
+[server.output]
+[[server.output.metrics]]
+name = "metric"
+units = "unit"
+pattern = "metric.unit:(\\d+)"
