@@ -218,7 +218,9 @@ This is the administrative command-line tool for the Anubis system
                 --query-graphs           : creates connection to dashboard server (and brings up front end browser interface)
                 --query-alerts           : creates connection to alert manager (and brings up front end interface)
                 --snoop-events <topic name(s)> : streams event log to terminal
-      ====>>    -- | --driver            : consumes ALL subsequent args and dispatches them to Anubis \"driver\" sub command (see help below)
+                --force                  : to force execution of some commands (can also be set by setting env var FORCE=1)
+                --debug                  : provides more output to the user (can also be set by setting env var DEBUG=1)
+                -- | --driver            : consumes ALL subsequent args and dispatches them to Anubis \"driver\" sub command (see help below)
                 --help                   : (this output)
 
 ------------------------------------------------------------
@@ -391,7 +393,7 @@ query_alerts() {
 #TODO
 # To connect *through* the bastion host to the listen directly to specified topic on Kaffka
 snoop_events() {
-    ((DEBUG)) && echo "Calling \"snoop_events\" function with: $*"
+    ((DEBUG)) && echo "IMPLEMENT ME!!! Calling \"snoop_events\" function with: $*"
 }
 
 
