@@ -131,16 +131,11 @@ _validate_profile() {
     local match=0
     for profile in $(sed -r -n  's/\[(.*)\]/\1/p' "${AWS_CREDIENTIALS_FILE}" | xargs); do
         if [[ "${profile}" == "${input_profile}" ]]; then
-            ((match++))
-            break
+            return 0
         fi
     done
-    if ((match <= 0 )); then
-        printf "\033[01;31m[WARNING]\033[0m Unknown profile \"%s\" is not in your credentials config file!\n" "${input_profile}" >&2
-        return 9
-    else
-        return 0
-    fi
+    printf "\033[01;31m[WARNING]\033[0m Unknown profile \"%s\" is not in your credentials config file!\n" "${input_profile}" >&2
+    return 9
 }
 
 _check_profile_and_config_aligned() {
