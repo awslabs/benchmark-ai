@@ -5,7 +5,7 @@ import logging
 import os
 import random
 import shlex
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from typing import List, Dict
 
 from bai_kafka_utils.events import DownloadableContent, BenchmarkEvent
@@ -75,6 +75,7 @@ class BaiKubernetesObjectBuilder(metaclass=abc.ABCMeta):
         self.config_template.feed({"job_id": self.job_id})
         self.config_template.feed({"inference_server_job_id": self.inference_server_job_id})
         self.config_template.feed({"metrics": self.get_metrics_from_descriptor(descriptor)})
+        self.config_template.feed({"server_metrics": self.get_server_metrics_from_descriptor(descriptor)})
 
     @staticmethod
     def get_metrics_from_descriptor(descriptor: Descriptor):
@@ -82,6 +83,15 @@ class BaiKubernetesObjectBuilder(metaclass=abc.ABCMeta):
         for metric in descriptor.metrics:
             metric["pattern"] = base64.b64encode(metric["pattern"].encode("utf-8")).decode("utf-8")
             metrics.append(metric)
+        return json.dumps(metrics)
+
+    @staticmethod
+    def get_server_metrics_from_descriptor(descriptor: Descriptor):
+        metrics = []
+        if descriptor.is_client_server and descriptor.server.output:
+            for metric in descriptor.server.output.metrics:
+                metric.pattern = base64.b64encode(metric.pattern.encode("utf-8")).decode("utf-8")
+                metrics.append(asdict(metric))
         return json.dumps(metrics)
 
     @staticmethod

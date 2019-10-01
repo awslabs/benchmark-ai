@@ -49,29 +49,29 @@ spec:
       - name: data-puller
         image: {config.puller_docker_image}
         env:
-          - name: S3_ENDPOINT
-            valueFrom:
-              configMapKeyRef:
-                name: outputs-infrastructure
-                key: s3_endpoint
-          # This environment variables are optional.
-          # They reference a config map missing in DEVO/PROD.
-          # Enable the integration tests
-          - name: AWS_ACCESS_KEY_ID
-            valueFrom:
-              configMapKeyRef:
-                name: s3
-                key: access-key-id
-                optional: true
-          - name: AWS_SECRET_ACCESS_KEY
-            valueFrom:
-              configMapKeyRef:
-                name: s3
-                key: secret-access-key
-                optional: true
+        - name: S3_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: outputs-infrastructure
+              key: s3_endpoint
+        # This environment variables are optional.
+        # They reference a config map missing in DEVO/PROD.
+        # Enable the integration tests
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            configMapKeyRef:
+              name: s3
+              key: access-key-id
+              optional: true
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: s3
+              key: secret-access-key
+              optional: true
         volumeMounts:
-          - name: datasets-volume
-            mountPath: /data
+        - name: datasets-volume
+          mountPath: /data
       containers:
       - name: inference-server
         image: {descriptor.server.env.docker_image}
@@ -98,12 +98,85 @@ spec:
           value: '/opt/env/bin/kubectl delete job,service {inference_server_job_id}'
         - name: JOB_NOT_FOUND_GRACE_PERIOD_SECONDS
           value: '30'
+      - name: metrics-pusher
+        image: {config.metrics_pusher_docker_image}
+        env:
+          - name: BENCHMARK_AI_FIFO_FILEPATH
+            value: /tmp/benchmark-ai/fifo
+          ##################################
+          # Sidecar backend: Elasticsearch #
+          ##################################
+          #        - name: BACKEND
+          #          value: elasticsearch
+          #        - name: BACKEND_ARG_ACTION_ID
+          #          value: {event.action_id}
+          #        - name: BACKEND_ARG_CLIENT_ID
+          #          value: {event.client_id}
+          #        - name: BACKEND_ARG_HOSTNAME
+          #          valueFrom:
+          #            configMapKeyRef:
+          #              name: outputs-infrastructure
+          #              key: es_endpoint
+          #        - name: BACKEND_ARG_PORT
+          #          value: "443"
+
+          ##########################
+          # Sidecar backend: Kafka #
+          ##########################
+          - name: BACKEND
+            value: kafka
+          - name: BACKEND_ARG_ACTION_ID
+            value: {event.action_id}
+          - name: BACKEND_ARG_CLIENT_ID
+            value: {event.client_id}
+          - name: BACKEND_ARG_BOOTSTRAP_SERVERS
+            valueFrom:
+              configMapKeyRef:
+                name: outputs-infrastructure
+                key: msk_bootstrap_brokers
+          - name: BACKEND_ARG_KEY
+            value: {event.client_id}
+          - name: BACKEND_ARG_TOPIC
+            value: BAI_METRICS
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+        volumeMounts:
+          - mountPath: /tmp/benchmark-ai
+            name: benchmark-ai
+      - name: metrics-extractor
+        image: {config.metrics_extractor_docker_image}
+        env:
+          - name: ANUBIS_POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: ANUBIS_POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: ANUBIS_METRICS
+            value: '{server_metrics}'
+          - name: BENCHMARK_AI
+            value: "fifo"
+          - name: BENCHMARK_AI_FIFO_FILEPATH
+            value: "/tmp/benchmark-ai/fifo"
+        volumeMounts:
+          - mountPath: /tmp/benchmark-ai
+            name: benchmark-ai
       nodeSelector:
         beta.kubernetes.io/instance-type: {descriptor.server.hardware.instance_type}
         node.type: bai-worker
         failure-domain.beta.kubernetes.io/zone: {availability_zone}
       restartPolicy: Never
       volumes:
+      - name: benchmark-ai
+        emptyDir: {{}}
       - name: datasets-volume
         emptyDir: {{}}
   backoffLimit: 4
