@@ -129,7 +129,7 @@ _validate_profile() {
     ((DEBUG)) && echo "validating profile for: $*"
     local input_profile=${1:-"${AWS_PROFILE}"}
     local match=0
-    for profile in $(sed -r -n  's/\[(.*)\]/\1/p' "${AWS_CREDIENTIALS_FILE}" | xargs); do
+    for profile in $(list_profiles | xargs); do
         if [[ "${profile}" == "${input_profile}" ]]; then
             return 0
         fi
@@ -207,7 +207,7 @@ This is the administrative command-line tool for the Anubis system
 
  > %s --list-profiles          : lists your aws profiles configured in %s
                 --whoami                 : tells you what the current active profile is
-                --as <profile name>      : changes your profile to the provided value
+                --set-profile | --as <profile name> : changes your profile to the provided value
                 --sync-config-to-profile : synchronized the Anubis configuration state to match your current profile
                 --show-service-endpoint  : displays the hostname and port of the Anubis (bff) HTTP API endpoint (used to \"--register\" with anubis client tool)
                 --list-configmaps        : shows a listing of the current configuration maps
