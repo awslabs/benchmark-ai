@@ -169,7 +169,7 @@ spec:
           value: "/tmp/benchmark-ai/fifo"
         - name: BENCHMARK_AI_FIFO_MAX_WAIT_TIME
           value: "60"
-      - name: sidecar
+      - name: metrics-pusher
         image: {config.metrics_pusher_docker_image}
         env:
         - name: BENCHMARK_AI_FIFO_FILEPATH
@@ -209,8 +209,6 @@ spec:
           value: {event.client_id}
         - name: BACKEND_ARG_TOPIC
           value: BAI_METRICS
-
-
         - name: POD_NAME
           valueFrom:
             fieldRef:
@@ -222,7 +220,7 @@ spec:
         volumeMounts:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
-      - name: extractor-sidecar
+      - name: metrics-extractor
         image: {config.metrics_extractor_docker_image}
         env:
         - name: ANUBIS_POD_NAME

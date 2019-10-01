@@ -179,7 +179,7 @@ spec:
           value: '60'
         - name: BAI_SCRIPTS_PATH
           value: /bai/scripts
-      - name: sidecar
+      - name: metrics-pusher
         image: benchmarkai/metrics-pusher:ffed580
         env:
         - name: BENCHMARK_AI_FIFO_FILEPATH
@@ -210,7 +210,7 @@ spec:
         volumeMounts:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
-      - name: extractor-sidecar
+      - name: metrics-extractor
         image: benchmarkai/metrics-extractor:b0b9185
         env:
         - name: ANUBIS_POD_NAME

@@ -125,7 +125,7 @@ spec:
           name: benchmark-ai
         - mountPath: /bai/scripts
           name: scripts-volume
-      - name: sidecar
+      - name: metrics-pusher
         image: {config.metrics_pusher_docker_image}
         env:
         - name: BENCHMARK_AI_FIFO_FILEPATH
@@ -176,7 +176,7 @@ spec:
         volumeMounts:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
-      - name: extractor-sidecar
+      - name: metrics-extractor
         image: {config.metrics_extractor_docker_image}
         env:
         - name: ANUBIS_POD_NAME
