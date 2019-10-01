@@ -263,6 +263,7 @@ whoami() {
         aws sts get-caller-identity --profile=${AWS_PROFILE}
 }
 
+# To assume a new identity - to run anubis-setup *as* X, where X is a profile listed in your credentials file.
 as() {
     ((DEBUG)) && echo "Calling \"as\" function with: $*"
     [[ ! -f ~/.aws/credentials ]] && printf "\033[01;31m[WARNING]\033[0m CANNOT FIND YOUR AWS crendentials file!\n\n" >&2
@@ -366,6 +367,9 @@ query_logs() {
     else
         chmod 600 "${ssh_pem_file}"
     fi
+    printf 'Navigate to https://localhost:9200/_plugin/kibana/app/kibana#/dev_tools/console?_g=() to access the Kibana dashboard
+Ctrl+C to cancel the session.
+'
     ssh -F "${ssh_config_file}" -i "${ssh_pem_file}" estunnel -N
     #[[ $(uname) == "Darwin" ]] && open http://127.0.0.1:9200/_plugin/kibana
 }
