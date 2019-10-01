@@ -10,6 +10,7 @@ import argparse
 import boto3
 import sys
 import time
+import logging
 from pathlib import Path
 from collections import namedtuple
 from typing import Dict
@@ -136,7 +137,7 @@ def s3_remote_state_bucket(config, region, session):
     bucket = s3.Bucket(bucket_name)
     bucket.load()
     if bucket.creation_date is None:
-        print(f"Will create a bucket named `{bucket_name}` in region `{region}`")
+        logging.info(f"Will create a bucket named `{bucket_name}` in region `{region}`")
 
         try:
             if region == "us-east-1":
@@ -190,7 +191,7 @@ def sync_baictl(region, session):
     )
 
     # Delete .terraform directory if mismatched with aws caller identity
-    print(f"=> Calling `./baictl sync infra --aws-region={region}` in baictl to get kubeconfig")
+    logging.info(f"=> Calling `./baictl sync infra --aws-region={region}` in baictl to get kubeconfig")
     if os.path.exists(backend_tfvars_path):
         backend_tfvars = open(backend_tfvars_path, "r").read()
         if account_id not in backend_tfvars:
@@ -246,13 +247,12 @@ def get_service_endpoint(region, session):
             else:
                 raise Exception(f"baictl sync infra failed to download: {kubeconfig_path}")
             # kubectl get service endpoint
-            service_endpoint_json = subprocess.check_output(
+            service_endpoint = subprocess.check_output(
                 ["kubectl", f"--kubeconfig={kubeconfig_abs_path}", "get", "service", "bai-bff", "-o", "json"]
             )
-            service_endpoint = json.loads(service_endpoint_json)["status"]["loadBalancer"]["ingress"][0]["hostname"]
-            service_port = json.loads(service_endpoint_json)["spec"]["ports"][0]["port"]
-            print(f"=> Your Anubis service endpoint: {service_endpoint}")
-            return service_endpoint + ":" + str(service_port)
+            service_endpoint = json.loads(service_endpoint)["status"]["loadBalancer"]["ingress"][0]["hostname"]
+            logging.info(f"=> Your Anubis service endpoint: {service_endpoint}")
+            return service_endpoint
         elif codepipeline_bff_status == "Failed":
             raise Exception(f"Unable to get service endpoint since `bai-bff` deploy stage failed")
 
@@ -285,7 +285,7 @@ def remove_terraform_config_files():
     def rm(path):
         if os.path.exists(path):
             os.remove(path)
-            print(f"Removed `{path}`")
+            logging.info(f"Removed `{path}`")
 
     rm(".terraform/terraform.tfstate")
     rm(".terraform/ci-backend-config")
@@ -317,7 +317,7 @@ def destroy_pipeline(region):
                 "all",
             ]
         )
-    print("=> Calling `terraform destroy` to destroy pipeline")
+    logging.info("=> Calling `terraform destroy` to destroy pipeline")
     return_code = subprocess.call(["terraform", "destroy", "-auto-approve"])
     if return_code != 0:
         raise Exception(f"Failure calling `terraform destroy`: {return_code}")
@@ -325,13 +325,15 @@ def destroy_pipeline(region):
 
 def destroy_infrastructure(region):
     os.environ["AWS_REGION"] = region
-    print("=> Calling `make destroy-infra` in baictl to destroy infrastructure")
+    logging.info("=> Calling `make destroy-infra` in baictl to destroy infrastructure")
     return_code = subprocess.call(["make", "destroy-infra"], cwd="../baictl")
     if return_code != 0:
         raise Exception(f"Failure calling `make destroy` in baictl: {return_code}")
 
 
 def main():
+    logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(message)s", datefmt="%m/%d/%Y %H:%M:%S %Z")
+
     # Set up configuration and parse args
     parser = argparse.ArgumentParser()
     parser.add_argument("--clean", action="store_true", help="Removes current state and configured values")
@@ -350,13 +352,13 @@ def main():
     config.write()
 
     # Initialize terraform
-    print("=> Configuration to call terraform with:")
-    print(config)
+    logging.info("=> Configuration to call terraform with:")
+    logging.info(config)
     mode = "destroy" if args.destroy else "create"
     user_response = input(f"Do you want to {mode} the pipeline with this configuration? ([y]/n)?: ").lower().strip()
     if not user_response == "y" and not user_response == "yes" and not user_response == "":
         sys.exit()
-    print("=> Calling `terraform init`")
+    logging.info("=> Calling `terraform init`")
     return_code = subprocess.call(["terraform", "init", "-backend-config=.terraform/ci-backend-config"])
     if return_code != 0:
         raise Exception(f"Failure to init terraform: {return_code}")
@@ -371,24 +373,24 @@ def main():
 
     # HACK for github
     if "GITHUB_TOKEN" not in os.environ:
-        print("!!! ATTENTION !!!")
-        print("Don't forget to set the environment variable `GITHUB_TOKEN` before `terraform apply`.")
-        print("This is a limitation of the AWS Terraform provider (HACK!!!)")
-        print(
+        logging.warning("!!! ATTENTION !!!")
+        logging.warning("Don't forget to set the environment variable `GITHUB_TOKEN` before `terraform apply`.")
+        logging.warning("This is a limitation of the AWS Terraform provider (HACK!!!)")
+        logging.warning(
             "Follow this page for instructions: https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line"
         )
         return 1
 
     # Create pipeline which creates infrastructure and deploys services
-    print(f"=> Calling `terraform plan --out=terraform.plan`")
+    logging.info(f"=> Calling `terraform plan --out=terraform.plan`")
     return_code = subprocess.call(["terraform", "plan", "--out=terraform.plan"])
     if return_code != 0:
         raise Exception(f"Failure calling `terraform plan`: {return_code}")
-    print("=> Calling `terraform apply`")
+    logging.info("=> Calling `terraform apply`")
     return_code = subprocess.call(["terraform", "apply", "terraform.plan"])
     if return_code != 0:
         raise Exception(f"Failure calling `terraform plan`: {return_code}")
-    print(f"=> Creation complete!  Check AWS -> CodePipeline -> Anubis in {region}")
+    logging.info(f"=> Creation complete!  Check AWS -> CodePipeline -> Anubis in {region}")
     service_endpoint = get_service_endpoint(region, session)
     register_service_endpoint(service_endpoint)
     return
