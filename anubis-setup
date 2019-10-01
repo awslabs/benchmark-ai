@@ -134,7 +134,7 @@ _validate_profile() {
             return 0
         fi
     done
-    printf "\033[01;31m[WARNING]\033[0m Unknown profile \"%s\" is not in your credentials config file!\n" "${input_profile}" >&2
+    printf "\033[01;31m[WARNING]\033[0m Unknown profile, \"%s\" is not in your credentials config file!\n" "${input_profile}" >&2
     return 9
 }
 
