@@ -476,7 +476,14 @@ main() {
             -- | --driver)
                 shift
                 echo "${AWS_PROFILE}"
-                (cd ${ANUBIS_REPO_HOME}/ci; AWS_PROFILE=${AWS_PROFILE} ./anubis-driver.py ${@})
+                (
+                    if [[ -n "${ANUBIS_REPO_HOME}" ]]; then
+                        cd ${ANUBIS_REPO_HOME}/ci || exit 1
+                        AWS_PROFILE=${AWS_PROFILE} ./anubis-driver.py ${@}
+                    else
+                        printf "\033[01;31m[WARNING]\033[0m Please be sure to set environment variable ANUBIS_REPO_HOME to the top level directory of the anubis repository!\n\n"
+                    fi
+                )
                 break
                 ;;
             --help)
