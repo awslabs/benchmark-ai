@@ -15,7 +15,7 @@ description = """ \
 instance_type = "t3.small"
 strategy = "single_node"
 # us-east-1 az that has plenty of t3. Adjust for used region.
-aws_zone_id = "use1-az5"
+#aws_zone_id = "use1-az5"
 
 # 2. Environment
 [env]
