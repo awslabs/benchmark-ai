@@ -1,5 +1,16 @@
 #!/usr/bin/env bash
 
+DEBUG=${DEBUG:-0}
+VERBOSE=${VERBOSE:-0}
+FORCE=${FORCE:-0}
+
+#TODO - create a info page that goes in depth about this script and how to use it (docs/anubis-setup.md)
+#TODO - put warning to instruct users on how to set up access for a new account via --extra-users
+
+#--------------------------------------------------------------------
+# Conda setup
+#--------------------------------------------------------------------
+
 conda_usage() {
     printf "
 
@@ -52,8 +63,9 @@ dependencies:
   - boto3
   - requests
   - pip
-  - pip:
-    - pyfiglet
+  - jq 1.6
+  - curl 7.54.1
+  - coreutils 8.31
 EOF
     cmd="${CONDA_EXE} env update -f ${tmp_environment_file}"
     ${cmd}
@@ -78,24 +90,408 @@ if ! source "${CONDA_EXE%/*}"/activate anubis-setup >& /dev/null; then
     conda_usage
 fi
 
-DEBUG=${DEBUG:-0}
-VERBOSE=${VERBOSE:-0}
-_t=$(realpath ${BASH_SOURCE})
-ANUBIS_REPO_HOME=${ANUBIS_REPO_HOME:="${_t%/*}"}
-unset _t
-
-## put code here
-
-#TODO
-#Manual setup, (pipeline free)
+#------
+#Misc
+#------
+#Manual setup, (without using Pipelines)
 # ci/baictl create infra --aws-prefix-list-id=pl-f8a64391 --aws-region=us-west-2
 # build-and-deploy-all-services
+#------
 
-#Pipeline setup
-# ci/anubis-pipeline.py --region=us-west-1
+#--------------------------------------------------------------------
+# Environment vars...
+#--------------------------------------------------------------------
 
-main() {
-    (cd ${ANUBIS_REPO_HOME}/ci; ./anubis-driver.py $@)
+_t=$(realpath "${BASH_SOURCE}")
+ANUBIS_REPO_HOME=${ANUBIS_REPO_HOME:="${_t%/*}"}
+unset _t
+((DEBUG)) && printf "ANUBIS_REPO_HOME: %s\n\n" "${ANUBIS_REPO_HOME}"
+
+AWS_CREDIENTIALS_FILE="${HOME}/.aws/credentials"
+declare -r ANUBIS_HOME=${HOME}/.anubis
+export AWS_PROFILE=${AWS_PROFILE:=$(cat "${ANUBIS_HOME}"/whoami)}
+
+#--------------------------------------------------------------------
+# Helper / Utility functions ("private")
+#--------------------------------------------------------------------
+
+_prepare_credentials_map() {
+    sed -r -n  's/\[(.*)\]/\1/p' "${AWS_CREDIENTIALS_FILE}"
+    for profile in $(sed -r -n  's/\[(.*)\]/\1/p' "${AWS_CREDIENTIALS_FILE}"| xargs); do
+        account=$(aws sts get-caller-identity --profile="${profile}" | jq -r '.Account')
+        echo " looking at profile: ${profile}"
+        account-to-profile["${account}"]="${profile}"
+        profile-to-account["${profile}"]="${account}"
+    done
 }
 
-main $@
+_validate_profile() {
+    ((DEBUG)) && echo "validating profile for: $*"
+    local input_profile=${1:-"${AWS_PROFILE}"}
+    local match=0
+    for profile in $(list_profiles | xargs); do
+        if [[ "${profile}" == "${input_profile}" ]]; then
+            return 0
+        fi
+    done
+    printf "\033[01;31m[WARNING]\033[0m Unknown profile, \"%s\" is not in your credentials config file!\n" "${input_profile}" >&2
+    return 9
+}
+
+_check_profile_and_config_aligned() {
+    ((DEBUG)) && echo "Checking if profile and configuration are aligned"
+    local profile="${AWS_PROFILE}"
+    _validate_profile "${profile}"
+    local aws_account_id=$(aws sts get-caller-identity --profile="${profile}" | jq -r '.Account')
+    local aws_account_id_tfstate=$(jq -r '.backend.config.bucket' "${ANUBIS_REPO_HOME}"/ci/.terraform/terraform.tfstate | sed -n -r 's/bai-ci-terraform-state-([0-9]*)-.*$/\1/p')
+
+    if [[ "${aws_account_id}" == "${aws_account_id_tfstate}" ]]; then
+        printf "\033[01;32mYES\033[0m, current profile and configuration are aligned...\n\n" >&2
+        return 0
+    else
+        printf "\033[01;31mNO!!!\033[0m, current profile and configuration are NOT aligned!
+Please run \033[01;33m--sync-config-to-profile\033[0m to align configuration.\n\n" >&2
+        return 1
+    fi
+}
+
+_kubeconfig_file() {
+    local kubeconfig_file="${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform/bai/kubeconfig"
+    if [[ ! -f "${kubeconfig_file}" ]]; then
+        printf "\033[01;31m[WARNING]\033[0m CANNOT FIND THE REQUIRED CONFIGURATION FILE!" >&2
+        ((DEBUG)) && printf "\n          (%s)" "${kubeconfig_file}" >&2
+        printf "
+          Check that...
+          1. You have completed the (re)installation process.
+             (\033[01;33manubis-setup -- --region us-west-2 --prefix-list pl-xxxxxxxx\033[0m)
+          2. Your profile and configuration are aligned
+             (\033[01;33manubis-setup --sync-config-to-profile\033[0m)\n" >&2
+        exit 1
+    fi
+    echo "${kubeconfig_file}"
+}
+
+
+#--------------------------------------------------------------------
+# Primary functions
+#--------------------------------------------------------------------
+
+banner() {
+    printf '
+                      _     _                     _
+                     | |   (_)                   | |
+     __ _ _ __  _   _| |__  _ ___ ______ ___  ___| |_ _   _ _ __
+    /  _ |  _ \| | | |  _ \| / __|______/ __|/ _ \ __| | | |  _ \
+   | (_| | | | | |_| | |_) | \__ \      \__ \  __/ |_| |_| | |_) |
+    \__,_|_| |_|\__,_|_.__/|_|___/      |___/\___|\__|\__,_| .__/
+                                                            | |
+                                                            |_|
+
+Chance Bair
+Gavin Bell
+Anton Chernov
+Jose Contreras
+Edison Muenz
+Per da Silva
+Stanislav Tsukrov
+Marco Abreu
+'
+}
+
+usage() {
+    banner
+    printf "
+usage:
+
+This is the administrative command-line tool for the Anubis system
+
+ > %s --list-profiles          : lists your aws profiles configured in %s
+                --whoami                 : tells you what the current active profile is
+                --set-profile | --as <profile name> : changes your profile to the provided value
+                --sync-config-to-profile : synchronized the Anubis configuration state to match your current profile
+                --show-service-endpoint  : displays the hostname and port of the Anubis (bff) HTTP API endpoint (used to \"--register\" with anubis client tool)
+                --list-configmaps        : shows a listing of the current configuration maps
+                --show-configmap <configmap name> : shows the configuration associated with the supplied configuration name (default: outputs-infrastructure)
+                --connect-anubis-shell   : get a shell on the anubis installation (basiton host)
+                --query-logs             : creates connection to log search index and brings up front end in browser
+                --query-metrics          : creates connection to metrics index (and brings up front end in browser interface)
+                --query-graphs           : creates connection to dashboard server (and brings up front end browser interface)
+                --query-alerts           : creates connection to alert manager (and brings up front end interface)
+                --snoop-events <topic name(s)> : streams event log to terminal
+                --force                  : to force execution of some commands (can also be set by setting env var FORCE=1)
+                --debug                  : provides more output to the user (can also be set by setting env var DEBUG=1)
+                -- | --driver            : consumes ALL subsequent args and dispatches them to Anubis \"driver\" sub command (see help below)
+                --help                   : (this output)
+
+------------------------------------------------------------
+                (\"Driver\" subsystem....)
+------------------------------------------------------------
+
+ " "${0##*/}" "${AWS_CREDIENTIALS_FILE}"
+
+    (cd "${ANUBIS_REPO_HOME}"/ci || exit 1; AWS_PROFILE="${AWS_PROFILE}" ./anubis-driver.py --help)
+    exit 0
+}
+
+sanity_check() {
+    ((DEBUG)) && echo "Calling \"sanity_check\"..."
+    #TODO call full sanity checklist here
+    #[ ] The user and the configuration are aligned
+    #[ ] The front end API service (BFF) can be pinged (and provide endpoint)
+    #[ ] Can sync with the latest TF state
+    #[ ] Bastion is reachable, the SSH keys work
+    #[ ] Kafka, Kubernetes, Prometheus, Grafana, ElasticSearch are alive and well
+    #[ ] Services are alive and can process a "tracer" event all the way through
+}
+
+list_profiles() {
+    ((DEBUG)) && echo "Calling \"list profiles\" function with: $*"
+    sed -r -n  's/\[(.*)\]/\1/p' "${AWS_CREDIENTIALS_FILE}"
+}
+
+whoami() {
+    ((DEBUG)) && echo "Calling \"whoami\" function with: $*"
+    #If that is not set then select [default]
+    #print out the sts: Ex: aws sts get-caller-identity --profile=bellgav-dev
+    echo "Profile: ${AWS_PROFILE}"
+    _validate_profile "${AWS_PROFILE}" && \
+        aws sts get-caller-identity --profile=${AWS_PROFILE}
+}
+
+# To assume a new identity - to run anubis-setup *as* X, where X is a profile listed in your credentials file.
+as() {
+    ((DEBUG)) && echo "Calling \"as\" function with: $*"
+    [[ ! -f ~/.aws/credentials ]] && printf "\033[01;31m[WARNING]\033[0m CANNOT FIND YOUR AWS crendentials file!\n\n" >&2
+    local profile_name="${1:?You must provide a profile you which to switch to}"
+
+    #_prepare_credentials_map
+
+    if _validate_profile "${profile_name}"; then
+        echo "${profile_name}" > "${ANUBIS_HOME}"/whoami
+        export AWS_PROFILE=$(cat "${ANUBIS_HOME}"/whoami)
+    fi
+}
+
+sync_config_to_profile() {
+    ((DEBUG)) && echo "Calling \"sync_config_to_profile\" function with: $*"
+    echo "Current profile: ${AWS_PROFILE}"
+
+    if _check_profile_and_config_aligned; then
+        echo "already sync'ed!"
+        ((!FORCE)) && return 0
+    fi
+
+    ((DEBUG)) && echo "inspecting ${ANUBIS_REPO_HOME}/ci/.terraform/terraform.tfstate"
+    local aws_region_best_guess=$(jq -r '.backend.config.bucket' "${ANUBIS_REPO_HOME}"/ci/.terraform/terraform.tfstate | sed -n -r 's/bai-ci-terraform-state-[0-9]*-(.*)$/\1/p')
+    ((DEBUG)) && echo "aws_region = ${aws_region_best_guess}"
+
+    (
+        cd "${ANUBIS_REPO_HOME}"/baictl || exit 1
+        echo "Checking for terraform data..."
+        [[ -d "${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform" ]] && mv -v "${ANUBIS_REPO_HOME}"/baictl/drivers/aws/cluster/.terraform{,.bak}
+        local cmd="./baictl sync infra --aws-region=${aws_region_best_guess} --mode=pull"
+        echo "Synchronizing terraform data: ${cmd}"
+        if $cmd; then
+            echo "Synchronization successful..."
+            [[ -d "${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform" ]] && rm -rvf "${ANUBIS_REPO_HOME}"/baictl/drivers/aws/cluster/.terraform.bak
+            echo "Housekeeping..."
+        else
+            echo "\033[01;31m[WARNING]\033[0m Not able to sync... Restoring terraform state"
+            mv -v "${ANUBIS_REPO_HOME}"/baictl/drivers/aws/cluster/.terraform.bak "${ANUBIS_REPO_HOME}"/baictl/drivers/aws/cluster/.terraform
+        fi
+    )
+}
+
+show_service_endpoint() {
+    local kubeconfig_file=$(_kubeconfig_file)
+    local configured_service_endpoint=$(kubectl --kubeconfig="${kubeconfig_file}" get service bai-bff -o json | jq '.status.loadBalancer.ingress[].hostname')
+    if [[ -n "${configured_service_endpoint}" ]] ; then
+        printf "\nConfigured service endpoint is: [\033[01;33m%s\033[0m] \n\n" "$configured_service_endpoint" >&2
+    fi
+
+}
+
+list_configmaps() {
+    ((DEBUG)) && echo "Calling \"list_configmaps\" function with: $*"
+    local kubeconfig_file=$(_kubeconfig_file)
+    printf "\033[01;32m[%s]\033[0m\n" "${AWS_PROFILE}" >&2
+    kubectl --kubeconfig="${kubeconfig_file}" get configmaps
+}
+
+show_configmap() {
+    ((DEBUG)) && echo "Calling \"show_configmap\" function with: $*"
+    local kubeconfig_file=$(_kubeconfig_file)
+    printf "\033[01;32m[%s]\033[0m\n" "${AWS_PROFILE}"
+    local configmap_name=${1:-"outputs-infrastructure"}
+    printf "\033[01;32m[ConfigMap: %s]\033[0m\n" "${configmap_name}" >&2
+    kubectl --kubeconfig="${kubeconfig_file}" get configmap "${configmap_name}" --output yaml
+}
+
+jump_to_bastion() {
+    ((DEBUG)) && echo "Calling \"jump_to_bastion\" function with: $*"
+    local ssh_config_file="${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform/bai/ssh-config"
+    if [[ ! -f "${ssh_config_file}" ]]; then
+        printf "\033[01;31m[WARNING]\033[0m CANNOT FIND THE REQUIRED CONFIGURATION FILE!\n\n"
+        exit 1
+    fi
+
+    local ssh_pem_file="${ANUBIS_REPO_HOME}"/baictl/drivers/aws/cluster/.terraform/bai/bastion_private.pem
+    if [[ ! -f "${ssh_pem_file}" ]]; then
+        printf "\033[01;31m[WARNING]\033[0m CANNOT FIND THE REQUIRED KEY FILE!\n\n"
+        exit 1
+    else
+        chmod 600 "${ssh_pem_file}"
+    fi
+    ssh -F "${ssh_config_file}" -i "${ssh_pem_file}" bastion
+
+}
+
+# To connect to Kibana front end for ElasticSearch
+query_logs() {
+    ((DEBUG)) && echo "Calling \"query_logs\" function with: $*"
+    local ssh_config_file="${ANUBIS_REPO_HOME}/baictl/drivers/aws/cluster/.terraform/bai/ssh-config"
+    if [[ ! -f "${ssh_config_file}" ]]; then
+        printf "\033[01;31m[WARNING]\033[0m CANNOT FIND THE REQUIRED CONFIGURATION FILE!\n\n"
+        exit 1
+    fi
+
+    local ssh_pem_file="${ANUBIS_REPO_HOME}"/baictl/drivers/aws/cluster/.terraform/bai/bastion_private.pem
+    if [[ ! -f "${ssh_pem_file}" ]]; then
+        printf "\033[01;31m[WARNING]\033[0m CANNOT FIND THE REQUIRED KEY FILE!\n\n"
+        exit 1
+    else
+        chmod 600 "${ssh_pem_file}"
+    fi
+    printf 'Navigate to https://localhost:9200/_plugin/kibana/app/kibana#/dev_tools/console?_g=() to access the Kibana dashboard
+Ctrl+C to cancel the session.
+'
+    ssh -F "${ssh_config_file}" -i "${ssh_pem_file}" estunnel -N
+    #[[ $(uname) == "Darwin" ]] && open http://127.0.0.1:9200/_plugin/kibana
+}
+
+# To connect to Prometheus' query front end, PromDash
+query_metrics() {
+    ((DEBUG)) && echo "Calling \"query_metrics\" function with: $*"
+    local kubeconfig_file=$(_kubeconfig_file)
+    ("${ANUBIS_REPO_HOME}"/baictl/baictl port-forward infra --service="prometheus")
+
+}
+
+# To connect to Grafana dashboard
+query_graphs() {
+    ((DEBUG)) && echo "Calling \"query_graphs\" function with: $*"
+    local kubeconfig_file=$(_kubeconfig_file)
+    ("${ANUBIS_REPO_HOME}"/baictl/baictl port-forward infra --service="grafana")
+}
+
+# To connect to Alert Manager dashboard
+query_alerts() {
+    ((DEBUG)) && echo "Calling \"query_alerts\" function with: $*"
+    (KUBECONFIG=$(_kubeconfig_file) "${ANUBIS_REPO_HOME}"/baictl/baictl port-forward infra --service="alertmanager")
+}
+
+#TODO
+# To connect *through* the bastion host to the listen directly to specified topic on Kaffka
+snoop_events() {
+    ((DEBUG)) && echo "IMPLEMENT ME!!! Calling \"snoop_events\" function with: $*"
+}
+
+
+
+main() {
+    ((DEBUG)) && echo "Hello, ${AWS_PROFILE}..."
+    while [ -n "${1}" ]; do
+        myargs=()
+        local unshift=0
+        case "${1}" in
+            --force)
+                FORCE=1
+                ;;
+            --debug)
+                DEBUG=1
+                ;;
+            --check| --sanity-check)
+                sanity_check
+                exit $?
+                ;;
+            --list-profiles)
+                list_profiles ""
+                ;;
+            --whoami)
+                shift
+                whoami "${1}"
+                ;;
+            --as | --set-profile)
+                shift
+                as "${1}"
+                ;;
+            --sync-config-to-profile)
+                shift
+                sync_config_to_profile "${1}"
+                ;;
+            --show-service-endpoint)
+                show_service_endpoint
+                ;;
+            --list-configmaps)
+                list_configmaps ""
+                ;;
+            --show-configmap)
+                shift
+                show_configmap "${1}"
+                ;;
+            --jump-to-bastion | --connect-anubis-shell)
+                shift
+                jump_to_bastion ""
+                exit $?
+                ;;
+            --query-logs) #Kibana access (pulls up Kibana through a tunnel)
+                shift
+                query_logs "${1}"
+                ;;
+            --query-metrics) #PromDash access (play with Prometheus queries)
+                shift
+                query_metrics "${1}"
+                ;;
+            --query-graphs) #PromDash access (play with Prometheus queries)
+                shift
+                query_graphs "${1}"
+                ;;
+            --query-alerts) #PromDash access (play with Prometheus queries)
+                shift
+                query_alerts "${1}"
+                ;;
+            --snoop-events) #Kubectl logs (Kubernetes logs)
+                shift
+                until [[ -n "$(echo "${1}" | sed -rn '/^\s*--/p')" || -z "${1}" ]]; do
+                    ((DEBUG)) && echo "  collecting arg $1" 1>&2
+                    myargs+=("${1}")
+                    shift
+                done
+                unshift=1
+                snoop_events "${myargs[@]}"
+                ;;
+            -- | --driver)
+                shift
+                echo "${AWS_PROFILE}"
+                (
+                    if [[ -n "${ANUBIS_REPO_HOME}" ]]; then
+                        cd ${ANUBIS_REPO_HOME}/ci || exit 1
+                        AWS_PROFILE=${AWS_PROFILE} ./anubis-driver.py ${@}
+                    else
+                        printf "\033[01;31m[WARNING]\033[0m Please be sure to set environment variable ANUBIS_REPO_HOME to the top level directory of the anubis repository!\n\n"
+                    fi
+                )
+                break
+                ;;
+            --help)
+                usage | more
+                ;;
+            *)
+                echo "Unknown flag ${1}"
+                ;;
+        esac
+        ((!unshift)) && shift
+    done
+}
+
+main "$@"

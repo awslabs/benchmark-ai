@@ -99,6 +99,7 @@ emoji[WARN]="\xF0\x9F\x94\xA5 "
 emoji[ERROR]="\xF0\x9F\x92\xA5 "
 emoji[SUCESS_ALL]="\xF0\x9F\x8E\x89 "
 emoji[SEARCH]="\xF0\x9F\x94\x8D "
+emoji[WTF]="\xF0\x9F\x92\xA9 "
 
 banner() {
     printf '
@@ -923,7 +924,6 @@ main() {
                     exit $?
                     ;;
                 *)
-                    shift
                     echo "Unknown flag $1"
                     ;;
             esac

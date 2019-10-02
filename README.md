@@ -254,7 +254,7 @@ bff/bin/anubis --results <ACTION_ID>
 
 ```bash
 # Assuming PWD is `benchmark-ai`
-./anubis-setup --region us-east-1 --prefix-list-id pl-xxxxxxxx --destroy
+./anubis-setup -- --region us-east-1 --prefix-list-id pl-xxxxxxxx --destroy
 ```
 
 *Note - There is a bug in terraform where security group don't get revoked before security group deletion causing timeout https://github.com/hashicorp/terraform/issues/8617*
