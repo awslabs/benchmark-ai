@@ -190,7 +190,7 @@ metadata:
     parent-action-id: parentactionid
 spec:
   selector:
-    inference_server_name: is-benchmark-job-id
+    inference-server-name: is-benchmark-job-id
   ports:
   - name: port-0
     protocol: TCP
@@ -208,7 +208,7 @@ metadata:
     action-id: ACTION_ID
     client-id: CLIENT_ID
     created-by: executor
-    inference_server_name: is-benchmark-job-id
+    inference-server-name: is-benchmark-job-id
     parent-action-id: parentactionid
 spec:
   template:
@@ -218,7 +218,7 @@ spec:
         action-id: ACTION_ID
         client-id: CLIENT_ID
         created-by: executor
-        inference_server_name: is-benchmark-job-id
+        inference-server-name: is-benchmark-job-id
         parent-action-id: parentactionid
       annotations:
         iam.amazonaws.com/role: benchmark-host
@@ -349,6 +349,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: ANUBIS_POD_CONTAINER
+          value: inference-server
         - name: ANUBIS_METRICS
           value: '[{"name": "Requests2XX", "units": "requests", "pattern": "VW1WeGRXVnpkSE15V0ZndVkyOTFiblE2S0Z4a0t5az0="}]'
         - name: BENCHMARK_AI

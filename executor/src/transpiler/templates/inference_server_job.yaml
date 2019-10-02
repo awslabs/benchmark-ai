@@ -8,7 +8,7 @@ metadata:
     created-by: {service_name}
 spec:
   selector:
-    inference_server_name: {inference_server_job_id}
+    inference-server-name: {inference_server_job_id}
   ports: []
 ---
 
@@ -21,7 +21,7 @@ metadata:
     action-id: {event.action_id}
     client-id: {event.client_id}
     created-by: {service_name}
-    inference_server_name: {inference_server_job_id}
+    inference-server-name: {inference_server_job_id}
 spec:
   template:
     metadata:
@@ -30,7 +30,7 @@ spec:
         action-id: {event.action_id}
         client-id: {event.client_id}
         created-by: {service_name}
-        inference_server_name: {inference_server_job_id}
+        inference-server-name: {inference_server_job_id}
       annotations:
         iam.amazonaws.com/role: benchmark-host
     spec:
@@ -160,6 +160,9 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
+          # must match main container name
+          - name: ANUBIS_POD_CONTAINER
+            value: "inference-server"
           - name: ANUBIS_METRICS
             value: '{server_metrics}'
           - name: BENCHMARK_AI
