@@ -10,10 +10,15 @@ from typing import Any
 from unittest.mock import create_autospec
 
 from bai_io_utils.failures import UnRetryableError
-from bai_kafka_utils.events import DownloadableContent, BenchmarkEvent, FetcherStatus, DataSetSizeInfo
+from bai_kafka_utils.events import DownloadableContent, BenchmarkEvent, FetcherStatus, ContentSizeInfo
 from bai_zk_utils.states import FetcherResult
 from bai_zk_utils.zk_locker import RWLockManager, OnLockCallback, RWLock
-from fetcher_dispatcher.data_set_manager import DataSetManager, DataSetDispatcher, DataSetOnDone, DataSetSizeEstimator
+from fetcher_dispatcher.download_manager import (
+    DownloadManager,
+    DownloadDispatcher,
+    DownloadOnDone,
+    ContentSizeEstimator,
+)
 
 FILE_SIZE = 42
 
@@ -25,16 +30,16 @@ ACTION_ID = "ACTION_ID"
 
 SOME_PATH = "/some/path"
 
-SOME_SIZE_INFO = DataSetSizeInfo(FILE_SIZE, 1, FILE_SIZE)
+SOME_SIZE_INFO = ContentSizeInfo(FILE_SIZE, 1, FILE_SIZE)
 
 
-def mock_size_estimator(src: str) -> DataSetSizeInfo:
+def mock_size_estimator(src: str) -> ContentSizeInfo:
     return SOME_SIZE_INFO
 
 
 @fixture
-def failing_size_estimator() -> DataSetSizeEstimator:
-    mock = create_autospec(DataSetSizeEstimator)
+def failing_size_estimator() -> ContentSizeEstimator:
+    mock = create_autospec(ContentSizeEstimator)
     mock.side_effect = UnRetryableError()
     return mock
 
@@ -123,22 +128,22 @@ def zoo_keeper_client_with_done_node_that_exists(zoo_keeper_client_with_node_tha
 
 
 @fixture
-def kubernetes_job_starter() -> DataSetDispatcher:
-    return create_autospec(DataSetDispatcher)
+def kubernetes_job_starter() -> DownloadDispatcher:
+    return create_autospec(DownloadDispatcher)
 
 
 @fixture
-def data_set_manager(
-    zoo_keeper_client: KazooClient, kubernetes_job_starter: DataSetDispatcher, mock_lock_manager: RWLockManager
-) -> DataSetManager:
-    data_set_manager = DataSetManager(
+def download_manager(
+    zoo_keeper_client: KazooClient, kubernetes_job_starter: DownloadDispatcher, mock_lock_manager: RWLockManager
+) -> DownloadManager:
+    download_manager = DownloadManager(
         zoo_keeper_client,
         kubernetes_job_starter,
         mock_lock_manager,
         data_set_to_path,
         size_estimator=mock_size_estimator,
     )
-    return data_set_manager
+    return download_manager
 
 
 @fixture
@@ -178,22 +183,22 @@ def mock_lock_manager(mock_lock: RWLock) -> RWLockManager:
 
 
 def test_pass_through_start(
-    data_set_manager: DataSetManager,
+    download_manager,
     zoo_keeper_client: KazooClient,
-    kubernetes_job_starter: DataSetDispatcher,
+    kubernetes_job_starter: DownloadDispatcher,
     mock_lock_manager: RWLockManager,
 ):
-    data_set_manager.start()
+    download_manager.start()
     assert zoo_keeper_client.start.called
 
 
 def test_pass_through_stop(
-    data_set_manager: DataSetManager,
+    download_manager,
     zoo_keeper_client: KazooClient,
-    kubernetes_job_starter: DataSetDispatcher,
+    kubernetes_job_starter: DownloadDispatcher,
     mock_lock_manager: RWLockManager,
 ):
-    data_set_manager.stop()
+    download_manager.stop()
     assert zoo_keeper_client.stop.called
 
 
@@ -201,7 +206,7 @@ def test_first_fast_success(
     zoo_keeper_client_with_done_node: KazooClient,
     some_data_set: DownloadableContent,
     enclosing_event: BenchmarkEvent,
-    kubernetes_job_starter: DataSetDispatcher,
+    kubernetes_job_starter: DownloadDispatcher,
     mock_lock_manager: RWLockManager,
     mock_lock: RWLock,
 ):
@@ -215,15 +220,15 @@ def test_first_fast_success(
 
 # Common part of the tests
 def _test_fetch(zoo_keeper_client, enclosing_event, kubernetes_job_starter, mock_lock_manager, some_data_set):
-    data_set_manager = DataSetManager(
+    download_mgr = DownloadManager(
         zoo_keeper_client,
         kubernetes_job_starter,
         mock_lock_manager,
         data_set_to_path,
         size_estimator=mock_size_estimator,
     )
-    on_done = create_autospec(DataSetOnDone)
-    data_set_manager.fetch(some_data_set, enclosing_event, on_done)
+    on_done = create_autospec(DownloadOnDone)
+    download_mgr.fetch(some_data_set, enclosing_event, on_done)
     return on_done
 
 
@@ -231,7 +236,7 @@ def test_first_wait_success(
     zoo_keeper_client_with_running_node: KazooClient,
     some_data_set: DownloadableContent,
     enclosing_event: BenchmarkEvent,
-    kubernetes_job_starter: DataSetDispatcher,
+    kubernetes_job_starter: DownloadDispatcher,
     mock_lock_manager: RWLockManager,
     mock_lock: RWLock,
 ):
@@ -246,7 +251,7 @@ def test_first_wait_success(
 
 def _verify_fetch(
     enclosing_event: BenchmarkEvent,
-    kubernetes_job_starter: DataSetDispatcher,
+    kubernetes_job_starter: DownloadDispatcher,
     some_data_set: DownloadableContent,
     lock_manager: RWLockManager,
 ):
@@ -265,14 +270,14 @@ def _verify_wait_success(zoo_keeper_client: KazooClient):
 
 
 def _verify_success(
-    on_done: DataSetOnDone,
-    data_set: DownloadableContent,
-    kubernetes_job_starter: DataSetDispatcher,
+    on_done: DownloadOnDone,
+    content: DownloadableContent,
+    kubernetes_job_starter: DownloadDispatcher,
     zoo_keeper_client: KazooClient,
     lock: RWLock,
 ):
-    assert data_set.status == FetcherStatus.DONE
-    on_done.assert_called_with(data_set)
+    assert content.status == FetcherStatus.DONE
+    on_done.assert_called_with(content)
     zoo_keeper_client.delete.assert_called_with(SOME_PATH)
     kubernetes_job_starter.cleanup.assert_called_once()
     lock.release.assert_called_once()
@@ -322,12 +327,12 @@ def zoo_keeper_client_nothing_to_cancel(zoo_keeper_client: KazooClient) -> Kazoo
 
 
 def test_cancel_happy_path(
-    kubernetes_job_starter: DataSetDispatcher, zoo_keeper_client_to_cancel, mock_lock_manager: RWLockManager
+    kubernetes_job_starter: DownloadDispatcher, zoo_keeper_client_to_cancel, mock_lock_manager: RWLockManager
 ):
-    data_set_manager = DataSetManager(
+    download_mgr = DownloadManager(
         zoo_keeper_client_to_cancel, kubernetes_job_starter, mock_lock_manager, data_set_to_path
     )
-    data_set_manager.cancel(CLIENT_ID, ACTION_ID)
+    download_mgr.cancel(CLIENT_ID, ACTION_ID)
 
     kubernetes_job_starter.cancel_all.assert_called_once_with(CLIENT_ID, ACTION_ID)
     zoo_keeper_client_to_cancel.set.assert_called_once_with(
@@ -336,52 +341,52 @@ def test_cancel_happy_path(
 
 
 def test_cancel_node_is_done(
-    kubernetes_job_starter: DataSetDispatcher,
+    kubernetes_job_starter: DownloadDispatcher,
     zoo_keeper_client_with_almost_done: KazooClient,
     mock_lock_manager: RWLockManager,
 ):
-    data_set_manager = DataSetManager(
+    download_mgr = DownloadManager(
         zoo_keeper_client_with_almost_done, kubernetes_job_starter, mock_lock_manager, data_set_to_path
     )
 
-    data_set_manager.cancel(CLIENT_ID, ACTION_ID)
+    download_mgr.cancel(CLIENT_ID, ACTION_ID)
     zoo_keeper_client_with_almost_done.set.assert_not_called()
 
 
 def test_cancel_conflict(
-    kubernetes_job_starter: DataSetDispatcher,
+    kubernetes_job_starter: DownloadDispatcher,
     zoo_keeper_client_with_conflict: KazooClient,
     mock_lock_manager: RWLockManager,
 ):
-    data_set_manager = DataSetManager(
+    download_mgr = DownloadManager(
         zoo_keeper_client_with_conflict, kubernetes_job_starter, mock_lock_manager, data_set_to_path
     )
 
-    data_set_manager.cancel(CLIENT_ID, ACTION_ID)
+    download_mgr.cancel(CLIENT_ID, ACTION_ID)
     # We expect 2 conflicts as stated in the fixture
     zoo_keeper_client_with_conflict.set.call_count == 2
 
 
 def test_cancel_nothing_to_do(
-    kubernetes_job_starter: DataSetDispatcher,
+    kubernetes_job_starter: DownloadDispatcher,
     zoo_keeper_client_nothing_to_cancel: KazooClient,
     mock_lock_manager: RWLockManager,
 ):
-    data_set_manager = DataSetManager(
+    download_mgr = DownloadManager(
         zoo_keeper_client_nothing_to_cancel, kubernetes_job_starter, mock_lock_manager, data_set_to_path
     )
-    data_set_manager.cancel(CLIENT_ID, ACTION_ID)
+    download_mgr.cancel(CLIENT_ID, ACTION_ID)
 
     zoo_keeper_client_nothing_to_cancel.set.assert_not_called()
 
 
 def test_cancel_no_node(
-    kubernetes_job_starter: DataSetDispatcher, zoo_keeper_client_no_node: KazooClient, mock_lock_manager: RWLockManager
+    kubernetes_job_starter: DownloadDispatcher, zoo_keeper_client_no_node: KazooClient, mock_lock_manager: RWLockManager
 ):
-    data_set_manager = DataSetManager(
+    download_mgr = DownloadManager(
         zoo_keeper_client_no_node, kubernetes_job_starter, mock_lock_manager, data_set_to_path
     )
-    data_set_manager.cancel(CLIENT_ID, ACTION_ID)
+    download_mgr.cancel(CLIENT_ID, ACTION_ID)
 
     zoo_keeper_client_no_node.set.assert_not_called()
 
@@ -389,17 +394,17 @@ def test_cancel_no_node(
 def test_pass_through_estimator_error(
     enclosing_event: BenchmarkEvent,
     some_data_set: DownloadableContent,
-    failing_size_estimator: DataSetSizeEstimator,
+    failing_size_estimator: ContentSizeEstimator,
     zoo_keeper_client: KazooClient,
-    kubernetes_job_starter: DataSetDispatcher,
+    kubernetes_job_starter: DownloadDispatcher,
     mock_lock_manager: RWLockManager,
     mock_lock: RWLock,
 ):
-    data_set_manager = DataSetManager(
+    download_mgr = DownloadManager(
         zoo_keeper_client, kubernetes_job_starter, mock_lock_manager, data_set_to_path, failing_size_estimator
     )
-    on_done = create_autospec(DataSetOnDone)
-    data_set_manager.fetch(some_data_set, enclosing_event, on_done)
+    on_done = create_autospec(DownloadOnDone)
+    download_mgr.fetch(some_data_set, enclosing_event, on_done)
 
     _verify_failed_estimator(mock_lock, on_done, some_data_set)
 

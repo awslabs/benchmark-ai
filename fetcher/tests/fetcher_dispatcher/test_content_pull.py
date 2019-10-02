@@ -1,7 +1,7 @@
 import pytest
 
 from bai_kafka_utils.events import DownloadableContent
-from fetcher_dispatcher.data_set_pull import get_dataset_dst
+from fetcher_dispatcher.content_pull import get_content_dst
 
 S3_BUCKET = "datasets_bucket"
 
@@ -33,5 +33,5 @@ S3_BUCKET = "datasets_bucket"
     ids=["simple", "simple with query", "md5 matters", "no doc path"],
 )
 def test_simple_case(data_set: DownloadableContent, expected: str):
-    dst = get_dataset_dst(data_set, S3_BUCKET)
+    dst = get_content_dst(data_set, S3_BUCKET)
     assert dst == expected

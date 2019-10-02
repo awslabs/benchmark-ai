@@ -3,7 +3,7 @@ from botocore.stub import Stubber
 from pytest import fixture
 from typing import NamedTuple, Any, List
 
-from bai_kafka_utils.events import DataSetSizeInfo
+from bai_kafka_utils.events import ContentSizeInfo
 from preflight.s3_estimator import s3_estimate_size
 
 BUCKET = "some_data"
@@ -59,9 +59,9 @@ def mock_s3_with_folder(mock_s3: StubedS3):
 
 def test_s3_estimator_file(mock_s3_with_file):
     size_info = s3_estimate_size(SOME_S3_FILE, mock_s3_with_file)
-    assert size_info == DataSetSizeInfo(SOME_SIZE, 1, SOME_SIZE)
+    assert size_info == ContentSizeInfo(SOME_SIZE, 1, SOME_SIZE)
 
 
 def test_s3_estimator_folder(mock_s3_with_folder):
     size_info = s3_estimate_size(SOME_S3_FOLDER, mock_s3_with_folder)
-    assert size_info == DataSetSizeInfo(SOME_SIZE, 1, SOME_SIZE)
+    assert size_info == ContentSizeInfo(SOME_SIZE, 1, SOME_SIZE)

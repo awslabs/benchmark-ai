@@ -1,10 +1,10 @@
 import pycurl
 
 from bai_io_utils.http_utils import http_perform
-from bai_kafka_utils.events import DataSetSizeInfo
+from bai_kafka_utils.events import ContentSizeInfo
 
 
-def http_estimate_size(src) -> DataSetSizeInfo:
+def http_estimate_size(src) -> ContentSizeInfo:
     curl = pycurl.Curl()
     curl.setopt(pycurl.URL, src)
     curl.setopt(pycurl.FOLLOWLOCATION, 1)
@@ -18,4 +18,4 @@ def http_estimate_size(src) -> DataSetSizeInfo:
 
     content_length = curl.getinfo(pycurl.CONTENT_LENGTH_DOWNLOAD)
 
-    return DataSetSizeInfo(int(content_length), 1, int(content_length))
+    return ContentSizeInfo(int(content_length), 1, int(content_length))

@@ -4,11 +4,11 @@ from typing import Dict, List, Optional
 
 import kubernetes
 from bai_k8s_utils.service_labels import ServiceLabels
-from bai_kafka_utils.events import DownloadableContent, BenchmarkEvent, DataSetSizeInfo
+from bai_kafka_utils.events import DownloadableContent, BenchmarkEvent, ContentSizeInfo
 from bai_kafka_utils.utils import id_generator, md5sum
 
 from fetcher_dispatcher.args import FetcherJobConfig
-from fetcher_dispatcher.data_set_manager import DataSetDispatcher
+from fetcher_dispatcher.download_manager import DownloadDispatcher
 
 BYTES_IN_MB = 1024 * 1024
 
@@ -32,7 +32,7 @@ def _align(n: int, align: int) -> int:
     return n + (align - r) if r else n
 
 
-class KubernetesDispatcher(DataSetDispatcher):
+class KubernetesDispatcher(DownloadDispatcher):
     DATA_SET_HASH_LABEL = "data-set-md5"
 
     ZK_NODE_PATH_ARG = "--zk-node-path"
@@ -255,7 +255,7 @@ class KubernetesDispatcher(DataSetDispatcher):
         logger.info(volumes_response)
 
     @staticmethod
-    def _get_volume_size(size_info: DataSetSizeInfo):
+    def _get_volume_size(size_info: ContentSizeInfo):
         # Max file + 20% just for any case.
         # Not less than 10% of total size
         # Round to the next X mb. X=4

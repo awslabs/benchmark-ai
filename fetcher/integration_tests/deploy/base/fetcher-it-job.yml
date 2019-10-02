@@ -11,7 +11,7 @@ spec:
           image: benchmarkai/fetcher-it
           imagePullPolicy: Always
           env:
-            - name: S3_DATASET_BUCKET
+            - name: S3_DOWNLOAD_BUCKET
               valueFrom:
                 configMapKeyRef:
                   name: outputs-infrastructure

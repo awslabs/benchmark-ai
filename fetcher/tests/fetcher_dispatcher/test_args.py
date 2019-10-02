@@ -28,7 +28,7 @@ MOCK_MIN_VOLUME_SIZE = 64
 MOCK_STORAGE_CLASS = "very_fast"
 
 ALL_ARGS = (
-    f"--s3-data-set-bucket={MOCK_S3_BUCKET} "
+    f"--s3-download-bucket={MOCK_S3_BUCKET} "
     f"--fetcher-job-image={MOCK_DOCKER_IMAGE} "
     f"--zookeeper-ensemble-hosts={MOCK_ZOOKEEPER_ENSEMBLE} "
     f"--kubeconfig={MOCK_KUBECONFIG} "
@@ -43,7 +43,7 @@ ALL_ARGS = (
 
 EXPECTED_CFG = FetcherServiceConfig(
     zookeeper_ensemble_hosts=MOCK_ZOOKEEPER_ENSEMBLE,
-    s3_data_set_bucket=MOCK_S3_BUCKET,
+    s3_download_bucket=MOCK_S3_BUCKET,
     kubeconfig=MOCK_KUBECONFIG,
     fetcher_job=FetcherJobConfig(
         node_selector=EXPECTED_NODE_SELECTOR,
