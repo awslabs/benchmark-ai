@@ -65,7 +65,7 @@ spec:
         created-by: executor
         parent-action-id: parentactionid
     spec:
-      serviceAccountName: metrics-pusher
+      serviceAccountName: benchmark
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

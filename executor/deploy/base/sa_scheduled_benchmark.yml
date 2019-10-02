@@ -1,0 +1,9 @@
+# ServiceAccount with RoleBindings required for a scheduled-benchmark service to function
+# This is the service account attached to the pod created the CronJob that represents
+# the scheduled benchmark. Since all it does it emit an event to a kafka topic, it needs
+# no special kubernetes resource access.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: scheduled-benchmark
+---

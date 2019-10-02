@@ -1,0 +1,94 @@
+# ServiceAccount with RoleBindings required for the executor service to function
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: executor
+---
+# Required for creating scheduled, inference, and single node benchmarks
+# as these are expressed as Kubernetes Job Resources
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: executor-job-creator-binding
+subjects:
+- kind: ServiceAccount
+  name: executor
+  namespace: default
+roleRef:
+  kind: Role
+  name: job-creator
+  apiGroup: rbac.authorization.k8s.io
+---
+# Required to crate Kubernetes ConfigMaps for the MPI jobs
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: executor-configmap-creator-binding
+subjects:
+- kind: ServiceAccount
+  name: executor
+  namespace: default
+roleRef:
+  kind: Role
+  name: configmap-creator
+  apiGroup: rbac.authorization.k8s.io
+---
+# Required to create MPI (Horovod) jobs
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: executor-mpijob-creator-binding
+  namespace:
+subjects:
+- kind: ServiceAccount
+  name: executor
+  namespace:
+roleRef:
+  kind: Role
+  name: mpijob-creator
+  apiGroup: rbac.authorization.k8s.io
+---
+# Required for creating scheduled benchmarks
+# as they are expressed as Kubernetes CronJob resources
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: executor-cronjob-creator-binding
+subjects:
+- kind: ServiceAccount
+  name: executor
+  namespace: default
+roleRef:
+  kind: Role
+  name: cronjob-creator
+  apiGroup: rbac.authorization.k8s.io
+---
+# Required for cancelling a benchmark
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: executor-benchmark-janitor-binding
+  namespace:
+subjects:
+- kind: ServiceAccount
+  name: executor
+  namespace: default
+roleRef:
+  kind: Role
+  name: benchmark-janitor
+  apiGroup: rbac.authorization.k8s.io
+---
+# Required to grand the role of pod status observer
+# to the service account created for the MPI (Horovod) benchmark
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: executor-pod-status-observer-binding
+subjects:
+- kind: ServiceAccount
+  name: executor
+  namespace: default
+roleRef:
+  kind: Role
+  name: pod-status-observer
+  apiGroup: rbac.authorization.k8s.io

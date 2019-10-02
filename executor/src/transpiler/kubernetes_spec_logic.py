@@ -177,6 +177,9 @@ class KubernetesRootObjectHelper:
         if container:
             container.ports = [{"containerPort": port} for port in ports] + (container.get("ports") or [])
 
+    def set_service_account(self, service_account_name: str):
+        self.get_pod_spec().serviceAccountName = service_account_name
+
     @staticmethod
     def _add_label(k8s_obj: Dict[Any, Any], key: str, value: str):
         if not k8s_obj:

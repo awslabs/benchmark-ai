@@ -5,3 +5,4 @@ configMapGenerator:
       - timeout=300
 resources:
   - executor-it-job.yml
+  - sa_executor_it.yml

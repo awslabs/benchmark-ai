@@ -5,7 +5,7 @@ metadata:
 spec:
   template:
     spec:
-      serviceAccountName: executor
+      serviceAccountName: executor-it
       initContainers:
         - name: kubectl-delivery
           image: mpioperator/kubectl-delivery:0.1.0

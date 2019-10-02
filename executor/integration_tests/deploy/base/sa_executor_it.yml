@@ -1,0 +1,37 @@
+# ServiceAccount with RoleBindings required for the executor service to function
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: executor-it
+---
+# This role defines all the required permissions for the
+# integration test pod
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: integration-tester
+  namespace: default
+rules:
+- apiGroups: ["batch"]
+  resources: ["jobs/status"]
+  verbs: ["get"]
+- apiGroups: ["batch"]
+  resources: ["jobs", "cronjobs"]
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources: ["pods", "services", "pods/status", "pods/logs"]
+  verbs: ["get", "list"]
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: executor-it-integration-tester-binding
+subjects:
+- kind: ServiceAccount
+  name: executor-it
+  namespace: default
+roleRef:
+  kind: Role
+  name: integration-tester
+  apiGroup: rbac.authorization.k8s.io
+
