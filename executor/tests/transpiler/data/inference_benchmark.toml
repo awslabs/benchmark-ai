@@ -90,3 +90,11 @@ start_command_args = "--model=mnist"
 [server.env.vars]
 VAR1 = "value1"
 VAR2 = "value2"
+
+[[server.models]]
+src = "model1"
+path = "/path/to/model1"
+
+[[server.models]]
+src = "model2"
+path = "/path/to/model2"

@@ -187,9 +187,11 @@ spec:
   selector:
     inference_server_name: is-benchmark-job-id
   ports:
-  - protocol: TCP
+  - name: port-0
+    protocol: TCP
     port: 8080
-  - protocol: TCP
+  - name: port-1
+    protocol: TCP
     port: 8081
 ---
 apiVersion: batch/v1
@@ -225,7 +227,33 @@ spec:
                 values:
                 - benchmark-ai
             topologyKey: kubernetes.io/hostname
-      initContainers: []
+      initContainers:
+      - name: data-puller
+        image: benchmarkai/puller:3115770
+        env:
+        - name: S3_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: outputs-infrastructure
+              key: s3_endpoint
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            configMapKeyRef:
+              name: s3
+              key: access-key-id
+              optional: true
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: s3
+              key: secret-access-key
+              optional: true
+        volumeMounts:
+        - name: datasets-volume
+          mountPath: /data
+        args:
+        - puller-data
+        - object-name/dir0,777,p0:object-name/dir1,777,p1
       containers:
       - name: inference-server
         image: jlcont/server:270219
@@ -238,10 +266,14 @@ spec:
         securityContext:
           privileged: false
         volumeMounts:
-        - mountPath: /bai/scripts
-          name: scripts-volume
         - name: dshm
           mountPath: /dev/shm
+        - name: datasets-volume
+          mountPath: /path/to/model1
+          subPath: p0
+        - name: datasets-volume
+          mountPath: /path/to/model2
+          subPath: p1
         env:
         - name: VAR1
           value: value1
@@ -272,7 +304,7 @@ spec:
         failure-domain.beta.kubernetes.io/zone: us-east-1c
       restartPolicy: Never
       volumes:
-      - name: scripts-volume
+      - name: datasets-volume
         emptyDir: {}
       - name: dshm
         emptyDir:
