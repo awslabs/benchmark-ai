@@ -201,15 +201,17 @@ clean:	project.clj
 	$(shell [[ -d $(TARGET_PATH) ]] && rm -rf $(TARGET_PATH))
 
 clean-all: clean
-	$(shell [[ -f project.clj ]]    && rm project.clj)
-	$(shell [[ -f deploy.yml ]]     && rm deploy.yml)
-	$(shell [[ -f service.yml ]]     && rm service.yml)
-	$(shell [[ -f Dockerfile ]]     && rm Dockerfile)
-	$(shell [[ -f Dockerfile_dev ]] && rm Dockerfile_dev)
+	$(shell [[ -f project.clj ]]       && rm project.clj)
+	$(shell [[ -f deploy.yml ]]        && rm deploy.yml)
+	$(shell [[ -f service.yml ]]       && rm service.yml)
+	$(shell [[ -f Dockerfile ]]        && rm Dockerfile)
+	$(shell [[ -f Dockerfile_dev ]]    && rm Dockerfile_dev)
 	$(shell [[ -d $(RELEASE_PATH) ]]   && rm -rf $(RELEASE_PATH))
 	$(shell [[ -d $(COMPILE_PATH) ]]   && rm -rf $(COMPILE_PATH))
 	$(shell [[ -d $(GEN_DOCS_PATH) ]]  && rm -rf $(GEN_DOCS_PATH))
 	$(shell [[ -d $(CD_TARGET_PATH) ]] && rm -rf $(CD_TARGET_PATH))
+	$(shell [[ -f service_endpoint ]]  && rm service_endpoint)
+
 
 $(JAR_FILE): $(MAIN_CLASS_FILE)
 	@echo "------------------------"
@@ -360,7 +362,7 @@ service.yml: FORCE
 	     -e 's|@@JMX_PORT@@|$(JMX_PORT)|g' \
 	     -e 's|@@SVC_PORT@@|$(SVC_PORT)|g' $(SERVICE_TEMPLATE) > $(SERVICE_YML)
 
-deploy: _deploy_venv deploy.yml service.yml 
+deploy: _deploy_venv deploy.yml service.yml
 	@echo "------------------------"
 	@echo "K8S deployment..."
 	@echo "------------------------"
