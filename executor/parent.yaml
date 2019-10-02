@@ -1,0 +1,5 @@
+name: bob
+age: 35
+some:
+  object:
+    {% filter indent(width=4) %}{% include 'child.yaml' %}{% endfilter %}

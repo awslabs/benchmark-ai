@@ -192,9 +192,11 @@ spec:
   selector:
     inference_server_name: is-benchmark-job-id
   ports:
-  - protocol: TCP
+  - name: port-0
+    protocol: TCP
     port: 8080
-  - protocol: TCP
+  - name: port-1
+    protocol: TCP
     port: 8081
 ---
 apiVersion: batch/v1

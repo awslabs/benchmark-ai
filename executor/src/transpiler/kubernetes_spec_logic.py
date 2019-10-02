@@ -169,8 +169,8 @@ class KubernetesRootObjectHelper:
         service = list(filter(lambda x: name == x["metadata"]["name"], self.services))
         if service:
             service_ports = service[0].get("spec", {}).get("ports", [])
-            for port in ports:
-                service_ports.append({"protocol": "TCP", "port": port})
+            for idx, port in enumerate(ports):
+                service_ports.append({"name": f"port-{idx}", "protocol": "TCP", "port": port})
 
     def add_container_ports_to_container(self, container_name: str, ports: List[int]):
         container = self.find_container(container_name)
