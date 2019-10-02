@@ -343,7 +343,7 @@ spec:
         - name: ANUBIS_POD_CONTAINER
           value: inference-server
         - name: ANUBIS_METRICS
-          value: '[{"name": "Requests2XX", "units": "requests", "pattern": "VW1WeGRXVnpkSE15V0ZndVkyOTFiblE2S0Z4a0t5az0="}]'
+          value: '[{"name": "Requests2XX", "units": "requests", "pattern": "UmVxdWVzdHMyWFguY291bnQ6KFxkKyk="}]'
         - name: BENCHMARK_AI
           value: fifo
         - name: BENCHMARK_AI_FIFO_FILEPATH

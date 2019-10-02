@@ -75,7 +75,6 @@ class BaiKubernetesObjectBuilder(metaclass=abc.ABCMeta):
         self.config_template.feed({"job_id": self.job_id})
         self.config_template.feed({"inference_server_job_id": self.inference_server_job_id})
         self.config_template.feed({"metrics": self.get_metrics_from_descriptor(descriptor)})
-        self.config_template.feed({"server_metrics": self.get_server_metrics_from_descriptor(descriptor)})
 
     @staticmethod
     def get_metrics_from_descriptor(descriptor: Descriptor):
@@ -421,6 +420,7 @@ class InferenceServerJobKubernetedObjectBuilder(SingleRunBenchmarkKubernetesObje
 
     def _feed_additional_template_values(self):
         super()._feed_additional_template_values()
+        self.config_template.feed({"server_metrics": self.get_server_metrics_from_descriptor(self.descriptor)})
 
     def _update_root_k8s_object(self):
         self.root.set_service_account(INFERENCE_SERVER_SERVICE_ACCOUNT)
