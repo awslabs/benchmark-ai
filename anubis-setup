@@ -304,7 +304,8 @@ sync_config_to_profile() {
 
 show_service_endpoint() {
     local kubeconfig_file=$(_kubeconfig_file)
-    local configured_service_endpoint=$(kubectl --kubeconfig="${kubeconfig_file}" get service bai-bff -o json | jq '.status.loadBalancer.ingress[].hostname')
+    echo "Fetching service endpoint value..."
+    local configured_service_endpoint=$(kubectl --kubeconfig="${kubeconfig_file}" get service bai-bff -o json | jq '.status.loadBalancer.ingress[].hostname,.spec.ports[0].port' | xargs | sed 's/ /:/')
     if [[ -n "${configured_service_endpoint}" ]] ; then
         printf "\nConfigured service endpoint is: [\033[01;33m%s\033[0m] \n\n" "$configured_service_endpoint" >&2
     fi

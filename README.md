@@ -9,18 +9,31 @@ Anubis provides a simple, self service solution for teams to schedule and run be
 
 # Features
 
-* Simple _declarative_ _document-based_ input that gives user full control of Model / Framework / Hardware
+* Simple single _declarative_ _document-based_ input that gives user full control of Model / Framework / Hardware dimensions
+  ([TOML](https://github.com/toml-lang/toml) format)
 * Simple command-line interface
 * Strong Reproducibility
 * Efficient Dataset Caching
 * Ease of use and deployment
-* Enables self-service model (anyone can spin up Anubis)
+* Encourages and enables self-service paradigm (anyone can spin up Anubis)
 * Designed to be future proof
 * Built around open standards
-* Cloud native, cloud ready and cloud scalable*
-* Operational Metrics
+* Cloud native, cloud ready and cloud scalable ++
 
-*Takes advantage of your cloud provider or datacenter's available resources - currently supports AWS out-of-the-box"
+Work loads:
+* benchmarks training and inference work loads
+* [kubeflow](https://www.kubeflow.org) support (MPI jobs).
+* [horovod](https://github.com/horovod/horovod) support
+
+Metrics:
+* provides [dashboard](https://grafana.com/grafana/) of operational metrics for runs
+* provides capability to [dashboard](https://grafana.com/grafana/) user defined metrics for runs
+* powerful query and alerting capabilities (leveraging [Prometheus](https://prometheus.io) [PromQL](https://prometheus.io/docs/prometheus/latest/querying/basics/) + [Alert Manager](https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/))
+
+Log search:
+* nimbly [search](https://www.elastic.co/products/elasticsearch) benchmark output for deeper investigation and trouble shooting
+
+_++Takes advantage of your cloud provider or datacenter's available resources - currently supports AWS out-of-the-box".  Including the option to export data to [CloudWatch](https://aws.amazon.com/cloudwatch/)_
 
 
 
@@ -30,12 +43,12 @@ Anubis provides a simple, self service solution for teams to schedule and run be
 
 One is the installer [`anubis-setup`](docs/anubis-setup.md), that is used to...
 
-- configure and create the Anubis infrastructure
+- create, configure, operate and destroy the Anubis infrastructure
 
 The other is the [`anubis`](bff/docs/anubis-client.md) client tool that allows users to...
 
 - run a benchmark: `anbis --submit resnet50-descriptor.toml`
-- monitor the progress of a run activities `anubis --status`
+- monitor the progress of a run's activities `anubis --status`
 - obtain information from a benchmark that was run: `anubis --results`
 
 The envisioned use-case is that a team or group or org instantiates the service infrastructure to be be used by its constituents. As such only the "admin" needs to run [`anubis-setup`](docs/anubis-setup.md).  While all users of Anubis interact with it using the `anubis` client tool.
@@ -110,12 +123,12 @@ You will now create a Codebuild pipeline that deploys Anubis infrastructure and 
 
 ```bash
 # Assuming PWD is `benchmark-ai`
-./anubis-setup --region us-east-1 --prefix-list-id pl-xxxxxxxx
+./anubis-setup -- --region us-east-1 --prefix-list-id pl-xxxxxxxx
 ```
 
 Type 'yes' when prompted and terraform will create the Codebuild pipeline and its dependencies.  When terraform finishes navigate to the AWS console -> Codebuild -> Pipeline -> Pipelines -> Anubis on the console to see the status of the installation
 
-<details><summary>More about anubis-setup arguments</summary>
+<details><summary>More about anubis-setup "driver" arguments</summary>
 <p>
 
  - region: (REQUIRED) AWS region that Anubis infrastructure and services will be instantiated in.  There can only be one instantiation of Anubis per account due to IAM role name collisions, etc.
@@ -132,15 +145,16 @@ Type 'yes' when prompted and terraform will create the Codebuild pipeline and it
 
 ##### Get the service endpoint for Anubis
 
-Once the Anubis pipeline has completed, at least the `deploy` step, successfully you need to query the EKS cluster for the Anubis service endpoint.
+Once the Anubis pipeline has completed, at least the `deploy` stage, successfully you need to get the Anubis service endpoint.
 
-```bash
-# Assuming PWD is `benchmark-ai`
-cd baictl
-./baictl sync infra --aws-region=us-east-1 --mode=pull
-# The kubeconfig will be downloaded to `drivers/aws/cluster/.terraform/bai/kubeconfig`
-kubectl --kubeconfig=drivers/aws/cluster/.terraform/bai/kubeconfig get service bai-bff -o json | jq '.status.loadBalancer.ingress[].hostname'
+``` bash
+> anubis-setup --show-service-endpoint
+Fetching service endpoint value...
+
+Configured service endpoint is: [xxxxxxxxxxx-xxxx.us-east-1.elb.amazonaws.com:80]
 ```
+_(give this to anubis client users so that they may [`--register`](#registration) the endpoint, more [later](#registration))_
+
 
 **OR**
 
@@ -269,34 +283,48 @@ in your code.
 
 Future Feature Roadmap...
 
-<details><summary>Global status state</summary>
+<details><summary>User Metrics Dashboard Auto-Generation</summary>
 <p>
 
-To be able to store status state in a global store that persists.  In
-the current implementation the data is stored in memory and is
-ephemeral bound to the life-cycle of the BFF instance(s).  The solution here is to use a data structure store.  Redis would be a suitable tool for this.  One may also just take advantage of the event persistence story, and replenish data from Kafka or S3.
-
-</p>
-</details>
-<details><summary>User Metrics</summary>
-<p>
-
-To provide user defined metrics to the customer.  This entails
-providing a means of dynamically producing dashboards for a given run
-based on what is being collected/emitted.
+To automatically generate User Metrics Dashboard to provide user defined metrics displayed to the customer.  This entails
+providing a means of dynamically producing dashboards for a given run based on what is being collected/emitted.
 
 </p>
 </details>
 
-<details><summary>AWS: Cloudwatch exporting</summary>
+<details><summary>Persistent metrics, raw events and log storage</summary>
 <p>
 
-To export data so that it may be consumed by cloudwatch.  This entails
-creating a service whose function is to listen to messages and writing
-them out to Cloud Watch.
+Being able to have all events recorded durably would be advantageous
+as it would result in having "event datasets" that enable further
+out-of-band investigations or reporting.
+
+<ul>
+
+<li> Events: Listen to Kafka and dump all the events for each topic to
+S3.
+<li> Logs: We are using fluentD to push logs to ElasticSearch. This
+can be configured to write to s3 (I believe - need to confirm)
+<li> Metrics: This means having a persistence story for Prometheus
+metrics which are rather opaque and not amenable to simple file
+writing.  There is a story and write up for this capability, executing
+it will manifest this feature.
+</ul>
+</p>
+</details>
+
+<details><summary>Report generation</summary>
+<p>
+
+Processing systems to generate reports akin to those presented now
+with "BAI 1.0".  Report generation entails looking through data to put
+together the insights you seek.  This is largely out-of-band
+processing happening at the egress end of the system, and goes hand in
+hand with the raw persistence story.
 
 </p>
 </details>
+
 <details><summary>AMI Support</summary>
 <p>
 
@@ -351,37 +379,6 @@ aggregating identifying attribute that would group action ids into an
 "action-id-family" With the action-id-family, the notion of experiment
 can be realized - as a set of actions / runs that are semantically
 related.
-
-</p>
-</details>
-<details><summary>Persistent metrics, raw events and log storage</summary>
-<p>
-
-Being able to have all events recorded durably would be advantageous
-as it would result in having "event datasets" that enable further
-out-of-band investigations or reporting.
-
-<ul>
-
-<li> Events: Listen to Kafka and dump all the events for each topic to
-S3.
-<li> Logs: We are using fluentD to push logs to ElasticSearch. This
-can be configured to write to s3 (I believe - need to confirm)
-<li> Metrics: This means having a persistence story for Prometheus
-metrics which are rather opaque and not amenable to simple file
-writing.  There is a story and write up for this capability, executing
-it will manifest this feature.
-</ul>
-</p>
-</details>
-<details><summary>Report generation</summary>
-<p>
-
-Processing systems to generate reports akin to those presented now
-with "BAI 1.0".  Report generation entails looking through data to put
-together the insights you seek.  This is largely out-of-band
-processing happening at the egress end of the system, and goes hand in
-hand with the raw persistence story.
 
 </p>
 </details>
