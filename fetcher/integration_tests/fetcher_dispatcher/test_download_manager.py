@@ -43,7 +43,10 @@ def test_fetch(
     data_sets_with_events = [
         DataSetWithEvent(
             DownloadableContent(
-                src=EXISTING_DATASET, dst=f"s3://{fetcher_service_config.s3_download_bucket}/it/test.file", md5=None
+                src=EXISTING_DATASET,
+                dst=f"s3://{fetcher_service_config.s3_download_bucket}/it/test.file",
+                md5=None,
+                path="/mount/path",
             ),
             threading.Event(),
         )
@@ -75,7 +78,10 @@ def test_cancel(
     download_manager, fetcher_service_config: FetcherServiceConfig, benchmark_event_dummy_payload: BenchmarkEvent
 ):
     data_set = DownloadableContent(
-        src=VERY_LARGE_DATASET, dst=f"s3://{fetcher_service_config.s3_download_bucket}/it/test.file", md5=None
+        src=VERY_LARGE_DATASET,
+        dst=f"s3://{fetcher_service_config.s3_download_bucket}/it/test.file",
+        md5=None,
+        path="/mount/path",
     )
 
     completed = threading.Event()

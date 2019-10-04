@@ -42,8 +42,8 @@ def get_salted_src(src: str) -> str:
 
 def get_fetcher_benchmark_event(template_event: BenchmarkEvent, dataset_src: str, model_src: str):
     doc = BenchmarkDoc({"var": "val"}, "var = val", "")
-    datasets = [] if not dataset_src else [DownloadableContent(src=get_salted_src(dataset_src))]
-    models = [] if not model_src else [DownloadableContent(src=get_salted_src(model_src))]
+    datasets = [] if not dataset_src else [DownloadableContent(src=get_salted_src(dataset_src), path="/mount/path")]
+    models = [] if not model_src else [DownloadableContent(src=get_salted_src(model_src), path="/mount/path")]
     fetch_payload = FetcherPayload(toml=doc, datasets=datasets, models=models)
     return dataclasses.replace(template_event, payload=fetch_payload)
 
