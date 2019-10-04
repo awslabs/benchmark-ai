@@ -425,5 +425,8 @@ def test_cmd_object_emits_status_and_raises(
 )
 def test_collect_status(fetch_statuses, expected_status):
     assert expected_status == FetcherEventHandler._collect_status(
-        [DownloadableContent(src="some/path", status=fetch_status) for fetch_status in fetch_statuses]
+        [
+            DownloadableContent(src="some/path", status=fetch_status, path="/mount/path")
+            for fetch_status in fetch_statuses
+        ]
     )

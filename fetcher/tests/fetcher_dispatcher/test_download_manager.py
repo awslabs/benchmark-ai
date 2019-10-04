@@ -148,7 +148,7 @@ def download_manager(
 
 @fixture
 def some_data_set() -> DownloadableContent:
-    return DownloadableContent("http://imagenet.org/bigdata.zip", size_info=SOME_SIZE_INFO)
+    return DownloadableContent("http://imagenet.org/bigdata.zip", size_info=SOME_SIZE_INFO, path="/mount/path")
 
 
 @fixture
