@@ -317,6 +317,8 @@ _install_kubeflow_operators() {
         ks component list | awk '{print $1}' | xargs | grep "mpi-operator" || ks generate mpi-operator mpi-operator || return 1 && \
         ks component list | awk '{print $1}' | xargs | grep "mxnet-operator" || ks generate mxnet-operator mxnet-operator || return 1
 
+    # Enforce mpi-operator version 0.2.0
+    ks param set mpi-operator image mpioperator/mpi-operator:0.2.0
 
     ks apply kubeflow --component mpi-operator && \
         ks apply kubeflow --component mxnet-operator
