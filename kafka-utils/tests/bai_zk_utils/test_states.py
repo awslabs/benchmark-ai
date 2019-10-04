@@ -40,7 +40,9 @@ def test_deserialize_state_strange():
 
 @fixture
 def some_data_set():
-    return DownloadableContent(src="http://something.com/dataset.zip", dst="s3://something/dataset.zip")
+    return DownloadableContent(
+        src="http://something.com/dataset.zip", path="/mount/path", dst="s3://something/dataset.zip"
+    )
 
 
 def test_update_success(some_data_set: DownloadableContent):

@@ -46,14 +46,18 @@ class ContentSizeInfo:
 @dataclass_json
 @dataclass
 class DownloadableContent:
-    src: str
-    md5: Optional[str] = None
-    dst: Optional[str] = None
-    status: Optional[FetcherStatus] = None
+    # Set by the user
+    src: str  # uri of the data
+    path: str  # filesystem path where data will be found in the benchmark pod
+    id: Optional[str] = None  # (Opt) content id
+    md5: Optional[str] = None  # (Opt) content md5
+
+    # Set by the fetcher
+    dst: Optional[str] = None  # internal location of the data
     type: Optional[FetchedType] = None
+    status: Optional[FetcherStatus] = None
     message: Optional[str] = None
     size_info: Optional[ContentSizeInfo] = None
-    id: Optional[str] = None
 
 
 @dataclass_json

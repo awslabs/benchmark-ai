@@ -76,11 +76,6 @@ def test_invalid_args_type(descriptor_as_dict, descriptor_config):
         Descriptor(descriptor_as_dict, descriptor_config)
 
 
-def test_find_data_source(descriptor):
-    source = descriptor.find_data_source("foo1")
-    assert source["path"] == "bar1"
-
-
 def test_distributed_explicite(descriptor_as_dict, descriptor_config):
     descriptor_as_dict["hardware"]["distributed"]["processes_per_instance"] = "4"
     descriptor = Descriptor(descriptor_as_dict, descriptor_config)

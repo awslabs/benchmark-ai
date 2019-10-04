@@ -56,22 +56,23 @@ BIG_FETCHER_JSON = """{
                    },
                    "datasets": [
                        {
-                           "path": "~/data/tf-imagenet/",
-                           "src": "s3://bucket/imagenet/train"
+                           "src": "s3://bucket/imagenet/train",
+                           "path": "~/data/tf-imagenet/"
                        },
                        {
-                           "src": "s3://bucket/imagenet/validation"
+                           "src": "s3://bucket/imagenet/validation",
+                           "path": "~/data/tf-imagenet/"
                        }
                    ],
                    "models": [
                        {
-                           "path": "~/data/models/",
                            "src": "s3://bucket/model/inception",
+                           "path": "/models/inception",
                            "md5": "5d41402abc4b2a76b9719d911017c592"
                        },
                        {
-                           "path": "~/data/models/",
-                           "src": "s3://bucket/models/mnist"
+                           "src": "s3://bucket/models/mnist",
+                           "path": "/models/mnist"
                        }
                    ],
                    "scripts": [
@@ -131,15 +132,17 @@ EXPECTED_FETCHER_VISITED = [
 ]
 
 EXPECTED_FETCHER_DATASETS = [
-    DownloadableContent("s3://bucket/imagenet/train"),
-    DownloadableContent("s3://bucket/imagenet/validation"),
+    DownloadableContent("s3://bucket/imagenet/train", path="~/data/tf-imagenet/"),
+    DownloadableContent("s3://bucket/imagenet/validation", path="~/data/tf-imagenet/"),
 ]
 
 EXPECTED_FETCHER_SCRIPTS = [FileSystemObject(dst="s3://script-exchange/foo.tar")]
 
 EXPECTED_FETCHER_MODELS = [
-    DownloadableContent("s3://bucket/model/inception", md5="5d41402abc4b2a76b9719d911017c592"),
-    DownloadableContent("s3://bucket/models/mnist"),
+    DownloadableContent(
+        "s3://bucket/model/inception", path="/models/inception", md5="5d41402abc4b2a76b9719d911017c592"
+    ),
+    DownloadableContent("s3://bucket/models/mnist", path="/models/mnist"),
 ]
 
 EXPECTED_FETCHER_EVENT = FetcherBenchmarkEvent(
