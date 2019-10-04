@@ -1,9 +1,9 @@
 from dataclasses import dataclass
+from typing import Dict
 from urllib.parse import urlparse
 
-from bai_kafka_utils.events import DownloadableContent, FileSystemObject
+from bai_kafka_utils.events import FileSystemObject
 from bai_kafka_utils.executors.descriptor import DescriptorError
-from typing import Dict
 
 
 @dataclass
