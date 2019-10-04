@@ -254,13 +254,13 @@ anubis --status --watch --submit etc/examples/example_descriptor.toml --script /
 
 #### Utility:
 
-You can view the history of your runs, as shown above.  You can also fetch the specific descriptor file used for that run (as indicated, by passing in the action-id).
+You can view the history of your runs, as shown above.  You can also fetch the specific descriptor file used for a particular run, by passing in the **action-id**.
 
 ```shell
 anubis --show-desc 91d3c0e4-8a70-4581-b5ae-4d9dbdce05fb
 ```
 
-This will output the exact TOML descriptor used for that run, another nod to **reproducibility**. So even if you nuke the original file, you can still get back to it ;-).  It will also echo back the action id (to double check) and sha1sum of the file.
+This will output the exact TOML descriptor used for that run, another nod to **reproducibility**. So even if you nuke the original file, you can still get it back ;-).  It will also echo back the action id (to double check) and sha1sum of the file.
 
 ```bash
 ...
@@ -282,10 +282,11 @@ sha1sum : f79b3a29da24489804a173d053c7271793836b5d  -
 -------------------------
 ```
 
-You can also write that file out explicitly with:
+You can also write that descriptor file out explicitly with:
 
 ```bash
-%> anubis --write-desc 91d3c0e4-8a70-4581-b5ae-4d9dbdce05fb /Users/bellgav/.bai/db/ca2f097889997d8200b9abc2f8d2ec822246845e/91d3c0e4-8a70-4581-b5ae-4d9dbdce05fb/descriptor.toml
+%> anubis --write-desc 91d3c0e4-8a70-4581-b5ae-4d9dbdce05fb
+/Users/bellgav/.bai/db/ca2f097889997d8200b9abc2f8d2ec822246845e/91d3c0e4-8a70-4581-b5ae-4d9dbdce05fb/descriptor.toml
 ```
 
 
