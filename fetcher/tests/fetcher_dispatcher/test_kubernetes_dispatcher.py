@@ -20,7 +20,7 @@ CLIENT_ID = "CLIENT_ID"
 
 ACTION_ID = "ACTION_ID"
 
-DATA_SET = DownloadableContent(src="http://some.com/src", dst="s3://bucket/dst/")
+DATA_SET = DownloadableContent(src="http://some.com/src", dst="s3://bucket/dst/", path="/mount/path")
 DATA_SET_WITH_MD5 = dataclasses.replace(DATA_SET, md5="42")
 
 BENCHMARK_EVENT = BenchmarkEvent(

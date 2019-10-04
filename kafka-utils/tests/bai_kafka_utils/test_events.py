@@ -66,10 +66,10 @@ def test_metrics_event(metrics_event, metrics_event_as_dict):
 
 # Rather a boundary test for DataSet optional
 def test_data_set_optional_fields_just_src():
-    json = '{"src":"http://foo.com"}'
+    json = '{"src":"http://foo.com","path":"/mount/path"}'
     with pytest.warns(None) as record:
         dataset = DownloadableContent.from_json(json)
-        assert dataset == DownloadableContent(src="http://foo.com")
+        assert dataset == DownloadableContent(src="http://foo.com", path="/mount/path")
     assert not record.list
 
 
@@ -80,19 +80,23 @@ def test_data_set_optional_missing_src():
 
 
 def test_data_set_dont_fail_unknown_fields():
-    json = '{"src":"http://foo.com","foo":"bar"}'
+    json = '{"src":"http://foo.com","foo":"bar","path":"/mount/path"}'
     dataset = DownloadableContent.from_json(json)
     assert not hasattr(dataset, "foo")
 
 
 def test_data_set_with_enums():
-    json = '{"src":"http://foo.com","type":"FILE", "status": "DONE"}'
+    json = '{"src":"http://foo.com","type":"FILE","status":"DONE","path":"/mount/path"}'
     dataset = DownloadableContent.from_json(json)
-    assert dataset == DownloadableContent(src="http://foo.com", type=FetchedType.FILE, status=FetcherStatus.DONE)
+    assert dataset == DownloadableContent(
+        src="http://foo.com", path="/mount/path", type=FetchedType.FILE, status=FetcherStatus.DONE
+    )
 
 
 def test_data_set_with_enums_serialize():
-    dataset = DownloadableContent(src="http://foo.com", type=FetchedType.FILE, status=FetcherStatus.DONE)
+    dataset = DownloadableContent(
+        src="http://foo.com", path="/mount/path", type=FetchedType.FILE, status=FetcherStatus.DONE
+    )
     jsons = dataset.to_json()
     dict = json.loads(jsons)
     assert dict["type"] == "FILE"
@@ -111,7 +115,9 @@ def test_crazy_json():
 
 def test_fetcher_event(base_event_as_dict):
     fetcher_event_as_dict = base_event_as_dict
-    fetcher_event_as_dict["payload"]["datasets"] = [{"src": "http://foo.com", "md5": "None", "dst": "None"}]
+    fetcher_event_as_dict["payload"]["datasets"] = [
+        {"src": "http://foo.com", "md5": "None", "dst": "None", "path": "/mount/path"}
+    ]
     event_as_json_string = json.dumps(fetcher_event_as_dict)
 
     event = FetcherBenchmarkEvent.from_json(event_as_json_string)
@@ -134,8 +140,12 @@ def test_fetcher_event_scripts(base_event_as_dict):
 
 def test_executor_event(base_event_as_dict):
     executor_event_as_dict = base_event_as_dict
-    executor_event_as_dict["payload"]["datasets"] = [{"src": "http://foo.com", "md5": "None", "dst": "None"}]
-    executor_event_as_dict["payload"]["models"] = [{"src": "http://foo.com", "md5": "None", "dst": "None"}]
+    executor_event_as_dict["payload"]["datasets"] = [
+        {"src": "http://foo.com", "md5": "None", "dst": "None", "path": "/mount/path"}
+    ]
+    executor_event_as_dict["payload"]["models"] = [
+        {"src": "http://foo.com", "md5": "None", "dst": "None", "path": "/mount/path"}
+    ]
     executor_event_as_dict["payload"]["job"] = {"id": "job_id", "extras": {"some_var": "some_val"}}
 
     event_as_json_string = json.dumps(executor_event_as_dict)

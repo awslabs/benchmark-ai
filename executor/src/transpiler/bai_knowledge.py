@@ -7,6 +7,7 @@ import random
 import shlex
 from dataclasses import dataclass, asdict
 from typing import List, Dict
+from urllib.parse import urlparse
 
 from bai_kafka_utils.events import DownloadableContent, BenchmarkEvent
 from bai_kafka_utils.events import FileSystemObject
@@ -15,7 +16,7 @@ from ruamel import yaml
 
 from executor import SERVICE_NAME
 from executor.config import ExecutorConfig
-from transpiler.config import BaiConfig, BaiDataSource, EnvironmentInfo, BaiScriptSource
+from transpiler.config import BaiConfig, EnvironmentInfo, BaiScriptSource
 from transpiler.kubernetes_spec_logic import (
     ConfigTemplate,
     VolumeMount,
@@ -150,7 +151,7 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         self,
         descriptor: Descriptor,
         config: BaiConfig,
-        data_sources: List[BaiDataSource],
+        data_sources: List[DownloadableContent],
         scripts: List[BaiScriptSource],
         job_id: str,
         *,
@@ -319,7 +320,7 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         else:
             self.add_benchmark_cmd_to_container()
 
-    def _get_data_mounts(self, data_sources: List[BaiDataSource]) -> Dict[str, PullerDataSource]:
+    def _get_data_mounts(self, data_sources: List[DownloadableContent]) -> Dict[str, PullerDataSource]:
         """
         Processes the input data sources to get a dict with the required data volumes
         :param data_sources:
@@ -330,20 +331,37 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         data_vols = {}
 
         for idx, data_source in enumerate(data_sources):
+            if data_source.path in data_vols:
+                continue
             name = "p" + str(idx)
             puller_path = f"/data/{name}"
             data_vols[data_source.path] = PullerDataSource(name, puller_path)
 
         return data_vols
 
-    def _get_container_volume_mounts(self, data_volumes: Dict[str, PullerDataSource]) -> List[VolumeMount]:
+    @staticmethod
+    def _get_container_volume_mounts(data_volumes: Dict[str, PullerDataSource]) -> List[VolumeMount]:
         vol_mounts = []
 
         for dest_path, vol in data_volumes.items():
             vol_mounts.append(VolumeMount(name=DATASETS_VOLUME_NAME, mountPath=dest_path, subPath=vol.name))
         return vol_mounts
 
-    def _update_data_puller(self, data_volumes: Dict[str, PullerDataSource], data_sources: List[BaiDataSource]):
+    @staticmethod
+    def _get_s3_bucket_and_object_from_uri(downloadable_content: DownloadableContent):
+        parsed_uri = urlparse(downloadable_content.dst)
+        scheme = parsed_uri.scheme
+        s3_bucket = parsed_uri.netloc
+        s3_object = parsed_uri.path[1:]
+
+        if scheme.lower() != "s3":
+            raise DescriptorError(
+                f"Unexpected scheme in data source src: {scheme}." f" Fetched content is {downloadable_content}"
+            )
+
+        return s3_bucket, s3_object
+
+    def _update_data_puller(self, data_volumes: Dict[str, PullerDataSource], data_sources: List[DownloadableContent]):
         """
         Completes the data puller by adding the required arguments and volume mounts.
         If no data sources are found, the data puller is deleted.
@@ -355,15 +373,18 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
 
         data_puller = self.root.find_container(DATA_PULLER_CONTAINER)
 
+        s3_bucket, _ = self._get_s3_bucket_and_object_from_uri(data_sources[0])
+
         s3_objects = []
         for s in data_sources:
+            _, s3_object = self._get_s3_bucket_and_object_from_uri(s)
             s3_objects.append(
                 "{object},{chmod},{path_name}".format(
-                    object=s.object, chmod=self.config.puller_mount_chmod, path_name=data_volumes[s.path].name
+                    object=s3_object, chmod=self.config.puller_mount_chmod, path_name=data_volumes[s.path].name
                 )
             )
 
-        puller_args = [data_sources[0].bucket, ":".join(s3_objects)]
+        puller_args = [s3_bucket, ":".join(s3_objects)]
         data_puller.args = puller_args
 
     def add_env_vars(self):
@@ -400,7 +421,7 @@ class InferenceServerJobKubernetedObjectBuilder(SingleRunBenchmarkKubernetesObje
         descriptor: Descriptor,
         config: BaiConfig,
         job_id: str,
-        fetched_models: List[BaiDataSource],
+        fetched_models: List[DownloadableContent],
         event: BenchmarkEvent,
         environment_info: EnvironmentInfo,
         random_object: random.Random = None,
@@ -458,22 +479,6 @@ class InferenceServerJobKubernetedObjectBuilder(SingleRunBenchmarkKubernetesObje
         server_container.pop("args", None)
 
 
-def create_bai_data_sources(
-    fetched_data_sources: List[DownloadableContent], descriptor: Descriptor
-) -> List[BaiDataSource]:
-    def find_destination_path(fetched_source: DownloadableContent) -> str:
-        return descriptor.find_data_source(fetched_source.src)["path"]
-
-    return [BaiDataSource(fetched, find_destination_path(fetched)) for fetched in fetched_data_sources]
-
-
-def create_bai_models(fetched_data_sources: List[DownloadableContent], descriptor: Descriptor) -> List[BaiDataSource]:
-    def find_destination_path(fetched_source: DownloadableContent) -> str:
-        return list(filter(lambda dc: dc.src == fetched_source.src, descriptor.server.models))[0].path
-
-    return [BaiDataSource(fetched, find_destination_path(fetched)) for fetched in fetched_data_sources]
-
-
 def create_scripts(scripts: List[FileSystemObject]) -> List[BaiScriptSource]:
     return list(map(BaiScriptSource, scripts)) if scripts else []
 
@@ -514,13 +519,12 @@ def create_single_run_benchmark_bai_k8s_builder(
     if not template_name:
         raise ValueError(f"Unsupported distributed strategy in descriptor file: '{descriptor.strategy}'")
 
-    bai_data_sources = create_bai_data_sources(fetched_data_sources, descriptor)
     bai_scripts = create_scripts(scripts)
 
     bai_k8s_builder = SingleRunBenchmarkKubernetesObjectBuilder(
         descriptor,
         bai_config,
-        bai_data_sources,
+        fetched_data_sources,
         bai_scripts,
         job_id,
         template_name=template_name,
@@ -556,13 +560,11 @@ def create_inference_server_bai_k8s_builder(
     if extra_bai_config_args is None:
         extra_bai_config_args = {}
 
-    bai_models = create_bai_models(fetched_models, descriptor)
-
     bai_k8s_builder = InferenceServerJobKubernetedObjectBuilder(
         descriptor,
         bai_config,
         job_id,
-        bai_models,
+        fetched_models,
         event=event,
         environment_info=environment_info,
         **extra_bai_config_args,

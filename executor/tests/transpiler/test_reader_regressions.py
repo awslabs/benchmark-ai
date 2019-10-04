@@ -7,7 +7,7 @@ from pytest_regressions.file_regression import FileRegressionFixture
 from typing import List
 
 from executor.args import create_executor_config
-from transpiler.bai_knowledge import create_job_yaml_spec, create_scheduled_job_yaml_spec
+from transpiler.bai_knowledge import create_job_yaml_spec, create_scheduled_job_yaml_spec, DescriptorError
 
 ANUBIS_SCRIPTS = [
     FileSystemObject(dst="s3://scripts-exchange/anubis/scripts1.tar"),
@@ -15,6 +15,7 @@ ANUBIS_SCRIPTS = [
 ]
 
 PULLER_S3_URI = "s3://puller-data/object-name/dir"
+PULLER_HTTP_URI = "http://puller-data/object-name/dir"
 JOB_ID = "benchmark-JOB-ID"
 
 
@@ -88,11 +89,37 @@ def test_scheduled_job_regressions(
     file_regression.check(yaml_spec, basename=expected_yaml, extension=".yaml")
 
 
-def generate_fetched_data_sources(descriptor_data) -> List[DownloadableContent]:
+def test_raises_with_non_s3_puller_uri(
+    shared_datadir, config_args, config_env, file_regression: FileRegressionFixture, benchmark_event
+):
+    random_object = random.Random()
+    random_object.seed(1)
+
+    descriptor_data = toml.load(str(shared_datadir / "training.toml"))
+    fetched_data_sources = generate_fetched_data_sources(descriptor_data, http_puller_uri=True)
+    transpiler_config = create_executor_config(config_args, config_env)
+
+    with pytest.raises(DescriptorError):
+        create_job_yaml_spec(
+            descriptor_data,
+            transpiler_config,
+            fetched_data_sources,
+            [],
+            [],
+            JOB_ID,
+            extra_bai_config_args=dict(random_object=random_object),
+            event=benchmark_event,
+        )
+
+
+def generate_fetched_data_sources(descriptor_data, http_puller_uri: bool = False) -> List[DownloadableContent]:
     data_sources = descriptor_data.get("data", {}).get("sources", [])
+    puller_uri = PULLER_HTTP_URI if http_puller_uri else PULLER_S3_URI
     if data_sources:
         return [
-            DownloadableContent(src=source["src"], md5="md5", dst=PULLER_S3_URI + str(inx), type=FetchedType.DIRECTORY)
+            DownloadableContent(
+                src=source["src"], md5="md5", path=source["path"], dst=puller_uri + str(inx), type=FetchedType.DIRECTORY
+            )
             # Fake different destinations
             for inx, source in enumerate(data_sources)
         ]
@@ -104,7 +131,13 @@ def generate_fetched_models(descriptor_data) -> List[DownloadableContent]:
     data_sources = descriptor_data.get("server", {}).get("models", [])
     if data_sources:
         return [
-            DownloadableContent(src=source["src"], md5="md5", dst=PULLER_S3_URI + str(inx), type=FetchedType.DIRECTORY)
+            DownloadableContent(
+                src=source["src"],
+                md5="md5",
+                path=source["path"],
+                dst=PULLER_S3_URI + str(inx),
+                type=FetchedType.DIRECTORY,
+            )
             # Fake different destinations
             for inx, source in enumerate(data_sources)
         ]

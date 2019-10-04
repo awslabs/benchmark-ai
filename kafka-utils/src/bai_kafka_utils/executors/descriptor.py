@@ -238,12 +238,3 @@ class Descriptor:
                 raise DescriptorError(f"Invalid custom label key: {label}. " + INVALID_LABEL_MESSAGE)
             if value and not LABEL_VALIDATION_REGEX.fullmatch(value) or len(value) > 63:
                 raise DescriptorError(f"Invalid value for label {label}: {value} " + INVALID_LABEL_MESSAGE)
-
-    def find_data_source(self, src: str):
-        for source in self.data_sources:
-            if source["src"] == src:
-                return source
-        else:
-            raise DescriptorError(
-                f"Could not find data source with src: {src} \n" f"Data sources are: {self.data_sources}"
-            )

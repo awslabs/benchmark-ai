@@ -1,9 +1,9 @@
 from dataclasses import dataclass
+from typing import Dict
 from urllib.parse import urlparse
 
-from bai_kafka_utils.events import DownloadableContent, FileSystemObject
+from bai_kafka_utils.events import FileSystemObject
 from bai_kafka_utils.executors.descriptor import DescriptorError
-from typing import Dict
 
 
 @dataclass
@@ -25,27 +25,6 @@ class EnvironmentInfo:
     """
 
     availability_zones: Dict[str, str]
-
-
-@dataclass(init=False)
-class BaiDataSource:
-    scheme: str
-    bucket: str
-    object: str
-    path: str
-
-    def __init__(self, fetched_data_source: DownloadableContent, path: str):
-        parsed_uri = urlparse(fetched_data_source.dst)
-        self.src = fetched_data_source.src
-        self.scheme = parsed_uri.scheme
-        self.bucket = parsed_uri.netloc
-        self.object = parsed_uri.path[1:]
-        self.path = path
-
-        if self.scheme.lower() != "s3":
-            raise DescriptorError(
-                f"Unexpected scheme in data source src: {self.scheme}." f" Fetched dataset is {fetched_data_source}"
-            )
 
 
 @dataclass(init=False)

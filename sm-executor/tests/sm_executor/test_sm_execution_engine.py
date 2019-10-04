@@ -123,6 +123,7 @@ def fetcher_event(descriptor_as_dict: Dict[str, Any]) -> FetcherBenchmarkEvent:
                 DownloadableContent(
                     src="http://someserver.com/somedata.zip",
                     dst=DATASET_S3_URI,
+                    path="/mount/path",
                     id=DATASET_ID,
                     size_info=ContentSizeInfo(total_size=42, file_count=1, max_size=42),
                     type=FetchedType.FILE,

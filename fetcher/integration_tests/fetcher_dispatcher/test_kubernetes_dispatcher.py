@@ -30,7 +30,7 @@ def test_kubernetes_client(
     fetcher_job_config: FetcherJobConfig,
     size_info: ContentSizeInfo,
 ):
-    data_set = DownloadableContent(src=SOMEDATA_BIG, dst=S3_DST, md5=None, size_info=size_info)
+    data_set = DownloadableContent(src=SOMEDATA_BIG, path="/mount/path", dst=S3_DST, md5=None, size_info=size_info)
 
     k8s_dispatcher.dispatch_fetch(data_set, benchmark_event_dummy_payload, "/data/sets/fake")
 
@@ -46,7 +46,9 @@ def test_kubernetes_cancel(
     fetcher_job_config: FetcherJobConfig,
     size_info: ContentSizeInfo,
 ):
-    data_set = DownloadableContent(src=SOMEDATA_BIG_WITH_DELAY, dst=S3_DST, md5=None, size_info=size_info)
+    data_set = DownloadableContent(
+        src=SOMEDATA_BIG_WITH_DELAY, path="/mount/path", dst=S3_DST, md5=None, size_info=size_info
+    )
     k8s_dispatcher.dispatch_fetch(data_set, benchmark_event_dummy_payload, "/data/sets/fake")
 
     _wait_for_k8s_objects_exist(benchmark_event_dummy_payload, fetcher_job_config, k8s_test_client, size_info)
@@ -64,7 +66,9 @@ def test_kubernetes_cleanup(
     fetcher_job_config: FetcherJobConfig,
     size_info: ContentSizeInfo,
 ):
-    data_set = DownloadableContent(src=SOMEDATA_BIG_WITH_DELAY, dst=S3_DST, md5=None, size_info=size_info)
+    data_set = DownloadableContent(
+        src=SOMEDATA_BIG_WITH_DELAY, path="/mount/path", dst=S3_DST, md5=None, size_info=size_info
+    )
     k8s_dispatcher.dispatch_fetch(data_set, benchmark_event_dummy_payload, "/data/sets/fake")
 
     _wait_for_k8s_objects_exist(benchmark_event_dummy_payload, fetcher_job_config, k8s_test_client, size_info)

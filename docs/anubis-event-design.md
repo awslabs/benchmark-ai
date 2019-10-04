@@ -64,8 +64,18 @@ Sent from BFF directly (...to Fetcher) via the Kafka topic **BAI_APP_BFF**<br>
     payload:{
  ->     datasets: [
             {src:"http://imagenet.org/somebig.zig",
-             md5: "gifudifdoiudfdfklfdjll"},
+             md5: "gifudifdoiudfdfklfdjll"
+             path: "/container/mount/path"},
             {src:"http://imagenet.org/somebig.zig",
+             md5: "gifudifdoiudfdfklfdjll",
+             path: "/container/mount/path"}
+            ],
+        models: [
+            {src:"http://mms.mxnet/inception.mar",
+             path:"/models/",
+             md5: "gifudifdoiudfdfklfdjll"}
+            {src:"http://mms.mxnet/squeezenet.mar",
+             path:"/models/",
              md5: "gifudifdoiudfdfklfdjll"}
             ],
         scripts: [
@@ -102,9 +112,21 @@ Sent from Fetcher (...to Executor) via the Kafka topic:<br>
     payload:{
         datasets: [
             {src:"http://imagenet.org/somebig.zig",
+             path:"/container/mount/path",
              md5: "gifudifdoiudfdfklfdjll",
  ->          dst:"s3://mycache/datasets/20429402904290"},
             {src:"http://imagenet.org/somebig.zig",
+             path:"/container/mount/path",
+             md5: "gifudifdoiudfdfklfdjll",
+ ->          dst:""} //Missing for whatever reason...
+            ],
+        models: [
+            {src:"http://mms.mxnet/inception.mar",
+             path:"/models/",
+             md5: "gifudifdoiudfdfklfdjll",
+ ->          dst:"s3://mycache/models/20549402704290"},
+            {src:"http://mms.mxnet/squeezenet.mar",
+             path:"/models/",
              md5: "gifudifdoiudfdfklfdjll",
  ->          dst:""} //Missing for whatever reason...
             ],
@@ -146,12 +168,25 @@ Sent from Executor ... This may be what we would consider the “receipt” for 
         },
         datasets: [
             {src:"http://imagenet.org/somebig.zig",
-             md5: "gifudidokiudfdfklfdjll",
-             dst:"s3://mycache/datasets/20429402904290",
+             path:"/container/mount/path",
+             md5: "gifudifdoiudfdfklfdjll",
+             dst:"s3://mycache/datasets/20429402904290"
              status="SUCCESS"},
             {src:"http://imagenet.org/somebig.zig",
+             path:"/container/mount/path",
              md5: "gifudifdoiudfdfklfdjll",
              dst:"",
+             status="FAILED",
+             message="File not found"}
+             ...
+            ],
+        models: [
+            {src:"http://mms.mxnet/inception.mar",
+             path:"/models/",
+             md5: "gifudifdoiudfdfklfdjll",
+             dst:"s3://mycache/models/20549402704290"
+             status="SUCCESS"},
+            ...
             ],
         toml:{
             contents: { ... }

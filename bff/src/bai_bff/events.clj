@@ -55,12 +55,12 @@
   not do any in place changes, such as when these data sources are
   fetched and augmented with additional information.</i>"
   [event]
-  (assoc-in event [:payload :datasets] (remove empty? (mapv #(select-keys % [:src :md5 :id]) (some-> event :payload :toml :contents :data :sources)))))
+  (assoc-in event [:payload :datasets] (remove empty? (mapv #(select-keys % [:src :md5 :id :path]) (some-> event :payload :toml :contents :data :sources)))))
 
 (defn glean-server-model-info
   "Pulls out the server.models information out of the TOML and raises it in the \"payload\" map."
   [event]
-  (assoc-in event [:payload :models] (remove empty? (mapv #(select-keys % [:src :md5 :id]) (some-> event :payload :toml :contents :server :models)))))
+  (assoc-in event [:payload :models] (remove empty? (mapv #(select-keys % [:src :md5 :id :path]) (some-> event :payload :toml :contents :server :models)))))
 
 
 (defn glean-script-info

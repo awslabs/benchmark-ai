@@ -11,22 +11,22 @@ S3_BUCKET = "datasets_bucket"
     [
         # Simplest case
         (
-            DownloadableContent(src="http://some-server.org/datasets/plenty/bigfile.zip"),
+            DownloadableContent(src="http://some-server.org/datasets/plenty/bigfile.zip", path="/mount/path"),
             f"s3://{S3_BUCKET}/data_sets/390c2fe19f6061e4520964a1a968cede/datasets/plenty/bigfile.zip",
         ),
         # Same with query args - we ignore them
         (
-            DownloadableContent(src="http://some-server.org/datasets/plenty/bigfile.zip?foo=bar"),
+            DownloadableContent(src="http://some-server.org/datasets/plenty/bigfile.zip?foo=bar", path="/mount/path"),
             f"s3://{S3_BUCKET}/data_sets/5fddff4d49df672934851f436de903f3/datasets/plenty/bigfile.zip",
         ),
         # md5 matters
         (
-            DownloadableContent(src="http://some-server.org/datasets/plenty/bigfile.zip", md5="42"),
+            DownloadableContent(src="http://some-server.org/datasets/plenty/bigfile.zip", md5="42", path="/mount/path"),
             f"s3://{S3_BUCKET}/data_sets/390c2fe19f6061e4520964a1a968cede/42/datasets/plenty/bigfile.zip",
         ),
         # Hardly possible, but who knows?
         (
-            DownloadableContent(src="http://some-server.org"),
+            DownloadableContent(src="http://some-server.org", path="/mount/path"),
             f"s3://{S3_BUCKET}/data_sets/a05fe609e976847b1543a2f3cd25d22c",
         ),
     ],

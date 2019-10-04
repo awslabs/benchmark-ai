@@ -50,7 +50,9 @@ def fetched_data_sources(base_data_sources):
     sources = []
 
     for source in base_data_sources:
-        sources.append(DownloadableContent(src=source["src"], md5=source["md5"], dst=source["puller_uri"]))
+        sources.append(
+            DownloadableContent(src=source["src"], path="/mount/path", md5=source["md5"], dst=source["puller_uri"])
+        )
     return sources
 
 

@@ -10,7 +10,6 @@ from bai_kafka_utils.executors.descriptor import Descriptor, DescriptorError
 from transpiler.bai_knowledge import (
     BaiKubernetesObjectBuilder,
     SingleRunBenchmarkKubernetesObjectBuilder,
-    create_bai_data_sources,
     create_single_run_benchmark_bai_k8s_builder,
 )
 from transpiler.config import EnvironmentInfo
@@ -60,13 +59,6 @@ def test_add_container_no_cmd(descriptor, bai_config, fetched_data_sources, bai_
     container = bai_k8s_builder.root.find_container("benchmark")
     assert "command" not in container
     assert container.args == ["arg1", "arg2=abc"]
-
-
-def test_create_bai_data_sources(fetched_data_sources, descriptor):
-    bai_data_sources = create_bai_data_sources(fetched_data_sources, descriptor)
-
-    for source in bai_data_sources:
-        assert source.path == descriptor.find_data_source(source.src)["path"]
 
 
 def test_choose_zone_passed(descriptor: Descriptor, bai_environment_info: EnvironmentInfo):
