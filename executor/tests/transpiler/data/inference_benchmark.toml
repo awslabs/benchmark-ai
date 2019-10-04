@@ -98,3 +98,12 @@ path = "/path/to/model1"
 [[server.models]]
 src = "model2"
 path = "/path/to/model2"
+
+[server.output]
+[[server.output.metrics]]
+# Name of the metric that will appear in the dashboards.
+name = "Requests2XX"
+# Metric unit (required)
+units = "requests"
+# Pattern for log parsing for this metric.
+pattern = "Requests2XX.count:(\\d+)"

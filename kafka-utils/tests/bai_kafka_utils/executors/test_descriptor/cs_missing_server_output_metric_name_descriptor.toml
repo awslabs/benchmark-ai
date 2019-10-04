@@ -1,0 +1,27 @@
+# Minimal descriptor to get client_server strategy to work
+
+[hardware]
+instance_type = "t3.small"
+strategy = "client_server"
+
+[env]
+docker_image = "jlcont/inference_server_benchmark:270219"
+
+# Server definition
+[server]
+# Harware on which to run the server
+[server.hardware]
+instance_type = "p3.8xlarge"
+# The server environment definition
+[server.env]
+# The server image
+docker_image = "jlcont/inference_server:270219"
+# array ports that are exposed by the server
+ports = [8080, 8081]
+# Server start command
+start_command = ""
+
+[server.output]
+[[server.output.metrics]]
+units = "units"
+pattern = "(\\d+)"

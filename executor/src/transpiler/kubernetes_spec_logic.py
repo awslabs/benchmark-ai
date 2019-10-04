@@ -8,6 +8,8 @@ from itertools import chain
 from typing import Dict, Any, List
 from bai_kafka_utils.utils import METRICS_PUSHER_BACKEND_ARG_PREFIX
 
+METRICS_PUSHER_CONTAINER = "metrics-pusher"
+
 # Using the official Kubernetes Model classes (https://github.com/kubernetes-client/python) is avoided here
 # because it presents some problems:
 #
@@ -200,7 +202,7 @@ class KubernetesRootObjectHelper:
     def _add_metrics_pusher_backend_arg(self, key: str, value: str):
         env_var_name = METRICS_PUSHER_BACKEND_ARG_PREFIX.upper() + key.upper()
         try:
-            metrics_pusher_container = self.find_container("sidecar")
+            metrics_pusher_container = self.find_container(METRICS_PUSHER_CONTAINER)
         except ValueError:
             logger.debug(f"Could not add backend arg {env_var_name} to metrics pusher sidecar.")
             return

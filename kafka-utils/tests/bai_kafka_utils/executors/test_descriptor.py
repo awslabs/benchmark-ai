@@ -17,6 +17,10 @@ from bai_kafka_utils.executors.descriptor import DescriptorError, Descriptor, ON
         "cs_non_uri_readiness_probe_descriptor.toml",
         "cs_missing_server_model_path_descriptor.toml",
         "cs_missing_server_model_src_descriptor.toml",
+        "cs_missing_server_output_metrics_descriptor.toml",
+        "cs_missing_server_output_metric_name_descriptor.toml",
+        "cs_missing_server_output_metric_units_descriptor.toml",
+        "cs_missing_server_output_metric_pattern_descriptor.toml",
     ],
 )
 def test_wrong_descriptor(datadir, filename, descriptor_config):
