@@ -177,8 +177,7 @@ class Descriptor:
 
         self.is_inference_strategy = self.strategy == DistributedStrategy.INFERENCE
 
-        if self.is_inference_strategy:
-            self.server = self._make_server_descriptor(descriptor_data.get("server", {}))
+        self.server = self._make_server_descriptor(descriptor_data)
 
         self._validate()
 
@@ -210,8 +209,13 @@ class Descriptor:
         with open(os.path.join(current_dir, "descriptor_server_schema.json"), encoding="utf-8") as f:
             return json.loads(f.read(), encoding="utf-8")
 
-    @staticmethod
-    def _make_server_descriptor(server_dict: Dict[str, Any]):
+    def _make_server_descriptor(self, descriptor_data: Dict[str, Any]):
+
+        if not self.is_inference_strategy:
+            return None
+
+        server_dict = descriptor_data.get("server", {})
+
         # Validate against schema
         try:
             jsonschema.validate(

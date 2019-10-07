@@ -119,59 +119,6 @@ spec:
           subPath: p1
         - name: dshm
           mountPath: /dev/shm
-      - name: metrics-pusher
-        image: benchmarkai/metrics-pusher:ffed580
-        env:
-        - name: BENCHMARK_AI_FIFO_FILEPATH
-          value: /tmp/benchmark-ai/fifo
-        - name: BACKEND
-          value: kafka
-        - name: BACKEND_ARG_ACTION_ID
-          value: ACTION_ID
-        - name: BACKEND_ARG_CLIENT_ID
-          value: CLIENT_ID
-        - name: BACKEND_ARG_BOOTSTRAP_SERVERS
-          valueFrom:
-            configMapKeyRef:
-              name: outputs-infrastructure
-              key: msk_bootstrap_brokers
-        - name: BACKEND_ARG_KEY
-          value: CLIENT_ID
-        - name: BACKEND_ARG_TOPIC
-          value: BAI_METRICS
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: BACKEND_ARG_PARENT-ACTION-ID
-          value: parentactionid
-        volumeMounts:
-        - mountPath: /tmp/benchmark-ai
-          name: benchmark-ai
-      - name: metrics-extractor
-        image: benchmarkai/metrics-extractor:b0b9185
-        env:
-        - name: ANUBIS_POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: ANUBIS_POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: ANUBIS_METRICS
-          value: '[]'
-        - name: BENCHMARK_AI
-          value: fifo
-        - name: BENCHMARK_AI_FIFO_FILEPATH
-          value: /tmp/benchmark-ai/fifo
-        volumeMounts:
-        - mountPath: /tmp/benchmark-ai
-          name: benchmark-ai
       nodeSelector:
         beta.kubernetes.io/instance-type: p3.8xlarge
         node.type: bai-worker

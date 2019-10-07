@@ -31,6 +31,8 @@ SCRIPT_PULLER_CHMOD = 777
 
 BENCHMARK_CONTAINER = "benchmark"
 DATA_PULLER_CONTAINER = "data-puller"
+METRICS_PUSHER_CONTAINER = "metrics-pusher"
+METRICS_EXTRACTOR_CONTAINER = "metrics-extractor"
 DATASETS_VOLUME_NAME = "datasets-volume"
 SCRIPTS_VOLUME_NAME = "scripts-volume"
 SCRIPTS_PULLER_CONTAINER = "script-puller"
@@ -187,6 +189,7 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         self.add_shared_memory()
         self.add_env_vars()
         self.add_benchmark_cmd()
+        self.remove_metrics_sidecars_if_necessary()
 
         if self.event.parent_action_id:
             self.root.add_label("parent-action-id", self.event.parent_action_id)
@@ -252,6 +255,11 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         data_mounts = self._get_data_mounts(data_sources)
         self._update_data_puller(data_mounts, data_sources)
         benchmark_container.volumeMounts.extend(self._get_container_volume_mounts(data_mounts))
+
+    def remove_metrics_sidecars_if_necessary(self):
+        if not self.descriptor.metrics and (not self.descriptor.server or not self.descriptor.server.output):
+            self.root.remove_container(METRICS_EXTRACTOR_CONTAINER)
+            self.root.remove_container(METRICS_PUSHER_CONTAINER)
 
     def add_shared_memory(self):
         if self.descriptor.extended_shm:
@@ -453,6 +461,7 @@ class InferenceServerJobKubernetedObjectBuilder(SingleRunBenchmarkKubernetesObje
         self.root.add_container_ports_to_container(INFERENCE_SERVER_CONTAINER, self.descriptor.server.env.ports)
         if self.event.parent_action_id:
             self.root.add_label("parent-action-id", self.event.parent_action_id)
+        self.remove_metrics_sidecars_if_necessary()
 
     def add_shared_memory(self):
         if self.descriptor.server.env.extended_shm:
