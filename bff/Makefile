@@ -217,7 +217,10 @@ $(JAR_FILE): $(MAIN_CLASS_FILE)
 	@echo "------------------------"
 	@echo "Building Jar"
 	@echo "------------------------"
+	@cp -v bin/anubis ${RESOURCE_PATHS}
 	LEIN_SNAPSHOTS_IN_RELEASE=1 ${LEIN} with-profile $(PROFILE) uberjar
+	@rm -v ${RESOURCE_PATHS}/anubis
+	@echo "------------------------"
 	@unzip -q -c $(JAR_FILE) META-INF/MANIFEST.MF
 	@touch $@
 

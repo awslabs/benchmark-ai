@@ -102,6 +102,9 @@
 (defroutes api-routes
   (GET "/api" []
        (str "<hr><CENTER><h1> Anubis (BFF) HTTP Service API (v"VERSION")</h1><a href=\"http://foobar.com/api\">docs</a></CENTER><hr>"))
+  (context "/api/tools" []
+           (defroutes tool-routes
+             (GET "/:toolname" [toolname] (slurp (io/resource toolname)))))
   (context "/api/job" []
            (defroutes job-routes
              (GET  "/script/:filename" [filename] (response (if (eventbus/has-file? filename) (str "true") (str "false"))))
