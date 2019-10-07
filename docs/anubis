@@ -1,1 +1,941 @@
-../bff/bin/anubis
+#!/usr/bin/env bash
+
+conda_usage() {
+    printf "
+
+ Anubis uses Conda to provide a predictable running environment.  Make
+ sure you have Conda installed. We recommend installing miniconda via
+ https://docs.conda.io/en/latest/miniconda.html
+
+ Once Conda is installed run the following:
+
+ %s --env-setup
+
+ And then re-run the ${0##*/} command :-)
+
+" "${0##*/}"
+    exit 9
+}
+
+#TODO - add the dependencies that cover some of the other tools this script needs:
+#  uuidgen
+#  hostname
+#  tar
+env_setup() {
+    if ! conda --version; then conda_usage; fi;
+    local tmp_environment_file=$(mktemp "/tmp/${0##*/}-XXXXXXXXX").yml
+    ((DEDBUG)) && echo "${tmp_environment_file}"
+    cat <<EOF > "${tmp_environment_file}"
+name: anubis
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - sed 4.7
+  - jq 1.6
+  - curl 7.54.1
+  - coreutils 8.31
+EOF
+    cmd="conda env update -f ${tmp_environment_file}"
+    ${cmd}
+    rm "${tmp_environment_file}"
+    [ -f "${tmp_environment_file%.*}" ] && rm "${tmp_environment_file%.*}"
+
+    printf "
+  Please proceed with your %s shenanigans
+
+" "${0##*/}"
+}
+
+if [ $1 = "--env-setup" ]; then
+    env_setup
+    exit $?
+fi
+
+CONDA_EXE="${CONDA_EXE:=$(which conda)}"
+if ! source "${CONDA_EXE%/*}"/activate anubis >& /dev/null; then
+    printf "
+  Oops, there seems to be a problem with Conda...
+        (Co you have Conda installed? Is it in your \$PATH?)\n"
+    conda_usage
+fi
+
+DEBUG=${DEBUG:-0}
+VERBOSE=${VERBOSE:-0}
+TAIL_STATUS=0
+SYNC_DATA=${SYNC_DATA:-0}
+WATCH=0
+WATCH_PERIOD=5
+
+declare -r VERSION="0.5.0"
+declare -r SERVICE_NAME="anubis-client"
+declare -r MY_SHA1=$(sha1sum "${0}" | awk '{print $1}')
+declare -r ANUBIS_HOME=${HOME}/.anubis
+declare -r ANUBIS_HISTORY=${ANUBIS_HOME}/history
+declare -r ANUBIS_SCRIPT_STAGING=${ANUBIS_HOME}/script_staging
+declare -r ANUBIS_ACTION_IDS=${ANUBIS_HOME}/action_ids
+declare -r ANUBIS_DATABASE=${ANUBIS_HOME}/db
+declare -r ANUBIS_SERVICE_ENDPOINT_CONFIG=${ANUBIS_HOME}/service_endpoint
+declare -r TSTAMP_FILENAME=latest_tstamp
+
+declare -r head_='^###.*begin.*anubis.*###$'
+declare -r tail_='^###.*end.*anubis.*###$'
+
+## EMOJIS ##  https://apps.timwhitlock.info/emoji/tables/unicode
+declare -A emoji
+emoji[anubis-client]="\xE2\x99\x8E "
+emoji[bai-bff]="\xE2\x9C\x8A "
+emoji[fetcher-dispatcher]="\xF0\x9F\x90\x95 "
+emoji[anubis-cron-job]="\xF0\x9F\x93\x85 "
+emoji[executor]="\xE2\x9A\xA1 "
+emoji[sm-executor]="\xF0\x9F\x94\xAE "
+emoji[watcher]="\xF0\x9F\x91\x80 "
+emoji[bai-bff-error]="\xF0\x9F\x92\x94 "
+emoji[FAIL]="\xE2\x9D\x8C "
+emoji[SUCCESS]="\xE2\x9C\x85 "
+emoji[WAIT]="\xF0\x9F\x95\x9D "
+emoji[GOOD]="\xF0\x9F\x98\x8E "
+emoji[WARN]="\xF0\x9F\x94\xA5 "
+emoji[ERROR]="\xF0\x9F\x92\xA5 "
+emoji[SUCESS_ALL]="\xF0\x9F\x8E\x89 "
+emoji[SEARCH]="\xF0\x9F\x94\x8D "
+emoji[WTF]="\xF0\x9F\x92\xA9 "
+
+banner() {
+    printf '
+\033[01;31m                       _      _
+                      | |    (_)
+   __ _  _ __   _   _ | |__   _  ___
+  / _  ||  _ \ | | | ||  _ \ | |/ __|\033[0m
+\033[01;33m | (_| || | | || |_| || |_) || |\__ \\\033[0m
+\033[01;32m  \__,_||_| |_| \__,_||_.__/ |_||___/\033[0m \xE2\x99\x8E
+
+(v%s)
+-------------------------
+AWS: \033[01;33mB\033[0menchmark \033[01;33mAI\033[0m \033[01;33mClient\033[0m
+-------------------------
+
+Brought to you by the cool peeps of the  MXNet-Berlin Team
+' "${VERSION}"
+}
+
+usage() {
+    printf "
+usage:
+
+This is the command-line, client-side interface to the Bechmark AI service...
+
+ > %s --submit <descriptor file | action id> [ --script <path to script>] : Returns an \"action id\" if submission successful
+          --status  [<action id>]  : displays a report of the current status
+          --results [<action id>]  : displays output of the benchmark output (stdout from model)
+          --inspect  <message id> [<action-id>] : displays full details of specified message object
+          --show-descriptor [<action-id>]       : shows the descriptor acknowledged by Anubis
+          --last-action-id         : displays the last action id from a valid submission
+          --cancel   <action id>   : cancels the current, in progress, submission
+          --purge    <action id>   : cancels the current, in progress, submission and all descendant processes
+          --upgrade                : fetches latest version of this tool [%s]
+          --sync-version           : synchronized this tool with that of the service endpoint
+          --tail                   : when showing status, only show the latest from the service
+          --sync-data              : clean local cached data and refetch from service
+          --history                : lists recently returned <action id> : <descriptor path> : <date>
+          --register <hostname|IP and PORT of anubis service> | Ex: anubis.aws.amazon.com:7100
+          --unregister             : clears service endpoint from configuration
+          --show-registered-service-endpoint : The hostname|IP:PORT of anubis service you are using
+          --legend                 : displays quick legend of the emojis used
+          --help                   : (this output)
+
+          (please use gnu tools for best results!!!)
+
+ " "${0##*/}" "${0##*/}"
+    exit 0
+}
+
+show_legend() {
+    echo "----------------"
+    echo "Emoji legend:"
+    echo "----------------"
+    for key in ${!emoji[@]}; do
+        printf "%b = %s\n " "${emoji[${key}]}" "${key}"
+    done
+    echo "----------------"
+    echo
+}
+
+check_tools() {
+    ((VERBOSE || DEBUG)) && echo "Using, bash --> BASH VERSION = ${BASH_VERSION}" 1>&2
+    if (( $(sed -n -re 's/^([0-9]*).[0-9]*.[0-9]*.*-release.*/\1/p' <<< "${BASH_VERSION}")  < 5 )); then
+        printf "\n\033[01;33mYour bash is too old, son. You need v5+, money-grip ;-)\033[0m\n\n"; exit 9;fi
+
+    local num_missing_tools=0
+    if type uuidgen  >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "uuidgen"; (( num_missing_tools++ ));fi
+    if type hostname >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "hostname"; (( num_missing_tools++ ));fi
+    if type tar      >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "tar"; (( num_missing_tools++ ));fi
+
+    # ---- gotten via conda ----
+    if type whoami   >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "whoami"; (( num_missing_tools++ ));fi
+    if type date     >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "date"; (( num_missing_tools++ ));fi
+    if type sha1sum  >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "sha1sum"; (( num_missing_tools++ ));fi
+    if type curl     >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "curl"; (( num_missing_tools++ ));fi
+    if type jq       >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "jq"; (( num_missing_tools++ ));fi
+    if type base64   >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "base64"; (( num_missing_tools++ ));fi
+    if type sed      >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "sed"; (( num_missing_tools++ ));fi
+
+    echo
+    if (( num_missing_tools > 0 )); then
+        printf "\033[01;31m [ERROR:] \033[0m you just install the required prerequisite tool(s)/command(s) to use %s. bye...\n" "${0##*/}"
+        echo
+        ((DEBUG)) && exit ${num_missing_tools}
+    fi
+}
+
+_setup() {
+    mkdir -p "${ANUBIS_HOME}"
+    mkdir -p "${ANUBIS_HOME}/db"
+    mkdir -p "${ANUBIS_HOME}/script_staging"
+    touch "${ANUBIS_HOME}/action_ids"
+    touch "${ANUBIS_HOME}/history"
+    touch "${ANUBIS_HOME}/service_endpoint"
+}
+
+#---------------------------------------------------------
+# Util functions
+#---------------------------------------------------------
+
+_get_current_service_endpoint() {
+    sed -n -e '$p' "${ANUBIS_SERVICE_ENDPOINT_CONFIG}"
+}
+
+_construct_endpoint_URL() {
+    printf "http://%s" "$(_get_current_service_endpoint)"
+}
+
+get_client_id() {
+    echo -n "$(printf "$(whoami)+$(hostname)" | sha1sum | awk '{print $1}')"
+}
+
+service_version_check() {
+    # Receives a stream of HTTP header data (this function can be treated as a file with >(service_version_check) invocation)
+    # Looks for service header value: X-Service-Version
+    # Checks to see if compatible with this scripts version: $VERSION
+    # If not prints warning information to STDERR
+    local service_version="<no version>"
+    local match=0
+    while read -r header_line
+    do
+        ((DEBUG)) && echo "inspecting header line: $header_line" >&2
+        service_version="$(sed -n -e 's#^X-Service-Version:[ ]*\([a-zA-Z0-9.]*\).*#\1#p' <<<${header_line})"
+        if [[ "${VERSION%.*}" ==  "${service_version%.*}" ]]; then
+            ((match++))
+        fi
+        [ -n "${service_version}" ] && break
+    done
+    if ((match <= 0)); then
+        printf "
+\033[01;31m[WARNING]\033[0m THE VERSION OF THE CLIENT IS NOT COMPATIBLE WITH THAT OF THE SERVICE
+          Client  Version = [%s]
+          Service Version = [%s]
+          Please use the \033[01;33m--sync-version\033[0m option to get a compatible client tool
+          \n\n" "${VERSION}" "${service_version}" >&2
+    fi
+}
+
+ping_service_endpoint() {
+    if show_registered_service_endpoint && curl -s -D >(service_version_check) $(_construct_endpoint_URL)/ready >& /dev/null ; then
+        printf "%b \033[01;32mR\033[0meady \033[01;32mA\033[0mnd \033[01;32mW\033[0milling like Big Daddy Kane\n\n" "${emoji[GOOD]}" >&2
+        return 0
+    else
+        printf "%b Anubis Service Endpoint \033[01;31mNOT AVAILABLE\033[0m\n\n" "${emoji[FAIL]}" >&2
+        return 1
+    fi
+}
+
+register_service_endpoint() {
+    local service_endpoint=${1:?"register() -> You MUST supply the service endpoint hostname|IP and PORT"}
+    #TODO - Do basic sanity checking on format and then write it to file;
+
+    if [ -n "$(sed -ne '/^'${service_endpoint}'$/p' ${ANUBIS_SERVICE_ENDPOINT_CONFIG})" ]; then
+        echo "${service_endpoint} has been registered before, setting as current endpoint..." >&2
+        sed -i '/^'${service_endpoint}'$/d' "${ANUBIS_SERVICE_ENDPOINT_CONFIG}"
+    else
+        echo "Adding new anubis service endpoint entry: ${service_endpoint}" >&2
+    fi
+
+    echo "${service_endpoint}" >> "${ANUBIS_SERVICE_ENDPOINT_CONFIG}"
+    show_registered_service_endpoint
+}
+
+unregister_service_endpoint() {
+    local current_service_endpoint=${1:-$(_get_current_service_endpoint)}
+    ((DEBUG)) && echo "unregister_service_endpoint -> removing ${current_service_endpoint}"
+    sed -i.bak '/'${current_service_endpoint}'/d' "${ANUBIS_SERVICE_ENDPOINT_CONFIG}"
+}
+
+show_registered_service_endpoint() {
+    local current_service_endpoint=$(_get_current_service_endpoint)
+    if [[ -n "${current_service_endpoint}" ]]; then
+        printf "Current service endpoint is: [\033[01;33m%s\033[0m] \n\n" "$current_service_endpoint" >&2
+        return 0
+    else
+        printf "
+\033[01;31m[WARNING]\033[0m You do not have a service endpoint registered!!
+          Please do so.  (use --register to set one)\n\n" >&2
+        return 1
+    fi
+}
+
+show_registered_service_endpoint_history() {
+    ((DEBUG)) && echo "show_registered_service_endpoint_history ..." >&2
+    #TODO -- It would be nice to do a loop through each and format the current
+    cat "${ANUBIS_SERVICE_ENDPOINT_CONFIG}"
+}
+
+
+#---------------------------------------------------------
+# Event Construction
+#---------------------------------------------------------
+_package_command_args() {
+    local required_field="${1}"
+    shift
+
+    local data
+    if [[ "${1}" == "--json" ]]; then
+        shift
+        local required_map=$(cat <<EOF
+{"target_action_id" : "${required_field}"}
+EOF
+              )
+        data=$(jq '.' <<< "$@")
+        echo ${required_map} ${data} | jq -s add
+    else
+        #echo "Number of args is ${#command_args[@]}"
+        data=$(sed 's/.$//g' <<< $(for item in $(echo "${required_field} "${@}); do echo -n "\""${item}"\","; done))
+        printf "[${data}]"
+    fi
+}
+
+# TODO - Also, look at changing the formulation of client_id to just be the user's hashed email
+_generate_submit_event() {
+    local descriptor_filename=${1?"generate_submit_event() -> You MUST supply a descriptor file as first argument to this function"}
+    local script=${2:-""}
+
+    if [[ -n "${script}" ]]; then
+        if grep -q '\[ml.script\]' "${descriptor_filename}"; then
+            sed -i "/^###.*begin.*anubis.*###$/, /^###.*end.*anubis.*###$/ s#^\(script[ ]*=\)\(.*\)#\1 \""${script_artifact##*/}"\"#"  ${descriptor_filename}
+        else
+            cat <<EOF >> "${descriptor_filename}"
+
+### --- beginning of anubis generated entry --- ###
+[ml.script]
+script = "${script_artifact##*/}"
+### --- ending of anubis generated entry --- ###
+
+EOF
+        fi
+    fi
+
+    local event=$(cat <<-EOF
+{
+    "message_id" : "$(uuidgen)",
+    "client_id"  : "$(get_client_id)",
+    "client_version" : "${VERSION}",
+    "client_sha1"    : "${MY_SHA1}",
+    "client_username" : "$(whoami)",
+    "date" : "$(date -u +"%a %b %d %H:%M:%S %Z %Y")",
+    "visited"  : [{"svc" : "${SERVICE_NAME}", "tstamp" : $(( $(date +%s) * 1000 )), "version" :"${VERSION}"}],
+    "payload"  : {
+        "toml" : {
+            "descriptor_filename" : "${descriptor_filename##*/}",
+            "sha1" : "$(sha1sum ${descriptor_filename} | awk '{print $1}')",
+            "doc"  : "$(base64 --wrap=0 ${descriptor_filename})"
+        }
+    }
+}
+EOF
+          )
+    jq '.' <<< ${event}
+}
+
+# TODO - Also, look at changing the formulation of client_id to just be the user's hashed email
+_generate_command_event() {
+    local command=${1}
+    shift
+    local action_id=${1?"generate_command_event() -> You MUST supply the action id as the second argument to this function"}
+    local command_args=("${@}")
+    local event=$(cat <<-EOF
+{
+    "message_id" : "$(uuidgen)",
+    "client_id"  : "$(get_client_id)",
+    "client_version" : "${VERSION}",
+    "client_sha1"    : "${MY_SHA1}",
+    "client_username" : "$(whoami)",
+    "date" : "$(date -u +"%a %b %d %H:%M:%S %Z %Y")",
+    "visited"  : [{"svc" : "${SERVICE_NAME}", "tstamp" : $(( $(date +%s) * 1000 )), "version" :"${VERSION}"}],
+    "payload"  : {
+        "command" : "${command}",
+        "args" : $(_package_command_args ${command_args[@]})
+    }
+}
+EOF
+          )
+    jq '.' <<< ${event}
+}
+
+#---------------------------------------------------------
+
+_get_service_version() {
+    #TODO Check to see if this is the latest version of the client
+    while read -r header_line
+    do
+        ((DEBUG)) && echo "inspecting header line: $header_line" >&2
+        service_version="$(sed -n -e 's#^X-Service-Version:[ ]*\([a-zA-Z0-9.]*\).*#\1#p' <<<${header_line})"
+        if [[ "${VERSION%.*}" ==  "${service_version%.*}" ]]; then
+            ((match++))
+        fi
+        [ -n "${service_version}" ] && break
+    done < <(curl -s -I $(_construct_endpoint_URL)/ready)
+    printf "%s" "${service_version}"
+}
+
+upgrade() {
+    #TODO - upgrading this tool itself...
+    #TODO - implement how to upgrade to the version supported by the service directly?
+    printf "Upgrading to the latest client version... " >&2
+    local cmd="curl $(_construct_endpoint_URL)/downloads/${0##*/}-latest --output $(realpath ${0})"
+    ((DEBUG)) && echo "${cmd}" >&2
+    $cmd && chmod 755 "$(realpath "${0}")"
+}
+
+#REST API call
+sync_version() {
+    #TODO - implement how to upgrade to the version supported by the service directly?
+    printf "Sync'ing client version to that of the current service endpoint [\033[01;33m%s\033[0m] \n" "$current_service_endpoint"
+    local cmd="curl -D >(service_version_check) $(_construct_endpoint_URL)/downloads/${0##*/}-$(_get_service_version) --output $(realpath ${0})"
+    ((DEBUG)) && echo "${cmd}" >&2
+    $cmd && chmod 755 "$(realpath "${0}")"
+}
+
+script_artifact=""
+
+_prepare_script() {
+    local script=${1:?"The script name is a manditory argument"}
+    ((DEBUG)) && echo "Preparing script ${script}" 1>&2
+
+    #NOTE: restrict (lint) script locations... (don't want script to point to "dangerous" places etc...)
+    local artifact
+    if [[ -e "${script}" ]]; then
+        script=$(realpath "${script}")
+        ((DEBUG)) && echo "Located ${script} "$([[ -d "${script}" ]] && echo -n "directory" ; [[ -f "${script}" ]] && echo -n "file")", building artifact..." 1>&2
+        pushd "${script%/*}" >& /dev/null
+        artifact=${ANUBIS_SCRIPT_STAGING}/_${script##*/}.tar
+        tar cf "${artifact}" "${script##*/}"
+        (( $? != 0 )) && popd && return 1
+        artifact_hashname=$(sha1sum "${artifact}" | awk '{print $1}')
+        mv "${artifact}" "${artifact%/*}/${artifact_hashname}.tar"
+        popd >& /dev/null
+    else
+        echo "Sorry, money grip, your script file doesn't exist :-/"
+        exit 99
+    fi
+
+    script_artifact=$( [[ -n "${artifact_hashname}" ]] && printf "${artifact%/*}/${artifact_hashname}.tar")
+}
+
+# Ping the server endpoint with name of script artifact to see if the file exists already on the server.
+# Remember for a script a return value of 0 means TRUE (everything else is false... !0)
+_has_script() {
+    local cmd
+    local my_script_artifact_name=${1:?"Must provide the script artifact you wish to check for existence on"}
+    cmd="curl -s http://${current_service_endpoint}/api/job/script/${my_script_artifact_name}"
+    if [[ "true" == "$(eval ${cmd})" ]]; then  return 0 ; else return 1; fi;
+}
+
+#submit event
+submit() {
+    local descriptor_filename=${1?"submit() -> You MUST supply a descriptor file (or <action id>)"}
+    if [[ -n $(sed -rne '/[a-f0-9-]{8}-([a-f0-9-]{4}-){3}[a-f0-9-]{12}/p' <<<"${descriptor_filename}") ]]; then
+        descriptor_filename=$(_write_descriptor "${descriptor_filename}")
+    fi
+    local script_filename=${2:-""}
+    local current_service_endpoint=$(_get_current_service_endpoint)
+
+    if [ ! -f "${descriptor_filename}" ]; then echo "file [${descriptor_filename}], does not exist"; exit 1; fi
+    if [[ -z "${current_service_endpoint}" ]]; then
+        printf "
+\033[01;31m[WARNING]\033[0m You do not have a service endpoint registered.
+          Please do so.  (see --register flag)
+          using localhost, port 8080\n\n";
+        current_service_endpoint="localhost:8080"
+    fi
+
+    if [[ -n "${script_filename}" ]]; then
+        if ! _prepare_script "${script_filename}"; then
+            echo "submission aborted!"
+            exit 9
+        fi
+    fi
+
+    local data=$(_generate_submit_event "${descriptor_filename}" "${script_artifact}")
+    local cmd
+    local msg
+    local response
+
+    if [[ -n "${data}" ]]; then
+        [[ -n "${script_artifact}" ]] && echo "Using Script: ${script_artifact##*/}" 1>&2
+
+        cmd="curl -s -D >(service_version_check) -F submit-event='"${data}"'"
+        msg="sending ${descriptor_filename}"
+        if [[ -n "${script_artifact}" ]]; then
+            if ((FORCE)) || ! $(_has_script "${script_artifact##*/}") ; then
+                ((DEBUG)) && echo "Including script for upload to the Anubis service (bff)" 1>&2
+                cmd+=" -F script="@${script_artifact}
+                msg+=" and ${script_artifact##*/}"
+            fi
+        fi
+        cmd+=" http://"${current_service_endpoint}"/api/job/descriptor"
+        msg+=" to anubis service @ ${current_service_endpoint}"
+        ((VERBOSE || DEBUG)) && echo "${cmd}" 1>&2
+
+        _print_status "${msg}"
+        [[ ! -d "${ANUBIS_DATABASE}/$(get_client_id)" ]] && mkdir -p "${ANUBIS_DATABASE}/$(get_client_id)"
+
+        response=$(eval $cmd)
+
+        if [[ -z "${response}" ]]; then
+            printf "
+\033[01;31m[WARNING]\033[0m Your submission was not sent, please check:
+          %s
+ " "$(show_registered_service_endpoint)"
+            curl $(_construct_endpoint_URL)/ready
+
+
+        fi
+
+        if [[ -n $(sed -rne '/[a-f0-9-]{8}-([a-f0-9-]{4}-){3}[a-f0-9-]{12}/p' <<<"${response}") ]]; then
+            [[ ! -d "${ANUBIS_DATABASE}/$(get_client_id)/${response}" ]] && mkdir -p "${ANUBIS_DATABASE}/$(get_client_id)/${response}"
+            echo "${response} : ${descriptor_filename} : $(date)" >>  "${ANUBIS_ACTION_IDS}"
+            echo "${response}"
+        else
+            printf '\033[01;31m[ERROR]\033[0m Submission was NOT successful - submission rejected by service:\n%s\n' "${response}"
+            exit 9
+        fi
+    else
+        printf '\033[01;31m[ERROR]\033[0m No data to send.\n\n'
+        exit 1
+    fi
+}
+
+#local db lookup
+use_last_action_id() {
+    local last_action_id=$(cat "${ANUBIS_ACTION_IDS}" | tail -n 1 | awk '{print $1}')
+    current_action_id=${last_action_id}
+    printf "%s" "$last_action_id"
+}
+
+get_latest_event_timestamp() {
+    local action_id=${1:-$(use_last_action_id)}
+    local path=${ANUBIS_DATABASE}/$(get_client_id)"/"${action_id}
+    local tstamp_file=${path}/${TSTAMP_FILENAME}
+    local tstamp_file_size=$([[ -f "${tstamp_file}" ]] && stat "${tstamp_file}" | grep Size | awk '{print $2}' || echo -n "0")
+
+    if ((tstamp_file_size > 0)); then
+        cat "${tstamp_file}"
+    else
+        printf "0"
+    fi
+}
+
+#Local filesystem read
+_read_local_submission_status() {
+    local action_id=${1:-$(use_last_action_id)}
+    ((DEBUG)) && echo "_read_local_submission_status for action: ${action_id}" 1>&2
+    current_action_id=$action_id
+
+    local datafile=${ANUBIS_DATABASE}/$(get_client_id)"/"${action_id}/data
+
+    if [[ -f "${datafile}" ]]; then
+        jq --compact-output '{src: .visited[-1].svc , id: .message_id, msg: .payload.message, tstamp: .visited[-1].tstamp}' "${datafile}" | while read line; do _as_status_line $line; done;
+    else
+        ((VERBOSE)) && printf "Events datafile [%s] is not present\n" "${datafile}"
+    fi
+}
+
+_read_remote_submission_status() {
+    local action_id=${1:-$(use_last_action_id)}
+    ((DEBUG)) && echo "_read_remote_submission_status for action: ${action_id}" 1>&2
+    current_action_id=$action_id
+
+    local path=$(get_client_id)"/"${action_id}
+    local current_service_endpoint=$(_get_current_service_endpoint)
+    local cmd
+
+    ((VERBOSE)) && echo "database = ${ANUBIS_DATABASE}"
+
+    local since_tstamp=$(get_latest_event_timestamp "${action_id}")
+
+    cmd="curl -s -D >(service_version_check) -X GET -G -H Content-Type: application/json --data-urlencode since="${since_tstamp}" http://"${current_service_endpoint}"/api/job/"${path}
+    ((VERBOSE)) && echo ${cmd}
+    local response=$(eval ${cmd})
+
+    if [[ -n "${response}" ]]; then
+        [[ ! -d "${ANUBIS_DATABASE}/${path}" ]] && mkdir -p "${ANUBIS_DATABASE}/${path}"
+        echo "${response}" | jq '.[]' | tee $( [[ ${since_tstamp} != "0" ]] && echo -n "-a") ${ANUBIS_DATABASE}/${path}/data 2> /dev/null | jq --compact-output '{src: .visited[-1].svc , id: .message_id, msg: .payload.message, tstamp: .visited[-1].tstamp} +{"new" : "1"}' | while read line; do _as_status_line $line; done;
+    fi
+}
+
+_looks_like_an_action_id() {
+    local action_id="${1}"
+    if [[ -z $(sed -rne '/[a-f0-9-]{8}-([a-f0-9-]{4}-){3}[a-f0-9-]{12}/p' <<<"${action_id}") ]]; then
+        printf "\033[01;31m[ERROR] Incorrect action-id format: expecting a UUID\033[0m\n" 1>&2
+        return 1
+    fi
+    return 0
+}
+
+#REST API call
+get_submission_status() {
+    local action_id=${1:-$(use_last_action_id)}
+    ((DEBUG)) && echo "[DEBUG] - get_submission_status, was passed in [${action_id}]" 1>&2
+    if ! _looks_like_an_action_id "${action_id}" ; then
+        printf "\033[01;31m[ERROR] Incorrect action-id format: expecting a UUID\033[0m\n"
+        exit 9
+    fi
+
+    ((VERBOSE)) && echo "get_submission_status for action: ${action_id}"
+    current_action_id=$action_id
+    echo "Status: [${action_id}]"
+
+    if ((TAIL_STATUS == 0)); then
+        if ((SYNC_DATA)); then
+            since_tstamp=0
+            [[ -f "${ANUBIS_DATABASE}/$(get_client_id)/${action_id}/data" ]] && mv "${ANUBIS_DATABASE}/$(get_client_id)/${action_id}/data"{,.bkup}
+            [[ -f "${ANUBIS_DATABASE}/$(get_client_id)/${action_id}/latest_tstamp" ]] && mv "${ANUBIS_DATABASE}/$(get_client_id)/${action_id}/latest_tstamp"{,.bkup}
+        else
+            _read_local_submission_status "${action_id}"
+        fi
+    fi
+
+    if ((WATCH)); then
+        while ((WATCH)) ; do
+            curl -s $(_construct_endpoint_URL)/ready >& /dev/null
+            if (( $? != 0 )); then
+                if ((WATCH)); then
+                    ((VERBOSE)) && printf "\033[01;31m[no connection to service]\033[0m\n" || printf "\033[01;31mx\033[0m"
+                    sleep 2
+                    continue
+                else
+                    exit 9
+                fi
+            fi
+            printf "\033[01;32m.\033[0m"
+            _read_remote_submission_status "${action_id}"
+            sleep "${WATCH_PERIOD}"
+        done
+    else
+        curl -s "$(_construct_endpoint_URL)"/ready >& /dev/null
+        if (( $? != 0 )); then
+            printf "\033[01;31m[no connection to service]\033[0m\n"
+            exit 9
+        fi
+        _read_remote_submission_status "${action_id}"
+    fi
+}
+
+_print_status() {
+    local msg=${1}
+    local src=${2:-"anubis-client"}
+    local id=${3:-"00000000"}
+    local new=${4:-0}
+
+    printf "%b|\033[0$( ((new)) && printf "1" || printf "0");33m%s\033[0m|%s\n" "${emoji[${src}]}" "${id:0:8}" "${msg}" >&2
+}
+
+# (Note: $line is scope in the while loop that this function is called in)
+_as_status_line() {
+    #TODO - change these 3 jq calls to a single jq call that creates the arg list for _print_status directly
+    local msg=$(jq --compact-output '.msg' <<<"$line")
+    local src=$(jq --compact-output '.src' <<<"$line")
+    local id=$(jq  --compact-output '.id' <<<"$line")
+    local new=$(jq --compact-output '.new' <<<"$line")
+
+    _print_status "$(sed 's/^.\(.*\).$/\1/' <<<"$msg")" "$(sed 's/^.\(.*\).$/\1/' <<<"$src")" "$(sed 's/^.\(.*\).$/\1/' <<<"$id")" "$(sed 's/^.\(.*\).$/\1/' <<<"$new")"
+
+    local tstamp=$(jq --compact-output '.tstamp' <<<"$line")
+    [[ ! -d "${ANUBIS_DATABASE}/$(get_client_id)/${current_action_id}" ]] && mkdir -p "${ANUBIS_DATABASE}/$(get_client_id)/${current_action_id}"
+    echo "$tstamp:$id" > "${ANUBIS_DATABASE}/$(get_client_id)/${current_action_id}/${TSTAMP_FILENAME}"
+}
+
+#command event
+get_results() {
+    local action_id=${1:-$(use_last_action_id)}
+    local current_service_endpoint=$(_get_current_service_endpoint)
+    ((VERBOSE)) && echo "get_results ${action_id}" >&2
+
+    local cmd
+    local returned
+    cmd="curl -s -D >(service_version_check) -X GET -H Content-Type: application/json http://"${current_service_endpoint}"/api/job/results/$(get_client_id)/${action_id}"
+    ((VERBOSE)) && echo ${cmd} >&2
+    returned=$(eval "${cmd}" | jq --raw-output '.[]._source.log')
+    echo "${returned}"
+}
+
+#command event
+abort_submission() {
+    local action_id
+    if _looks_like_an_action_id "${1}" ; then
+        action_id="${1}"
+    else
+        printf "%b You MUST provide a valid, well-formed action_id \033[01;31mtry again buddy\033[0m\n\n" "${emoji[FAIL]}" >&2
+        exit 9
+    fi
+    local current_service_endpoint=$(_get_current_service_endpoint)
+    shift
+    ((VERBOSE)) && echo "abort submisson ${action_id}"
+
+    if [[ -z "${current_service_endpoint}" ]]; then
+        printf "
+\033[01;31m[WARNING]\033[0m You do not have a service endpoint registered.
+          Please do so.  (see --register flag)
+          using localhost, port 8080\n\n";
+        current_service_endpoint="localhost:8080"
+    fi
+
+    local cmd
+    local returned
+    local data=$(_generate_command_event "cancel" ${action_id} "--json" $*)
+    if [[ -n "${data}" ]]; then
+        cmd="curl -s -D >(service_version_check) -X DELETE -H Content-Type: application/json -d '"${data}"' http://"${current_service_endpoint}"/api/job/$(get_client_id)/${action_id}"
+        ((VERBOSE)) && echo ${cmd}
+        returned=$(eval "${cmd}")
+        echo "${returned}"
+    else
+        printf '\033[01;31m[ERROR]\033[0m No data to send.\n\n'
+        exit 1
+    fi
+}
+
+#---------------------------------------
+# JQ shenanigans in the context of an action_id
+#---------------------------------------
+
+#shows the full JSON event for the given message_id partial value
+inspect() {
+    local message_id=${1:?"You must provide the message id that you want to inspect"}
+    local action_id=${2:-$(use_last_action_id)}
+    local datafile=${ANUBIS_DATABASE}/$(get_client_id)"/"${action_id}/data
+    /usr/bin/env bash <<EOF
+jq 'select(.message_id|test("${message_id}-"))' $datafile
+EOF
+}
+
+show_descriptor() {
+    local action_id=${1:-$(use_last_action_id)}
+    ((VERBOSE)) && echo "show_descriptor [toml] for action: ${action_id}"
+    local datafile=${ANUBIS_DATABASE}/$(get_client_id)"/"${action_id}/data
+
+    if [[ ! -f "${datafile}" ]]; then
+        printf "
+\033[01;31m[ERROR]\033[0m The file ${datafile} does not exist!\n\n";
+        return 9
+    fi
+
+    local content=$(jq --compact-output '.payload.toml.doc' <(sed -n '/^{/,/^}/p; /^}/q' "${datafile}") | sed 's/^.\(.*\).$/\1/' | base64 -d 2> /dev/null)
+
+    echo "${content}"
+    echo "-------------------------"
+    echo "ActionID: [${action_id}]"
+    printf "sha1sum : " && sha1sum <<< "${content}"
+    echo "-------------------------"
+}
+
+_write_descriptor() {
+    local action_id=${1:-$(use_last_action_id)}
+    ((VERBOSE)) && echo "write_descriptor [toml] for action: ${action_id}"
+    local datafile=${ANUBIS_DATABASE}/$(get_client_id)"/"${action_id}/data
+
+    jq --compact-output '.payload.toml.doc' <(sed -n '/^{/,/^}/p; /^}/q' "${datafile}") | sed 's/^.\(.*\).$/\1/' | base64 -d 2> /dev/null >> "${datafile%/*}"/descriptor.toml
+    printf "${datafile%/*}"/descriptor.toml
+}
+
+get_history() {
+    cat "${ANUBIS_ACTION_IDS}"
+}
+
+
+#---------------------------------------
+
+
+main() {
+    banner
+    check_tools
+    _setup
+
+    local SUBMIT=0;
+    local STATUS=0;
+    local FORCE=0;
+    local descriptor_filename=""
+    local id_status_is_desired_for=""
+    local script=""
+
+        while [ -n "$1" ]; do
+            #echo "arg ${i} = $1"
+            local unshift=0
+            case $1 in
+                --force | -f)
+                    FORCE=1
+                    ;;
+                --verbose | -vv)
+                    VERBOSE=1
+                    echo "[verbose mode: on]" 1>&2
+                    ;;
+                --debug | -dbg)
+                    DEBUG=1
+                    echo "[debug mode: on]" 1>&2
+                    ;;
+                --tail)
+                    TAIL_STATUS=1
+                    ;;
+                --sync-data)
+                    SYNC_DATA=1
+                    ((VERBOSE)) && echo "[sync local data <==> service data]"
+                    ;;
+                --watch)
+                    WATCH=1
+                    printf " %b\n" "${emoji[watcher]}"
+                    ;;
+                --submit)
+                    shift
+                    SUBMIT=1
+                    until [[ -n "$(echo "${1}" | sed -rn '/^\s*--/p')" || -z "${1}" ]]; do
+                        ((DEBUG)) && echo "submit looking at arg $1" 1>&2
+                        descriptor_filename="${1}"
+                        shift
+                    done
+                    unshift=1
+                    ;;
+                --script)
+                    shift
+                    until [[ -n "$(echo "${1}" | sed -rn '/^\s*--/p')" || -z "${1}" ]]; do
+                        ((DEBUG)) && echo "script looking at arg $1" 1>&2
+                        script="${1}"
+                        shift
+                    done
+                    unshift=1
+                    ;;
+                --status)
+                    shift
+                    STATUS=1
+                    until [[ -n "$(echo "${1}" | sed -rn '/^\s*--/p')" || -z "${1}" ]]; do
+                        ((DEBUG)) && echo "status looking at arg $1" 1>&2
+                        id_status_is_desired_for="${1}"
+                        shift
+                    done
+                    unshift=1
+                    ;;
+                --results | --result)
+                    shift
+                    get_results ${1} ; shift
+                    exit $?
+                    ;;
+                --last-action-id)
+                    shift
+                    echo $(use_last_action_id)
+                    exit $?
+                    ;;
+                --history)
+                    get_history
+                    exit $?
+                    ;;
+                --abort|--cancel)
+                    shift
+                    abort_submission ${@} ; shift
+                    exit $?
+                    ;;
+                --abort\* | --cancel\* | --purge)
+                    shift
+                    abort_submission ${@} '{ "cascade" : true }'; shift
+                    exit $?
+                    ;;
+                --check-prerequisites) # hidden option
+                    shift
+                    check_tools
+                    exit $?
+                    ;;
+                --upgrade)
+                    shift
+                    upgrade
+                    exit $?
+                    ;;
+                --sync-version)
+                    shift
+                    sync_version
+                    exit $?
+                    ;;
+                --register)
+                    shift
+                    register_service_endpoint "${1}"
+                    exit $?
+                    ;;
+                --ping-service-endpoint | --ping)
+                    shift
+                    ping_service_endpoint
+                    exit $?
+                    ;;
+                --unregister)
+                    shift
+                    unregister_service_endpoint "${1}"
+                    exit $?
+                    ;;
+                --show-registered-service-endpoint)
+                    shift
+                    show_registered_service_endpoint
+                    exit $?
+                    ;;
+                --show-registered-service-endpoint-history)
+                    shift
+                    show_registered_service_endpoint_history
+                    exit $?
+                    ;;
+                --help | -h)
+                    shift
+                    usage
+                    ;;
+                --legend)
+                    show_legend
+                    exit 0
+                    ;;
+                --inspect| -i)
+                    shift
+                    inspect "${@}"
+                    exit $?
+                    ;;
+                --show-descriptor | --show-desc)
+                    shift
+                    show_descriptor "${@}"
+                    exit $?
+                    ;;
+                --write-descriptor | --write-desc) #"hidden" option
+                    shift
+                    _write_descriptor "${@}"
+                    exit $?
+                    ;;
+                --banner) #"hidden" option
+                    shift
+                    banner
+                    exit $?
+                    ;;
+                *)
+                    echo "Unknown flag $1"
+                    ;;
+            esac
+            ((!unshift)) && shift
+        done
+        if ((SUBMIT && STATUS)) ; then
+            get_submission_status $(submit "${descriptor_filename}" "${script}")
+        else
+            ((SUBMIT)) && submit "${descriptor_filename}" "${script}"
+            ((STATUS)) && get_submission_status "${id_status_is_desired_for}"
+        fi
+
+}
+
+main "$@"
