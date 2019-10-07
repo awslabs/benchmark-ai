@@ -292,7 +292,7 @@ spec:
         - name: JOB_NAME
           value: benchmark-job-id
         - name: TRIGGER_STATUSES
-          value: '[SUCCEEDED, FAILED]'
+          value: '[SUCCEEDED, FAILED, JOB_NOT_FOUND]'
         - name: COMMAND
           value: /opt/env/bin/kubectl delete job,service is-benchmark-job-id
         - name: JOB_NOT_FOUND_GRACE_PERIOD_SECONDS

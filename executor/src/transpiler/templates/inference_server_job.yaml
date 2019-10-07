@@ -93,7 +93,7 @@ spec:
         - name: JOB_NAME
           value: {job_id}
         - name: TRIGGER_STATUSES
-          value: "[SUCCEEDED, FAILED]"
+          value: "[SUCCEEDED, FAILED, JOB_NOT_FOUND]"
         - name: COMMAND
           value: '/opt/env/bin/kubectl delete job,service {inference_server_job_id}'
         - name: JOB_NOT_FOUND_GRACE_PERIOD_SECONDS
