@@ -16,7 +16,7 @@ description = """ \
 # 1. Hardware
 [hardware]
 instance_type = "t3.medium"
-strategy = "client_server"
+strategy = "inference"
 
 # 2. Environment
 [env]
