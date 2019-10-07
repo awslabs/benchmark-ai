@@ -286,7 +286,7 @@ spec:
           httpGet:
             path: /ping
             port: 8080
-            scheme: https
+            scheme: HTTPS
           initialDelaySeconds: 5
           periodSeconds: 5
           timeoutSeconds: 1

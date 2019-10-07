@@ -183,7 +183,7 @@ class KubernetesRootObjectHelper:
                 "httpGet": {
                     "path": probe.path,
                     "port": probe.port if probe.port else default_port,
-                    "scheme": probe.scheme.value,
+                    "scheme": probe.scheme.value.upper(),
                 },
                 "initialDelaySeconds": probe.initial_delay_seconds,
                 "periodSeconds": probe.period_seconds,
