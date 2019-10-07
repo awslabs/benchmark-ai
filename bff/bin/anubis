@@ -408,8 +408,8 @@ upgrade() {
 #REST API call
 sync_version() {
     #TODO - implement how to upgrade to the version supported by the service directly?
-    printf "Sync'ing client version to that of the current service endpoint [\033[01;33m%s\033[0m] \n" "$current_service_endpoint"
-    local cmd="curl -D >(service_version_check) $(_construct_endpoint_URL)/downloads/${0##*/}-$(_get_service_version) --output $(realpath ${0})"
+    printf "Sync'ing client to that of the current service endpoint [\033[01;33m%s\033[0m] \n" "$current_service_endpoint"
+    local cmd="curl $(_construct_endpoint_URL)/api/tools/${0##*/} --output $(realpath ${0})"
     ((DEBUG)) && echo "${cmd}" >&2
     $cmd && chmod 755 "$(realpath "${0}")"
 }
