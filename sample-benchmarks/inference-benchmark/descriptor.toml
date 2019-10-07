@@ -1,0 +1,73 @@
+# BenchmarkAI meta
+spec_version = "0.1.0"
+
+# These fields don't have any impact on the job to run, they contain
+# merely informative data so the benchmark can be categorized when displayed
+# in the dashboard.
+[info]
+task_name = "Hello world"
+description = """ \
+    A hello world example of using Benchmark AI\
+    """
+
+# 1. Hardware
+[hardware]
+instance_type = "t3.small"
+strategy = "inference"
+
+# 2. Environment
+[env]
+# Docker hub <hub-user>/<repo-name>:<tag> 
+docker_image = "benchmarkai/inference_benchmark_client:5f3d4af"
+
+[env.vars]
+MODEL_NAME="squeezenet_v1.1"
+# MODEL_NAME="Inception-BN"
+
+# 3. Machine learning related settings: 
+# dataset, benchmark code and parameters it takes
+[ml]
+benchmark_code = "./run_benchmark.sh"
+
+[output]
+# [Opt] Custom metrics descriptions
+# List all required metrics descriptions below.
+# Make an entry in same format as the one below.
+[[output.metrics]]
+# Name of the metric that will appear in the dashboards.
+name = "response_time"
+# Metric unit (required)
+units = "seconds"
+# Pattern for log parsing for this metric.
+pattern = "response_time:([-+]?\\d*\\.\\d+|\\d+)"
+
+
+[server]
+
+[server.hardware]
+instance_type = "t3.small"
+
+
+[server.env]
+docker_image = "benchmarkai/mxnet-model-server:79a39b0"
+start_command = "mxnet-model-server --start --model-store /models --log-config=/config/log4j.properties --foreground"
+ports = [8080,8081]
+
+[[server.models]]
+src = "https://s3.amazonaws.com/model-server/model_archive_1.0/squeezenet_v1.1.mar"
+path = "/models"
+
+
+[[server.models]]
+src = "https://s3.amazonaws.com/model-server/model_archive_1.0/inception-bn.mar"
+path = "/models"
+
+[server.output]
+[[server.output.metrics]]
+# Name of the metric that will appear in the dashboards.
+name = "Requests2XX"
+# Metric unit (required)
+units = "requests"
+# Pattern for log parsing for this metric.
+pattern = "Requests2XX\\.Count:(\\d+)"
+
