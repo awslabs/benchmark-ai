@@ -22,14 +22,30 @@ privileged = false
 extended_shm = true
 # array ports that are exposed by the server
 ports = [8080, 8081]
-# [Opt] Server iveliness probe url
-liveliness_probe = "http://localhost:8080/iamhere"
-# [Opt] Server readiness probe url
-readiness_probe = "http://localhost:8081/iamok"
 # Server start command
 start_command = ""
 # [Opt] Arguments to pass to server start command
 start_command_args = ""
+
+# [Opt] Server readiness probe url
+[server.env.readiness_probe]
+# [Required] probe end point
+path = "/ping"
+# [Opt] uri scheme. One of [http, https]. Default: http
+scheme = "http"
+# [Opt] Will default to the first port defined in the [server.env] ports attribute
+port = 8080
+# [Opt] Number of seconds after server container starts to initiate probe (Default 10)
+initial_delay_seconds = 10
+# [Opt] How often to perform probe (Default 10)
+period_seconds = 10
+# [Opt] Number of seconds after which probe will timeout (Default 1)
+timeout_seconds = 1
+# [Opt] Minimum consecutive successes for probe to be considered successful (Default 1)
+success_threshold = 1
+# [Opt] Minimum consecutire failured for probe to be considered failed (Default 3)
+failure_threshold = 3
+
 # [Opt] Server environment variables
 [server.env.vars]
 VAR1 = "value1"

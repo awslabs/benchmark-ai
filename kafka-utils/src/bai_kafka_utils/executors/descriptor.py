@@ -43,6 +43,23 @@ INVALID_LABEL_MESSAGE = (
 )
 
 
+class HttpProbeScheme(Enum):
+    HTTP = "http"
+    HTTPS = "https"
+
+
+@dataclass
+class HttpProbeDescriptor:
+    path: str
+    port: Optional[int] = None
+    scheme: Optional[HttpProbeScheme] = HttpProbeScheme.HTTP
+    initial_delay_seconds: Optional[int] = 10
+    period_seconds: Optional[int] = 10
+    timeout_seconds: Optional[int] = 1
+    success_threshold: Optional[int] = 1
+    failure_threshold: Optional[int] = 3
+
+
 @dataclass
 class MetricDescriptor:
     name: str
@@ -82,8 +99,7 @@ class ServerEnvDescriptor:
     # optional
     privileged: Optional[bool] = False
     extended_shm: Optional[bool] = True
-    liveliness_probe: Optional[str] = None
-    readiness_probe: Optional[str] = None
+    readiness_probe: Optional[HttpProbeDescriptor] = None
     start_command_args: Optional[str] = None
     vars: Optional[Dict[str, str]] = None
 
@@ -204,7 +220,16 @@ class Descriptor:
         except jsonschema.ValidationError as err:
             raise DescriptorError(f"Invalid [server] definition: {err.message}") from err
 
-        return dacite.from_dict(data_class=ServerDescriptor, data=server_dict)
+        return dacite.from_dict(
+            data_class=ServerDescriptor,
+            data=server_dict,
+            config=dacite.Config(
+                type_hooks={
+                    # Convert HttpProbeScheme from str to HttpProbeScheme
+                    HttpProbeScheme: HttpProbeScheme
+                }
+            ),
+        )
 
     def _validate(self):
         """
