@@ -87,9 +87,7 @@ class KubernetesJobWatcher:
             self.kubernetes_namespace, label_selector=f"job-name={self.job_id}"
         )
         logger.debug(f"[job-id: {self.job_id}] Kubernetes Job pods: {pods}")
-        inferrer = SingleNodeStrategyKubernetesStatusInferrer(
-            k8s_job_status, pods.items, backoff_limit=k8s_job.spec.backoff_limit
-        )
+        inferrer = SingleNodeStrategyKubernetesStatusInferrer(k8s_job_status, pods.items)
         status = inferrer.status()
 
         if status.is_running() and self.job_start_time is None:

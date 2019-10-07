@@ -21,6 +21,8 @@ ContainerInfo = collections.namedtuple("ContainerInfo", ("container_name", "mess
 
 logger = service_logger.getChild(__name__)
 
+FAILURE_REASONS = ["BackoffLimitExceeded"]
+
 
 class ContainerState(Enum):
     """
@@ -98,13 +100,8 @@ class SingleNodeStrategyKubernetesStatusInferrer:
     """
     BENCHMARK_CONTAINER_NAME = "benchmark"
 
-    def __init__(self, k8s_job_status: V1JobStatus, pods: List[V1Pod], backoff_limit: int):
-
-        if backoff_limit <= 0:
-            raise ValueError(f"backoff_limit({backoff_limit}) must be > 0")
-
+    def __init__(self, k8s_job_status: V1JobStatus, pods: List[V1Pod]):
         self.k8s_job_status: V1JobStatus = k8s_job_status
-        self.backoff_limit: int = backoff_limit
         self.pods: List[V1Pod] = pods
 
     def status(self) -> BenchmarkJobStatus:
@@ -129,9 +126,10 @@ class SingleNodeStrategyKubernetesStatusInferrer:
         if self.k8s_job_status.succeeded is not None and self.k8s_job_status.succeeded > 0:
             return BenchmarkJobStatus.SUCCEEDED
 
-        # Job has failed if the number of failure is greater or equal to the backoff limit
-        if self.k8s_job_status.failed is not None and (self.k8s_job_status.failed >= self.backoff_limit):
-            return BenchmarkJobStatus.FAILED
+        if self.k8s_job_status.conditions:
+            failures = list(filter(lambda cond: cond.reason in FAILURE_REASONS, self.k8s_job_status.conditions))
+            if failures:
+                return BenchmarkJobStatus.FAILED
 
     def _infer_status_from_pod(self):
         # TODO: Handle multiple PODs for the same Job since Jobs have a retry mechanism
