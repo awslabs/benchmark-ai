@@ -12,11 +12,11 @@
         "scheme": { "type": "string", "enum": ["http", "https"], "default": "http" },
         "path": { "type": "string", "format": "uri-reference" },
         "port": { "type": "number", "minimum": 1, "maximum": 65535 },
-        "initial_delay_seconds": { "type": "number", "minimum": 1, "default": 10 },
-        "period_seconds": { "type": "number", "minimum": 1, "default": 10 },
-        "timeout_seconds": { "type": "number", "minimum": 1, "default": 1 },
-        "success_threshold": { "type" : "number", "minimum": 1, "default": 1 },
-        "failure_threshold": { "type" :  "number", "minimum": 1, "default": 3 }
+        "initial_delay_seconds": { "type": "number", "minimum": 1 },
+        "period_seconds": { "type": "number", "minimum": 1 },
+        "timeout_seconds": { "type": "number", "minimum": 1 },
+        "success_threshold": { "type" : "number", "minimum": 1 },
+        "failure_threshold": { "type" :  "number", "minimum": 1 }
       },
       "additionalProperties": false,
       "required": ["path"]
