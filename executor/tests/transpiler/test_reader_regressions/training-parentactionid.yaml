@@ -146,7 +146,7 @@ spec:
         beta.kubernetes.io/instance-type: p3.8xlarge
         node.type: bai-worker
         failure-domain.beta.kubernetes.io/zone: us-east-1a
-      restartPolicy: Never
+      restartPolicy: OnFailure
       volumes:
       - name: benchmark-ai
         emptyDir: {}
