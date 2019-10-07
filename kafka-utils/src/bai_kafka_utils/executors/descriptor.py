@@ -28,7 +28,7 @@ class DescriptorError(Exception):
 class DistributedStrategy(Enum):
     SINGLE_NODE = "single_node"
     HOROVOD = "horovod"
-    CLIENT_SERVER = "client_server"
+    INFERENCE = "inference"
 
 
 SINGLE_RUN_SCHEDULING = "single_run"
@@ -159,9 +159,9 @@ class Descriptor:
 
         self.env_vars = descriptor_data.get("env", {}).get("vars", {})
 
-        self.is_client_server = self.strategy == DistributedStrategy.CLIENT_SERVER
+        self.is_inference_strategy = self.strategy == DistributedStrategy.INFERENCE
 
-        if self.is_client_server:
+        if self.is_inference_strategy:
             self.server = self._make_server_descriptor(descriptor_data.get("server", {}))
 
         self._validate()

@@ -1,6 +1,6 @@
 [hardware]
 instance_type = "t3.small"
-strategy = "client_server"
+strategy = "inference"
 
 [env]
 docker_image = "alpine"
