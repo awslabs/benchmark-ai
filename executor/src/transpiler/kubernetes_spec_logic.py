@@ -7,6 +7,9 @@ import ruamel.yaml as yaml
 from itertools import chain
 from typing import Dict, Any, List
 
+from bai_kafka_utils.executors.descriptor import HttpProbeDescriptor
+
+
 # Using the official Kubernetes Model classes (https://github.com/kubernetes-client/python) is avoided here
 # because it presents some problems:
 #
@@ -172,6 +175,22 @@ class KubernetesRootObjectHelper:
         container = self.find_container(container_name)
         if container:
             container.ports = [{"containerPort": port} for port in ports] + (container.get("ports") or [])
+
+    def add_readiness_probe(self, container_name: str, probe: HttpProbeDescriptor, default_port: int):
+        container = self.find_container(container_name)
+        if container:
+            container["readinessProbe"] = {
+                "httpGet": {
+                    "path": probe.path,
+                    "port": probe.port if probe.port else default_port,
+                    "scheme": probe.scheme.value,
+                },
+                "initialDelaySeconds": probe.initial_delay_seconds,
+                "periodSeconds": probe.period_seconds,
+                "timeoutSeconds": probe.timeout_seconds,
+                "successThreshold": probe.success_threshold,
+                "failureThreshold": probe.failure_threshold,
+            }
 
     def set_service_account(self, service_account_name: str):
         self.get_pod_spec().serviceAccountName = service_account_name

@@ -314,6 +314,16 @@ spec:
         ports:
         - containerPort: 8080
         - containerPort: 8081
+        readinessProbe:
+          httpGet:
+            path: /ping
+            port: 8080
+            scheme: https
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 1
+          successThreshold: 1
+          failureThreshold: 5
       - name: client-lock
         image: benchmarkai/job-status-trigger:3115770
         env:
