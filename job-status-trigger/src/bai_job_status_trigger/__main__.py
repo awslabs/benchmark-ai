@@ -37,16 +37,14 @@ def make_trigger_callback(
         nonlocal job_seen
 
         # For the first job_not_found_grace_period_seconds seconds, ignore not found
-        if job_status == BenchmarkJobStatus.JOB_NOT_FOUND:
+        if not job_seen and job_status == BenchmarkJobStatus.JOB_NOT_FOUND:
             elapsed = int(time() - start_time)
 
             # job has not been seen before grace period elapsed
-            if not job_seen and elapsed >= not_found_grace_period_seconds:
+            if elapsed >= not_found_grace_period_seconds:
                 raise RuntimeError(f"Could not find job within {not_found_grace_period_seconds} seconds")
 
-            # job has been seen before, but has disappeared
-            if job_seen and BenchmarkJobStatus.JOB_NOT_FOUND not in trigger_statuses:
-                raise RuntimeError(f"Job {job_name} could no longer be found")
+            return False
         else:
             job_seen = True
 
@@ -55,6 +53,11 @@ def make_trigger_callback(
             logger.info(f"Job status is {job_status} - executing trigger")
             return True
         logger.info(f"Job {job_name}: {job_status}")
+
+        if job_status in [BenchmarkJobStatus.JOB_NOT_FOUND, BenchmarkJobStatus.FAILED, BenchmarkJobStatus.SUCCEEDED]:
+            logger.error(f"Watched job reached final state: {job_status}. Exiting with error...")
+            raise RuntimeError(f"Job {job_name} reached final state {job_status} before reaching any trigger status.")
+
         return False
 
     return status_trigger_callback

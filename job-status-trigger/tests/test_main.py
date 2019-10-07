@@ -168,7 +168,7 @@ def test_main_error(
     "trigger_statuses,job_status,not_found_grace_period,expected",
     [
         ([BenchmarkJobStatus.SUCCEEDED], BenchmarkJobStatus.SUCCEEDED, 30, True),
-        ([BenchmarkJobStatus.SUCCEEDED], BenchmarkJobStatus.FAILED, 30, False),
+        ([BenchmarkJobStatus.SUCCEEDED], BenchmarkJobStatus.PENDING_NODE_SCALING, 30, False),
     ],
 )
 def test_trigger_callback(trigger_statuses, job_status, not_found_grace_period, expected):
@@ -182,6 +182,26 @@ def test_trigger_callback_fails_on_job_disappears_if_not_found_not_in_trigger_st
     assert fn(JOB_NAME, BenchmarkJobStatus.PENDING_NODE_SCALING, None) is False
     with pytest.raises(RuntimeError):
         fn(JOB_NAME, BenchmarkJobStatus.JOB_NOT_FOUND, None)
+
+
+@pytest.mark.parametrize(
+    "trigger_status,final_status",
+    [
+        (BenchmarkJobStatus.SUCCEEDED, BenchmarkJobStatus.FAILED),
+        (BenchmarkJobStatus.SUCCEEDED, BenchmarkJobStatus.JOB_NOT_FOUND),
+        (BenchmarkJobStatus.FAILED, BenchmarkJobStatus.SUCCEEDED),
+        (BenchmarkJobStatus.FAILED, BenchmarkJobStatus.JOB_NOT_FOUND),
+        (BenchmarkJobStatus.RUNNING_AT_INIT_CONTAINERS, BenchmarkJobStatus.SUCCEEDED),
+        (BenchmarkJobStatus.RUNNING_AT_INIT_CONTAINERS, BenchmarkJobStatus.FAILED),
+        (BenchmarkJobStatus.RUNNING_AT_INIT_CONTAINERS, BenchmarkJobStatus.JOB_NOT_FOUND),
+    ],
+)
+def test_trigger_callback_fails_on_job_reaches_final_state_before_trigger_state(trigger_status, final_status):
+    fn = make_trigger_callback([trigger_status], 30)
+    assert fn(JOB_NAME, BenchmarkJobStatus.JOB_NOT_FOUND, None) is False
+    assert fn(JOB_NAME, BenchmarkJobStatus.PENDING_NODE_SCALING, None) is False
+    with pytest.raises(RuntimeError):
+        fn(JOB_NAME, final_status, None)
 
 
 def test_trigger_callback_success_on_job_disappears_if_not_found_in_trigger_statuses():
