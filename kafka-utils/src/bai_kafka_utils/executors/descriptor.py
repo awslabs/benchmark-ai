@@ -226,7 +226,7 @@ class Descriptor:
             config=dacite.Config(
                 type_hooks={
                     # Convert HttpProbeScheme from str to HttpProbeScheme
-                    HttpProbeScheme: HttpProbeScheme
+                    HttpProbeScheme: lambda scheme_str: HttpProbeScheme(scheme_str.lower())
                 }
             ),
         )
