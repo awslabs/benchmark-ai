@@ -88,7 +88,7 @@ class BaiKubernetesObjectBuilder(metaclass=abc.ABCMeta):
     @staticmethod
     def get_server_metrics_from_descriptor(descriptor: Descriptor):
         metrics = []
-        if descriptor.is_client_server and descriptor.server.output:
+        if descriptor.is_inference_strategy and descriptor.server.output:
             for metric in descriptor.server.output.metrics:
                 metric.pattern = base64.b64encode(metric.pattern.encode("utf-8")).decode("utf-8")
                 metrics.append(asdict(metric))
@@ -194,13 +194,13 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         if self.config.suppress_job_affinity:
             self.root.remove_affinity()
 
-        if self.descriptor.is_client_server:
+        if self.descriptor.is_inference_strategy:
             # Use inference server service account
             self.root.set_service_account(INFERENCE_SERVER_SERVICE_ACCOUNT)
             # add server environment variables
             self.add_server_env_vars()
 
-        # remove server lock init container from non-client_server strategy
+        # remove server lock init container from non-inference strategy
         # single node benchmarks
         elif self.descriptor.strategy == DistributedStrategy.SINGLE_NODE:
             self.root.remove_container(INFERENCE_SERVER_LOCK_CONTAINER)
@@ -225,7 +225,7 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         return random_object.choice(list(environment_info.availability_zones.values()))
 
     def add_server_env_vars(self):
-        if not self.descriptor.is_client_server:
+        if not self.descriptor.is_inference_strategy:
             return
 
         # TODO: Maybe the k8s namespace should be a parameter to the configuration
@@ -240,7 +240,7 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         self.root.add_env_vars(BENCHMARK_CONTAINER, env_vars)
 
     def add_benchmark_cmd(self):
-        if self.descriptor.strategy in [DistributedStrategy.SINGLE_NODE, DistributedStrategy.CLIENT_SERVER]:
+        if self.descriptor.strategy in [DistributedStrategy.SINGLE_NODE, DistributedStrategy.INFERENCE]:
             self.add_benchmark_cmd_to_container()
         elif self.descriptor.strategy == DistributedStrategy.HOROVOD:
             self.add_benchmark_cmd_to_config_map()
@@ -512,7 +512,7 @@ def create_single_run_benchmark_bai_k8s_builder(
         DistributedStrategy.SINGLE_NODE: "job_single_node.yaml",
         DistributedStrategy.HOROVOD: "mpi_job_horovod.yaml",
         # Benchmark job component of client-server strategy
-        DistributedStrategy.CLIENT_SERVER: "job_single_node.yaml",
+        DistributedStrategy.INFERENCE: "job_single_node.yaml",
     }
 
     template_name = template_files.get(descriptor.strategy)
@@ -623,7 +623,7 @@ def create_job_yaml_spec(
         extra_bai_config_args=extra_bai_config_args,
     )
 
-    if descriptor.strategy != DistributedStrategy.CLIENT_SERVER:
+    if descriptor.strategy != DistributedStrategy.INFERENCE:
         return bai_k8s_benchmark_job_builder.dump_yaml_string()
 
     bai_k8s_inference_server_job_builder = create_inference_server_bai_k8s_builder(

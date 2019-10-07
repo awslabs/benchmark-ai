@@ -3,4 +3,4 @@ transpiler_puller_docker_image: stsukrov/s3dataprovider
 transpiler_job_status_trigger_docker_image: benchmarkai/job-status-trigger:3115770
 
 # descriptor config
-transpiler_valid_strategies: single_node,horovod,client_server
+transpiler_valid_strategies: single_node,horovod,inference

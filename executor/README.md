@@ -101,7 +101,7 @@ pattern = "accuracy=([-+]?\\d*\\.\\d+|\\d+)"
 ### Inference
 
 Inference benchmarks use a client-server architecture, where the client sends requests to the host, which contains the ML model.
-To describe such a job, specify `strategy = "client_server"` and add a section describing the server:
+To describe such a job, specify `strategy = "inference"` and add a section describing the server:
 
 ```toml
 # BenchmarkAI meta
@@ -125,7 +125,7 @@ other-label = "other-value"
 # 1. Hardware
 [hardware]
 instance_type = "t3.medium"
-strategy = "client_server"
+strategy = "inference"
 
 # 2. Environment
 [env]
@@ -216,7 +216,7 @@ VAR2 = "value2"
 | info                   | scheduling         | Job scheduling: whether to run it a single time or periodically and when    | [Cron expression](https://kubernetes.io/docs/tasks/job/automated-tasks-with-cron-jobs/#schedule) to schedule a job, 'single_run' to run it right away (default)| Optional |
 | info                   | labels             | Custom labels to be applied to the pod running the benchmark. They are exported as labels for the metrics produced by the job    | Key=value pairs (must comply with [Kubernetes label syntax](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set) . | Optional |
 | hardware               | instance_type      | Type of EC2 instance where the job is to run                                                                                                         | EC2 instance [API name](https://ec2instances.info)          | Required          |
-| hardware               | strategy           | Whether to run on single node or distributed. In the latter case, a distributed strategy, such as horovod or mxnet_parameter_server, must be specified | One of ['single_node', 'horovod', 'client_server', 'mxnet_parameter_server'] | Required          |
+| hardware               | strategy           | Whether to run on single node or distributed. In the latter case, a distributed strategy, such as horovod or mxnet_parameter_server, must be specified | One of ['single_node', 'horovod', 'inference', 'mxnet_parameter_server'] | Required          |
 | hardware > distributed | num_instances      | Number of nodes to use for distributed training                                                                                                      | Int                                                         | Optional          |
 | env                    | docker_image       | Docker image which runs the benchmark (it must contain the benchmark code)                                                                           | Docker image as user/repo:tag                               | Required          |
 | env                    | privileged         | Whether to run the container in privileged mode                                                                                                      | boolean (default: false)                                    | Optional          |
@@ -227,7 +227,7 @@ VAR2 = "value2"
 | data                   | sources            | List with all required data sources (see below for the fields required for each source)                                                              | List of data.sources                                        | Optional          |
 | data > sources         | uri                | Uri of the dataset to be downloaded. We plan to support 's3', 'http', 'https', 'ftp' and 'ftps'                                                      | Uri, such as 's3://bucket/imagenet/'                        | Optional          |
 | data > sources         | path               | Destination path where this data will be mounted in the container FS                                                                                 | String                                                      | Optional          |                                                                                                                    |
-| server                 |                    | Defines an inference server - only relevant for the *client_server* strategy.                                                                        |                                                       | Required for *client-server* strategy       |                                                                                                                                                      |
+| server                 |                    | Defines an inference server - only relevant for the *inference* strategy.                                                                            |                                                             | Required for *client-server* strategy       |                                                                                                                                                      |
 | server                 | hardware           | Hardware definition for inference server                                                                                                             |                                                                                                                           | Required               |                                                                                                                                                                           |
 | server.hardware        | instance_type      | Inference server EC2 instance type                                                                                                                   |                                                       String                                                      | Required               |                                                                                                               |
 | server                 | env                | Inference server environment definition                                                                                                              |                                                       | Required               |                                                                                                                                                                           |
@@ -249,7 +249,7 @@ Notes on the sections:
 * **Ml**: Users can specify the command to run on their docker image (benchmark_code) or the args to be passed to the container's entrypoint. If both are specified, the args are concatenated with the command.
 * **Data**: This section must specify the ID of the dataset used, along with a list of the data sources to be downloaded.
 For any required data source, users can provide a download URI and a destination path where the resulting data will be mounted in the container filesystem for the benchmark script to use it.
-* **Server**: This section must specify the inference server hardware and environment. It is only relevant to the *client_server* strategy.
+* **Server**: This section must specify the inference server hardware and environment. It is only relevant to the *inference* strategy.
 * (Upcoming) **Output**: Section for users to declare the metrics they will be tracking with this benchmark, along with the alarming information: thresholds (can be dynamic, such as 2-sigma) and who should be notified when they are triggered.
 
 
