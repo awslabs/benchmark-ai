@@ -78,10 +78,6 @@ privileged = false
 extended_shm = true
 # array ports that are exposed by the server
 ports = [8080, 8081]
-# [Opt] Server iveliness probe url
-liveliness_probe = "http://localhost:8080/iamhere"
-# [Opt] Server readiness probe url
-readiness_probe = "http://localhost:8081/iamok"
 # Server start command
 start_command = "/opt/bin/server"
 # [Opt] Arguments to pass to server start command
