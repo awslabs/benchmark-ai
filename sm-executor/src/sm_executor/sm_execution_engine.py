@@ -118,14 +118,25 @@ class SageMakerExecutionEngine(ExecutionEngine):
         logger.info(f"Attempting to stop training job {action_id}")
         job_name = SageMakerExecutionEngine._get_job_name(action_id)
         try:
-            self.sagemaker_client.stop_training_job(TrainingJobName=job_name)
-
+            # TODO Remove the status check before issuing the stop training job
+            # This is a stopgap solution
+            # For some reason the SageMaker client is hanging when calling stop_training_job
+            # against an existing, but not running, training job. This blocks the sm-executor from
+            # servicing more events. Furthermore, it blocks it from committing the event. Meaning that it
+            # will always be at the top of the queue - so, restarting the sm-executor has no effect.
+            # This check ensures that, under most circumstances, this won't happen.
+            # It's a hack, and it should be removed once we can figure out this SageMaker client issue.
+            # Normally, the stop_training_job call should just raise a client exception.
+            # GitHub issue: https://github.com/MXNetEdge/benchmark-ai/issues/928
+            training_job = self.sagemaker_client.describe_training_job(TrainingJobName=job_name)
+            if training_job["TrainingJobStatus"] == "InProgress":
+                self.sagemaker_client.stop_training_job(TrainingJobName=job_name)
+            else:
+                logging.info(f"""Skipping delete. Job status is {training_job["TrainingJobStatus"]}""")
         except botocore.exceptions.ClientError as err:
             logging.exception(f"Could not stop training job {action_id}", err)
             if self._is_not_found_error(err):
                 logging.info(f"Training job {action_id} not found")
                 raise NoResourcesFoundException(action_id) from err
             raise ExecutionEngineException(str(err)) from err
-        except Exception as err:
-            logging.exception("Unexpected exception", err)
         logging.info(f"Successfully issued stop training command for {action_id}")

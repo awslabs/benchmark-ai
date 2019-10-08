@@ -4,6 +4,7 @@ from unittest.mock import create_autospec, PropertyMock
 import addict
 import boto3
 import botocore
+import datetime
 import pytest
 from bai_kafka_utils.events import (
     FetcherBenchmarkEvent,
@@ -84,6 +85,20 @@ def mock_session_factory(mock_session):
 
 
 MOCKED_REGION = "us-east-1"
+
+
+def sm_job_description(status: str = "InProgress"):
+    return {
+        "TrainingJobName": "name",
+        "TrainingJobArn": "arn",
+        "ModelArtifacts": {"S3ModelArtifacts": "s3stuff"},
+        "SecondaryStatus": "secondary",
+        "AlgorithmSpecification": {"TrainingInputMode": "mode"},
+        "ResourceConfig": {"InstanceType": "", "InstanceCount": 1, "VolumeSizeInGB": 30},
+        "StoppingCondition": {},
+        "CreationTime": datetime.datetime.now(),
+        "TrainingJobStatus": status,
+    }
 
 
 @fixture
@@ -224,6 +239,7 @@ def test_run_fail_from_sagemaker(
 
 def test_cancel_raises_not_found(sm_execution_engine_to_test: SageMakerExecutionEngine):
     stub = Stubber(sm_execution_engine_to_test.sagemaker_client)
+    stub.add_response(method="describe_training_job", service_response=sm_job_description(status="InProgress"))
     stub.add_client_error(
         "stop_training_job",
         service_error_code="ValidationException",
@@ -236,8 +252,27 @@ def test_cancel_raises_not_found(sm_execution_engine_to_test: SageMakerExecution
         sm_execution_engine_to_test.cancel(CLIENT_ID, ACTION_ID)
 
 
+def test_cancel_not_called_on_non_in_progress_status(sm_execution_engine_to_test: SageMakerExecutionEngine):
+    stub = Stubber(sm_execution_engine_to_test.sagemaker_client)
+    stub.add_response(method="describe_training_job", service_response=sm_job_description(status="Failed"))
+    stub.add_client_error(
+        "stop_training_job",
+        service_error_code="ValidationException",
+        service_message="The job status is Failed",
+        expected_params={"TrainingJobName": ACTION_ID},
+    )
+    stub.activate()
+
+    try:
+        sm_execution_engine_to_test.cancel(CLIENT_ID, ACTION_ID)
+    except Exception as err:
+        pytest.fail("stop training got called")
+        raise err
+
+
 def test_cancel_raises(sm_execution_engine_to_test: SageMakerExecutionEngine):
     stub = Stubber(sm_execution_engine_to_test.sagemaker_client)
+    stub.add_response(method="describe_training_job", service_response=sm_job_description(status="InProgress"))
     stub.add_client_error(
         "stop_training_job",
         service_error_code="SomeRandomError",
