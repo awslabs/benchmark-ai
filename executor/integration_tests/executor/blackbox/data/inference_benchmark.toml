@@ -1,0 +1,27 @@
+spec_version = "0.1.0"
+
+[info]
+task_name = "Inference benchmark test"
+description = "Minimal inference benchmark test"
+
+[hardware]
+instance_type = "local"
+strategy = "inference"
+
+[env]
+docker_image = "pstauffer/curl"
+
+[ml]
+benchmark_code = "sh -c 'curl http://${INFERENCE_SERVER_HOST}:${INFERENCE_SERVER_PORT}'"
+
+[server]
+[server.hardware]
+instance_type = "local"
+
+[server.env]
+docker_image = "nginx"
+start_command = "nginx -g 'daemon off;'"
+ports = [80]
+
+[server.env.readiness_probe]
+path = "/"

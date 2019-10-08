@@ -41,6 +41,7 @@ phases:
             (cd ../metrics-pusher && make publish COMMIT_SHORT_HASH="local-latest")
             (cd ../metrics-extractor && make publish COMMIT_SHORT_HASH="local-latest")
             (cd ../puller && make publish COMMIT_SHORT_HASH="local-latest")
+            (cd ../job-status-trigger && make publish COMMIT_SHORT_HASH="local-latest")
 
             make publish COMMIT_SHORT_HASH="local-latest"
             make deploy COMMIT_SHORT_HASH="local-latest"
