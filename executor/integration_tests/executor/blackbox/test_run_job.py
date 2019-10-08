@@ -90,7 +90,7 @@ def test_inference_exec(
     kafka_service_config: KafkaServiceConfig,
     k8s_test_client: KubernetesTestUtilsClient,
 ):
-    _test_schedule_and_wait(
+    _inference_benchmark_schedule_wait(
         fetcher_inference_benchmark_event,
         kafka_producer_to_consume,
         kafka_prepolled_consumer_of_produced,
@@ -137,5 +137,33 @@ def _test_schedule_and_wait(
     )
     wait_for_response(combined_filter, kafka_prepolled_consumer_of_produced)
     k8s_test_client.wait_for_pod_succeeded(
+        POD_NAMESPACE, fetcher_benchmark_event.client_id, fetcher_benchmark_event.action_id
+    )
+
+
+def _inference_benchmark_schedule_wait(
+    fetcher_benchmark_event: FetcherBenchmarkEvent,
+    kafka_producer_to_consume: KafkaProducer,
+    kafka_prepolled_consumer_of_produced: KafkaConsumer,
+    kafka_service_config: KafkaServiceConfig,
+    k8s_test_client: KubernetesTestUtilsClient,
+):
+    kafka_producer_to_consume.send(
+        kafka_service_config.consumer_topic, value=fetcher_benchmark_event, key=fetcher_benchmark_event.client_id
+    )
+    k8s_test_client.wait_for_inference_jobs_exists(
+        POD_NAMESPACE, fetcher_benchmark_event.client_id, fetcher_benchmark_event.action_id
+    )
+    k8s_test_client.wait_for_service_exists(
+        POD_NAMESPACE, fetcher_benchmark_event.client_id, fetcher_benchmark_event.action_id
+    )
+    combined_filter = CombinedFilter(
+        [
+            get_is_exec_filter(fetcher_benchmark_event, kafka_service_config),
+            get_is_status_filter(fetcher_benchmark_event, Status.SUCCEEDED, kafka_service_config),
+        ]
+    )
+    wait_for_response(combined_filter, kafka_prepolled_consumer_of_produced)
+    k8s_test_client.wait_for_inference_benchmark_client_succeeded(
         POD_NAMESPACE, fetcher_benchmark_event.client_id, fetcher_benchmark_event.action_id
     )
