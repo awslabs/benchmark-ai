@@ -89,6 +89,8 @@ class KubernetesTestUtilsClient:
         client_pod = list(filter(lambda pod: pod.metadata.name.startswith(f"b-{action_id}".lower()), pods.items))
         if len(client_pod) == 0:
             raise ValueError("Inference benchmark client pod not found")
+        logger.info(f"Found {len(client_pod)} client pods")
+        logger.info(f"Status {client_pod[0]}")
         return client_pod[0].status.phase == "Succeeded"
 
     def is_volume_claim_present(self, namespace: str, client_id: str, action_id: str):
