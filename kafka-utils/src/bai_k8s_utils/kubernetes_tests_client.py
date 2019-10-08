@@ -34,7 +34,7 @@ class KubernetesTestUtilsClient:
         self.beta_api_instance = kubernetes.client.BatchV1beta1Api(api_client)
         self.service = service
 
-    DEFAULT_TIMEOUT_SECONDS = 60
+    DEFAULT_TIMEOUT_SECONDS = 300
 
     def is_pod_present(self, namespace: str, client_id: str, action_id: str):
         pods = self._get_pods(namespace, client_id, action_id)
@@ -90,7 +90,7 @@ class KubernetesTestUtilsClient:
         if len(client_pod) == 0:
             raise ValueError("Inference benchmark client pod not found")
         logger.info(f"Found {len(client_pod)} client pods")
-        logger.info(f"Status {client_pod[0]}")
+        logger.info(f"Status {client_pod[0].status.phase}")
         return client_pod[0].status.phase == "Succeeded"
 
     def is_volume_claim_present(self, namespace: str, client_id: str, action_id: str):
