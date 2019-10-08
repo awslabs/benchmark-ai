@@ -83,6 +83,22 @@ def test_exec(
     )
 
 
+def test_inference_exec(
+    fetcher_inference_benchmark_event: FetcherBenchmarkEvent,
+    kafka_producer_to_consume: KafkaProducer,
+    kafka_prepolled_consumer_of_produced: KafkaConsumer,
+    kafka_service_config: KafkaServiceConfig,
+    k8s_test_client: KubernetesTestUtilsClient,
+):
+    _test_schedule_and_wait(
+        fetcher_inference_benchmark_event,
+        kafka_producer_to_consume,
+        kafka_prepolled_consumer_of_produced,
+        kafka_service_config,
+        k8s_test_client,
+    )
+
+
 def test_exec_with_scripts(
     fetcher_benchmark_event_with_scripts: FetcherBenchmarkEvent,
     kafka_producer_to_consume: KafkaProducer,
