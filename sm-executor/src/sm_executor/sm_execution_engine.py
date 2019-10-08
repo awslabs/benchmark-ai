@@ -121,9 +121,11 @@ class SageMakerExecutionEngine(ExecutionEngine):
             self.sagemaker_client.stop_training_job(TrainingJobName=job_name)
 
         except botocore.exceptions.ClientError as err:
+            logging.exception(f"Could not stop training job {action_id}", err)
             if self._is_not_found_error(err):
                 logging.info(f"Training job {action_id} not found")
                 raise NoResourcesFoundException(action_id) from err
-            logging.exception(f"Could not stop training job {action_id}", err)
             raise ExecutionEngineException(str(err)) from err
+        except Exception as err:
+            logging.exception("Unexpected exception", err)
         logging.info(f"Successfully issued stop training command for {action_id}")
