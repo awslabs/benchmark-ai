@@ -5,7 +5,7 @@ task_name = "Inference benchmark test"
 description = "Minimal inference benchmark test"
 
 [hardware]
-instance_type = "t3.small"
+instance_type = "local"
 strategy = "inference"
 
 [env]
@@ -16,7 +16,7 @@ benchmark_code = "sh -c 'curl http://${INFERENCE_SERVER_HOST}:${INFERENCE_SERVER
 
 [server]
 [server.hardware]
-instance_type = "t3.small"
+instance_type = "local"
 
 [server.env]
 docker_image = "nginx"
