@@ -48,7 +48,7 @@ The `bai-bff` is the only user-facing, service-side, service through which all i
 * Kubernetes
   * `kubctrl`
   * Minikube
-  
+
 * unzip
 
 ---
@@ -170,7 +170,7 @@ Given that you have a Kubernetes cluster at your disposal, you may deploy via...
 ```bash
 %> make deploy
 ```
-(Note: you will have to have kubctl configured to communicate with your cluster)
+(Note: you will have to have kubectl configured to communicate with your cluster)
 
 
 ---
