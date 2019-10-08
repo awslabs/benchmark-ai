@@ -477,6 +477,12 @@ class InferenceServerJobKubernetedObjectBuilder(SingleRunBenchmarkKubernetesObje
         self.root.add_env_vars(INFERENCE_SERVER_CONTAINER, self.descriptor.server.env.vars)
         self.root.add_tcp_ports_to_service(self.inference_server_job_id, self.descriptor.server.env.ports)
         self.root.add_container_ports_to_container(INFERENCE_SERVER_CONTAINER, self.descriptor.server.env.ports)
+        if self.descriptor.server.env.readiness_probe:
+            self.root.add_readiness_probe(
+                container_name=INFERENCE_SERVER_CONTAINER,
+                probe=self.descriptor.server.env.readiness_probe,
+                default_port=self.descriptor.server.env.ports[0],
+            )
         if self.event.parent_action_id:
             self.root.add_label("parent-action-id", self.event.parent_action_id)
         if not self.descriptor.server.output:
@@ -543,7 +549,7 @@ def create_single_run_benchmark_bai_k8s_builder(
     template_files = {
         DistributedStrategy.SINGLE_NODE: "job_single_node.yaml",
         DistributedStrategy.HOROVOD: "mpi_job_horovod.yaml",
-        # Benchmark job component of client-server strategy
+        # Benchmark job component of inference strategy
         DistributedStrategy.INFERENCE: "job_single_node.yaml",
     }
 
