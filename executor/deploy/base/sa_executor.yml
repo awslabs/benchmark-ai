@@ -19,6 +19,21 @@ roleRef:
   name: job-creator
   apiGroup: rbac.authorization.k8s.io
 ---
+# Required for creating scheduled, inference, and single node benchmarks
+# as these are expressed as Kubernetes Job Resources
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: executor-service-creator-binding
+subjects:
+- kind: ServiceAccount
+  name: executor
+  namespace: default
+roleRef:
+  kind: Role
+  name: service-creator
+  apiGroup: rbac.authorization.k8s.io
+---
 # Required to crate Kubernetes ConfigMaps for the MPI jobs
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
