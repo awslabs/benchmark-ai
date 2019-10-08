@@ -1,12 +1,12 @@
 import logging
+from functools import wraps
+from time import sleep
+from typing import Callable
 
 import kubernetes
-from functools import wraps
 from kubernetes.client import V1Pod, V1PodStatus
-from kubernetes.client import V1PodList, V1PersistentVolumeClaimList, V1beta1CronJobList
-from time import sleep
+from kubernetes.client import V1PodList, V1PersistentVolumeClaimList, V1beta1CronJobList, V1JobList, V1ServiceList
 from timeout_decorator import timeout
-from typing import Callable
 
 from bai_k8s_utils.service_labels import ServiceLabels
 
@@ -70,6 +70,27 @@ class KubernetesTestUtilsClient:
         )
         return bool(cron_jobs.items)
 
+    def is_inference_jobs_present(self, namespace: str, client_id: str, action_id: str):
+        label_selector = ServiceLabels.get_label_selector(self.service, client_id, action_id)
+        logger.info(f"job selector request:{label_selector}")
+        job_list: V1JobList = self.batch_api_instance.list_namespaced_job(namespace, label_selector=label_selector)
+        return len(job_list.items) == 2
+
+    def if_service_present(self, namespace: str, client_id: str, action_id: str):
+        label_selector = ServiceLabels.get_label_selector(self.service, client_id, action_id)
+        logger.info(f"service selector request:{label_selector}")
+        services: V1ServiceList = self.core_api_instance.list_namespaced_service(
+            namespace, label_selector=label_selector
+        )
+        return bool(services.items)
+
+    def is_inference_benchmark_client_succeeded(self, namespace: str, client_id: str, action_id: str):
+        pods = self._get_pods(namespace, client_id, action_id)
+        client_pod = list(filter(lambda pod: pod.metadata.name.startswith(f"b-{action_id}".lower()), pods.items))
+        if len(client_pod) == 0:
+            raise ValueError("Inference benchmark client pod not found")
+        return client_pod[0].status.phase == "Succeeded"
+
     def is_volume_claim_present(self, namespace: str, client_id: str, action_id: str):
         label_selector = ServiceLabels.get_label_selector(self.service, client_id, action_id)
         logger.info(f"volume claim selector request:{label_selector}")
@@ -94,6 +115,12 @@ class KubernetesTestUtilsClient:
                 sleep(1)
 
         fn()
+
+    def wait_for_service_exists(self, namespace: str, client_id: str, action_id: str):
+        self._wait_loop(negate(self.if_service_present), "service doesn't exist yet", namespace, client_id, action_id)
+
+    def wait_for_service_not_exists(self, namespace: str, client_id: str, action_id: str):
+        self._wait_loop(self.if_service_present, "service still exists", namespace, client_id, action_id)
 
     def wait_for_volume_claim_exists(self, namespace: str, client_id: str, action_id: str):
         self._wait_loop(
@@ -123,3 +150,21 @@ class KubernetesTestUtilsClient:
 
     def wait_for_cron_job_not_exists(self, namespace: str, client_id: str, action_id: str):
         self._wait_loop(self.is_cron_job_present, "cron job still exists", namespace, client_id, action_id)
+
+    def wait_for_inference_jobs_exists(self, namespace: str, client_id: str, action_id: str):
+        self._wait_loop(
+            negate(self.is_inference_jobs_present),
+            "inference benchmark jobs dont't exist yet",
+            namespace,
+            client_id,
+            action_id,
+        )
+
+    def wait_for_inference_benchmark_client_succeeded(self, namespace: str, client_id: str, action_id: str):
+        self._wait_loop(
+            negate(self.is_inference_benchmark_client_succeeded),
+            "inference benchmark client has not succeeded yet",
+            namespace,
+            client_id,
+            action_id,
+        )
