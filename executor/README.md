@@ -62,8 +62,6 @@ args = "--model=resnet50_v2 --batch-size=32"
 
 # [Opt] 4. Dataset 
 [data]
-# Dataset ID
-id = "imagenet"
 
 # [Opt] Data sources
 # List all required data sources below. 
@@ -73,6 +71,8 @@ id = "imagenet"
 uri = "s3://bucket/imagenet/train"
 # Path where the dataset is stored in the container FS
 path = "/data/tf-imagenet/train"
+# Md5 can be ommitted, but it is required for dataset caching to work
+md5 = "5df9f63916ebf8528697b629022993e8"
 
 # Second data source
 [[data.sources]]
@@ -208,25 +208,24 @@ VAR2 = "value2"
 
 ## Fields
 
-| Section                    | Field                  | Description                                                                                                                                            | Values                                                      | Required/Optional |
-|----------------------------|------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------|-------------------|
-| -                          | spec_version           | Version of the descriptor specification                                                                                                                | Semantically versioned                                      | Required          |
-| info                       | task_name              | Name of the benchmark job                                                                                                                              | String                                                      | Required          |
-| info                       | description            | Description (informative field)                                                                                                                        | String                                                      | Required          |
-| info                       | scheduling             | Job scheduling: whether to run it a single time or periodically and when                                                                               | [Cron expression](https://kubernetes.io/docs/tasks/job/automated-tasks-with-cron-jobs/#schedule) to schedule a job, 'single_run' to run it right away (default)| Optional |
-| info                       | labels                 | Custom labels to be applied to the pod running the benchmark. They are exported as labels for the metrics produced by the job                          | Key=value pairs (must comply with [Kubernetes label syntax](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set) . | Optional |
-| hardware                   | instance_type          | Type of EC2 instance where the job is to run                                                                                                           | EC2 instance [API name](https://ec2instances.info)          | Required          |
-| hardware                   | strategy               | Whether to run on single node or distributed. In the latter case, a distributed strategy, such as horovod or mxnet_parameter_server, must be specified | One of ['single_node', 'horovod', 'inference', 'mxnet_parameter_server'] | Required |
-| hardware > distributed     | num_instances          | Number of nodes to use for distributed training                                                                                                        | Integer                                                   | Optional          |
-| env                        | docker_image           | Docker image which runs the benchmark (it must contain the benchmark code)                                                                             | Docker image as user/repo:tag                               | Required          |
-| env                        | privileged             | Whether to run the container in privileged mode                                                                                                        | Boolean (default: false)                                    | Optional          |
-| env                        | extended_shm           | Whether more than 64MB shared memory is needed for containers                                                                                          | Boolean (default: true)                                     | Optional          |
-| ml                         | benchmark_code         | Command to run the benchmark code                                                                                                                      | String                                                      | Optional          |
-| ml                         | args                   | Additional arguments for the benchmark scripts                                                                                                         | String                                                      | Optional          |
-| data                       | id                     | Dataset name                                                                                                                                           | String ('imagenet', 'cifar10', etc.)                        | Required          |
-| data                       | sources                | List with all required data sources (see below for the fields required for each source)                                                                | List of data.sources                                        | Optional          |
-| data > sources             | uri                    | Uri of the dataset to be downloaded. We plan to support 's3', 'http', 'https', 'ftp' and 'ftps'                                                        | Uri, such as 's3://bucket/imagenet/'                        | Optional          |
-| data > sources             | path                   | Destination path where this data will be mounted in the container FS                                                                                   | String                                                      | Optional          |
+| Section                | Field            | Description                                                                                                                                            | Values                                                      | Required/Optional |
+|------------------------|----------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------|-------------------|
+| -                      | spec_version       | Version of the descriptor specification                                                                                                              | Semantically versioned                                      | Required          |
+| info                   | task_name          | Name of the benchmark job                                                                                                                            | String                                                      | Required          |
+| info                   | description        | Description (informative field)                                                                                                                      | String                                                      | Required          |
+| info                   | scheduling         | Job scheduling: whether to run it a single time or periodically and when    | [Cron expression](https://kubernetes.io/docs/tasks/job/automated-tasks-with-cron-jobs/#schedule) to schedule a job, 'single_run' to run it right away (default)| Optional |
+| hardware               | instance_type      | Type of EC2 instance where the job is to run                                                                                                         | EC2 instance [API name](https://ec2instances.info)          | Required          |
+| hardware               | strategy           | Whether to run on single node or distributed. In the latter case, a distributed strategy, such as horovod or mxnet_parameter_server, must be specified | One of ['single_node', 'horovod', 'client_server', 'mxnet_parameter_server'] | Required          |
+| hardware.distributed   | num_instances      | Number of nodes to use for distributed training                                                                                                      | Int                                                         | Optional          |
+| env                    | docker_image       | Docker image which runs the benchmark (it must contain the benchmark code)                                                                           | Docker image as user/repo:tag                               | Required          |
+| env                    | privileged         | Whether to run the container in privileged mode                                                                                                      | boolean (default: false)                                    | Optional          |
+| env                    | extended_shm       | Whether more than 64MB shared memory is needed for containers                                                                                        | boolean (default: true)                                     | Optional          |
+| ml                     | benchmark_code     | Command to run the benchmark code                                                                                                                    | String                                                      | Optional          |
+| ml                     | args               | Additional arguments for the benchmark scripts                                                                                                       | String                                                      | Optional          |
+| data                   | sources            | List with all required data sources (see below for the fields required for each source)                                                              | List of data.sources                                        | Optional          |
+| data.sources           | uri                | Uri of the dataset to be downloaded. We plan to support 's3', 'http', 'https', 'ftp' and 'ftps'                                                      | Uri, such as 's3://bucket/imagenet/'                        | Optional          |
+| data.sources           | path               | Destination path where this data will be mounted in the container FS                                                                                 | String                                                      | Optional          |                                                                                                                    |
+| data.sources           | md5                | md5 checksum of the file specified above. It is required for the system to be able to cache datasets                                                 | String                                                      | Optional          |                                                                                                                    |
 | server                     |                        | Defines an inference server - only relevant for the *inference* strategy.                                                                              |                                                             | Required for *client-server* strategy
 | server                     | hardware               | Hardware definition for inference server                                                                                                               |                                                             | Required           |
 | server.hardware            | instance_type          | Inference server EC2 instance type                                                                                                                     | String                                                      | Required           |
@@ -254,7 +253,7 @@ Notes on the sections:
 * **Hardware**: Users must specify a strategy to run their benchmark, be it single_node or one of the distributed alternatives, such as horovod.
 * **Env**: Environment is defined by passing the identifier (user/repo:tag) of the docker image containing the benchmark code.
 * **Ml**: Users can specify the command to run on their docker image (benchmark_code) or the args to be passed to the container's entrypoint. If both are specified, the args are concatenated with the command.
-* **Data**: This section must specify the ID of the dataset used, along with a list of the data sources to be downloaded.
+* **Data**: This section must specify a list of the data sources to be downloaded.
 For any required data source, users can provide a download URI and a destination path where the resulting data will be mounted in the container filesystem for the benchmark script to use it.
 * **Server**: This section must specify the inference server hardware and environment. It is only relevant to the *inference* strategy.
 * (Upcoming) **Output**: Section for users to declare the metrics they will be tracking with this benchmark, along with the alarming information: thresholds (can be dynamic, such as 2-sigma) and who should be notified when they are triggered.
