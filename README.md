@@ -93,7 +93,7 @@ cd benchmark-ai
 
 
 ## Step 1 - Create the infrastructure
-(If you are only interested in using an existing Anubis service instance skip this section and jump to [Step 2](#foo))
+(If you are only interested in using an existing Anubis service instance skip this section and jump to [Step 2](#step-2---register-the-client))
 
 
 #### Overview...
@@ -178,7 +178,6 @@ The directory `baictl/drivers/aws/cluster/.terraform/bai` is created with everyt
 </p>
 </details>
 
-----
 
 ## Step 2 - Register The Client
 
