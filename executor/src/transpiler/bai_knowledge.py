@@ -492,6 +492,9 @@ class InferenceServerJobKubernetedObjectBuilder(SingleRunBenchmarkKubernetesObje
             for label, value in self.descriptor.custom_labels.items():
                 self.add_metrics_pusher_backend_arg(label, value)
 
+        if self.config.suppress_job_affinity:
+            self.root.remove_affinity()
+
     def add_shared_memory(self):
         if self.descriptor.server.env.extended_shm:
             self._add_extended_shm(container=INFERENCE_SERVER_CONTAINER)
