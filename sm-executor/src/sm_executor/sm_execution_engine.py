@@ -51,9 +51,11 @@ class SageMakerExecutionEngine(ExecutionEngine):
         return action_id
 
     def run(self, event: FetcherBenchmarkEvent) -> BenchmarkJob:
+        logger.info(f"Processing SageMaker benchmark {event.action_id}")
         try:
             descriptor = Descriptor(event.payload.toml.contents, CONFIG)
         except DescriptorError as e:
+            logger.exception(f"Could not parse descriptor", e)
             raise ExecutionEngineException("Cannot process the request") from e
 
         with tempfile.TemporaryDirectory(prefix=self.config.tmp_sources_dir) as tmpdirname:
@@ -64,6 +66,7 @@ class SageMakerExecutionEngine(ExecutionEngine):
             try:
                 estimator = self.estimator_factory(session, descriptor, tmpdirname, self.config)
             except Exception as e:
+                logger.exception(f"Could not create estimator", e)
                 raise ExecutionEngineException("Cannot create estimator") from e
 
             # Estimate the total size
@@ -74,12 +77,17 @@ class SageMakerExecutionEngine(ExecutionEngine):
 
             try:
                 job_name = SageMakerExecutionEngine._get_job_name(event.action_id)
+                logger.info(f"Attempting to start training job {job_name}")
                 estimator.fit(data, wait=False, logs=False, job_name=job_name)
+
             except botocore.exceptions.ClientError as err:
                 error_message = SageMakerExecutionEngine._get_client_error_message(err, default="Unknown")
                 raise ExecutionEngineException(
                     f"Benchmark creation failed. SageMaker returned error: {error_message}"
                 ) from err
+            except Exception as err:
+                logger.exception("Caught unexpected exception", err)
+                raise err
             return BenchmarkJob(id=estimator.latest_training_job.name)
 
     def _get_estimator_data(self, event):
@@ -107,10 +115,15 @@ class SageMakerExecutionEngine(ExecutionEngine):
         return re.match(r"(\w*\s*)*not found(\s*\w*)*", error_message, re.IGNORECASE) is not None
 
     def cancel(self, client_id: str, action_id: str, cascade: bool = False):
+        logger.info(f"Attempting to stop training job {action_id}")
         job_name = SageMakerExecutionEngine._get_job_name(action_id)
         try:
             self.sagemaker_client.stop_training_job(TrainingJobName=job_name)
+
         except botocore.exceptions.ClientError as err:
             if self._is_not_found_error(err):
+                logging.info(f"Training job {action_id} not found")
                 raise NoResourcesFoundException(action_id) from err
+            logging.exception(f"Could not stop training job {action_id}", err)
             raise ExecutionEngineException(str(err)) from err
+        logging.info(f"Successfully issued stop training command for {action_id}")
