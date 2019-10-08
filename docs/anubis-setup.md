@@ -9,7 +9,7 @@ The Anubis service installation is directly linked to the user account used to i
 ## Let's get started
 
 
-First thing, download the Anubis client from here.
+First thing, get the code...
 
 * Clone this git repository
   (for convenience symlink `anubis-setup` in your $PATH somewhere and make sure it is executable)
@@ -22,7 +22,7 @@ Second thing: The prerequisites.
 
 * A Unix-like machine
 
-(This is an executable script so don't forget to chmod it appropriately.  We recommend putting this program in your $PATH)
+(This is an executable script so don't forget to make sure it is _chmod'ed_ it appropriately - it should already be.  We recommend putting this program in your $PATH)
 
 ```shell
 %> chmod 755 anubis-setup

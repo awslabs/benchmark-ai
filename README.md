@@ -93,6 +93,8 @@ cd benchmark-ai
 
 
 ## Step 1 - Create the infrastructure
+(If you are only interested in using an existing Anubis service instance skip this section and jump to [Step 2](#step-2---register-the-client))
+
 
 #### Overview...
 The installation process... consists of two phases - 1) configuring and deploying *infrastructure* services, and then 2) configuring and deploying *orchestration* services.
@@ -119,14 +121,14 @@ The installation process... consists of two phases - 1) configuring and deployin
 
 #### Via Code Pipeline (recommended)
 
-You will now create a Codebuild pipeline that deploys Anubis infrastructure and orchestration services in your AWS account using the default region us-east-1 (this can be changed from benchmark-ai/ci/variables.tf):
+You will now create a [Codebuild](https://aws.amazon.com/codebuild/) pipeline that deploys Anubis infrastructure and orchestration services in your AWS account using the default region us-east-1 (this can be changed from benchmark-ai/ci/variables.tf):
 
 ```bash
 # Assuming PWD is `benchmark-ai`
 ./anubis-setup -- --region us-east-1 --prefix-list-id pl-xxxxxxxx
 ```
 
-Type 'yes' when prompted and terraform will create the Codebuild pipeline and its dependencies.  When terraform finishes navigate to the AWS console -> Codebuild -> Pipeline -> Pipelines -> Anubis on the console to see the status of the installation
+Inspect the output line presented, if okay, type 'yes' when prompted and terraform will create the Codebuild pipeline and its dependencies.  When terraform finishes navigate to the AWS console -> Codebuild -> Pipeline -> Pipelines -> Anubis on the console to see the status of the installation.  The general run time of the pipeline is approximately 50 minutes.
 
 <details><summary>More about anubis-setup "driver" arguments</summary>
 <p>
@@ -145,7 +147,7 @@ Type 'yes' when prompted and terraform will create the Codebuild pipeline and it
 
 ##### Get the service endpoint for Anubis
 
-Once the Anubis pipeline has completed, at least the `deploy` stage, successfully you need to get the Anubis service endpoint.
+Once the Anubis pipeline has completed, at least the `deploy` stage, successfully you will be presented with the Anubis service endpoint and asked to _register_ to it.  You may subsequently ask the installation for its service endpoint by making an explicit request:
 
 ``` bash
 > anubis-setup --show-service-endpoint
@@ -156,11 +158,11 @@ Configured service endpoint is: [xxxxxxxxxxx-xxxx.us-east-1.elb.amazonaws.com:80
 _(give this to anubis client users so that they may [`--register`](#registration) the endpoint, more [later](#registration))_
 
 
-**OR**
+**OR...**
 
 #### Via the "no frills" instantiation
 
-This form also does a full instantiation of the Anubis service (infrastructure and orchestration services).  However, with this installation mechanism you will **not** get any of the CI/CD benefits provided by code pipeline.  This means that to apply any updates you would have to do so explicitly by re-issuing the command or by using the appropriate flags that give you control down to the service level ([see documentation for more details](docs/anubis-setup.md)).  The "no frills" option is more high touch, and as such offers a bit more control over what services get updated, when and how.
+This form also does a full instantiation of the Anubis service (infrastructure and orchestration services).  However, with this installation mechanism you will **not** get any of the CI/CD benefits provided by code pipeline.  This means that to apply any updates you would have to do so explicitly by re-issuing the command or by using the appropriate flags that give you control down to the service level ([see documentation for more details](docs/anubis-setup.md)).  The "no frills" option is more high touch, and as such offers a bit more control over what services get updated, when and how.  The installation process is run locally! This means, make sure you have stable network connectivity and sufficient power (for those using laptops).
 
 ``` bash
 # Assuming PWD is `benchmark-ai`
@@ -176,11 +178,23 @@ The directory `baictl/drivers/aws/cluster/.terraform/bai` is created with everyt
 </p>
 </details>
 
-----
 
-#### Registration:
+## Step 2 - Register The Client
 
-Once the instantiation of the anubis *infrastructure* is complete you may begin to use the [`anubis`](bff/docs/anubis-client.md) client to interact with the system.  However, you must first tell the [`anubis`](bff/docs/anubis-client.md) client which infrastructure it needs to point to. You do this by *registering* your infrastructure's *endpoint* with the client.  Use the **--register** flag supplying the network **address** and **port** of your Anubis instantiation.  This will be provided to you at the end of the infrastructure instantiation process that you just went through (above).
+Once the instantiation of the anubis *infrastructure* is complete you may begin to use the [`anubis`](bff/docs/anubis-client.md) client to interact with the system.
+
+#### Download the client:
+
+To use the Anubis client tool you do **not** need to clone the repository, you simply need to download the client.
+
+``` bash
+curl http://xxxxxxxxxxx-xxxx.us-east-1.elb.amazonaws.com:80/api/tools/anubis -o anubis
+```
+(It is recommended to put the anubis script somewhere in your $PATH)
+
+#### Register the client:
+
+Once you have downloaded the [`anubis`](bff/docs/anubis-client.md) client you must point it to the Anubis service you wish to interact with. You do this by *registering* your infrastructure's *service endpoint* with the client.  Use the **--register** flag supplying the network **address** and **port** of your Anubis instantiation.  This will be provided to you _out-of-band_ by the Anubis service administrator.  This is the value that was provided at the end of the installation process (above).
 
 ``` bash
 # Assuming PWD is `benchmark-ai`
@@ -214,8 +228,9 @@ Current service endpoint is: [xxxxxxxxxxx-xxxx.us-east-1.elb.amazonaws.com:80]
 ```
 This means you are good to go ;-) - Nice work.
 
+-----
 
-## Step 2 - Run benchmarks
+## Step 3 - Run benchmarks
 
 To run benchmarks and generally interact with Anubis, use the [Anubis client tool](bff/bin/anubis) ([starter doc here](bff/docs/anubis-client.md)).
 
