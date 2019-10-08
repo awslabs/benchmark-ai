@@ -189,7 +189,9 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         self.add_shared_memory()
         self.add_env_vars()
         self.add_benchmark_cmd()
-        self.remove_metrics_sidecars_if_necessary()
+
+        if not self.descriptor.metrics:
+            self.remove_metrics_sidecars()
 
         if self.event.parent_action_id:
             self.root.add_label("parent-action-id", self.event.parent_action_id)
@@ -256,10 +258,9 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         self._update_data_puller(data_mounts, data_sources)
         benchmark_container.volumeMounts.extend(self._get_container_volume_mounts(data_mounts))
 
-    def remove_metrics_sidecars_if_necessary(self):
-        if not self.descriptor.metrics and (not self.descriptor.server or not self.descriptor.server.output):
-            self.root.remove_container(METRICS_EXTRACTOR_CONTAINER)
-            self.root.remove_container(METRICS_PUSHER_CONTAINER)
+    def remove_metrics_sidecars(self):
+        self.root.remove_container(METRICS_EXTRACTOR_CONTAINER)
+        self.root.remove_container(METRICS_PUSHER_CONTAINER)
 
     def add_shared_memory(self):
         if self.descriptor.extended_shm:
@@ -461,7 +462,8 @@ class InferenceServerJobKubernetedObjectBuilder(SingleRunBenchmarkKubernetesObje
         self.root.add_container_ports_to_container(INFERENCE_SERVER_CONTAINER, self.descriptor.server.env.ports)
         if self.event.parent_action_id:
             self.root.add_label("parent-action-id", self.event.parent_action_id)
-        self.remove_metrics_sidecars_if_necessary()
+        if not self.descriptor.server.output:
+            self.remove_metrics_sidecars()
 
     def add_shared_memory(self):
         if self.descriptor.server.env.extended_shm:
