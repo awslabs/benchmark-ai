@@ -7,7 +7,6 @@ metadata:
     action-id: ACTION_ID
     client-id: CLIENT_ID
     created-by: executor
-    parent-action-id: parentactionid
 spec:
   template:
     metadata:
@@ -16,7 +15,6 @@ spec:
         action-id: ACTION_ID
         client-id: CLIENT_ID
         created-by: executor
-        parent-action-id: parentactionid
       annotations:
         iam.amazonaws.com/role: benchmark-host
     spec:
@@ -139,8 +137,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        - name: BACKEND_ARG_PARENT-ACTION-ID
-          value: parentactionid
         volumeMounts:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
@@ -156,7 +152,7 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: ANUBIS_METRICS
-          value: '[]'
+          value: '[{"name": "response_time", "units": "seconds", "pattern": "cmVzcG9uc2VfdGltZTooWy0rXT9cZCpcLlxkK3xcZCsp"}]'
         - name: BENCHMARK_AI
           value: fifo
         - name: BENCHMARK_AI_FIFO_FILEPATH
@@ -187,7 +183,6 @@ metadata:
     action-id: ACTION_ID
     client-id: CLIENT_ID
     created-by: executor
-    parent-action-id: parentactionid
 spec:
   selector:
     inference-server-name: is-benchmark-job-id
@@ -209,7 +204,6 @@ metadata:
     client-id: CLIENT_ID
     created-by: executor
     inference-server-name: is-benchmark-job-id
-    parent-action-id: parentactionid
 spec:
   template:
     metadata:
@@ -219,7 +213,6 @@ spec:
         client-id: CLIENT_ID
         created-by: executor
         inference-server-name: is-benchmark-job-id
-        parent-action-id: parentactionid
       annotations:
         iam.amazonaws.com/role: benchmark-host
     spec:
@@ -333,8 +326,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        - name: BACKEND_ARG_PARENT-ACTION-ID
-          value: parentactionid
         volumeMounts:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai

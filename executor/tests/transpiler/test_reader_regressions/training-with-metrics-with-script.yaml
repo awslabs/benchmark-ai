@@ -7,7 +7,6 @@ metadata:
     action-id: ACTION_ID
     client-id: CLIENT_ID
     created-by: executor
-    parent-action-id: parentactionid
 spec:
   template:
     metadata:
@@ -16,7 +15,6 @@ spec:
         action-id: ACTION_ID
         client-id: CLIENT_ID
         created-by: executor
-        parent-action-id: parentactionid
       annotations:
         iam.amazonaws.com/role: benchmark-host
     spec:
@@ -58,6 +56,32 @@ spec:
         args:
         - puller-data
         - object-name/dir0,777,p0:object-name/dir1,777,p1
+      - name: script-puller
+        image: benchmarkai/puller:3115770
+        volumeMounts:
+        - name: scripts-volume
+          mountPath: /bai/scripts
+        env:
+        - name: S3_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: outputs-infrastructure
+              key: s3_endpoint
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            configMapKeyRef:
+              name: s3
+              key: access-key-id
+              optional: true
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: s3
+              key: secret-access-key
+              optional: true
+        args:
+        - scripts-exchange
+        - anubis/scripts1.tar,777,/bai/scripts/s0,unpack_in_place:anubis/scripts2.tar,777,/bai/scripts/s1,unpack_in_place
       containers:
       - name: benchmark
         image: jlcont/benchmarking:270219
@@ -78,9 +102,13 @@ spec:
           value: /tmp/benchmark-ai/fifo
         - name: BENCHMARK_AI_FIFO_MAX_WAIT_TIME
           value: '60'
+        - name: BAI_SCRIPTS_PATH
+          value: /bai/scripts
         volumeMounts:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
+        - mountPath: /bai/scripts
+          name: scripts-volume
         - name: datasets-volume
           mountPath: ~/data/tf-imagenet/train
           subPath: p0
@@ -89,6 +117,57 @@ spec:
           subPath: p1
         - name: dshm
           mountPath: /dev/shm
+      - name: metrics-pusher
+        image: benchmarkai/metrics-pusher:ffed580
+        env:
+        - name: BENCHMARK_AI_FIFO_FILEPATH
+          value: /tmp/benchmark-ai/fifo
+        - name: BACKEND
+          value: kafka
+        - name: BACKEND_ARG_ACTION_ID
+          value: ACTION_ID
+        - name: BACKEND_ARG_CLIENT_ID
+          value: CLIENT_ID
+        - name: BACKEND_ARG_BOOTSTRAP_SERVERS
+          valueFrom:
+            configMapKeyRef:
+              name: outputs-infrastructure
+              key: msk_bootstrap_brokers
+        - name: BACKEND_ARG_KEY
+          value: CLIENT_ID
+        - name: BACKEND_ARG_TOPIC
+          value: BAI_METRICS
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        volumeMounts:
+        - mountPath: /tmp/benchmark-ai
+          name: benchmark-ai
+      - name: metrics-extractor
+        image: benchmarkai/metrics-extractor:b0b9185
+        env:
+        - name: ANUBIS_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: ANUBIS_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: ANUBIS_METRICS
+          value: '[{"name": "accuracy", "units": "percent", "pattern": "cmVzcG9uc2VfdGltZTooWy0rXT9cZCpcLlxkK3xcZCsp"}]'
+        - name: BENCHMARK_AI
+          value: fifo
+        - name: BENCHMARK_AI_FIFO_FILEPATH
+          value: /tmp/benchmark-ai/fifo
+        volumeMounts:
+        - mountPath: /tmp/benchmark-ai
+          name: benchmark-ai
       nodeSelector:
         beta.kubernetes.io/instance-type: p3.8xlarge
         node.type: bai-worker
@@ -98,6 +177,8 @@ spec:
       - name: benchmark-ai
         emptyDir: {}
       - name: datasets-volume
+        emptyDir: {}
+      - name: scripts-volume
         emptyDir: {}
       - name: dshm
         emptyDir:

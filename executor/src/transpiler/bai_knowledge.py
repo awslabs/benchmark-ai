@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 from bai_kafka_utils.events import DownloadableContent, BenchmarkEvent
 from bai_kafka_utils.events import FileSystemObject
 from bai_kafka_utils.executors.descriptor import DescriptorError, Descriptor, DistributedStrategy
+from bai_kafka_utils.utils import METRICS_PUSHER_BACKEND_ARG_PREFIX
 from ruamel import yaml
 
 from executor import SERVICE_NAME
@@ -31,6 +32,8 @@ SCRIPT_PULLER_CHMOD = 777
 
 BENCHMARK_CONTAINER = "benchmark"
 DATA_PULLER_CONTAINER = "data-puller"
+METRICS_PUSHER_CONTAINER = "metrics-pusher"
+METRICS_EXTRACTOR_CONTAINER = "metrics-extractor"
 DATASETS_VOLUME_NAME = "datasets-volume"
 SCRIPTS_VOLUME_NAME = "scripts-volume"
 SCRIPTS_PULLER_CONTAINER = "script-puller"
@@ -188,8 +191,16 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         self.add_env_vars()
         self.add_benchmark_cmd()
 
+        if not self.descriptor.metrics:
+            self.remove_metrics_sidecars()
+        else:
+            # Add custom labels metrics pusher
+            for label, value in self.descriptor.custom_labels.items():
+                self.add_metrics_pusher_backend_arg(label, value)
+
         if self.event.parent_action_id:
             self.root.add_label("parent-action-id", self.event.parent_action_id)
+            self.add_metrics_pusher_backend_arg("parent-action-id", self.event.parent_action_id)
 
         if self.config.suppress_job_affinity:
             self.root.remove_affinity()
@@ -224,6 +235,17 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
 
         return random_object.choice(list(environment_info.availability_zones.values()))
 
+    def add_metrics_pusher_backend_arg(self, key: str, value: str):
+        env_var_name = METRICS_PUSHER_BACKEND_ARG_PREFIX.upper() + key.upper()
+        # self.root.add_env_vars(METRICS_PUSHER_CONTAINER, )
+        try:
+            metrics_pusher_container = self.root.find_container(METRICS_PUSHER_CONTAINER)
+        except ValueError:
+            logger.debug(f"Could not add backend arg {env_var_name} to metrics pusher sidecar.")
+            return
+        metrics_pusher_env = metrics_pusher_container.get("env", [])
+        metrics_pusher_env.append({"name": env_var_name, "value": value})
+
     def add_server_env_vars(self):
         if not self.descriptor.is_inference_strategy:
             return
@@ -252,6 +274,10 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         data_mounts = self._get_data_mounts(data_sources)
         self._update_data_puller(data_mounts, data_sources)
         benchmark_container.volumeMounts.extend(self._get_container_volume_mounts(data_mounts))
+
+    def remove_metrics_sidecars(self):
+        self.root.remove_container(METRICS_EXTRACTOR_CONTAINER)
+        self.root.remove_container(METRICS_PUSHER_CONTAINER)
 
     def add_shared_memory(self):
         if self.descriptor.extended_shm:
@@ -453,6 +479,12 @@ class InferenceServerJobKubernetedObjectBuilder(SingleRunBenchmarkKubernetesObje
         self.root.add_container_ports_to_container(INFERENCE_SERVER_CONTAINER, self.descriptor.server.env.ports)
         if self.event.parent_action_id:
             self.root.add_label("parent-action-id", self.event.parent_action_id)
+        if not self.descriptor.server.output:
+            self.remove_metrics_sidecars()
+        else:
+            # Add custom labels metrics pusher
+            for label, value in self.descriptor.custom_labels.items():
+                self.add_metrics_pusher_backend_arg(label, value)
 
     def add_shared_memory(self):
         if self.descriptor.server.env.extended_shm:
