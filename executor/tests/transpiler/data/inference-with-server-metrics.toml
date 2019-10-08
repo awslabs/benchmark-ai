@@ -87,17 +87,6 @@ start_command_args = "--model=mnist"
 VAR1 = "value1"
 VAR2 = "value2"
 
-[server.env.readiness_probe]
-path = "/ping"
-# skipping port to ensure the first
-# port defined in [server.env] ports is used
-scheme = "https"
-initial_delay_seconds = 5
-period_seconds = 5
-timeout_seconds = 1
-success_threshold = 1
-failure_threshold = 5
-
 [[server.models]]
 src = "model1"
 path = "/path/to/model1"
