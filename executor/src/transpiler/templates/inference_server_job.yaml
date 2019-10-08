@@ -93,7 +93,7 @@ spec:
         - name: JOB_NAME
           value: {job_id}
         - name: TRIGGER_STATUSES
-          value: "[SUCCEEDED, FAILED]"
+          value: "[SUCCEEDED, FAILED, JOB_NOT_FOUND]"
         - name: COMMAND
           value: '/opt/env/bin/kubectl delete job,service {inference_server_job_id}'
         - name: JOB_NOT_FOUND_GRACE_PERIOD_SECONDS
@@ -176,7 +176,7 @@ spec:
         beta.kubernetes.io/instance-type: {descriptor.server.hardware.instance_type}
         node.type: bai-worker
         failure-domain.beta.kubernetes.io/zone: {availability_zone}
-      restartPolicy: Never
+      restartPolicy: OnFailure
       volumes:
       - name: benchmark-ai
         emptyDir: {{}}

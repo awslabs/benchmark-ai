@@ -164,7 +164,7 @@ spec:
         beta.kubernetes.io/instance-type: t3.medium
         node.type: bai-worker
         failure-domain.beta.kubernetes.io/zone: us-east-1a
-      restartPolicy: Never
+      restartPolicy: OnFailure
       volumes:
       - name: benchmark-ai
         emptyDir: {}
@@ -292,7 +292,7 @@ spec:
         - name: JOB_NAME
           value: benchmark-job-id
         - name: TRIGGER_STATUSES
-          value: '[SUCCEEDED, FAILED]'
+          value: '[SUCCEEDED, FAILED, JOB_NOT_FOUND]'
         - name: COMMAND
           value: /opt/env/bin/kubectl delete job,service is-benchmark-job-id
         - name: JOB_NOT_FOUND_GRACE_PERIOD_SECONDS
@@ -355,7 +355,7 @@ spec:
         beta.kubernetes.io/instance-type: p3.8xlarge
         node.type: bai-worker
         failure-domain.beta.kubernetes.io/zone: us-east-1c
-      restartPolicy: Never
+      restartPolicy: OnFailure
       volumes:
       - name: benchmark-ai
         emptyDir: {}
