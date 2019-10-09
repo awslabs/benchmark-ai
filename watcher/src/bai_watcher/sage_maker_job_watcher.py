@@ -11,7 +11,7 @@ from bai_watcher.status_inferrers.status import BenchmarkJobStatus
 
 logger = service_logger.getChild(__name__)
 
-SLEEP_TIME_BETWEEN_CHECKING_K8S_STATUS = 5
+SLEEP_TIME_BETWEEN_CHECKING_SAGEMAKER_STATUS = 10
 
 
 class SageMakerTrainingJobWatcher(JobWatcher):
@@ -22,7 +22,7 @@ class SageMakerTrainingJobWatcher(JobWatcher):
         *,
         sagemaker_client
     ):
-        super().__init__(job_id, callback)
+        super().__init__(job_id, callback, SLEEP_TIME_BETWEEN_CHECKING_SAGEMAKER_STATUS)
         self._sagemaker_client = sagemaker_client
 
     @staticmethod

@@ -14,7 +14,7 @@ from bai_watcher.status_inferrers.status import BenchmarkJobStatus
 
 logger = service_logger.getChild(__name__)
 
-SLEEP_TIME_BETWEEN_CHECKING_K8S_STATUS = 5
+SLEEP_TIME_BETWEEN_CHECKING_K8S_STATUS = 10
 
 
 def load_kubernetes_config(kubeconfig=None):
@@ -42,7 +42,7 @@ class KubernetesJobWatcher(JobWatcher):
         kubernetes_client_jobs: BatchV1Api,
         kubernetes_client_pods: CoreV1Api,
     ):
-        super().__init__(job_id, callback)
+        super().__init__(job_id, callback, SLEEP_TIME_BETWEEN_CHECKING_K8S_STATUS)
         self.kubernetes_namespace = kubernetes_namespace
         self.jobs_client = kubernetes_client_jobs
         self.pod_client = kubernetes_client_pods

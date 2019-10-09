@@ -20,12 +20,15 @@ JobWatcherCallback = Callable[[str, BenchmarkJobStatus, AbstractJobWatcherBase],
 
 
 class JobWatcher(AbstractJobWatcherBase):
-    def __init__(self, job_id: str, callback: JobWatcherCallback):
+    def __init__(
+        self, job_id: str, callback: JobWatcherCallback, period_seconds: int = SLEEP_TIME_BETWEEN_CHECKS_SECONDS
+    ):
         self._job_id = job_id
         self._callback = callback
         self._thread = Thread(target=self._thread_run_loop, daemon=True, name=f"k8s-job-watcher-{job_id}")
         self._error = None
         self._success = None
+        self._period_seconds = period_seconds
 
     @abc.abstractmethod
     def _get_status(self):
@@ -54,4 +57,4 @@ class JobWatcher(AbstractJobWatcherBase):
                 self._success = False
                 self._error = err
                 return
-            time.sleep(SLEEP_TIME_BETWEEN_CHECKS_SECONDS)
+            time.sleep(self._period_seconds)
