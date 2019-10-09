@@ -75,8 +75,11 @@ class SageMakerExecutionEngine(ExecutionEngine):
             try:
                 job_name = SageMakerExecutionEngine._get_job_name(event.action_id)
                 estimator.fit(data, wait=False, logs=False, job_name=job_name)
-            except botocore.exceptions.ClientError as e:
-                raise ExecutionEngineException("Cannot execute the requested benchmark") from e
+            except botocore.exceptions.ClientError as err:
+                error_message = SageMakerExecutionEngine._get_client_error_message(err, default="Unknown")
+                raise ExecutionEngineException(
+                    f"Benchmark creation failed. SageMaker returned error: {error_message}"
+                ) from err
             return BenchmarkJob(id=estimator.latest_training_job.name)
 
     def _get_estimator_data(self, event):
@@ -95,8 +98,12 @@ class SageMakerExecutionEngine(ExecutionEngine):
         return total_size_gb
 
     @staticmethod
+    def _get_client_error_message(client_error: ClientError, default: str = None):
+        return client_error.response.get("Error", {}).get("Message", default)
+
+    @staticmethod
     def _is_not_found_error(client_error: ClientError):
-        error_message = client_error.response.get("Error", {}).get("Message", "")
+        error_message = SageMakerExecutionEngine._get_client_error_message(client_error, default="")
         return re.match(r"(\w*\s*)*not found(\s*\w*)*", error_message, re.IGNORECASE) is not None
 
     def cancel(self, client_id: str, action_id: str, cascade: bool = False):

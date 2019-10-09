@@ -217,8 +217,9 @@ def test_run_fail_from_sagemaker(
     fetcher_event: FetcherBenchmarkEvent,
 ):
     mock_estimator.fit.side_effect = botocore.exceptions.ClientError(MOCK_ERROR_RESPONSE, "start job")
-    with pytest.raises(ExecutionEngineException):
+    with pytest.raises(ExecutionEngineException) as err:
         sm_execution_engine_to_test.run(fetcher_event)
+    assert str(err.value) == "Benchmark creation failed. SageMaker returned error: Something is wrong"
 
 
 def test_cancel_raises_not_found(sm_execution_engine_to_test: SageMakerExecutionEngine):
