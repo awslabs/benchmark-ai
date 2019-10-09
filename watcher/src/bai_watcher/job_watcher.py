@@ -20,11 +20,7 @@ JobWatcherCallback = Callable[[str, BenchmarkJobStatus, AbstractJobWatcherBase],
 
 
 class JobWatcher(AbstractJobWatcherBase):
-    def __init__(
-        self,
-        job_id: str,
-        callback: JobWatcherCallback,
-    ):
+    def __init__(self, job_id: str, callback: JobWatcherCallback):
         self._job_id = job_id
         self._callback = callback
         self._thread = Thread(target=self._thread_run_loop, daemon=True, name=f"k8s-job-watcher-{job_id}")

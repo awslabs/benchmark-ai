@@ -13,6 +13,7 @@ GetStatusFn = Callable[[], BenchmarkJobStatus]
 def true_callback() -> JobWatcherCallback:
     def callback(job_id: str, status: BenchmarkJobStatus, watcher: JobWatcher):
         return True
+
     return callback
 
 
@@ -20,6 +21,7 @@ def true_callback() -> JobWatcherCallback:
 def false_callback() -> JobWatcherCallback:
     def callback(job_id: str, status: BenchmarkJobStatus, watcher: JobWatcher):
         return False
+
     return callback
 
 
@@ -34,6 +36,7 @@ def make_mock_job_watcher(get_status: GetStatusFn, job_id: str, callback: JobWat
 def make_get_status_fn(status_to_return: BenchmarkJobStatus) -> GetStatusFn:
     def fn() -> BenchmarkJobStatus:
         return status_to_return
+
     return fn
 
 

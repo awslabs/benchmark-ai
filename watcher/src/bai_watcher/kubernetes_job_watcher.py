@@ -33,7 +33,6 @@ def load_kubernetes_config(kubeconfig=None):
 
 
 class KubernetesJobWatcher(JobWatcher):
-
     def __init__(
         self,
         job_id: str,
