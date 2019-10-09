@@ -53,6 +53,8 @@ class SageMakerTrainingJobWatcher(JobWatcher):
             return BenchmarkJobStatus.SM_INTERRUPTED
         elif status == "Completed":
             return BenchmarkJobStatus.SUCCEEDED
+        elif status == "Failed":
+            return BenchmarkJobStatus.FAILED
         else:
             return BenchmarkJobStatus.SM_UNKNOWN
 
