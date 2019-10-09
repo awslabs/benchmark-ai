@@ -62,6 +62,11 @@ spec:
                 configMapKeyRef:
                   name: watcher
                   key: grafana_results_url
+            - name: AWS_DEFAULT_REGION
+              valueFrom:
+                configMapKeyRef:
+                  key: region
+                  name: outputs-infrastructure
       nodeSelector:
         node.type: bai-services-cheap
       restartPolicy: Always
