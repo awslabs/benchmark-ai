@@ -15,13 +15,7 @@ SLEEP_TIME_BETWEEN_CHECKING_SAGEMAKER_STATUS = 10
 
 
 class SageMakerTrainingJobWatcher(JobWatcher):
-    def __init__(
-        self,
-        job_id: str,
-        callback: Callable[[str, BenchmarkJobStatus, SageMakerTrainingJobWatcher], bool],
-        *,
-        sagemaker_client
-    ):
+    def __init__(self, job_id: str, callback: Callable[[str, BenchmarkJobStatus], bool], *, sagemaker_client):
         super().__init__(job_id, callback, SLEEP_TIME_BETWEEN_CHECKING_SAGEMAKER_STATUS)
         self._sagemaker_client = sagemaker_client
 

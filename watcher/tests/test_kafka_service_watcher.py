@@ -158,5 +158,5 @@ def test_status_callback_returns_false_on_job_not_found(
     # create status callback function
     status_callback = watcher._make_status_callback(benchmark_event, kafka_service)
 
-    assert status_callback(job_id, BenchmarkJobStatus.JOB_NOT_FOUND, k8s_job_watcher) is True
+    assert status_callback(job_id, BenchmarkJobStatus.JOB_NOT_FOUND) is True
     assert job_id not in watcher.watchers

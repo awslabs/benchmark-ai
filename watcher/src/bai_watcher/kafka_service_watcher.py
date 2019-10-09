@@ -41,10 +41,9 @@ def choose_status_from_benchmark_status(job_status: BenchmarkJobStatus) -> Tuple
         return Status.PENDING, "Benchmark pending node autoscaling"
     elif job_status == BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS:
         return Status.RUNNING, "Benchmark running"
-
-    # SageMaker statuses
+    # SageMaker status messages
     elif job_status == BenchmarkJobStatus.SM_IN_PROGRESS_STARTING:
-        return Status.PENDING, "Starting benchmark"
+        return Status.PENDING, "Benchmark starting"
     elif job_status == BenchmarkJobStatus.SM_IN_PROGRESS_LAUNCHING_ML_INSTANCES:
         return Status.PENDING, "Launching ML instances"
     elif job_status == BenchmarkJobStatus.SM_IN_PROGRESS_PREP_TRAINING_STACK:
@@ -84,49 +83,34 @@ class WatchJobsEventHandler(KafkaServiceCallback):
         load_kubernetes_config(config.kubeconfig)
 
     def _make_status_callback(
-        self, event: ExecutorBenchmarkEvent, kafka_service: KafkaService
+        self, event: ExecutorBenchmarkEvent, kafka_service: KafkaService, if_k8s_job: bool = True
     ) -> Callable[[str, BenchmarkJobStatus, KubernetesJobWatcher], bool]:
-        def callback(job_id, benchmark_job_status: BenchmarkJobStatus, watcher: KubernetesJobWatcher):
+        job_start_time = None
+
+        def callback(job_id, benchmark_job_status: BenchmarkJobStatus):
+            nonlocal job_start_time
+
             # This method is called at each thread (not the Main Thread)
             logger.info(f"Benchmark job '{job_id}'' has status '{benchmark_job_status}'")
             status, message = choose_status_from_benchmark_status(benchmark_job_status)
             kafka_service.send_status_message_event(event, status, message)
-            if benchmark_job_status.is_running() and not watcher.metrics_available_message_sent:
-                kafka_service.send_status_message_event(
-                    event,
-                    status.METRICS_AVAILABLE,
-                    self._get_metrics_available_message(event, job_start_time=watcher.job_start_time),
-                )
-                watcher.metrics_available_message_sent = True
-            if benchmark_job_status == BenchmarkJobStatus.SUCCEEDED:
-                tstamp_now = int(time.time() * 1000)
-                kafka_service.send_status_message_event(
-                    event,
-                    status.METRICS_AVAILABLE,
-                    self._get_metrics_available_message(
-                        event, job_start_time=watcher.job_start_time, job_end_time=tstamp_now
-                    ),
-                )
+
+            # For now, only emit metrics url for k8s benchmarks
+            if if_k8s_job:
+                if benchmark_job_status.is_running() and not job_start_time:
+                    job_start_time = int(time.time() * 1000)
+                    msg = self._get_metrics_available_message(event, job_start_time)
+                    kafka_service.send_status_message_event(event, Status.METRICS_AVAILABLE, msg)
+
+                if benchmark_job_status == BenchmarkJobStatus.SUCCEEDED:
+                    job_end_time = int(time.time() * 1000)
+                    msg = self._get_metrics_available_message(event, job_start_time, job_end_time)
+                    kafka_service.send_status_message_event(event, Status.METRICS_AVAILABLE, msg)
+
             if benchmark_job_status is not None and benchmark_job_status.is_final():
                 del self.watchers[job_id]
                 logger.info(f"Job {job_id} is not being watched anymore")
                 kafka_service.send_status_message_event(event, status, "No longer watching benchmark")
-                return True
-            return False
-
-        return callback
-
-    def _make_sagemaker_status_callback(
-        self, event: ExecutorBenchmarkEvent, kafka_service: KafkaService
-    ) -> Callable[[str, BenchmarkJobStatus, SageMakerTrainingJobWatcher], bool]:
-        def callback(job_id, benchmark_job_status: BenchmarkJobStatus, watcher: SageMakerTrainingJobWatcher):
-            # This method is called at each thread (not the Main Thread)
-            logger.info(f"Benchmark job '{job_id}'' has status '{benchmark_job_status}'")
-            status, message = choose_status_from_benchmark_status(benchmark_job_status)
-            kafka_service.send_status_message_event(event, status, message)
-            if benchmark_job_status is not None and benchmark_job_status.is_final():
-                del self.watchers[job_id]
-                logger.info(f"Job {job_id} is not being watched anymore")
                 return True
             return False
 
@@ -146,17 +130,17 @@ class WatchJobsEventHandler(KafkaServiceCallback):
 
         logger.info("Starting to watch the job '%s'", job_id)
 
+        watcher_callback = self._make_status_callback(event, kafka_service, not self._is_sage_maker_job(event))
+
         if self._is_sage_maker_job(event):
             watcher = SageMakerTrainingJobWatcher(
-                job_id=event.action_id,
-                callback=self._make_sagemaker_status_callback(event, kafka_service),
-                sagemaker_client=boto3.Session().client("sagemaker"),
+                job_id=event.action_id, callback=watcher_callback, sagemaker_client=boto3.client("sagemaker")
             )
             kafka_service.send_status_message_event(event, Status.PENDING, "Watching SageMaker benchmark")
         else:
             watcher = KubernetesJobWatcher(
                 job_id,
-                self._make_status_callback(event, kafka_service),
+                watcher_callback,
                 kubernetes_client_jobs=kubernetes.client.BatchV1Api(),
                 kubernetes_client_pods=kubernetes.client.CoreV1Api(),
                 kubernetes_namespace=self.config.kubernetes_namespace_of_running_jobs,

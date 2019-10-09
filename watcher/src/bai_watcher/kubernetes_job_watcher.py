@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import time
 from pathlib import Path
 from typing import Callable
 
@@ -36,7 +35,7 @@ class KubernetesJobWatcher(JobWatcher):
     def __init__(
         self,
         job_id: str,
-        callback: Callable[[str, BenchmarkJobStatus, KubernetesJobWatcher], bool],
+        callback: Callable[[str, BenchmarkJobStatus], bool],
         *,
         kubernetes_namespace: str,
         kubernetes_client_jobs: BatchV1Api,
@@ -46,8 +45,6 @@ class KubernetesJobWatcher(JobWatcher):
         self.kubernetes_namespace = kubernetes_namespace
         self.jobs_client = kubernetes_client_jobs
         self.pod_client = kubernetes_client_pods
-        self.job_start_time = None
-        self.metrics_available_message_sent = False
 
     def _get_status(self):
         try:
@@ -73,8 +70,5 @@ class KubernetesJobWatcher(JobWatcher):
         logger.debug(f"[job-id: {self._job_id}] Kubernetes Job pods: {pods}")
         inferrer = SingleNodeStrategyKubernetesStatusInferrer(k8s_job_status, pods.items)
         status = inferrer.status()
-
-        if status.is_running() and self.job_start_time is None:
-            self.job_start_time = int(time.time() * 1000)
 
         return status

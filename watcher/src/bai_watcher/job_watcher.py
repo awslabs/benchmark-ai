@@ -12,14 +12,10 @@ SLEEP_TIME_BETWEEN_CHECKS_SECONDS = 5
 logger = service_logger.getChild(__name__)
 
 
-class AbstractJobWatcherBase(metaclass=abc.ABCMeta):
-    pass
+JobWatcherCallback = Callable[[str, BenchmarkJobStatus], bool]
 
 
-JobWatcherCallback = Callable[[str, BenchmarkJobStatus, AbstractJobWatcherBase], bool]
-
-
-class JobWatcher(AbstractJobWatcherBase):
+class JobWatcher(metaclass=abc.ABCMeta):
     def __init__(
         self, job_id: str, callback: JobWatcherCallback, period_seconds: int = SLEEP_TIME_BETWEEN_CHECKS_SECONDS
     ):
@@ -48,7 +44,7 @@ class JobWatcher(AbstractJobWatcherBase):
         for _ in itertools.count():
             try:
                 status = self._get_status()
-                stop_watching = self._callback(self._job_id, status, self)
+                stop_watching = self._callback(self._job_id, status)
                 if stop_watching:
                     self._success = True
                     return

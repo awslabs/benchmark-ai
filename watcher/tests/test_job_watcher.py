@@ -11,7 +11,7 @@ GetStatusFn = Callable[[], BenchmarkJobStatus]
 
 @fixture
 def true_callback() -> JobWatcherCallback:
-    def callback(job_id: str, status: BenchmarkJobStatus, watcher: JobWatcher):
+    def callback(job_id: str, status: BenchmarkJobStatus):
         return True
 
     return callback
@@ -19,7 +19,7 @@ def true_callback() -> JobWatcherCallback:
 
 @fixture
 def false_callback() -> JobWatcherCallback:
-    def callback(job_id: str, status: BenchmarkJobStatus, watcher: JobWatcher):
+    def callback(job_id: str, status: BenchmarkJobStatus):
         return False
 
     return callback
