@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Callable, Dict, Any
 
-import botocore
 from bai_sagemaker_utils.utils import is_not_found_error
+from botocore.client import ClientError
 
 from bai_watcher import service_logger
 from bai_watcher.job_watcher import JobWatcher
@@ -21,36 +21,37 @@ class SageMakerTrainingJobWatcher(JobWatcher):
 
     @staticmethod
     def _get_benchmark_status(training_job: Dict[str, Any]):
-        # 'Starting'|'LaunchingMLInstances'|'PreparingTrainingStack'|'Downloading'|'DownloadingTrainingImage'|'Training'|'Uploading'|'Stopping'|'Stopped'|'MaxRuntimeExceeded'|'Completed'|'Failed'|'Interrupted'|'MaxWaitTimeExceeded',
-        status = training_job["SecondaryStatus"]
         primary_status = training_job["TrainingJobStatus"]
-        if status == "Starting":
+        secondary_status = training_job["SecondaryStatus"]
+        if secondary_status == "Starting":
             return BenchmarkJobStatus.SM_IN_PROGRESS_STARTING
-        elif status == "LaunchingMLInstances":
+        elif secondary_status == "LaunchingMLInstances":
             return BenchmarkJobStatus.SM_IN_PROGRESS_LAUNCHING_ML_INSTANCES
-        elif status == "PreparingTrainingStack":
+        elif secondary_status == "PreparingTrainingStack":
             return BenchmarkJobStatus.SM_IN_PROGRESS_PREP_TRAINING_STACK
-        elif status == "Downloading":
+        elif secondary_status == "Downloading":
             return BenchmarkJobStatus.SM_IN_PROGRESS_DOWNLOADING
-        elif status == "DownloadingTrainingImage":
+        elif secondary_status == "DownloadingTrainingImage":
             return BenchmarkJobStatus.SM_IN_PROGRESS_DOWNLOADING_TRAINING_IMG
-        elif status == "Training":
+        elif secondary_status == "Training":
             return BenchmarkJobStatus.SM_IN_PROGRESS_TRAINING
-        elif status == "Stopped":
+        elif secondary_status == "Stopped":
             return BenchmarkJobStatus.SM_STOPPED
-        elif status == "Stopping":
+        elif secondary_status == "Stopping":
             return BenchmarkJobStatus.SM_STOPPING
-        elif status == "MaxRuntimeExceeded":
+        elif secondary_status == "MaxRuntimeExceeded":
             return BenchmarkJobStatus.SM_FAILED_MAX_RUNTIME_EXCEEDED
-        elif status == "MaxWaitTimeExceeded":
+        elif secondary_status == "MaxWaitTimeExceeded":
             return BenchmarkJobStatus.SM_FAILED_MAX_WAITTIME_EXCEEDED
-        elif status == "Interrupted":
+        elif secondary_status == "Interrupted":
             return BenchmarkJobStatus.SM_INTERRUPTED
-        elif status == "Completed":
+        elif secondary_status == "Completed":
             return BenchmarkJobStatus.SUCCEEDED
-        elif status == "Failed":
+        elif secondary_status == "Failed":
             return BenchmarkJobStatus.FAILED
-        elif primary_status == "Failed":
+
+        logger.info(f"Could not decode secondary status {secondary_status} - trying primary: {primary_status}")
+        if primary_status == "Failed":
             return BenchmarkJobStatus.FAILED
         elif primary_status == "Completed":
             return BenchmarkJobStatus.SUCCEEDED
@@ -58,14 +59,15 @@ class SageMakerTrainingJobWatcher(JobWatcher):
             return BenchmarkJobStatus.SM_STOPPED
         elif primary_status == "Stopping":
             return BenchmarkJobStatus.SM_STOPPED
-        else:
-            return BenchmarkJobStatus.SM_UNKNOWN
+
+        logger.warning(f"Could not decode SageMaker training job secondary_status {primary_status}/{secondary_status}")
+        return BenchmarkJobStatus.SM_UNKNOWN
 
     def _get_status(self):
         try:
             training_job = self._sagemaker_client.describe_training_job(TrainingJobName=self._job_id)
             return self._get_benchmark_status(training_job)
-        except botocore.exceptions.ClientError as err:
+        except ClientError as err:
             if is_not_found_error(err):
                 return BenchmarkJobStatus.JOB_NOT_FOUND
             logger.exception(
@@ -73,4 +75,4 @@ class SageMakerTrainingJobWatcher(JobWatcher):
                     job_id=self._job_id
                 )
             )
-            raise
+            raise err
