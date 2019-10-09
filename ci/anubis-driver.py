@@ -244,12 +244,13 @@ def get_service_endpoint(region, session):
             else:
                 raise Exception(f"baictl sync infra failed to download: {kubeconfig_path}")
             # kubectl get service endpoint
-            service_endpoint = subprocess.check_output(
+            service_endpoint_json = subprocess.check_output(
                 ["kubectl", f"--kubeconfig={kubeconfig_abs_path}", "get", "service", "bai-bff", "-o", "json"]
             )
-            service_endpoint = json.loads(service_endpoint)["status"]["loadBalancer"]["ingress"][0]["hostname"]
+            service_endpoint = json.loads(service_endpoint_json)["status"]["loadBalancer"]["ingress"][0]["hostname"]
+            service_port = json.loads(service_endpoint_json)["spec"]["ports"][0]["port"]
             print(f"=> Your Anubis service endpoint: {service_endpoint}")
-            return service_endpoint
+            return service_endpoint+":"+service_port
         elif codepipeline_bff_status == "Failed":
             raise Exception(f"Unable to get service endpoint since `bff` deploy stage failed")
 
@@ -271,10 +272,10 @@ def register_service_endpoint(service_endpoint):
     user_response = input(f"Do you want to register this service endpoint now? ([y]/n)?: ").lower().strip()
     if not user_response == "y" and not user_response == "yes" and not user_response == "":
         return
-    return_code = subprocess.call(["./bin/anubis", "--register", f"{service_endpoint}:80"], cwd="../bff")
+    return_code = subprocess.call(["./bin/anubis", "--register", f"{service_endpoint}"], cwd="../bff")
     if return_code != 0:
         raise Exception(
-            f"Failure registering service endpoint to bff `/bin/anubis --register {service_endpoint}:80`: {return_code}"
+            f"Failure registering service endpoint to bff `/bin/anubis --register {service_endpoint}`: {return_code}"
         )
 
 
