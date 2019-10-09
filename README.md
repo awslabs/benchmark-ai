@@ -251,7 +251,8 @@ and the following will be done:
 - Logs are collected into:
     - ElasticSearch
 - Metrics are collected into:
-    - Prometheus
+    - Prometheus (both operational metrics, such as CPU or GPU utilization rates, and user defined metrics, such as accuracy or throughput)
+    - CloudWatch (only user defined metrics)
 
 *hint: put bff/bin/anubis, or symlink to it, in your $PATH*
 
@@ -274,10 +275,26 @@ bff/bin/anubis --purge <ACTION_ID>
 
 ## Step 3 - Collect the results of your run
 
+
+### Option 1: Anubis client
+
+You can collect results using the `--results` option of the [Anubis client tool](bff/bin/anubis).
+
 ```bash
 # Assuming PWD is `benchmark-ai`
 bff/bin/anubis --results <ACTION_ID>
 ```
+
+### Option 2: CloudWatch
+
+All metrics defined in the _output.metrics_ section of the [descriptor TOML file](executor/README.md) are automatically exported to AWS CloudWatch.
+Accessing CloudWatch via the AWS console, they can be found in the _metrics_ section, under the namespace ANUBIS/METRICS. 
+
+Metrics are labeled using:
+ - _action-id_ of the benchmark run which produced them.
+ - _client-id_ of the user who submitted the benchmark.
+ - All **custom labels** defined in the _info.labels_ section of the descriptor file which defined the benchmark. 
+ (see the [example descriptors](https://github.com/MXNetEdge/benchmark-ai/blob/master/executor/README.md#training) for reference)
 
 ## Step 4 - Destroy Anubis Infrastructure
 
