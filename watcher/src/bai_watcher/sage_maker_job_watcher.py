@@ -29,6 +29,7 @@ class SageMakerTrainingJobWatcher(JobWatcher):
     def _get_benchmark_status(training_job: Dict[str, Any]):
         # 'Starting'|'LaunchingMLInstances'|'PreparingTrainingStack'|'Downloading'|'DownloadingTrainingImage'|'Training'|'Uploading'|'Stopping'|'Stopped'|'MaxRuntimeExceeded'|'Completed'|'Failed'|'Interrupted'|'MaxWaitTimeExceeded',
         status = training_job["SecondaryStatus"]
+        primary_status = training_job["TrainingJobStatus"]
         if status == "Starting":
             return BenchmarkJobStatus.SM_IN_PROGRESS_STARTING
         elif status == "LaunchingMLInstances":
@@ -55,6 +56,14 @@ class SageMakerTrainingJobWatcher(JobWatcher):
             return BenchmarkJobStatus.SUCCEEDED
         elif status == "Failed":
             return BenchmarkJobStatus.FAILED
+        elif primary_status == "Failed":
+            return BenchmarkJobStatus.FAILED
+        elif primary_status == "Completed":
+            return BenchmarkJobStatus.SUCCEEDED
+        elif primary_status == "Stopped":
+            return BenchmarkJobStatus.SM_STOPPED
+        elif primary_status == "Stopping":
+            return BenchmarkJobStatus.SM_STOPPED
         else:
             return BenchmarkJobStatus.SM_UNKNOWN
 
