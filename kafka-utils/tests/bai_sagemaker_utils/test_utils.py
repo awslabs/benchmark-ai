@@ -23,5 +23,5 @@ def test_bad_error_returns_default():
 def test_is_not_found_error():
     not_found_error = make_client_error(msg="ThiS wAs nOt FoUnD")
     found_error = make_client_error(msg="Found")
-    assert is_not_found_error(not_found_error) == True
-    assert is_not_found_error(found_error) == False
+    assert is_not_found_error(not_found_error) is True
+    assert is_not_found_error(found_error) is False

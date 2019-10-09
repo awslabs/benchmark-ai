@@ -1,5 +1,3 @@
-import re
-
 from botocore.exceptions import ClientError
 
 

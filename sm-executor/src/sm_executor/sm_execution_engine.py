@@ -1,5 +1,4 @@
 import logging
-import re
 import tempfile
 from math import ceil
 from typing import Callable
@@ -15,7 +14,6 @@ from bai_kafka_utils.executors.execution_callback import (
     NoResourcesFoundException,
 )
 from bai_sagemaker_utils.utils import get_client_error_message, is_not_found_error
-from botocore.exceptions import ClientError
 
 from sm_executor.args import SageMakerExecutorConfig
 from sm_executor.estimator_factory import EstimatorFactory, TENSORFLOW_FRAMEWORK, MXNET_FRAMEWORK
