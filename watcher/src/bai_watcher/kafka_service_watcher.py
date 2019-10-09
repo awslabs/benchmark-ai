@@ -83,7 +83,7 @@ class WatchJobsEventHandler(KafkaServiceCallback):
         load_kubernetes_config(config.kubeconfig)
 
     def _make_status_callback(
-        self, event: ExecutorBenchmarkEvent, kafka_service: KafkaService, if_k8s_job: bool = True
+        self, event: ExecutorBenchmarkEvent, kafka_service: KafkaService, is_k8s_job: bool = True
     ) -> Callable[[str, BenchmarkJobStatus, KubernetesJobWatcher], bool]:
         job_start_time = None
 
@@ -95,8 +95,8 @@ class WatchJobsEventHandler(KafkaServiceCallback):
             status, message = choose_status_from_benchmark_status(benchmark_job_status)
             kafka_service.send_status_message_event(event, status, message)
 
-            # For now, only emit metrics url for k8s benchmarks
-            if if_k8s_job:
+            # TODO: Remove this once we know where to get the SM metrics from
+            if is_k8s_job:
                 if benchmark_job_status.is_running() and not job_start_time:
                     job_start_time = int(time.time() * 1000)
                     msg = self._get_metrics_available_message(event, job_start_time)
