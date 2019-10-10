@@ -1,6 +1,12 @@
 import pytest
 
-from bai_kafka_utils.executors.descriptor import DescriptorError, Descriptor, ONE_PER_GPU, DistributedStrategy
+from bai_kafka_utils.executors.descriptor import (
+    DescriptorError,
+    ONE_PER_GPU,
+    DistributedStrategy,
+    BenchmarkDescriptor,
+    MLFramework,
+)
 
 
 @pytest.mark.parametrize(
@@ -13,20 +19,18 @@ from bai_kafka_utils.executors.descriptor import DescriptorError, Descriptor, ON
         "cs_missing_hardware_descriptor.toml",
         "cs_missing_ports_descriptor.toml",
         "cs_missing_start_command_descriptor.toml",
-        "cs_non_uri_liveliness_probe_descriptor.toml",
-        "cs_non_uri_readiness_probe_descriptor.toml",
         "cs_missing_server_model_path_descriptor.toml",
         "cs_missing_server_model_src_descriptor.toml",
         "cs_missing_server_output_metrics_descriptor.toml",
         "cs_missing_server_output_metric_name_descriptor.toml",
         "cs_missing_server_output_metric_units_descriptor.toml",
         "cs_missing_server_output_metric_pattern_descriptor.toml",
-        "cs_missing_readiness_probe_path.yaml",
+        "cs_missing_readiness_probe_path.toml",
     ],
 )
-def test_wrong_descriptor(datadir, filename, descriptor_config):
+def test_wrong_descriptor(datadir, filename):
     with pytest.raises(DescriptorError):
-        Descriptor.from_toml_file(str(datadir / filename), descriptor_config)
+        BenchmarkDescriptor.from_toml(str(datadir / filename))
 
 
 @pytest.mark.parametrize(
@@ -38,15 +42,15 @@ def test_wrong_descriptor(datadir, filename, descriptor_config):
         "cs_minimal_with_models_descriptor.toml",
     ],
 )
-def test_minimal_descriptor(datadir, filename, descriptor_config):
-    Descriptor.from_toml_file(str(datadir / filename), descriptor_config)
+def test_minimal_descriptor(datadir, filename):
+    BenchmarkDescriptor.from_toml(str(datadir / filename))
 
 
 @pytest.mark.parametrize("scheduling", ["0 0 0 0", "* * ? * *", "single"])
-def test_invalid_scheduling(descriptor, scheduling):
-    descriptor.scheduling = scheduling
+def test_invalid_scheduling(descriptor_as_adict, scheduling):
+    descriptor_as_adict.info.scheduling = scheduling
     with pytest.raises(DescriptorError):
-        descriptor._validate()
+        BenchmarkDescriptor.from_dict(descriptor_as_adict.to_dict())
 
 
 @pytest.mark.parametrize(
@@ -60,122 +64,108 @@ def test_invalid_scheduling(descriptor, scheduling):
         {"a": "more-than-63-chars-00025-00000-00038-00000-00000-00056-00000-00066"},
     ],
 )
-def test_invalid_custom_labels(descriptor, labels):
-    descriptor.custom_labels = labels
+def test_invalid_custom_labels(descriptor_as_adict, labels):
+    descriptor_as_adict.info.labels = labels
     with pytest.raises(DescriptorError):
-        descriptor._validate()
+        BenchmarkDescriptor.from_dict(descriptor_as_adict.to_dict())
 
 
-def test_descriptor_config(descriptor_config):
-    strategies = [e.value for e in DistributedStrategy]
-    assert descriptor_config.valid_strategies == strategies
-
-
-def test_invalid_args_type(descriptor_as_dict, descriptor_config):
-    descriptor_as_dict["ml"]["args"] = 4
+def test_invalid_args_type(descriptor_as_adict):
+    descriptor_as_adict.ml.args = 4
     with pytest.raises(DescriptorError):
-        Descriptor(descriptor_as_dict, descriptor_config)
+        BenchmarkDescriptor.from_dict(descriptor_as_adict.to_dict())
 
 
-def test_distributed_explicite(descriptor_as_dict, descriptor_config):
-    descriptor_as_dict["hardware"]["distributed"]["processes_per_instance"] = "4"
-    descriptor = Descriptor(descriptor_as_dict, descriptor_config)
+def test_distributed_explicit(descriptor_as_adict):
+    descriptor_as_adict.hardware.distributed.processes_per_instance = "4"
+    descriptor = BenchmarkDescriptor.from_dict(descriptor_as_adict.to_dict())
 
-    assert descriptor.processes_per_instance == 4
-
-
-def test_distributed_default(descriptor_as_dict, descriptor_config):
-    descriptor = Descriptor(descriptor_as_dict, descriptor_config)
-
-    assert descriptor.processes_per_instance == 1
+    assert descriptor.hardware.processes_per_instance == 4
 
 
-def test_distributed_gpus(descriptor_as_dict, descriptor_config):
-    descriptor_as_dict["hardware"]["instance_type"] = "p3.8xlarge"
-    descriptor_as_dict["hardware"]["distributed"]["processes_per_instance"] = ONE_PER_GPU
-    descriptor = Descriptor(descriptor_as_dict, descriptor_config)
+def test_distributed_default(descriptor_as_adict):
+    descriptor = BenchmarkDescriptor.from_dict(descriptor_as_adict.to_dict())
 
-    assert descriptor.processes_per_instance == 4
+    assert descriptor.hardware.processes_per_instance == 1
 
 
-def test_distributed_gpus_on_cpu(descriptor_as_dict, descriptor_config):
-    descriptor_as_dict["hardware"]["instance_type"] = "t2.small"
-    descriptor_as_dict["hardware"]["distributed"]["processes_per_instance"] = ONE_PER_GPU
+def test_distributed_gpus(descriptor_as_adict):
+    descriptor_as_adict.hardware.instance_type = "p3.8xlarge"
+    descriptor_as_adict.hardware.distributed.processes_per_instance = ONE_PER_GPU
+    descriptor = BenchmarkDescriptor.from_dict(descriptor_as_adict.to_dict())
+
+    assert descriptor.hardware.processes_per_instance == 4
+
+
+def test_distributed_gpus_on_cpu(descriptor_as_adict):
+    descriptor_as_adict.hardware.instance_type = "t2.small"
+    descriptor_as_adict.hardware.distributed.processes_per_instance = ONE_PER_GPU
 
     with pytest.raises(DescriptorError):
-        Descriptor(descriptor_as_dict, descriptor_config)
+        BenchmarkDescriptor.from_dict(descriptor_as_adict.to_dict())
 
 
-def test_distributed_num_instances_str(descriptor_as_dict, descriptor_config):
-    descriptor_as_dict["hardware"]["distributed"]["num_instances"] = "4"
-    descriptor = Descriptor(descriptor_as_dict, descriptor_config)
+def test_distributed_num_instances_str(descriptor_as_adict):
+    descriptor_as_adict.hardware.distributed.num_instances = 4
+    descriptor = BenchmarkDescriptor.from_dict(descriptor_as_adict.to_dict())
 
-    assert descriptor.num_instances == 4
-
-
-def test_distributed_num_instances_default(descriptor_as_dict, descriptor_config):
-    descriptor = Descriptor(descriptor_as_dict, descriptor_config)
-
-    assert descriptor.num_instances == 1
+    assert descriptor.hardware.distributed.num_instances == 4
 
 
-def test_framework_optional(descriptor_as_dict, descriptor_config):
-    assert "" in descriptor_config.valid_frameworks
-    descriptor_as_dict["ml"]["framework"] = ""
+def test_distributed_num_instances_default(descriptor_as_adict):
+    descriptor = BenchmarkDescriptor.from_dict(descriptor_as_adict.to_dict())
 
-    descriptor = Descriptor(descriptor_as_dict, descriptor_config)
-
-    assert not descriptor.framework
+    assert descriptor.hardware.distributed.num_instances == 2
 
 
-def test_framework_explicite(descriptor_as_dict, descriptor_config):
-    descriptor_as_dict["ml"]["framework"] = "mxnet"
+def test_framework_explicit(descriptor_as_adict):
+    descriptor_as_adict.ml.framework = "mxnet"
 
-    descriptor = Descriptor(descriptor_as_dict, descriptor_config)
+    descriptor = BenchmarkDescriptor.from_dict(descriptor_as_adict.to_dict())
 
-    assert descriptor.framework == "mxnet"
+    assert descriptor.ml.framework == MLFramework.MXNET
 
 
-def test_framework_required(descriptor_as_dict, descriptor_config):
+def test_framework_required(descriptor_as_adict, descriptor_config):
     descriptor_config.valid_frameworks = ["foo"]
 
     with pytest.raises(DescriptorError):
-        Descriptor(descriptor_as_dict, descriptor_config)
+        BenchmarkDescriptor.from_dict(descriptor_as_adict.to_dict(), descriptor_config)
 
 
-def test_framework_invalid(descriptor_as_dict, descriptor_config):
+def test_framework_invalid(descriptor_as_adict, descriptor_config):
     descriptor_config.valid_frameworks = ["foo"]
-    descriptor_as_dict["ml"]["framework"] = "bar"
+    descriptor_as_adict.ml.framework = "bar"
 
     with pytest.raises(DescriptorError):
-        Descriptor(descriptor_as_dict, descriptor_config)
+        BenchmarkDescriptor.from_dict(descriptor_as_adict.to_dict(), descriptor_config)
 
 
-def test_framework_version(descriptor_as_dict, descriptor_config):
-    descriptor_as_dict["ml"]["framework"] = "mxnet"
-    descriptor_as_dict["ml"]["framework_version"] = "1.0"
+def test_framework_version(descriptor_as_adict):
+    descriptor_as_adict.ml.framework = "mxnet"
+    descriptor_as_adict.ml.framework_version = "1.0"
 
-    descriptor = Descriptor(descriptor_as_dict, descriptor_config)
+    descriptor = BenchmarkDescriptor.from_dict(descriptor_as_adict.to_dict())
 
-    assert descriptor.framework_version == "1.0"
+    assert descriptor.ml.framework_version == "1.0"
 
 
-def test_framework_version_no_framework(descriptor_as_dict, descriptor_config):
-    descriptor_as_dict["ml"]["framework"] = ""
-    descriptor_as_dict["ml"]["framework_version"] = "1.0"
+def test_framework_version_no_framework(descriptor_as_adict):
+    descriptor_as_adict.ml.framework = ""
+    descriptor_as_adict.ml.framework_version = "1.0"
 
     with pytest.raises(DescriptorError):
-        Descriptor(descriptor_as_dict, descriptor_config)
+        BenchmarkDescriptor.from_dict(descriptor_as_adict.to_dict())
 
 
-def test_invalid_strategy(descriptor_as_dict, descriptor_config):
-    descriptor_as_dict["hardware"]["strategy"] = "foo"
+def test_invalid_strategy(descriptor_as_adict):
+    descriptor_as_adict.hardware.strategy = "foo"
     with pytest.raises(DescriptorError):
-        Descriptor(descriptor_as_dict, descriptor_config)
+        BenchmarkDescriptor.from_dict(descriptor_as_adict.to_dict())
 
 
-def test_valid_strategy(descriptor_as_dict, descriptor_config):
-    descriptor_as_dict["hardware"]["strategy"] = "horovod"
+def test_valid_strategy(descriptor_as_adict):
+    descriptor_as_adict.hardware.strategy = "horovod"
 
-    descriptor = Descriptor(descriptor_as_dict, descriptor_config)
-    assert descriptor.strategy == DistributedStrategy.HOROVOD
+    descriptor = BenchmarkDescriptor.from_dict(descriptor_as_adict.to_dict())
+    assert descriptor.hardware.strategy == DistributedStrategy.HOROVOD

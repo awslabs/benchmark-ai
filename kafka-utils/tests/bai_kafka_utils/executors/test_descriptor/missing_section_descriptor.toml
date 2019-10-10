@@ -1,7 +1,6 @@
 # BenchmarkAI meta
 spec_version = "0.1.0"
 
-
 [info]
 task_name = "Title"
 description = "Description"
@@ -25,12 +24,12 @@ docker_image = "jlcont/benchmarking:270219"
 
 # [Opt] Dataset
 [data]
-# Dataset ID
-id = "mnist"
 
 [[data.sources]]
+# [Opt] Dataset ID
+id = "mnist"
 # [Opt] Path of data download script.
-uri = "python /home/benchmark/get_data.py mnist"
+src = "python /home/benchmark/get_data.py mnist"
 # [Opt] Path where the dataset is stored in the container FS
 path = "/work/data/mnist/"
 

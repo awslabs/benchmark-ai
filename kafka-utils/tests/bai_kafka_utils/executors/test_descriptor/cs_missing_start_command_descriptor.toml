@@ -1,3 +1,8 @@
+spec_version = "0.1.0"
+
+[info]
+description = "some description"
+
 [hardware]
 instance_type = "t3.small"
 strategy = "inference"
@@ -9,7 +14,7 @@ docker_image = "alpine"
 [server]
 # Harware on which to run the server
 [server.hardware]
-instance_type = "p3.4xlarge"
+instance_type = "p3.8xlarge"
 # The server environment definition
 [server.env]
 # The server image
