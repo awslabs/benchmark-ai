@@ -8,7 +8,7 @@ metadata:
     client-id: {event.client_id}
     created-by: {service_name}
 spec:
-  schedule: "{descriptor.scheduling}"
+  schedule: "{descriptor.info.scheduling}"
   jobTemplate:
     spec:
       template:

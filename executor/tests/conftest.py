@@ -3,7 +3,7 @@ import textwrap
 
 import toml
 import pytest
-from bai_kafka_utils.executors.descriptor import Descriptor, DescriptorConfig, DistributedStrategy
+from bai_kafka_utils.executors.descriptor import BenchmarkDescriptor, DescriptorConfig, DistributedStrategy
 
 from unittest.mock import create_autospec
 
@@ -109,21 +109,22 @@ def descriptor_as_dict(descriptor_config, base_data_sources):
         benchmark_code = 'python /home/benchmark/image_classification.py'
         args = '--model=resnet50_v2 --batch-size=32'
         [data]
-        id = 'mnist'
         [[data.sources]]
+        id = 'mnist'
         src = '{base_data_sources[0]['src']}'
         path = '{base_data_sources[0]['path']}'
         [[data.sources]]
+        id = 'mnist2'
         src = '{base_data_sources[1]['src']}'
         path = '{base_data_sources[1]['path']}'
         [output]
         [[output.metrics]]
         name = "accuracy"
-        unit = "%"
+        units = "%"
         pattern = "accuracy=([-+]?\\d*\\.\\d+|\\d+)"
         [[output.metrics]]
         name = "throughput"
-        unit = "images/sec"
+        units = "images/sec"
         pattern = "throughput=([-+]?\\d*\\.\\d+|\\d+)"
         """
         )
@@ -132,7 +133,7 @@ def descriptor_as_dict(descriptor_config, base_data_sources):
 
 @pytest.fixture
 def descriptor(descriptor_config, descriptor_as_dict):
-    return Descriptor(descriptor_as_dict, descriptor_config)
+    return BenchmarkDescriptor.from_dict(descriptor_as_dict, descriptor_config)
 
 
 @pytest.fixture

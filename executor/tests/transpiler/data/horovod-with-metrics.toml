@@ -18,7 +18,6 @@ strategy = "horovod"
 # [Opt]
 [hardware.distributed]
 num_instances = 2
-gpus_per_instance = 4
 
 # 2. Environment
 [env]
@@ -42,10 +41,6 @@ echo 'Horovod test descriptor'
 
 # [Opt] 4. Dataset
 [data]
-# Dataset ID
-id = "imagenet"
-
-# [Opt] Data sources
 # List all required data sources below.
 # Make an entry for each with the same format as the ones below.
 [[data.sources]]

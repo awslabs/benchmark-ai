@@ -51,8 +51,8 @@ spec:
                 "env": {"docker_image": "edisongustavo/bai-benchmarks-hello-world:latest",
                 "vars": {"FIST_VAL": "VAR", "SECOND_VAL": "VAR", "INT_VAL": 11, "FOO":
                 "bar"}}, "ml": {"benchmark_code": "python3 hello-world.py"}, "output":
-                {"metrics": [{"name": "accuracy", "unit": "%", "pattern": "accuracy=([-+]?\\d*\\.\\d+|\\d+)"},
-                {"name": "throughput", "unit": "images/sec", "pattern": "throughput=([-+]?\\d*\\.\\d+|\\d+)"}]}},
+                {"metrics": [{"name": "accuracy", "units": "%", "pattern": "accuracy=([-+]?\\d*\\.\\d+|\\d+)"},
+                {"name": "throughput", "units": "images/sec", "pattern": "throughput=([-+]?\\d*\\.\\d+|\\d+)"}]}},
                 "doc": "doc", "sha1": "SHA1", "descriptor_filename": null, "verified":
                 false}, "datasets": [], "models": [], "scripts": []}}'
             volumeMounts: []

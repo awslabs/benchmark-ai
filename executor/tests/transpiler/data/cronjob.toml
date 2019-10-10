@@ -24,8 +24,4 @@ docker_image = "test/example:latest"
 [ml]
 benchmark_code = "python /home/benchmark/image_classification.py"
 
-# 4. Dataset
-[data]
-# Dataset ID
-id = "mnist"
 
