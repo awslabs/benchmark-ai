@@ -273,28 +273,67 @@ bff/bin/anubis --cancel <ACTION_ID>
 bff/bin/anubis --purge <ACTION_ID>
 ```
 
-## Step 3 - Collect the results of your run
+## Step 3 - View the results of your run
 
 
-### Option 1: Anubis client
+### Model output
 
-You can collect results using the `--results` option of the [Anubis client tool](bff/bin/anubis).
+Using the `--results` option of the [Anubis client tool](bff/bin/anubis) will print out the STDOUT output of your run.
 
 ```bash
 # Assuming PWD is `benchmark-ai`
 bff/bin/anubis --results <ACTION_ID>
 ```
 
-### Option 2: CloudWatch
+### Benchmark metrics
 
-All metrics defined in the _output.metrics_ section of the [descriptor TOML file](executor/README.md) are automatically exported to AWS CloudWatch.
-Accessing CloudWatch via the AWS console, they can be found in the _metrics_ section, under the namespace ANUBIS/METRICS. 
+Anubis runs generate two kinds of metrics: _operational_ and _user defined_. Operational metrics inform of
+the health of the nodes running the benchmarks, such as CPU or GPU utilization, and are collected by default when running any Anubis job. 
+On the other hand, user defined metrics must be specified in the descriptor TOML and can contain any kind of data. 
+Typical examples for user defined metrics are accuracy and throughput.
 
-Metrics are labeled using:
+
+#### Operational metrics
+
+The system exports all operational metrics to [Prometheus](https://prometheus.io). They can be viewed using [Grafana dashboards](https://grafana.com/grafana/).
+These dashboards can be accesed either by:
+ - Using `./anubis-setup --query-graphs`
+ - Following the link provided by the anubis client when a submitted benchmark starts running:
+ ![metrics-dashboard-link](docs/images/metrics-available.png "Anubis client: link to metrics")
+ 
+The operational metrics dashboard looks as follows:
+
+![operational-metrics-dashboard](docs/images/operational-metrics-dashboard.png "Operational metrics")
+
+#### User defined metrics
+
+Users can define custom metrics in the _output.metrics_ section of the descriptor TOML. 
+These get exported to Prometheus with the prefix BAI_METRICS, and with the following labels:
+
  - _action-id_ of the benchmark run which produced them.
  - _client-id_ of the user who submitted the benchmark.
- - All **custom labels** defined in the _info.labels_ section of the descriptor file which defined the benchmark. 
- (see the [example descriptors](https://github.com/MXNetEdge/benchmark-ai/blob/master/executor/README.md#training) for reference)
+ - All **custom labels** defined in the _info.labels_ section of the descriptor file which defined the benchmark.
+ 
+ As an example, take a metric defined as follows: 
+ 
+ ```toml
+[[output.metrics]]
+# Name of the metric that will appear in the dashboards.
+name = "accuracy"
+
+# Metric unit (required)
+units = "ratio"
+
+# Pattern for log parsing for this metric.
+pattern = "accuracy=([-+]?\\d*\\.\\d+|\\d+)"
+```
+
+It will be accesible in grafana as _BAI_METRICS_accuracy_. Therefore, it can be queried to create a custom dashboard which displays it:
+
+![custom-metric-query](docs/images/metric-example.png "Querying custom metrics")
+
+
+
 
 ## Step 4 - Destroy Anubis Infrastructure
 
