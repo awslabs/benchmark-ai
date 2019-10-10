@@ -127,6 +127,9 @@ class BenchmarkHardwareDescriptor(HardwareDescriptor):
 
     # Only meaningful for horovod or other future multi-node strategies
     distributed: BenchmarkDistributedHardwareDescriptor = field(default_factory=BenchmarkDistributedHardwareDescriptor)
+
+    # TODO: We should probably refactor this and make it into a member function
+    # This is here just to convert "ONE_PER_GPU" into the number of processes per instance
     processes_per_instance: int = field(init=False)
 
     def __post_init__(self):
