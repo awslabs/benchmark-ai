@@ -1,6 +1,7 @@
 import time
 from typing import Callable, Tuple
 
+import boto3
 import kubernetes
 from bai_kafka_utils.events import ExecutorBenchmarkEvent, Status
 from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
@@ -10,37 +11,63 @@ from bai_kafka_utils.utils import get_pod_name
 from bai_watcher import SERVICE_NAME, __version__, service_logger
 from bai_watcher.args import WatcherServiceConfig
 from bai_watcher.kubernetes_job_watcher import KubernetesJobWatcher, load_kubernetes_config
+from bai_watcher.sage_maker_job_watcher import SageMakerTrainingJobWatcher
 from bai_watcher.status_inferrers.status import BenchmarkJobStatus
 
 logger = service_logger.getChild(__name__)
 
 
 def choose_status_from_benchmark_status(job_status: BenchmarkJobStatus) -> Tuple[Status, str]:
-    if job_status in (
-        BenchmarkJobStatus.FAILED_AT_SIDECAR_CONTAINER,
-        BenchmarkJobStatus.FAILED_AT_BENCHMARK_CONTAINER,
-        BenchmarkJobStatus.FAILED_AT_INIT_CONTAINERS,
-    ):
-        return Status.FAILED, "Job failed"
+    if job_status in (BenchmarkJobStatus.FAILED_AT_SIDECAR_CONTAINER, BenchmarkJobStatus.FAILED_AT_INIT_CONTAINERS):
+        return Status.FAILED, "Benchmark failed"
+    elif job_status == BenchmarkJobStatus.FAILED_AT_BENCHMARK_CONTAINER:
+        return Status.FAILED, "Benchmark container failed - Please check your container"
     elif job_status == BenchmarkJobStatus.FAILED:
-        return Status.FAILED, "Job finished with failure"
+        return Status.FAILED, "Benchmark failed for an unknown reason"
     elif job_status == BenchmarkJobStatus.SUCCEEDED:
-        return Status.SUCCEEDED, "Job finished with success"
+        return Status.SUCCEEDED, "Benchmark finished successfully"
     elif job_status == BenchmarkJobStatus.NO_POD_SCHEDULED:
-        return Status.FAILED, "Job was not able to run in the cluster"
+        return Status.FAILED, "Benchmark was unable to run on the cluster"
     elif job_status == BenchmarkJobStatus.JOB_NOT_FOUND:
-        return Status.CANCELED, "My watch has ended..."
+        return Status.CANCELED, "Benchmark cancelled - watch ended"
     elif job_status in (
         BenchmarkJobStatus.PENDING_AT_INIT_CONTAINERS,
         BenchmarkJobStatus.PENDING_AT_BENCHMARK_CONTAINER,
         BenchmarkJobStatus.PENDING_AT_SIDECAR_CONTAINER,
         BenchmarkJobStatus.RUNNING_AT_INIT_CONTAINERS,
     ):
-        return Status.PENDING, "Job is pending initialization"
+        return Status.PENDING, "Benchmark pending pod initialization"
     elif job_status in (BenchmarkJobStatus.PENDING_NODE_SCALING,):
-        return Status.PENDING, "Job is pending nodes to scale"
+        return Status.PENDING, "Benchmark pending node autoscaling"
     elif job_status == BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS:
-        return Status.RUNNING, "Job is running"
+        return Status.RUNNING, "Benchmark running"
+    # SageMaker status messages
+    elif job_status == BenchmarkJobStatus.SM_IN_PROGRESS_STARTING:
+        return Status.PENDING, "Benchmark starting"
+    elif job_status == BenchmarkJobStatus.SM_IN_PROGRESS_LAUNCHING_ML_INSTANCES:
+        return Status.PENDING, "Launching ML instances"
+    elif job_status == BenchmarkJobStatus.SM_IN_PROGRESS_PREP_TRAINING_STACK:
+        return Status.PENDING, "Preparing training stack"
+    elif job_status == BenchmarkJobStatus.SM_IN_PROGRESS_DOWNLOADING:
+        return Status.PENDING, "Downloading data"
+    elif job_status == BenchmarkJobStatus.SM_IN_PROGRESS_DOWNLOADING_TRAINING_IMG:
+        return Status.PENDING, "Downloading benchmark image"
+    elif job_status == BenchmarkJobStatus.SM_IN_PROGRESS_TRAINING:
+        return Status.PENDING, "Benchmark running"
+    elif job_status == BenchmarkJobStatus.SM_STOPPING:
+        return Status.PENDING, "Benchmark stopping"
+    elif job_status == BenchmarkJobStatus.SM_STOPPED:
+        return Status.FAILED, "Benchmark stopped"
+    elif job_status == BenchmarkJobStatus.SM_FAILED_MAX_RUNTIME_EXCEEDED:
+        return Status.FAILED, "Benchmark failed - Max runtime exceeded"
+    elif job_status == BenchmarkJobStatus.SM_FAILED_MAX_WAITTIME_EXCEEDED:
+        return Status.FAILED, "Benchmark failed - Max wait time exceeded"
+    elif job_status == BenchmarkJobStatus.SM_INTERRUPTED:
+        return Status.FAILED, "Benchmark interrupted"
+    elif job_status == BenchmarkJobStatus.SUCCEEDED:
+        return Status.SUCCEEDED, "Benchmark successful"
+    elif BenchmarkJobStatus.SM_UNKNOWN:
+        return Status.FAILED, "Benchmark reached unknown state - Please contact your system administrator"
     else:
         # All values of BenchmarkJobStatus must be handled
         assert False, f"Unknown status: {job_status}"
@@ -56,36 +83,43 @@ class WatchJobsEventHandler(KafkaServiceCallback):
         load_kubernetes_config(config.kubeconfig)
 
     def _make_status_callback(
-        self, event: ExecutorBenchmarkEvent, kafka_service: KafkaService
+        self, event: ExecutorBenchmarkEvent, kafka_service: KafkaService, is_k8s_job: bool = True
     ) -> Callable[[str, BenchmarkJobStatus, KubernetesJobWatcher], bool]:
-        def callback(job_id, benchmark_job_status: BenchmarkJobStatus, watcher: KubernetesJobWatcher):
+        job_start_time = None
+
+        def callback(job_id, benchmark_job_status: BenchmarkJobStatus):
+            nonlocal job_start_time
+
             # This method is called at each thread (not the Main Thread)
             logger.info(f"Benchmark job '{job_id}'' has status '{benchmark_job_status}'")
             status, message = choose_status_from_benchmark_status(benchmark_job_status)
             kafka_service.send_status_message_event(event, status, message)
-            if benchmark_job_status.is_running() and not watcher.metrics_available_message_sent:
-                kafka_service.send_status_message_event(
-                    event,
-                    status.METRICS_AVAILABLE,
-                    self._get_metrics_available_message(event, job_start_time=watcher.job_start_time),
-                )
-                watcher.metrics_available_message_sent = True
-            if benchmark_job_status == BenchmarkJobStatus.SUCCEEDED:
-                tstamp_now = int(time.time() * 1000)
-                kafka_service.send_status_message_event(
-                    event,
-                    status.METRICS_AVAILABLE,
-                    self._get_metrics_available_message(
-                        event, job_start_time=watcher.job_start_time, job_end_time=tstamp_now
-                    ),
-                )
+
+            # TODO: Remove this once we know where to get the SM metrics from
+            if is_k8s_job:
+                if benchmark_job_status.is_running() and not job_start_time:
+                    job_start_time = int(time.time() * 1000)
+                    msg = self._get_metrics_available_message(event, job_start_time)
+                    kafka_service.send_status_message_event(event, Status.METRICS_AVAILABLE, msg)
+
+                if benchmark_job_status == BenchmarkJobStatus.SUCCEEDED:
+                    job_end_time = int(time.time() * 1000)
+                    msg = self._get_metrics_available_message(event, job_start_time, job_end_time)
+                    kafka_service.send_status_message_event(event, Status.METRICS_AVAILABLE, msg)
+
             if benchmark_job_status is not None and benchmark_job_status.is_final():
                 del self.watchers[job_id]
                 logger.info(f"Job {job_id} is not being watched anymore")
+                kafka_service.send_status_message_event(event, status, "No longer watching benchmark")
                 return True
             return False
 
         return callback
+
+    @staticmethod
+    def _is_sage_maker_job(event: ExecutorBenchmarkEvent) -> bool:
+        execution_engine = event.payload.toml.contents.get("info", {}).get("execution_engine", None)
+        return execution_engine == "aws.sagemaker"
 
     def handle_event(self, event: ExecutorBenchmarkEvent, kafka_service: KafkaService):
         job_id = event.payload.job.id
@@ -95,13 +129,23 @@ class WatchJobsEventHandler(KafkaServiceCallback):
             return
 
         logger.info("Starting to watch the job '%s'", job_id)
-        watcher = KubernetesJobWatcher(
-            job_id,
-            self._make_status_callback(event, kafka_service),
-            kubernetes_client_jobs=kubernetes.client.BatchV1Api(),
-            kubernetes_client_pods=kubernetes.client.CoreV1Api(),
-            kubernetes_namespace=self.config.kubernetes_namespace_of_running_jobs,
-        )
+
+        watcher_callback = self._make_status_callback(event, kafka_service, not self._is_sage_maker_job(event))
+
+        if self._is_sage_maker_job(event):
+            watcher = SageMakerTrainingJobWatcher(
+                job_id=event.action_id, callback=watcher_callback, sagemaker_client=boto3.client("sagemaker")
+            )
+            kafka_service.send_status_message_event(event, Status.PENDING, "Watching SageMaker benchmark")
+        else:
+            watcher = KubernetesJobWatcher(
+                job_id,
+                watcher_callback,
+                kubernetes_client_jobs=kubernetes.client.BatchV1Api(),
+                kubernetes_client_pods=kubernetes.client.CoreV1Api(),
+                kubernetes_namespace=self.config.kubernetes_namespace_of_running_jobs,
+            )
+            kafka_service.send_status_message_event(event, Status.PENDING, "Watching Kubernetes benchmark")
         self.watchers[job_id] = watcher
         watcher.start()
 

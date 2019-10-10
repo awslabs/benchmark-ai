@@ -14,6 +14,9 @@ spec:
       labels:
         app: benchmark-ai
         service: watcher
+      annotations:
+        # TODO: Make a special role for the watcher with only "job describe" authorization
+        iam.amazonaws.com/role: sagemaker-executor-role
     spec:
       serviceAccountName: watcher
       affinity:
@@ -62,6 +65,11 @@ spec:
                 configMapKeyRef:
                   name: watcher
                   key: grafana_results_url
+            - name: AWS_DEFAULT_REGION
+              valueFrom:
+                configMapKeyRef:
+                  key: region
+                  name: outputs-infrastructure
       nodeSelector:
         node.type: bai-services-cheap
       restartPolicy: Always

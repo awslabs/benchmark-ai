@@ -27,6 +27,11 @@ def k8s_job_watcher(mocker):
 
 
 @pytest.fixture
+def sagemaker_job_watcher(mocker):
+    return mocker.patch("bai_watcher.kafka_service_watcher.SageMakerTrainingJobWatcher", autospec=True)
+
+
+@pytest.fixture
 def kafka_service_config():
     return KafkaServiceConfig(
         bootstrap_servers=["kafka1:9092", "kafka2:9092"],
@@ -158,5 +163,20 @@ def test_status_callback_returns_false_on_job_not_found(
     # create status callback function
     status_callback = watcher._make_status_callback(benchmark_event, kafka_service)
 
-    assert status_callback(job_id, BenchmarkJobStatus.JOB_NOT_FOUND, k8s_job_watcher) is True
+    assert status_callback(job_id, BenchmarkJobStatus.JOB_NOT_FOUND) is True
     assert job_id not in watcher.watchers
+
+
+def test_service_instantiates_right_watcher(
+    k8s_job_watcher, sagemaker_job_watcher, benchmark_event, kafka_service, watcher_service_config
+):
+    # K8s job
+    watcher = WatchJobsEventHandler(watcher_service_config)
+    watcher.handle_event(benchmark_event, kafka_service)
+    k8s_job_watcher.assert_called_once()
+
+    # SageMaker job
+    benchmark_event.payload.toml.contents["info"] = {"execution_engine": "aws.sagemaker"}
+    watcher = WatchJobsEventHandler(watcher_service_config)
+    watcher.handle_event(benchmark_event, kafka_service)
+    sagemaker_job_watcher.assert_called_once()

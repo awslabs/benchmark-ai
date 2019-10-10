@@ -1,5 +1,4 @@
 import logging
-import re
 import tempfile
 from math import ceil
 from typing import Callable
@@ -14,7 +13,7 @@ from bai_kafka_utils.executors.execution_callback import (
     ExecutionEngineException,
     NoResourcesFoundException,
 )
-from botocore.exceptions import ClientError
+from bai_sagemaker_utils.utils import get_client_error_message, is_not_found_error
 
 from sm_executor.args import SageMakerExecutorConfig
 from sm_executor.estimator_factory import EstimatorFactory, TENSORFLOW_FRAMEWORK, MXNET_FRAMEWORK
@@ -81,7 +80,7 @@ class SageMakerExecutionEngine(ExecutionEngine):
                 estimator.fit(data, wait=False, logs=False, job_name=job_name)
 
             except botocore.exceptions.ClientError as err:
-                error_message = SageMakerExecutionEngine._get_client_error_message(err, default="Unknown")
+                error_message = get_client_error_message(err, default="Unknown")
                 raise ExecutionEngineException(
                     f"Benchmark creation failed. SageMaker returned error: {error_message}"
                 ) from err
@@ -105,15 +104,6 @@ class SageMakerExecutionEngine(ExecutionEngine):
         total_size_gb = int(SageMakerExecutionEngine.SAFETY_FACTOR * ceil(total_size / 1024 ** 3))
         return total_size_gb
 
-    @staticmethod
-    def _get_client_error_message(client_error: ClientError, default: str = None):
-        return client_error.response.get("Error", {}).get("Message", default)
-
-    @staticmethod
-    def _is_not_found_error(client_error: ClientError):
-        error_message = SageMakerExecutionEngine._get_client_error_message(client_error, default="")
-        return re.match(r"(\w*\s*)*not found(\s*\w*)*", error_message, re.IGNORECASE) is not None
-
     def cancel(self, client_id: str, action_id: str, cascade: bool = False):
         logger.info(f"Attempting to stop training job {action_id}")
         job_name = SageMakerExecutionEngine._get_job_name(action_id)
@@ -135,8 +125,7 @@ class SageMakerExecutionEngine(ExecutionEngine):
                 logging.info(f"""Skipping delete. Job status is {training_job["TrainingJobStatus"]}""")
         except botocore.exceptions.ClientError as err:
             logging.exception(f"Could not stop training job {action_id}", err)
-            if self._is_not_found_error(err):
-                logging.info(f"Training job {action_id} not found")
+            if is_not_found_error(err):
                 raise NoResourcesFoundException(action_id) from err
             raise ExecutionEngineException(str(err)) from err
         logging.info(f"Successfully issued stop training command for {action_id}")

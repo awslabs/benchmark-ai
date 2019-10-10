@@ -64,7 +64,7 @@ def k8s_job_watcher(mocker):
 
 def test_get_status_when_job_does_not_exist(k8s_job_watcher):
     k8s_job_watcher.jobs_client.read_namespaced_job_status.side_effect = kubernetes.client.rest.ApiException(status=404)
-    assert k8s_job_watcher.get_status() == BenchmarkJobStatus.JOB_NOT_FOUND
+    assert k8s_job_watcher._get_status() == BenchmarkJobStatus.JOB_NOT_FOUND
 
 
 @pytest.mark.parametrize("error_code", [500, 503])
@@ -73,7 +73,7 @@ def test_get_status_when_kubernetes_raises_a_server_error(k8s_job_watcher, error
         status=error_code
     )
     with pytest.raises(kubernetes.client.rest.ApiException) as e:
-        k8s_job_watcher.get_status()
+        k8s_job_watcher._get_status()
     assert e.value.status == error_code
 
 
@@ -84,14 +84,14 @@ def test_thread_run_loop_when_callback_returns_true_will_end_loop(k8s_job_watche
     mock_time_sleep = mock_loop_dependencies(
         mocker, iterations=2, kubernetes_job_status=BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS
     )
-    k8s_job_watcher.callback.return_value = True
+    k8s_job_watcher._callback.return_value = True
 
     # evaluate
     k8s_job_watcher._thread_run_loop()
 
     # assertions
-    assert k8s_job_watcher.callback.call_args_list == [
-        call("job-id-1234", BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS, k8s_job_watcher)
+    assert k8s_job_watcher._callback.call_args_list == [
+        call("job-id-1234", BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS)
     ]
     assert mock_time_sleep.call_args_list == []
     assert k8s_job_watcher.get_result() == (True, None)
@@ -105,13 +105,13 @@ def test_thread_run_loop_when_callback_returns_raises_will_end_loop(k8s_job_watc
         mocker, iterations=2, kubernetes_job_status=BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS
     )
     err = Exception("Some error")
-    k8s_job_watcher.callback.side_effect = err
+    k8s_job_watcher._callback.side_effect = err
 
     # evaluate
     k8s_job_watcher._thread_run_loop()
 
     # assertions
-    assert k8s_job_watcher.callback.call_count == 1
+    assert k8s_job_watcher._callback.call_count == 1
     assert mock_time_sleep.call_args_list == []
     assert k8s_job_watcher.get_result() == (False, err)
 
@@ -122,13 +122,13 @@ def test_thread_run_loop_when_callback_returns_false_will_not_end_loop(k8s_job_w
     mock_time_sleep = mock_loop_dependencies(
         mocker, iterations=2, kubernetes_job_status=BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS
     )
-    k8s_job_watcher.callback.return_value = False
+    k8s_job_watcher._callback.return_value = False
 
     k8s_job_watcher._thread_run_loop()
 
-    assert k8s_job_watcher.callback.call_args_list == [
-        call("job-id-1234", BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS, k8s_job_watcher),
-        call("job-id-1234", BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS, k8s_job_watcher),
+    assert k8s_job_watcher._callback.call_args_list == [
+        call("job-id-1234", BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS),
+        call("job-id-1234", BenchmarkJobStatus.RUNNING_AT_MAIN_CONTAINERS),
     ]
     assert mock_time_sleep.call_args_list == [
         call(SLEEP_TIME_BETWEEN_CHECKING_K8S_STATUS),

@@ -33,7 +33,7 @@ def make_trigger_callback(
     job_seen = False
     start_time = int(time())
 
-    def status_trigger_callback(job_name: str, job_status: BenchmarkJobStatus, watcher: KubernetesJobWatcher) -> bool:
+    def status_trigger_callback(job_name: str, job_status: BenchmarkJobStatus) -> bool:
         nonlocal job_seen
 
         # For the first job_not_found_grace_period_seconds seconds, ignore not found
