@@ -50,7 +50,7 @@ metadata:
     client-id: {event.client_id}
     created-by: {service_name}
 spec:
-  replicas: {descriptor.num_instances}
+  replicas: {descriptor.hardware.distributed.num_instances}
   template:
     metadata:
       annotations:
@@ -146,11 +146,11 @@ spec:
                 key: secret-access-key
                 optional: true
       containers:
-      - image: {descriptor.docker_image}
+      - image: {descriptor.env.docker_image}
         name: benchmark
         resources:
           limits:
-            nvidia.com/gpu: {descriptor.gpus_per_instance}
+            nvidia.com/gpu: {descriptor.hardware.gpus_per_instance}
         command: 
         - /bin/entrypoint.sh
         volumeMounts:
@@ -252,6 +252,6 @@ spec:
       - name: scripts-volume
         emptyDir: {{}}
       nodeSelector:
-        beta.kubernetes.io/instance-type: {descriptor.instance_type}
+        beta.kubernetes.io/instance-type: {descriptor.hardware.instance_type}
         node.type: bai-worker
         failure-domain.beta.kubernetes.io/zone: {availability_zone}

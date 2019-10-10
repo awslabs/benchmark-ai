@@ -7,7 +7,7 @@ import boto3
 import botocore
 import sagemaker
 from bai_kafka_utils.events import FetcherBenchmarkEvent, BenchmarkJob
-from bai_kafka_utils.executors.descriptor import DescriptorConfig, Descriptor, DescriptorError
+from bai_kafka_utils.executors.descriptor import DescriptorConfig, BenchmarkDescriptor, DescriptorError
 from bai_kafka_utils.executors.execution_callback import (
     ExecutionEngine,
     ExecutionEngineException,
@@ -16,7 +16,8 @@ from bai_kafka_utils.executors.execution_callback import (
 from bai_sagemaker_utils.utils import get_client_error_message, is_not_found_error
 
 from sm_executor.args import SageMakerExecutorConfig
-from sm_executor.estimator_factory import EstimatorFactory, TENSORFLOW_FRAMEWORK, MXNET_FRAMEWORK
+from sm_executor.estimator_factory import EstimatorFactory
+from sm_executor.frameworks import MXNET_FRAMEWORK, TENSORFLOW_FRAMEWORK
 from sm_executor.source_dir import ScriptSourceDirectory
 
 CONFIG = DescriptorConfig(["single_node", "horovod"], [TENSORFLOW_FRAMEWORK, MXNET_FRAMEWORK])
@@ -52,7 +53,7 @@ class SageMakerExecutionEngine(ExecutionEngine):
     def run(self, event: FetcherBenchmarkEvent) -> BenchmarkJob:
         logger.info(f"Processing SageMaker benchmark {event.action_id}")
         try:
-            descriptor = Descriptor(event.payload.toml.contents, CONFIG)
+            descriptor = BenchmarkDescriptor.from_dict(event.payload.toml.contents, CONFIG)
         except DescriptorError as e:
             logger.exception(f"Could not parse descriptor", e)
             raise ExecutionEngineException("Cannot process the request") from e

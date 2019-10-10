@@ -64,8 +64,9 @@ def fetcher_inference_benchmark_event(
 @fixture
 def fetcher_benchmark_event(benchmark_event_dummy_payload: BenchmarkEvent) -> FetcherBenchmarkEvent:
     toml_dict = {
+        "spec_version": "0.1.0",
         "ml": {"benchmark_code": "echo hello world"},
-        "info": {"task_name": "test-2"},
+        "info": {"description": "something", "task_name": "test-2"},
         "hardware": {"instance_type": "local", "strategy": "single_node"},
         "env": {"docker_image": "alpine", "vars": {"FOO": "BAR", "IVAL": 42}},
     }

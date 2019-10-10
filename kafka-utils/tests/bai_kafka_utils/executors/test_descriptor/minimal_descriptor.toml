@@ -1,4 +1,8 @@
 # Minimal descriptor to get a single_node benchmark going
+spec_version = "0.1.0"
+
+[info]
+description = "some description"
 
 [hardware]
 instance_type = "t3.small"

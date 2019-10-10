@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 
 from bai_kafka_utils.events import DownloadableContent, BenchmarkEvent
 from bai_kafka_utils.events import FileSystemObject
-from bai_kafka_utils.executors.descriptor import DescriptorError, Descriptor, DistributedStrategy
+from bai_kafka_utils.executors.descriptor import DescriptorError, BenchmarkDescriptor, DistributedStrategy
 from bai_kafka_utils.utils import METRICS_PUSHER_BACKEND_ARG_PREFIX
 from ruamel import yaml
 
@@ -61,7 +61,7 @@ logger = logging.getLogger(__name__)
 
 class BaiKubernetesObjectBuilder(metaclass=abc.ABCMeta):
     def __init__(
-        self, job_id: str, descriptor: Descriptor, config: BaiConfig, template_name: str, event: BenchmarkEvent
+        self, job_id: str, descriptor: BenchmarkDescriptor, config: BaiConfig, template_name: str, event: BenchmarkEvent
     ):
         self.job_id = job_id.lower()
         self.inference_server_job_id = f"is-{self.job_id}"
@@ -78,20 +78,20 @@ class BaiKubernetesObjectBuilder(metaclass=abc.ABCMeta):
         self.config_template.feed({"service_name": SERVICE_NAME})
         self.config_template.feed({"job_id": self.job_id})
         self.config_template.feed({"inference_server_job_id": self.inference_server_job_id})
-        self.config_template.feed({"metrics": self.get_metrics_from_descriptor(descriptor)})
 
     @staticmethod
-    def get_metrics_from_descriptor(descriptor: Descriptor):
+    def get_metrics_from_descriptor(descriptor: BenchmarkDescriptor):
         metrics = []
-        for metric in descriptor.metrics:
-            metric["pattern"] = base64.b64encode(metric["pattern"].encode("utf-8")).decode("utf-8")
-            metrics.append(metric)
+        if descriptor.output:
+            for metric in descriptor.output.metrics:
+                metric.pattern = base64.b64encode(metric.pattern.encode("utf-8")).decode("utf-8")
+                metrics.append(asdict(metric))
         return json.dumps(metrics)
 
     @staticmethod
-    def get_server_metrics_from_descriptor(descriptor: Descriptor):
+    def get_server_metrics_from_descriptor(descriptor: BenchmarkDescriptor):
         metrics = []
-        if descriptor.is_inference_strategy and descriptor.server.output:
+        if descriptor.is_inference_strategy() and descriptor.server.output:
             for metric in descriptor.server.output.metrics:
                 metric.pattern = base64.b64encode(metric.pattern.encode("utf-8")).decode("utf-8")
                 metrics.append(asdict(metric))
@@ -122,7 +122,7 @@ class BaiKubernetesObjectBuilder(metaclass=abc.ABCMeta):
         self._feed_additional_template_values()
         self.root = self.config_template.build()
 
-        for label, value in self.descriptor.custom_labels.items():
+        for label, value in self.descriptor.info.labels.items():
             self.root.add_label(label, value)
 
         self._update_root_k8s_object()
@@ -134,7 +134,7 @@ class BaiKubernetesObjectBuilder(metaclass=abc.ABCMeta):
 
 
 class ScheduledBenchmarkKubernetedObjectBuilder(BaiKubernetesObjectBuilder):
-    def __init__(self, descriptor: Descriptor, config: BaiConfig, job_id: str, event: BenchmarkEvent):
+    def __init__(self, descriptor: BenchmarkDescriptor, config: BaiConfig, job_id: str, event: BenchmarkEvent):
         super().__init__(job_id, descriptor, config, "cron_job.yaml", event)
 
     def _feed_additional_template_values(self):
@@ -152,7 +152,7 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
 
     def __init__(
         self,
-        descriptor: Descriptor,
+        descriptor: BenchmarkDescriptor,
         config: BaiConfig,
         data_sources: List[DownloadableContent],
         scripts: List[BaiScriptSource],
@@ -182,6 +182,7 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         # Using a random AZ is good enough for now
         availability_zone = self.choose_availability_zone(self.descriptor, self.environment_info, self.random_object)
         self.config_template.feed({"availability_zone": availability_zone})
+        self.config_template.feed({"metrics": self.get_metrics_from_descriptor(self.descriptor)})
 
     def _update_root_k8s_object(self):
         self.root.set_service_account(BENCHMARK_SERVICE_ACCOUNT)
@@ -191,11 +192,11 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         self.add_env_vars()
         self.add_benchmark_cmd()
 
-        if not self.descriptor.metrics:
+        if not self.descriptor.output:
             self.remove_metrics_sidecars()
         else:
             # Add custom labels metrics pusher
-            for label, value in self.descriptor.custom_labels.items():
+            for label, value in self.descriptor.info.labels.items():
                 self.add_metrics_pusher_backend_arg(label, value)
 
         if self.event.parent_action_id:
@@ -205,7 +206,7 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         if self.config.suppress_job_affinity:
             self.root.remove_affinity()
 
-        if self.descriptor.is_inference_strategy:
+        if self.descriptor.is_inference_strategy():
             # Use inference server service account
             self.root.set_service_account(INFERENCE_SERVER_SERVICE_ACCOUNT)
             # add server environment variables
@@ -213,22 +214,22 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
 
         # remove server lock init container from non-inference strategy
         # single node benchmarks
-        elif self.descriptor.strategy == DistributedStrategy.SINGLE_NODE:
+        elif self.descriptor.hardware.strategy == DistributedStrategy.SINGLE_NODE:
             self.root.remove_container(INFERENCE_SERVER_LOCK_CONTAINER)
 
     @staticmethod
     def choose_availability_zone(
-        descriptor: Descriptor, environment_info: EnvironmentInfo, random_object: random.Random = None
+        descriptor: BenchmarkDescriptor, environment_info: EnvironmentInfo, random_object: random.Random = None
     ):
-        if descriptor.availability_zone:
-            if descriptor.availability_zone in environment_info.availability_zones.values():
-                return descriptor.availability_zone
-            raise DescriptorError(f"Invalid zone name {descriptor.availability_zone}")
+        if descriptor.hardware.availability_zone:
+            if descriptor.hardware.availability_zone in environment_info.availability_zones.values():
+                return descriptor.hardware.availability_zone
+            raise DescriptorError(f"Invalid zone name {descriptor.hardware.availability_zone}")
         # Try to find the zone id
-        if descriptor.zone_id:
-            if descriptor.zone_id in environment_info.availability_zones:
-                return environment_info.availability_zones[descriptor.zone_id]
-            raise DescriptorError(f"Invalid zone id {descriptor.zone_id}")
+        if descriptor.hardware.aws_zone_id:
+            if descriptor.hardware.aws_zone_id in environment_info.availability_zones:
+                return environment_info.availability_zones[descriptor.hardware.aws_zone_id]
+            raise DescriptorError(f"Invalid zone id {descriptor.hardware.aws_zone_id}")
 
         if random_object is None:
             random_object = random.Random()
@@ -262,9 +263,9 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         self.root.add_env_vars(BENCHMARK_CONTAINER, env_vars)
 
     def add_benchmark_cmd(self):
-        if self.descriptor.strategy in [DistributedStrategy.SINGLE_NODE, DistributedStrategy.INFERENCE]:
+        if self.descriptor.hardware.strategy in [DistributedStrategy.SINGLE_NODE, DistributedStrategy.INFERENCE]:
             self.add_benchmark_cmd_to_container()
-        elif self.descriptor.strategy == DistributedStrategy.HOROVOD:
+        elif self.descriptor.hardware.strategy == DistributedStrategy.HOROVOD:
             self.add_benchmark_cmd_to_config_map()
         else:
             raise ValueError("Unsupported configuration in descriptor file")
@@ -280,7 +281,7 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         self.root.remove_container(METRICS_PUSHER_CONTAINER)
 
     def add_shared_memory(self):
-        if self.descriptor.extended_shm:
+        if self.descriptor.env.extended_shm:
             self._add_extended_shm()
 
     def _add_extended_shm(self, container=BENCHMARK_CONTAINER):
@@ -313,14 +314,14 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
                 return []
             return shlex.split(command)
 
-        if self.descriptor.benchmark_code:
-            cmd = split_args(self.descriptor.benchmark_code)
-            args = split_args(self.descriptor.ml_args)
+        if self.descriptor.ml and self.descriptor.ml.benchmark_code:
+            cmd = split_args(self.descriptor.ml.benchmark_code)
+            args = split_args(self.descriptor.ml.args)
             benchmark_container.command = cmd + args
             benchmark_container.pop("args", None)
 
-        elif self.descriptor.ml_args:
-            benchmark_container.args = split_args(self.descriptor.ml_args)
+        elif self.descriptor.ml and self.descriptor.ml.args:
+            benchmark_container.args = split_args(self.descriptor.ml.args)
             benchmark_container.pop("command", None)
 
         else:
@@ -332,8 +333,8 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         """
         Adds the benchmark code and args to the entrypoint configmap.
         """
-        if self.descriptor.benchmark_code:
-            benchmark_cmd = self.descriptor.benchmark_code + self.descriptor.ml_args
+        if self.descriptor.ml and self.descriptor.ml.benchmark_code:
+            benchmark_cmd = self.descriptor.ml.benchmark_code + (self.descriptor.ml.args or "")
             # Using yaml.PreservedScalarString so multiline strings are printed properly
             # HACK: Depending on yaml here makes this module depend on knowledge of how our Kubernetes classes are
             # implemented
@@ -414,7 +415,7 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         data_puller.args = puller_args
 
     def add_env_vars(self):
-        self.root.add_env_vars(BENCHMARK_CONTAINER, self.descriptor.env_vars)
+        self.root.add_env_vars(BENCHMARK_CONTAINER, self.descriptor.env.vars)
         self.root.add_env_vars(BENCHMARK_CONTAINER, self.internal_env_vars)
 
     def add_scripts(self, scripts: List[BaiScriptSource]):
@@ -444,7 +445,7 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
 class InferenceServerJobKubernetedObjectBuilder(SingleRunBenchmarkKubernetesObjectBuilder):
     def __init__(
         self,
-        descriptor: Descriptor,
+        descriptor: BenchmarkDescriptor,
         config: BaiConfig,
         job_id: str,
         fetched_models: List[DownloadableContent],
@@ -489,7 +490,7 @@ class InferenceServerJobKubernetedObjectBuilder(SingleRunBenchmarkKubernetesObje
             self.remove_metrics_sidecars()
         else:
             # Add custom labels metrics pusher
-            for label, value in self.descriptor.custom_labels.items():
+            for label, value in self.descriptor.info.labels.items():
                 self.add_metrics_pusher_backend_arg(label, value)
 
         if self.config.suppress_job_affinity:
@@ -525,7 +526,7 @@ def create_scripts(scripts: List[FileSystemObject]) -> List[BaiScriptSource]:
 
 
 def create_single_run_benchmark_bai_k8s_builder(
-    descriptor: Descriptor,
+    descriptor: BenchmarkDescriptor,
     bai_config: BaiConfig,
     fetched_data_sources: List[DownloadableContent],
     scripts: List[FileSystemObject],
@@ -556,9 +557,9 @@ def create_single_run_benchmark_bai_k8s_builder(
         DistributedStrategy.INFERENCE: "job_single_node.yaml",
     }
 
-    template_name = template_files.get(descriptor.strategy)
+    template_name = template_files.get(descriptor.hardware.strategy)
     if not template_name:
-        raise ValueError(f"Unsupported distributed strategy in descriptor file: '{descriptor.strategy}'")
+        raise ValueError(f"Unsupported distributed strategy in descriptor file: '{descriptor.hardware.strategy}'")
 
     bai_scripts = create_scripts(scripts)
 
@@ -578,7 +579,7 @@ def create_single_run_benchmark_bai_k8s_builder(
 
 
 def create_inference_server_bai_k8s_builder(
-    descriptor: Descriptor,
+    descriptor: BenchmarkDescriptor,
     bai_config: BaiConfig,
     job_id: str,
     fetched_models: List[DownloadableContent],
@@ -614,7 +615,7 @@ def create_inference_server_bai_k8s_builder(
 
 
 def create_scheduled_benchmark_bai_k8s_builder(
-    descriptor: Descriptor, bai_config: BaiConfig, job_id: str, event: BenchmarkEvent
+    descriptor: BenchmarkDescriptor, bai_config: BaiConfig, job_id: str, event: BenchmarkEvent
 ) -> ScheduledBenchmarkKubernetedObjectBuilder:
     """
     Builds a BaiKubernetesObjectBuilder object
@@ -651,7 +652,7 @@ def create_job_yaml_spec(
     :param extra_bai_config_args: An optional Dict which will be forwarded to the `BaiConfig` object created
     :return: Tuple with (yaml string for the given descriptor, job_id)
     """
-    descriptor = Descriptor(descriptor_contents, executor_config.descriptor_config)
+    descriptor = BenchmarkDescriptor.from_dict(descriptor_contents, executor_config.descriptor_config)
 
     bai_k8s_benchmark_job_builder = create_single_run_benchmark_bai_k8s_builder(
         descriptor,
@@ -664,7 +665,7 @@ def create_job_yaml_spec(
         extra_bai_config_args=extra_bai_config_args,
     )
 
-    if descriptor.strategy != DistributedStrategy.INFERENCE:
+    if descriptor.hardware.strategy != DistributedStrategy.INFERENCE:
         return bai_k8s_benchmark_job_builder.dump_yaml_string()
 
     bai_k8s_inference_server_job_builder = create_inference_server_bai_k8s_builder(
@@ -695,7 +696,7 @@ def create_scheduled_job_yaml_spec(
     :param job_id: str
     :return: Tuple with (yaml string for the given descriptor, job_id)
     """
-    descriptor = Descriptor(descriptor_contents, executor_config.descriptor_config)
+    descriptor = BenchmarkDescriptor.from_dict(descriptor_contents, executor_config.descriptor_config)
     bai_k8s_builder = create_scheduled_benchmark_bai_k8s_builder(
         descriptor, executor_config.bai_config, job_id, event=event
     )

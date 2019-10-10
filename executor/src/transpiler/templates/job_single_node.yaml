@@ -105,14 +105,14 @@ spec:
             value: '30'
       containers:
       - name: benchmark
-        image: {descriptor.docker_image}
+        image: {descriptor.env.docker_image}
         resources:
           limits:
-            nvidia.com/gpu: {descriptor.gpus_per_instance}
+            nvidia.com/gpu: {descriptor.hardware.gpus_per_instance}
         command: []
         args: []
         securityContext:
-          privileged: {descriptor.privileged}
+          privileged: {descriptor.env.privileged}
         env:
         - name: BENCHMARK_AI
           value: "fifo"
@@ -197,7 +197,7 @@ spec:
           - mountPath: /tmp/benchmark-ai
             name: benchmark-ai
       nodeSelector:
-        beta.kubernetes.io/instance-type: {descriptor.instance_type}
+        beta.kubernetes.io/instance-type: {descriptor.hardware.instance_type}
         node.type: bai-worker
         failure-domain.beta.kubernetes.io/zone: {availability_zone}
       restartPolicy: OnFailure

@@ -1,5 +1,5 @@
 import addict
-from bai_kafka_utils.executors.descriptor import DescriptorConfig, Descriptor
+from bai_kafka_utils.executors.descriptor import DescriptorConfig, BenchmarkDescriptor
 from pytest import fixture
 
 from sm_executor.args import SageMakerExecutorConfig
@@ -27,9 +27,10 @@ def sagemaker_config(descriptor_config) -> SageMakerExecutorConfig:
 
 
 @fixture
-def descriptor_as_dict(descriptor_config):
+def descriptor_as_adict(descriptor_config):
     return addict.Dict(
         spec_version="0.1.0",
+        info=addict.Dict(description="something"),
         hardware=addict.Dict(instance_type="p3.8xlarge", strategy="single_node"),
         env=addict.Dict(docker_image="jlcont/benchmarking:270219"),
         ml=addict.Dict(
@@ -42,5 +43,5 @@ def descriptor_as_dict(descriptor_config):
 
 
 @fixture
-def descriptor(descriptor_config, descriptor_as_dict):
-    return Descriptor(descriptor_as_dict, descriptor_config)
+def descriptor(descriptor_config, descriptor_as_adict):
+    return BenchmarkDescriptor.from_dict(descriptor_as_adict.to_dict(), descriptor_config)

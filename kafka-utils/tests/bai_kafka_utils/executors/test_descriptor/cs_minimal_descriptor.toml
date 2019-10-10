@@ -1,4 +1,8 @@
 # Minimal descriptor to get inference strategy to work
+spec_version = "0.1.0"
+
+[info]
+description = "some description"
 
 [hardware]
 instance_type = "t3.small"
