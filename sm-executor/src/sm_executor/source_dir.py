@@ -2,7 +2,7 @@ import os
 import tarfile
 import tempfile
 
-from bai_kafka_utils.executors.descriptor import Descriptor
+from bai_kafka_utils.executors.descriptor import BenchmarkDescriptor
 from typing import TextIO, List
 from urllib.parse import urlparse
 
@@ -18,7 +18,7 @@ class ScriptSourceDirectory:
     PYTHON_ENTRY_POINT = "tmp_entry.py"
 
     @staticmethod
-    def create(descriptor: Descriptor, dst_path: str, scripts: List[FileSystemObject] = None, s3=None):
+    def create(descriptor: BenchmarkDescriptor, dst_path: str, scripts: List[FileSystemObject] = None, s3=None):
         with open(os.path.join(dst_path, ScriptSourceDirectory.SHELL_ENTRY_POINT), "wt") as bash_entry:
             ScriptSourceDirectory._create_shell_entrypoint(bash_entry, descriptor)
 
@@ -44,11 +44,11 @@ class ScriptSourceDirectory:
             tar.close()
 
     @staticmethod
-    def _create_shell_entrypoint(file: TextIO, descriptor: Descriptor):
+    def _create_shell_entrypoint(file: TextIO, descriptor: BenchmarkDescriptor):
         file.write(ScriptSourceDirectory.SHELL_SHEBANG + os.linesep)
-        for var, val in descriptor.env_vars.items():
+        for var, val in descriptor.env.vars.items():
             file.write(f'export {var}="{val}"' + os.linesep)
-        file.write(descriptor.benchmark_code + os.linesep)
+        file.write(descriptor.ml.benchmark_code + os.linesep)
 
     @staticmethod
     def _create_python_shell_wrapper(file: TextIO):

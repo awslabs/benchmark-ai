@@ -1,5 +1,5 @@
 import pytest
-from bai_kafka_utils.executors.descriptor import Descriptor, DistributedStrategy
+from bai_kafka_utils.executors.descriptor import BenchmarkDescriptor, DistributedStrategy
 from mock import PropertyMock
 from pytest import fixture
 from sagemaker import Session
@@ -38,7 +38,7 @@ def mock_session(mocker) -> Session:
 
 def test_estimator_factory_routing(
     mock_session: Session,
-    descriptor: Descriptor,
+    descriptor: BenchmarkDescriptor,
     sagemaker_config: SageMakerExecutorConfig,
     mock_create_tensorflow_estimator: EstimatorFactory,
     mock_create_mxnet_estimator: EstimatorFactory,
@@ -55,10 +55,10 @@ def validate_estimator_common(
     assert estimator.source_dir == SOURCE_DIR
     assert estimator.entry_point == ScriptSourceDirectory.PYTHON_ENTRY_POINT
     assert estimator.sagemaker_session == mock_session
-    assert estimator.image_name == descriptor.docker_image
-    assert estimator.framework_version == descriptor.framework_version
-    assert estimator.train_instance_type == descriptor.instance_type
-    assert estimator.train_instance_count == descriptor.num_instances
+    assert estimator.image_name == descriptor.env.docker_image
+    assert estimator.framework_version == descriptor.ml.framework_version
+    assert estimator.train_instance_type == descriptor.hardware.instance_type
+    assert estimator.train_instance_count == descriptor.hardware.distributed.num_instances
     assert estimator.role == sagemaker_config.sm_role
     assert estimator.output_path == f"s3://{sagemaker_config.s3_output_bucket}"
     assert estimator.security_group_ids == sagemaker_config.security_group_ids
@@ -69,9 +69,9 @@ def validate_estimator_tensorflow(
     estimator: TensorFlow, mock_session: Session, descriptor, sagemaker_config: SageMakerExecutorConfig
 ):
     assert estimator.script_mode
-    if descriptor.strategy == DistributedStrategy.SINGLE_NODE:
+    if descriptor.hardware.strategy == DistributedStrategy.SINGLE_NODE:
         assert not estimator.distributions
-    elif descriptor.strategy == DistributedStrategy.HOROVOD:
+    elif descriptor.hardware.strategy == DistributedStrategy.HOROVOD:
         assert estimator.distributions.mpi["enabled"]
         assert estimator.distributions.mpi["processes_per_host"] == descriptor.processes_per_instance
 
@@ -79,7 +79,7 @@ def validate_estimator_tensorflow(
 @pytest.mark.parametrize("strategy", [DistributedStrategy.SINGLE_NODE, DistributedStrategy.HOROVOD])
 def test_estimator_factory_tensorflow(
     mock_session: Session,
-    descriptor: Descriptor,
+    descriptor: BenchmarkDescriptor,
     sagemaker_config: SageMakerExecutorConfig,
     strategy: DistributedStrategy,
 ):
@@ -90,7 +90,7 @@ def test_estimator_factory_tensorflow(
 
 
 def test_estimator_factory_mxnet(
-    mock_session: Session, descriptor: Descriptor, sagemaker_config: SageMakerExecutorConfig
+    mock_session: Session, descriptor: BenchmarkDescriptor, sagemaker_config: SageMakerExecutorConfig
 ):
     estimator = create_mxnet_estimator(mock_session, descriptor, SOURCE_DIR, sagemaker_config)
     validate_estimator_common(estimator, mock_session, descriptor, sagemaker_config)

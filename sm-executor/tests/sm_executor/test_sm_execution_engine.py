@@ -1,10 +1,9 @@
-from typing import Dict, Any
+import datetime
 from unittest.mock import create_autospec, PropertyMock
 
 import addict
 import boto3
 import botocore
-import datetime
 import pytest
 from bai_kafka_utils.events import (
     FetcherBenchmarkEvent,
@@ -16,7 +15,7 @@ from bai_kafka_utils.events import (
     BenchmarkDoc,
     BenchmarkJob,
 )
-from bai_kafka_utils.executors.descriptor import Descriptor, DescriptorError
+from bai_kafka_utils.executors.descriptor import BenchmarkDescriptor, DescriptorError
 from bai_kafka_utils.executors.execution_callback import ExecutionEngineException, NoResourcesFoundException
 from botocore.stub import Stubber
 from pytest import fixture
@@ -120,7 +119,7 @@ def sm_execution_engine_to_test(
 
 
 @fixture
-def fetcher_event(descriptor_as_dict: Dict[str, Any]) -> FetcherBenchmarkEvent:
+def fetcher_event(descriptor_as_adict) -> FetcherBenchmarkEvent:
     return FetcherBenchmarkEvent(
         action_id=ACTION_ID,
         message_id="MESSAGE_ID",
@@ -132,7 +131,7 @@ def fetcher_event(descriptor_as_dict: Dict[str, Any]) -> FetcherBenchmarkEvent:
         visited=[],
         type="PRODUCER_TOPIC",
         payload=FetcherPayload(
-            toml=BenchmarkDoc(contents=descriptor_as_dict, doc="", sha1="SHA"),
+            toml=BenchmarkDoc(contents=descriptor_as_adict.to_dict(), doc="", sha1="SHA"),
             scripts=SCRIPTS,
             datasets=[
                 DownloadableContent(
@@ -162,7 +161,7 @@ def mock_tmp_dir(mocker):
 
 
 def test_run(
-    descriptor: Descriptor,
+    descriptor: BenchmarkDescriptor,
     sm_execution_engine_to_test: SageMakerExecutionEngine,
     fetcher_event: FetcherBenchmarkEvent,
     mock_create_source_dir,

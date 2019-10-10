@@ -3,7 +3,7 @@ import tarfile
 
 import boto3
 from bai_kafka_utils.events import FileSystemObject
-from bai_kafka_utils.executors.descriptor import Descriptor
+from bai_kafka_utils.executors.descriptor import BenchmarkDescriptor
 from botocore.stub import Stubber
 from io import BytesIO, StringIO, IOBase
 from pytest import fixture
@@ -95,7 +95,7 @@ def validate_unpacked_script(file: BytesIO, content):
 
 
 def test_create_dir_download_files(
-    descriptor: Descriptor, mock_open: PatchedOpen, mock_bltn_open: PatchedOpen, mock_s3
+    descriptor: BenchmarkDescriptor, mock_open: PatchedOpen, mock_bltn_open: PatchedOpen, mock_s3
 ):
     ScriptSourceDirectory.create(descriptor, DST_PATH, SCRIPTS, mock_s3)
 
@@ -108,8 +108,8 @@ def test_create_dir_download_files(
     validate_unpacked_script(mock_bltn_open.files[1], SECOND_CONTENT)
 
 
-def test_create_dir_shell_entry_point(descriptor: Descriptor, mock_open: PatchedOpen):
-    descriptor.env_vars = {"FOO": "BAR"}
+def test_create_dir_shell_entry_point(descriptor: BenchmarkDescriptor, mock_open: PatchedOpen):
+    descriptor.env.vars = {"FOO": "BAR"}
 
     ScriptSourceDirectory.create(descriptor, DST_PATH)
 
@@ -118,4 +118,4 @@ def test_create_dir_shell_entry_point(descriptor: Descriptor, mock_open: Patched
     shell_entry = mock_open.files[0]
     lines = [line for line in shell_entry.getvalue().split(os.linesep) if line]
 
-    assert lines == [ScriptSourceDirectory.SHELL_SHEBANG, 'export FOO="BAR"', descriptor.benchmark_code]
+    assert lines == [ScriptSourceDirectory.SHELL_SHEBANG, 'export FOO="BAR"', descriptor.ml.benchmark_code]
