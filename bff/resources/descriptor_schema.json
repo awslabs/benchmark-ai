@@ -1,8 +1,8 @@
 {
-  "$id": "descriptor_server_schema",
+  "$id": "anubis_benchmark_descriptor",
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "anubis descriptor schema",
-  "description": "Schema for the descriptor toml",
+  "title": "anubis benchmark descriptor schema",
+  "description": "Schema for the anubis benchmark descriptor toml",
 
   "definitions": {
     "str_dict": {
