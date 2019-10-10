@@ -1,0 +1,168 @@
+{
+  "$id": "descriptor_server_schema",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "anubis descriptor schema",
+  "description": "Schema for the descriptor toml",
+
+  "definitions": {
+    "str_dict": {
+      "type": "object",
+      "additionalProperties": {"type": "string"}
+    },
+    "http_probe": {
+      "type": "object",
+      "properties": {
+        "scheme": { "type": "string", "enum": ["http", "https"], "default": "http" },
+        "path": { "type": "string", "format": "uri-reference" },
+        "port": { "type": "number", "minimum": 1, "maximum": 65535 },
+        "initial_delay_seconds": { "type": "number", "minimum": 1 },
+        "period_seconds": { "type": "number", "minimum": 1 },
+        "timeout_seconds": { "type": "number", "minimum": 1 },
+        "success_threshold": { "type" : "number", "minimum": 1 },
+        "failure_threshold": { "type" :  "number", "minimum": 1 }
+      },
+      "additionalProperties": false,
+      "required": ["path"]
+    },
+    "output" : {
+      "type": "object",
+      "properties": {
+        "metrics": { "type":  "array", "items":  { "$ref": "#/definitions/metric" } }
+      },
+      "additionalProperties": false,
+      "required": ["metrics"]
+    },
+    "metric": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "units": { "type" : "string" },
+        "pattern": {
+          "type" : "string",
+          "format": "regex"
+        }
+      },
+      "additionalProperties": false,
+      "required": ["name", "units", "pattern"]
+    },
+    "downloadable_content": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "src": { "type": "string" },
+        "path": { "type": "string" },
+        "md5": { "type":  "string", "pattern": "^([^:]+:[a-fA-F0-9]+|[a-fA-F0-9]{32}|)$" }
+      },
+      "additionalProperties": false,
+      "required": ["src", "path"]
+    },
+    "server_hardware": {
+      "type": "object",
+      "properties": {
+        "instance_type": { "type":  "string" }
+      },
+      "additionalProperties": false,
+      "required": ["instance_type"]
+    },
+    "server_env": {
+      "type": "object",
+      "properties": {
+        "docker_image": { "type": "string" },
+        "privileged":   { "type": "boolean" },
+        "extended_shm": { "type": "boolean" },
+        "ports": { "type":  "array", "items":  { "type": "number" } },
+        "readiness_probe": { "$ref": "#/definitions/http_probe" },
+        "start_command": { "type":  "string" },
+        "start_command_args": { "type": "string" },
+        "vars": { "$ref": "#/definitions/str_dict" }
+      },
+      "additionalProperties": false,
+      "required": ["docker_image", "ports", "start_command"]
+    },
+    "server": {
+      "type": "object",
+      "properties": {
+        "env": { "$ref": "#/definitions/server_env" },
+        "hardware": { "$ref": "#/definitions/server_hardware" },
+        "models": { "type":  "array", "items":  { "$ref": "#/definitions/downloadable_content" } },
+        "output": { "$ref": "#/definitions/output" }
+      },
+      "required": ["hardware", "env"],
+      "additionalProperties": false
+    },
+    "benchmark_info": {
+      "type": "object",
+      "properties": {
+        "description": { "type": "string" },
+        "task_name": { "type": "string" },
+        "scheduling": { "type": "string", "pattern": "^(single_run|((\\*|\\?|\\d+((\\/|\\-){0,1}(\\d+))*)\\s*){6})$" },
+        "execution_engine": { "type": "string", "enum": ["default", "aws.sagemaker"] },
+        "labels": { "$ref": "#/definitions/str_dict" }
+      },
+      "additionalProperties": false,
+      "required": ["description"]
+    },
+    "distributed_hardware": {
+      "type": "object",
+      "properties": {
+        "num_instances": { "type": "integer" },
+        "processes_per_instance": { "type": "string", "pattern": "^gpus|\\d+" }
+      },
+      "additionalProperties": false
+    },
+    "benchmark_hardware": {
+      "type": "object",
+      "properties": {
+        "strategy": { "type":  "string", "enum": ["single_node", "horovod", "inference"] },
+        "instance_type": { "type": "string" },
+        "aws_zone_id": { "type": "string" },
+        "availability_zone": { "type": "string" },
+        "distributed": { "$ref": "#/definitions/distributed_hardware" }
+      },
+      "additionalProperties": false,
+      "required": ["instance_type"]
+    },
+    "benchmark_env": {
+      "type": "object",
+      "properties": {
+        "docker_image": { "type": "string" },
+        "privileged":   { "type": "boolean" },
+        "extended_shm": { "type": "boolean" },
+        "vars": { "$ref": "#/definitions/str_dict" }
+      },
+      "additionalProperties": false,
+      "required": ["docker_image"]
+    },
+    "benchmark_ml": {
+      "type": "object",
+      "properties": {
+        "framework": { "type": "string", "enum": ["", "mxnet", "tensorflow"] },
+        "framework_version": { "type": "string" },
+        "benchmark_code": { "type": "string" },
+        "args": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "benchmark_data": {
+      "type": "object",
+      "properties": {
+        "sources": { "type":  "array", "items":  { "$ref": "#/definitions/downloadable_content" } }
+      },
+      "additionalProperties": false,
+      "required": ["sources"]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "spec_version": { "type": "string" },
+    "info":  { "$ref": "#/definitions/benchmark_info" },
+    "hardware": { "$ref": "#/definitions/benchmark_hardware" },
+    "env": { "$ref": "#/definitions/benchmark_env" },
+    "ml": { "$ref": "#/definitions/benchmark_ml" },
+    "data": { "$ref": "#/definitions/benchmark_data" },
+    "output": { "$ref": "#/definitions/output" },
+    "server": { "$ref": "#/definitions/server" }
+  },
+  "additionalProperties": false,
+  "required": ["spec_version", "info", "hardware", "env"]
+}
