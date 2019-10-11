@@ -437,40 +437,55 @@ snoop_events() {
 main() {
     ((DEBUG)) && echo "Hello, ${AWS_PROFILE}..."
 
-    case "${1}" in
-        --as | --set-profile)
-            shift
-            as "${1}"
-            shift
-            ;;
-    esac
+    local input_args=($@)
+    local current_arg=""
+    local idx=0
 
-    _is_profile_set
-
-    while [ -n "${1}" ]; do
-        myargs=()
-        local unshift=0
-        case "${1}" in
+    while (( idx < ${#input_args[@]} )); do
+        current_arg=${input_args[$((idx))]}
+        case "${current_arg}" in
             --force)
                 FORCE=1
                 ;;
             --debug)
                 DEBUG=1
                 ;;
-            --check| --sanity-check)
-                sanity_check
-                exit $?
+        esac
+        ((idx++))
+    done
+
+    idx=0
+
+    while (( idx < ${#input_args[@]} )); do
+        current_arg=${input_args[$((idx))]}
+        case "${current_arg}" in
+            --as | --set-profile)
+                as "${input_args[$((++idx))]}"
                 ;;
             --list-profiles)
                 list_profiles ""
                 ;;
             --whoami)
-                shift
                 whoami ""
                 ;;
+        esac
+        ((idx++))
+    done
+
+    _is_profile_set
+
+    idx=0
+
+    while (( idx < ${#input_args[@]} )); do
+        myargs=()
+        current_arg=${input_args[$((idx))]}
+        case "${current_arg}" in
+            --check| --sanity-check)
+                sanity_check
+                exit $?
+                ;;
             --sync-config-to-profile)
-                shift
-                sync_config_to_profile "${1}"
+                sync_config_to_profile "${input_args[$((++idx))]}"
                 ;;
             --show-service-endpoint)
                 show_service_endpoint
@@ -479,61 +494,56 @@ main() {
                 list_configmaps ""
                 ;;
             --show-configmap)
-                shift
-                show_configmap "${1}"
+                show_configmap "${input_args[$((++idx))]}"
                 ;;
             --jump-to-bastion | --connect-anubis-shell)
-                shift
                 jump_to_bastion ""
                 exit $?
                 ;;
             --query-logs) #Kibana access (pulls up Kibana through a tunnel)
-                shift
-                query_logs "${1}"
+                query_logs "${input_args[$((++idx))]}"
                 ;;
             --query-metrics) #PromDash access (play with Prometheus queries)
-                shift
-                query_metrics "${1}"
+                query_metrics "${input_args[$((++idx))]}"
                 ;;
             --query-graphs) #PromDash access (play with Prometheus queries)
-                shift
-                query_graphs "${1}"
+                query_graphs "${input_args[$((++idx))]}"
                 ;;
             --query-alerts) #PromDash access (play with Prometheus queries)
-                shift
-                query_alerts "${1}"
+                query_alerts "${input_args[$((++idx))]}"
                 ;;
             --snoop-events) #Kubectl logs (Kubernetes logs)
-                shift
-                until [[ -n "$(echo "${1}" | sed -rn '/^\s*--/p')" || -z "${1}" ]]; do
-                    ((DEBUG)) && echo "  collecting arg $1" 1>&2
-                    myargs+=("${1}")
-                    shift
+                ((idx++))
+                until [[ -n "$(echo "${input_args[$((idx))]}" | sed -rn '/^\s*--/p')" || -z "${input_args[$((idx))]}" ]]; do
+                    ((DEBUG)) && echo "  collecting arg ${input_args[$((idx))]}" 1>&2
+                    myargs+=("${input_args[$((idx++))]}")
                 done
-                unshift=1
+                ((idx--))
                 snoop_events "${myargs[@]}"
                 ;;
             -- | --driver)
-                shift
+                ((idx++))
                 echo "${AWS_PROFILE}"
                 (
                     if [[ -n "${ANUBIS_REPO_HOME}" ]]; then
                         cd ${ANUBIS_REPO_HOME}/ci || exit 1
-                        AWS_PROFILE=${AWS_PROFILE} ./anubis-driver.py ${@}
+                        AWS_PROFILE=${AWS_PROFILE} ./anubis-driver.py "${input_args[@]:((idx))}"
                     else
                         printf "\033[01;31m[WARNING]\033[0m Please be sure to set environment variable ANUBIS_REPO_HOME to the top level directory of the anubis repository!\n\n"
                     fi
                 )
+                idx=${#input_args[@]}
                 break
                 ;;
             --help)
                 usage | more
                 ;;
             *)
-                echo "Unknown flag ${1}"
+                [[ ! "${current_arg}" =~ ^(--debug|--force|--as|--list-profiles|--whoami)$ ]] && \
+                    printf "\033[01;31m => Unknown flag\033[0m [%s]\n" "${current_arg}"
                 ;;
         esac
-        ((!unshift)) && shift
+        ((idx++))
     done
 }
 
