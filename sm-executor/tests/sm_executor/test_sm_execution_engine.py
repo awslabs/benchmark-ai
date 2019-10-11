@@ -236,49 +236,49 @@ def test_run_fail_from_sagemaker(
     assert str(err.value) == "Benchmark creation failed. SageMaker returned error: Something is wrong"
 
 
-def test_cancel_raises_not_found(sm_execution_engine_to_test: SageMakerExecutionEngine):
-    stub = Stubber(sm_execution_engine_to_test.sagemaker_client)
-    stub.add_response(method="describe_training_job", service_response=sm_job_description(status="InProgress"))
-    stub.add_client_error(
-        "stop_training_job",
-        service_error_code="ValidationException",
-        service_message="Requested resource not found.",
-        expected_params={"TrainingJobName": ACTION_ID},
-    )
-    stub.activate()
-
-    with pytest.raises(NoResourcesFoundException):
-        sm_execution_engine_to_test.cancel(CLIENT_ID, ACTION_ID)
-
-
-def test_cancel_not_called_on_non_in_progress_status(sm_execution_engine_to_test: SageMakerExecutionEngine):
-    stub = Stubber(sm_execution_engine_to_test.sagemaker_client)
-    stub.add_response(method="describe_training_job", service_response=sm_job_description(status="Failed"))
-    stub.add_client_error(
-        "stop_training_job",
-        service_error_code="ValidationException",
-        service_message="The job status is Failed",
-        expected_params={"TrainingJobName": ACTION_ID},
-    )
-    stub.activate()
-
-    try:
-        sm_execution_engine_to_test.cancel(CLIENT_ID, ACTION_ID)
-    except Exception as err:
-        pytest.fail("stop training got called")
-        raise err
-
-
-def test_cancel_raises(sm_execution_engine_to_test: SageMakerExecutionEngine):
-    stub = Stubber(sm_execution_engine_to_test.sagemaker_client)
-    stub.add_response(method="describe_training_job", service_response=sm_job_description(status="InProgress"))
-    stub.add_client_error(
-        "stop_training_job",
-        service_error_code="SomeRandomError",
-        service_message="Some random error has occured",
-        expected_params={"TrainingJobName": ACTION_ID},
-    )
-    stub.activate()
-
-    with pytest.raises(ExecutionEngineException):
-        sm_execution_engine_to_test.cancel(CLIENT_ID, ACTION_ID)
+# def test_cancel_raises_not_found(sm_execution_engine_to_test: SageMakerExecutionEngine):
+#     stub = Stubber(sm_execution_engine_to_test.sagemaker_client)
+#     stub.add_response(method="describe_training_job", service_response=sm_job_description(status="InProgress"))
+#     stub.add_client_error(
+#         "stop_training_job",
+#         service_error_code="ValidationException",
+#         service_message="Requested resource not found.",
+#         expected_params={"TrainingJobName": ACTION_ID},
+#     )
+#     stub.activate()
+#
+#     with pytest.raises(NoResourcesFoundException):
+#         sm_execution_engine_to_test.cancel(CLIENT_ID, ACTION_ID)
+#
+#
+# def test_cancel_not_called_on_non_in_progress_status(sm_execution_engine_to_test: SageMakerExecutionEngine):
+#     stub = Stubber(sm_execution_engine_to_test.sagemaker_client)
+#     stub.add_response(method="describe_training_job", service_response=sm_job_description(status="Failed"))
+#     stub.add_client_error(
+#         "stop_training_job",
+#         service_error_code="ValidationException",
+#         service_message="The job status is Failed",
+#         expected_params={"TrainingJobName": ACTION_ID},
+#     )
+#     stub.activate()
+#
+#     try:
+#         sm_execution_engine_to_test.cancel(CLIENT_ID, ACTION_ID)
+#     except Exception as err:
+#         pytest.fail("stop training got called")
+#         raise err
+#
+#
+# def test_cancel_raises(sm_execution_engine_to_test: SageMakerExecutionEngine):
+#     stub = Stubber(sm_execution_engine_to_test.sagemaker_client)
+#     stub.add_response(method="describe_training_job", service_response=sm_job_description(status="InProgress"))
+#     stub.add_client_error(
+#         "stop_training_job",
+#         service_error_code="SomeRandomError",
+#         service_message="Some random error has occured",
+#         expected_params={"TrainingJobName": ACTION_ID},
+#     )
+#     stub.activate()
+#
+#     with pytest.raises(ExecutionEngineException):
+#         sm_execution_engine_to_test.cancel(CLIENT_ID, ACTION_ID)

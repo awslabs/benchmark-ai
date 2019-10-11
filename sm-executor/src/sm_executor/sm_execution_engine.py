@@ -119,11 +119,11 @@ class SageMakerExecutionEngine(ExecutionEngine):
             # It's a hack, and it should be removed once we can figure out this SageMaker client issue.
             # Normally, the stop_training_job call should just raise a client exception.
             # GitHub issue: https://github.com/MXNetEdge/benchmark-ai/issues/928
-            training_job = self.sagemaker_client.describe_training_job(TrainingJobName=job_name)
-            if training_job["TrainingJobStatus"] == "InProgress":
-                self.sagemaker_client.stop_training_job(TrainingJobName=job_name)
-            else:
-                logging.info(f"""Skipping delete. Job status is {training_job["TrainingJobStatus"]}""")
+            # training_job = self.sagemaker_client.describe_training_job(TrainingJobName=job_name)
+            # if training_job["TrainingJobStatus"] == "InProgress":
+            self.sagemaker_client.stop_training_job(TrainingJobName=job_name)
+            # else:
+            #    logging.info(f"""Skipping delete. Job status is {training_job["TrainingJobStatus"]}""")
         except botocore.exceptions.ClientError as err:
             logging.exception(f"Could not stop training job {action_id}", err)
             if is_not_found_error(err):
