@@ -108,18 +108,53 @@ unset _t
 ((DEBUG)) && printf "ANUBIS_REPO_HOME: %s\n\n" "${ANUBIS_REPO_HOME}"
 
 AWS_CREDIENTIALS_FILE="${HOME}/.aws/credentials"
-declare -r ANUBIS_HOME=${HOME}/.anubis
-export AWS_PROFILE=${AWS_PROFILE:=$(cat "${ANUBIS_HOME}"/whoami)}
+declare -r ANUBIS_HOME=${ANUBIS_HOME:=${HOME}/.anubis}
+mkdir -p "${ANUBIS_HOME}"
+
+export AWS_PROFILE=$(cat "${ANUBIS_HOME}/whoami" 2> /dev/null)
 
 #--------------------------------------------------------------------
 # Helper / Utility functions ("private")
 #--------------------------------------------------------------------
 
+_is_profile_set() {
+    if [[ ! -s "${ANUBIS_HOME}/whoami" ]]; then
+        if [[ -n "${AWS_PROFILE}" ]]; then
+            cat "${AWS_PROFILE}" > "${ANUBIS_HOME}/whoami"
+        else
+            printf '
+  Please set the user that will be used for anubis-setup interactions.
+  This value must be present as a label in your credentials file and
+  preferably the same as the identity associated with the current installation.
+  To list the known profiles issue the command:
+
+  \033[01;33manubis-setup --list-profiles\033[0m
+
+  Set that profile by issuing the command:
+
+  \033[01;33manubis-setup --as [profile name]\033[0m
+
+  Note: This value will be saved and used during future use of anubis-setup.
+        This value may not match that of the current value of AWS_PROFILE in
+        you calling environment.  You may use the command:
+
+  \033[01;33manubis-setup --whoami\033[0m
+
+        To know who you are as far as anubis-setup is concerned.
+
+  :-)
+
+'
+            exit 9
+        fi
+    fi
+}
+
 _prepare_credentials_map() {
     sed -r -n  's/\[(.*)\]/\1/p' "${AWS_CREDIENTIALS_FILE}"
     for profile in $(sed -r -n  's/\[(.*)\]/\1/p' "${AWS_CREDIENTIALS_FILE}"| xargs); do
         account=$(aws sts get-caller-identity --profile="${profile}" | jq -r '.Account')
-        echo " looking at profile: ${profile}"
+        echo " looking at profile: [${profile}]"
         account-to-profile["${account}"]="${profile}"
         profile-to-account["${profile}"]="${account}"
     done
@@ -253,9 +288,9 @@ whoami() {
     ((DEBUG)) && echo "Calling \"whoami\" function with: $*"
     #If that is not set then select [default]
     #print out the sts: Ex: aws sts get-caller-identity --profile=bellgav-dev
-    echo "Profile: ${AWS_PROFILE}"
+    echo "Profile: [${AWS_PROFILE}]"
     _validate_profile "${AWS_PROFILE}" && \
-        aws sts get-caller-identity --profile=${AWS_PROFILE}
+        aws sts get-caller-identity --profile="${AWS_PROFILE}"
 }
 
 # To assume a new identity - to run anubis-setup *as* X, where X is a profile listed in your credentials file.
@@ -267,8 +302,8 @@ as() {
     #_prepare_credentials_map
 
     if _validate_profile "${profile_name}"; then
-        echo "${profile_name}" > "${ANUBIS_HOME}"/whoami
-        export AWS_PROFILE=$(cat "${ANUBIS_HOME}"/whoami)
+        echo "${profile_name}" > "${ANUBIS_HOME}/whoami"
+        export AWS_PROFILE=$(cat "${ANUBIS_HOME}/whoami")
     fi
 }
 
@@ -401,6 +436,17 @@ snoop_events() {
 
 main() {
     ((DEBUG)) && echo "Hello, ${AWS_PROFILE}..."
+
+    case "${1}" in
+        --as | --set-profile)
+            shift
+            as "${1}"
+            shift
+            ;;
+    esac
+
+    _is_profile_set
+
     while [ -n "${1}" ]; do
         myargs=()
         local unshift=0
@@ -420,11 +466,7 @@ main() {
                 ;;
             --whoami)
                 shift
-                whoami "${1}"
-                ;;
-            --as | --set-profile)
-                shift
-                as "${1}"
+                whoami ""
                 ;;
             --sync-config-to-profile)
                 shift
@@ -495,4 +537,4 @@ main() {
     done
 }
 
-main "$@"
+(main "$@")
