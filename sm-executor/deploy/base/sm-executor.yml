@@ -30,6 +30,8 @@ spec:
       containers:
         - name: sm-executor
           image: "benchmarkai/sm-executor"
+          ports:
+            - containerPort: 21000
           env:
           - name: KAFKA_BOOTSTRAP_SERVERS
             valueFrom:
