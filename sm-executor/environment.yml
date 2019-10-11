@@ -17,3 +17,4 @@ dependencies:
     - dacite
     - sagemaker
     - tensorflow
+    - pydevd-pycharm
