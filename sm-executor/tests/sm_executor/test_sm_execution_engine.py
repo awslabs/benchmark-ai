@@ -16,8 +16,7 @@ from bai_kafka_utils.events import (
     BenchmarkJob,
 )
 from bai_kafka_utils.executors.descriptor import BenchmarkDescriptor, DescriptorError
-from bai_kafka_utils.executors.execution_callback import ExecutionEngineException, NoResourcesFoundException
-from botocore.stub import Stubber
+from bai_kafka_utils.executors.execution_callback import ExecutionEngineException
 from pytest import fixture
 from sagemaker import Session
 from sagemaker.estimator import EstimatorBase, Framework
