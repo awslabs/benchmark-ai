@@ -49,7 +49,7 @@ def _create_common_estimator_args(
         sagemaker_session=session,
         image_name=descriptor.env.docker_image,
         py_version="py3",
-        framework_version=descriptor.ml.framework_version,
+        framework_version=descriptor.ml.framework_version or "",  # None is not a valid value
         train_instance_type=descriptor.hardware.instance_type,
         train_instance_count=descriptor.hardware.distributed.num_instances,
         role=config.sm_role,
