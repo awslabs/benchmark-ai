@@ -46,6 +46,8 @@ class SageMakerExecutionEngine(ExecutionEngine):
 
         self.sagemaker_client = sagemaker_client or boto3.client("sagemaker")
 
+        self._start_debug = True
+
     @staticmethod
     def _get_job_name(action_id: str):
         return action_id
@@ -108,6 +110,13 @@ class SageMakerExecutionEngine(ExecutionEngine):
     def cancel(self, client_id: str, action_id: str, cascade: bool = False):
         logger.info(f"Attempting to stop training job {action_id}")
         job_name = SageMakerExecutionEngine._get_job_name(action_id)
+
+        if self._start_debug:
+            import pydevd
+
+            pydevd.settrace("localhost", port=21000, suspend=False)
+            self._start_debug = False
+
         try:
             # TODO Remove the status check before issuing the stop training job
             # This is a stopgap solution

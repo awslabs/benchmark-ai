@@ -10,10 +10,6 @@ from sm_executor.args import create_executor_config
 
 
 def main(argv=None):
-    import pydevd
-
-    pydevd.settrace("localhost", port=21000, suspend=False)
-
     common_kafka_cfg = get_kafka_service_config(SERVICE_NAME, argv)
     executor_config = create_executor_config(argv, os.environ)
 
