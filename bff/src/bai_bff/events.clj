@@ -42,8 +42,7 @@
   (let [decoded-bytes   (b64/decode (.getBytes (some-> event :payload :toml :doc)))
         verified?       (= (digest/sha1 decoded-bytes)
                            (some-> event :payload :toml :sha1))
-        descriptor-toml (String. decoded-bytes)
-        descriptor-map  (validate-descriptor (toml/read descriptor-toml :keywordize))]
+        descriptor-map  (validate-descriptor (toml/read (String. decoded-bytes) :keywordize))]
 
     (-> event
         (assoc-in [:payload :toml :verified] verified?)
