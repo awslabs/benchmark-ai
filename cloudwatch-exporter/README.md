@@ -1,6 +1,6 @@
 # User defined metrics in CloudWatch
 
-All metrics defined in the _output.metrics_ section of the [descriptor TOML file](executor/README.md) are automatically exported to AWS CloudWatch.
+All metrics defined in the _output.metrics_ section of the [descriptor TOML file](../executor/README.md) are automatically exported to AWS CloudWatch.
 Accessing CloudWatch via the AWS console, they can be found in the _metrics_ section, under the namespace **ANUBIS/METRICS**.
 
  
@@ -43,3 +43,12 @@ pattern = "accuracy=([-+]?\\d*\\.\\d+|\\d+)"
 With this settings, one metric would be published to CloudWatch, under the namespace ANUBIS/METRICS and with metric name
  **accuracy**. It would have three dimensions: `action-id = <ACTION_ID>`, `client-id = <CLIENT_ID>` and `experiment = test1`.
 
+
+## How it works
+
+User defined metrics are published to Kafka by the [metrics pusher](../metrics-pusher), specifically to the BAI_METRICS topic
+(this is defined in the [metrics pusher configuration](https://github.com/MXNetEdge/benchmark-ai/blob/880fa33c208f39906647b7482f5ff1667d418d1d/executor/src/transpiler/templates/job_single_node.yaml#L167)).
+The CloudWatch exporter is a Kubernetes deployment which subscribes to this topic and publishes all metrics it receives 
+to CloudWatch using boto3.
+
+![cloudwatch-exporter-arch](../docs/images/cloudwatch-exporter.jpg "Cloudwatch exporter")
