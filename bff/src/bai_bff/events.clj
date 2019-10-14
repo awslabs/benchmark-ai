@@ -8,6 +8,7 @@
             [environ.core :refer [env]]
             [digest]
             [toml.core :as toml]
+            [json-schema.core :as json-schema]
             [java-time :refer [instant]]
             [taoensso.timbre :as log]))
 
@@ -25,21 +26,27 @@
   (= (some-> event :payload :toml :sha1)
      (digest/sha1(b64/decode (.getBytes (some-> event :payload :toml :doc))))))
 
+(defn- descriptor-validator-fn [json-schema-document]
+  (let [schema (json-schema/prepare-schema (slurp (io/resource json-schema-document)))]
+    (log/info "loaded schema:"(str"["json-schema-document"]"))
+    (partial json-schema/validate schema)))
+
+(def validate-descriptor (descriptor-validator-fn "descriptor_schema.json"))
+
 (defn decode-document
   "Takes an event and decodes the base64 encoded descriptor
   document (that is in TOML format), and transforms the information
   into a map under the \"contents\" key.  It also verifies that the
   SHA1 posted does indeed match the descriptor document posted."
   [event]
-  (let [decoded-bytes (b64/decode (.getBytes (some-> event :payload :toml :doc)))
-        verified?     (= (digest/sha1 decoded-bytes)
-                         (some-> event :payload :toml :sha1))
-        toml-document (String. decoded-bytes)
-        toml->map     (toml/read toml-document :keywordize)]
+  (let [decoded-bytes   (b64/decode (.getBytes (some-> event :payload :toml :doc)))
+        verified?       (= (digest/sha1 decoded-bytes)
+                           (some-> event :payload :toml :sha1))
+        descriptor-map  (validate-descriptor (toml/read (String. decoded-bytes) :keywordize))]
 
     (-> event
         (assoc-in [:payload :toml :verified] verified?)
-        (assoc-in [:payload :toml :contents] toml->map))))
+        (assoc-in [:payload :toml :contents] descriptor-map))))
 
 (defn validate-toml-crontab [event]
   (when-let [crontab-string (some-> event :payload :toml :contents :info :scheduling)]

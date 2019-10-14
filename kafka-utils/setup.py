@@ -15,7 +15,6 @@ setup(
     package_dir={"": "src"},
     packages=find_packages("src"),
     package_data={
-        "bai_kafka_utils.executors": ["descriptor_server_schema.json"],
         "bai_kafka_utils.executors.util": ["ec2_instance_info.csv"],
     },
     include_package_data=True,
