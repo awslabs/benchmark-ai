@@ -250,7 +250,7 @@ def get_service_endpoint(region, session):
             service_endpoint = json.loads(service_endpoint_json)["status"]["loadBalancer"]["ingress"][0]["hostname"]
             service_port = json.loads(service_endpoint_json)["spec"]["ports"][0]["port"]
             print(f"=> Your Anubis service endpoint: {service_endpoint}")
-            return service_endpoint+":"+service_port
+            return service_endpoint+":"+str(service_port)
         elif codepipeline_bff_status == "Failed":
             raise Exception(f"Unable to get service endpoint since `bff` deploy stage failed")
 
