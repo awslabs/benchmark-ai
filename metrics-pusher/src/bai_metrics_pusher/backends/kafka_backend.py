@@ -58,7 +58,7 @@ class KafkaBackend(Backend):
         timestamp_in_millis = int(now.timestamp()) * 1000
         for metric_name, metric_value in metrics.items():
             metric_object = KafkaExporterMetric(
-                name=metric_name, value=metric_value, timestamp=timestamp_in_millis, labels=self.labels
+                name=metric_name, value=float(metric_value), timestamp=timestamp_in_millis, labels=self.labels
             )
 
             # TODO: Handle KafkaTimeoutError
