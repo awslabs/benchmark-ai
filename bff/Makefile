@@ -372,9 +372,9 @@ deploy: _deploy_venv deploy.yml service.yml
 	#Deploy this service to the k8s cluster
 	kubectl $(K8S_KUBECTL_ARGS) apply -f deploy.yml
 	kubectl $(K8S_KUBECTL_ARGS) apply -f service.yml
-	touch $(SERVICE_ENDPOINT)
-	while [ ! -s $(SERVICE_ENDPOINT) ]; do \
-	  kubectl $(K8S_KUBECTL_ARGS) get service bai-bff -o json | jq '.status.loadBalancer.ingress[].hostname' > $(SERVICE_ENDPOINT); \
+	@touch $(SERVICE_ENDPOINT)
+	@while [ ! -s $(SERVICE_ENDPOINT) ]; do \
+	  kubectl $(K8S_KUBECTL_ARGS) get service bai-bff -o json | jq '.status.loadBalancer.ingress[].hostname,.spec.ports[0].port' | xargs | sed 's/ /:/' > $(SERVICE_ENDPOINT); \
 	  sleep 5; \
 	done
 
