@@ -142,6 +142,7 @@ This is the command-line, client-side interface to the Bechmark AI service...
           --unregister             : clears service endpoint from configuration
           --show-registered-service-endpoint : The hostname|IP:PORT of anubis service you are using
           --show-registered-service-endpoint-history : listing of endpoints you have previously registered
+          --version                : shows version
           --legend                 : displays quick legend of the emojis used
           --help                   : (this output)
 
