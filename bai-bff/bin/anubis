@@ -747,6 +747,10 @@ show_descriptor() {
     echo "-------------------------"
 }
 
+show_version() {
+    echo $VERSION
+}
+
 _write_descriptor() {
     local action_id=${1:-$(use_last_action_id)}
     ((VERBOSE)) && echo "write_descriptor [toml] for action: ${action_id}"
@@ -912,6 +916,10 @@ main() {
                     shift
                     show_descriptor "${@}"
                     exit $?
+                    ;;
+                --version | -v)
+                    show_version
+                    exit 0
                     ;;
                 --write-descriptor | --write-desc) #"hidden" option
                     shift

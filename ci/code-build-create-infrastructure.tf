@@ -20,7 +20,7 @@ resource "aws_codebuild_project" "ci-create-infra" {
 
   environment {
     compute_type    = "BUILD_GENERAL1_SMALL"
-    image           = var.ci_docker_image["default"]
+    image           = local.bootstrap_image_ecr
     type            = "LINUX_CONTAINER"
     privileged_mode = true
 

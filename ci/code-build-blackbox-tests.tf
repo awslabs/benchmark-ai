@@ -22,35 +22,35 @@ resource "aws_iam_role_policy" "code-build-blackbox-tests-role-ec2-actions" {
 data "aws_availability_zones" "available" {}
 
 module "blackbox-tests-vpc" {
-  source = "terraform-aws-modules/vpc/aws"
+  source  = "terraform-aws-modules/vpc/aws"
   version = "2.7.0"
 
   name = "bai-blackbox-tests"
   cidr = "10.0.0.0/16"
 
-  azs = data.aws_availability_zones.available.names
+  azs             = data.aws_availability_zones.available.names
   private_subnets = ["10.0.0.0/24"]
-  public_subnets = ["10.0.1.0/24"]
+  public_subnets  = ["10.0.1.0/24"]
 
   enable_nat_gateway = true
 }
 
 resource "aws_security_group" "blackbox_public" {
-  name = "blackbox_public"
+  name        = "blackbox_public"
   description = "Blackbox public subnet"
-  vpc_id = "${module.blackbox-tests-vpc.vpc_id}"
+  vpc_id      = "${module.blackbox-tests-vpc.vpc_id}"
 
   ingress {
-    protocol = -1
-    self = true
+    protocol  = -1
+    self      = true
     from_port = 0
-    to_port = 0
+    to_port   = 0
   }
 
   egress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
@@ -59,33 +59,33 @@ resource "aws_default_security_group" "default" {
   vpc_id = "${module.blackbox-tests-vpc.vpc_id}"
 
   ingress {
-    protocol = -1
-    self = true
+    protocol  = -1
+    self      = true
     from_port = 0
-    to_port = 0
+    to_port   = 0
   }
 
   ingress {
-    protocol = -1
+    protocol        = -1
     security_groups = ["${aws_security_group.blackbox_public.id}"]
-    from_port = 0
-    to_port = 0
+    from_port       = 0
+    to_port         = 0
   }
 
   egress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
 
 resource "aws_codebuild_project" "ci-blackbox-tests" {
-  name = "ci-blackbox-tests"
-  description = "Runs blackbox tests"
+  name          = "ci-blackbox-tests"
+  description   = "Runs blackbox tests"
   build_timeout = "120"
-  service_role = aws_iam_role.code-build-role.arn
+  service_role  = aws_iam_role.code-build-role.arn
   badge_enabled = false
 
   artifacts {
@@ -94,18 +94,18 @@ resource "aws_codebuild_project" "ci-blackbox-tests" {
 
   environment {
     compute_type = "BUILD_GENERAL1_SMALL"
-    image = var.ci_docker_image["default"]
-    type = "LINUX_CONTAINER"
+    image        = local.bootstrap_image_ecr
+    type         = "LINUX_CONTAINER"
   }
 
   source {
-    type = "CODEPIPELINE"
+    type      = "CODEPIPELINE"
     buildspec = "blackbox-tests/buildspec-blackbox-stage.yml"
   }
 
   vpc_config {
     security_group_ids = [module.blackbox-tests-vpc.default_security_group_id]
-    subnets = module.blackbox-tests-vpc.private_subnets
-    vpc_id = module.blackbox-tests-vpc.vpc_id
+    subnets            = module.blackbox-tests-vpc.private_subnets
+    vpc_id             = module.blackbox-tests-vpc.vpc_id
   }
 }

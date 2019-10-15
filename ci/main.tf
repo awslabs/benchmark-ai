@@ -129,6 +129,8 @@ resource "aws_iam_role_policy_attachment" "ecr-permissions" {
 
 locals {
   is_official_ci_account = data.aws_caller_identity.current.account_id == "563267192464"
+  ecr_repository         = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.region}.amazonaws.com"
+  bootstrap_image_ecr    = join("", [local.ecr_repository, "/${var.bootstrap_docker_image_tag}"])
 }
 
 resource "aws_codebuild_project" "ci-unit-tests" {
@@ -148,12 +150,8 @@ resource "aws_codebuild_project" "ci-unit-tests" {
   }
 
   environment {
-    compute_type = "BUILD_GENERAL1_LARGE"
-    image = lookup(
-      var.ci_docker_image,
-      var.projects[count.index],
-      var.ci_docker_image["default"]
-    )
+    compute_type    = "BUILD_GENERAL1_LARGE"
+    image           = local.bootstrap_image_ecr
     type            = "LINUX_CONTAINER"
     privileged_mode = true
 

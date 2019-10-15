@@ -28,8 +28,16 @@ _post_docker_package:: _docker_package
 
 docker_package: _post_docker_package
 
+bootstrap_package::
+	$(DOCKER) build -f dev.Dockerfile -t latest .
+	$(DOCKER) tag latest ${BOOTSTRAP_DOCKER_URL}
+
 publish: docker_publish
 
 docker_publish: docker_package
 	echo "Publishing $(DOCKER_IMAGE_TAG)"
 	[[ "$(STAGE)" == "local" ]] && $(LOCAL_PUBLISH) $(DOCKER_IMAGE_TAG) || $(DOCKER) push $(DOCKER_IMAGE_TAG)
+
+bootstrap_publish: bootstrap_package
+	docker push ${BOOTSTRAP_DOCKER_URL}
+

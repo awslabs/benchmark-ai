@@ -76,6 +76,24 @@ resource "aws_codepipeline" "codepipeline" {
   }
 
   stage {
+    name = "BootstrapImage"
+
+    action {
+      name             = "BootstrapImage"
+      category         = "Build"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      input_artifacts  = ["source_output"]
+      output_artifacts = []
+      version          = "1"
+
+      configuration = {
+        ProjectName = "bootstrap-image"
+      }
+    }
+  }
+
+  stage {
     name = "CreateInfra"
 
     action {
@@ -171,7 +189,7 @@ resource "aws_codepipeline" "codepipeline" {
       category         = "Build"
       owner            = "AWS"
       provider         = "CodeBuild"
-      input_artifacts  = ["source_output", "service_endpoint_bff"]
+      input_artifacts  = ["source_output", "service_endpoint_bai_bff"]
       output_artifacts = []
       version          = "1"
 
@@ -191,10 +209,45 @@ locals {
     project => {
       ACCOUNT_ID      = data.aws_caller_identity.current.account_id
       PROJECT_NAME    = project
-      DOCKER_REGISTRY = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.region}.amazonaws.com"
+      DOCKER_REGISTRY = local.ecr_repository
     }
   }
 }
+
+
+#############################################################
+# Bootstrap Image
+#############################################################
+resource "aws_codebuild_project" "ci-bootstrap-image" {
+  name          = "bootstrap-image"
+  description   = "Bootstrap docker image for pipeline"
+  build_timeout = "10"
+  service_role  = aws_iam_role.code-build-role.arn
+  badge_enabled = false
+
+  artifacts {
+    type = "CODEPIPELINE"
+  }
+
+  environment {
+    compute_type    = "BUILD_GENERAL1_SMALL"
+    image           = "aws/codebuild/standard:1.0"
+    type            = "LINUX_CONTAINER"
+    privileged_mode = true
+
+    environment_variable {
+      name  = "BOOTSTRAP_DOCKER_URL"
+      value = local.bootstrap_image_ecr
+    }
+
+  }
+
+  source {
+    type      = "CODEPIPELINE"
+    buildspec = "ci/buildspec-bootstrap.yml"
+  }
+}
+
 
 #############################################################
 # Build
@@ -212,12 +265,8 @@ resource "aws_codebuild_project" "ci-unit-tests-master" {
   }
 
   environment {
-    compute_type = "BUILD_GENERAL1_LARGE"
-    image = lookup(
-      var.ci_docker_image,
-      var.projects[count.index],
-      var.ci_docker_image["default"]
-    )
+    compute_type    = "BUILD_GENERAL1_LARGE"
+    image           = local.bootstrap_image_ecr
     type            = "LINUX_CONTAINER"
     privileged_mode = true
 
@@ -295,7 +344,7 @@ resource "aws_codebuild_project" "ci-deploy-master" {
 
   environment {
     compute_type = "BUILD_GENERAL1_SMALL"
-    image        = var.ci_docker_image["default"]
+    image        = local.bootstrap_image_ecr
     type         = "LINUX_CONTAINER"
 
     dynamic "environment_variable" {
@@ -312,3 +361,4 @@ resource "aws_codebuild_project" "ci-deploy-master" {
     buildspec = "ci/buildspec-deploy.yml"
   }
 }
+
