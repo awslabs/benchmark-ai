@@ -563,7 +563,7 @@ main() {
                         ((DEBUG)) && echo "  skipping arg ${input_args[$((idx))]}" 1>&2
                         skipped+=("${input_args[$((idx++))]}")
                     done
-                    echo "skipped args: ${skipped[@]}" 1>&2
+                    ((DEBUG)) && echo "skipped args: ${skipped[@]}" 1>&2
                     ((idx--))
                 fi
                 [[ ! "${current_arg}" =~ ^(--debug|--force|--as|--list-profiles|--whoami)$ ]] && \
