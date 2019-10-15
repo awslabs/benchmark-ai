@@ -23,7 +23,7 @@ _Kafka Topics_...<br>
 
 TOML → Client Tool (anubis): → BFF via web service call.
 
-(The TOML format is described [here](https://github.com/MXNetEdge/benchmark-ai/tree/master/executor/#example-descriptor))
+(The TOML format is described [here](https://github.com/awslabs/benchmark-ai/tree/master/executor/#example-descriptor))
 
 ```
 {
@@ -38,7 +38,7 @@ TOML → Client Tool (anubis): → BFF via web service call.
         toml:{
             descriptor_filename="descriptor_cpu.toml"
             sha1:d99cf00af3e9019f4fe7b180c47ef047395d2067
-            doc: "Initial toml" //Base64(see https://raw.githubusercontent.com/MXNetEdge/benchmark-ai/master/sample-benchmarks/single-node/descriptor_cpu.toml?token=ABNAFyoEABKZ-1J9XZJet22sFE1Uuc1iks5ctyuDwA%3D%3D)
+            doc: "Initial toml" //Base64(see https://raw.githubusercontent.com/awslabs/benchmark-ai/master/sample-benchmarks/single-node/descriptor_cpu.toml?token=ABNAFyoEABKZ-1J9XZJet22sFE1Uuc1iks5ctyuDwA%3D%3D)
         }
     },
 }

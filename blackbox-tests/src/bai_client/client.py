@@ -86,7 +86,7 @@ def _convert_status_json_response(json_string: str) -> List[StatusMessageBenchma
         except KeyError:
             if status_message_as_dict["visited"][-1]["svc"] == "bai-bff":
                 # TODO: Fix StatusMessageBenchmarkEvent modeling status messages:
-                #       https://github.com/MXNetEdge/benchmark-ai/issues/491
+                #       https://github.com/awslabs/benchmark-ai/issues/491
                 continue
             logger.exception(f"Failed to deserialize the following json: {dumped_json}\n")
             raise

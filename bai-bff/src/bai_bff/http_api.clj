@@ -85,7 +85,7 @@
 ;;----------------------
 (defroutes info-routes
   (GET "/" req
-       (str "<hr><CENTER><h1>Welcome To The Anubis (BFF) Service (v"VERSION")</h1><a href=\"https://github.com/MXNetEdge/benchmark-ai/\">https://github.com/MXNetEdge/benchmark-ai</a></CENTER><hr><p>")))
+       (str "<hr><CENTER><h1>Welcome To The Anubis (BFF) Service (v"VERSION")</h1><a href=\"https://github.com/awslabs/benchmark-ai/\">https://github.com/awslabs/benchmark-ai</a></CENTER><hr><p>")))
 
 ;; Kubernetes Liveliness and Readiness endpoints
 (defroutes k8s-routes

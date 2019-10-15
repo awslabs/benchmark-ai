@@ -87,7 +87,7 @@ conda deactivate
 Now, you are now ready to proceed :-)
 
 ```bash
-git clone https://github.com/MXNetEdge/benchmark-ai.git
+git clone https://github.com/awslabs/benchmark-ai.git
 cd benchmark-ai
 ```
 
@@ -247,7 +247,7 @@ and the following will be done:
 - The descriptor file is read and validated.
 - Anubis submits a job to Kubernetes
 - Kubernetes allocates node(s) for you (using [Cluster Autoscaler](https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler)).
-- The benchmark runs, emitting metrics via the `emit()` method provided by the [client-lib](https://github.com/MXNetEdge/benchmark-ai/tree/master/client-lib).
+- The benchmark runs, emitting metrics via the `emit()` method provided by the [client-lib](https://github.com/awslabs/benchmark-ai/tree/master/client-lib).
 - Logs are collected into:
     - ElasticSearch
 - Metrics are collected into:
@@ -349,7 +349,7 @@ It will be accesible in grafana as _BAI_METRICS_accuracy_. Therefore, it can be 
 Write your own benchmarks!
 
 Explore the [descriptor file format](executor/README.md)
-in order to run your benchmarks in Benchmark AI. Make sure to post metrics by integrating the [client library](https://github.com/MXNetEdge/benchmark-ai/tree/master/client-lib)
+in order to run your benchmarks in Benchmark AI. Make sure to post metrics by integrating the [client library](https://github.com/awslabs/benchmark-ai/tree/master/client-lib)
 in your code.
 
 Future Feature Roadmap...

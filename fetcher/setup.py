@@ -4,7 +4,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="fetcher_dispatcher",
-    url="https://github.com/MXNetEdge/benchmark-ai",
+    url="https://github.com/awslabs/benchmark-ai",
     package_dir={"": "src"},
     requires=["bai_kafka_utils"],
     packages=find_packages("src"),

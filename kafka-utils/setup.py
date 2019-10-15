@@ -11,11 +11,9 @@ bai_project_path = abspath(join(here, os.pardir))
 setup(
     description="Shared library for kafka-based services",
     name="kafka_utils",
-    url="https://github.com/MXNetEdge/benchmark-ai",
+    url="https://github.com/awslabs/benchmark-ai",
     package_dir={"": "src"},
     packages=find_packages("src"),
-    package_data={
-        "bai_kafka_utils.executors.util": ["ec2_instance_info.csv"],
-    },
+    package_data={"bai_kafka_utils.executors.util": ["ec2_instance_info.csv"]},
     include_package_data=True,
 )

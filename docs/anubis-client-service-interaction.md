@@ -9,7 +9,7 @@ REST-like API and the metrics dashboard.
 
 Let's take a closer look into the `anubis-client` and BFF interaction.
 
-The REST-like api is very simple ([see code here](https://github.com/MXNetEdge/benchmark-ai/blob/master/bff/src/bai_bff/http_api.clj#L100-L116))
+The REST-like api is very simple ([see code here](https://github.com/awslabs/benchmark-ai/blob/master/bff/src/bai_bff/http_api.clj#L100-L116))
 The system comes with a full client implementation, the [`anubis`](bff/docs/anubis-client.md) client.
 The event protocol is JSON - please review the [catalog of defined events](docs/anubis-event-design.md)
 

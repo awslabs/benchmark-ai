@@ -11,7 +11,7 @@ bai_project_path = abspath(join(here, os.pardir))
 setup(
     description=".",
     name="bai_client",
-    url="https://github.com/MXNetEdge/benchmark-ai",
+    url="https://github.com/awslabs/benchmark-ai",
     requires=["bai_kafka_utils"],
     package_dir={"": "src"},
     packages=find_packages("src"),
