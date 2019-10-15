@@ -38,7 +38,7 @@ variable "bootstrap_docker_image_tag" {
 
 variable "github_organization" {
   type    = string
-  default = "MXNetEdge"
+  default = "awslabs"
 }
 
 variable "github_branch" {

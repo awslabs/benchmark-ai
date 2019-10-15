@@ -23,7 +23,7 @@ ORGANIZATION := MXNet Berlin
 RELEASE_NAME := flatbush
 PROFILE := prod
 AUTHOR := Gavin M. Bell
-REPO_SITE = https://github.com/MXNetEdge/benchmark-ai/bff
+REPO_SITE = https://github.com/awslabs/benchmark-ai/bff
 
 RESOURCE_PATHS := resources
 SOURCE_PATHS := src

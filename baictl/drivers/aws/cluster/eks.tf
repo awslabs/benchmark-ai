@@ -1,5 +1,5 @@
 locals {
-  # Check the section "The node.type label" at https://github.com/MXNetEdge/benchmark-ai/blob/master/docs/autoscaler-aws.md
+  # Check the section "The node.type label" at https://github.com/awslabs/benchmark-ai/blob/master/docs/autoscaler-aws.md
   # for an explanation on each type of node.
   # --feature-gates=KubeletPodResources=true required for pod-gpu-metrics
   bai_worker_kubelet_args           = "--feature-gates='KubeletPodResources=true' --node-labels=node.type=bai-worker"
@@ -110,7 +110,7 @@ locals {
     ami_id              = "${lookup(local.ami_ids, "cpu")}"
     key_name            = "${aws_key_pair.worker_key.key_name}"
     autoscaling_enabled = true
-    # a work around for big files until https://github.com/MXNetEdge/benchmark-ai/issues/356 is resolved
+    # a work around for big files until https://github.com/awslabs/benchmark-ai/issues/356 is resolved
     root_volume_size = "2000"
   }
 

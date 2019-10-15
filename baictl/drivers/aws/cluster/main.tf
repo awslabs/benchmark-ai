@@ -19,7 +19,7 @@ locals {
   tags = {
     Environment = "test"
     GithubRepo  = "ci-infrastructure"
-    GithubOrg   = "MXNetEdge"
+    GithubOrg   = "awslabs"
     Workspace   = "${terraform.workspace}"
   }
 

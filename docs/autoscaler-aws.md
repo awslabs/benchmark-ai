@@ -25,7 +25,7 @@ Acronyms:
 ## Auto discovery
 
 CA is setup in "Auto-Discovery" mode. When it starts up it will autodiscover the ASGs available for it to use. This 
-setup is done with this flag on the [CA yaml](https://github.com/MXNetEdge/benchmark-ai/blob/master/baictl/drivers/aws/cluster/template/cluster-autoscaler-autodiscover.tpl.yaml):
+setup is done with this flag on the [CA yaml](https://github.com/awslabs/benchmark-ai/blob/master/baictl/drivers/aws/cluster/template/cluster-autoscaler-autodiscover.tpl.yaml):
 
 ```
 --node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,kubernetes.io/cluster/${cluster_name}
@@ -129,7 +129,7 @@ Then CA is able to choose the correct ASG to launch new nodes.
 These are the mechanisms used in BAI to restrict which nodes a Pod can run on:
 
 | Restriction mechanism | Label                                    | How does the Kubelet add this label? |
-|:----------------------|:-----------------------------------------|:-------------------------------------|
+| :-------------------- | :--------------------------------------- | :----------------------------------- |
 | AZ restriction        | `failure-domain.beta.kubernetes.io/zone` | Automatically added by AWS provider  |
 | Node type             | `node.type`                              | Setup in Terraform                   |
 
@@ -163,11 +163,11 @@ TODO: Study if this is necessary or helps in BAI's scenario. My guess is that BA
 
 **If BAI is running Kubernetes > 1.12, then delete this section**
 
-As stated in the [document](https://github.com/MXNetEdge/benchmark-ai/blob/master/docs/upgrading-kubernetes-version.md)
+As stated in the [document](https://github.com/awslabs/benchmark-ai/blob/master/docs/upgrading-kubernetes-version.md)
 describing what to consider when upgrading Kubernetes, the version of cluster-autoscaler is dependant on the
 Kubernetes version.
 
-Currently BAI is [running version 1.12](https://github.com/MXNetEdge/benchmark-ai/blob/master/baictl/drivers/aws/cluster/variables.tf#L57)
+Currently BAI is [running version 1.12](https://github.com/awslabs/benchmark-ai/blob/master/baictl/drivers/aws/cluster/variables.tf#L57)
 (check the `k8s_version` terraform variable).
 
 The version of CA that supports Kubernetes 1.12 is `1.12.X` and these versions have problem when dealing with more than

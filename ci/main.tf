@@ -166,7 +166,7 @@ resource "aws_codebuild_project" "ci-unit-tests" {
 
   source {
     type            = "GITHUB"
-    location        = "https://github.com/MXNetEdge/benchmark-ai.git"
+    location        = "https://github.com/awslabs/benchmark-ai.git"
     git_clone_depth = 1
     auth {
       type = "OAUTH"

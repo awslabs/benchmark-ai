@@ -4,7 +4,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="executor",
-    url="https://github.com/MXNetEdge/benchmark-ai",
+    url="https://github.com/awslabs/benchmark-ai",
     package_dir={"": "src"},
     packages=find_packages("src"),
     package_data={"executor": ["*.yaml"], "transpiler.templates": ["*.yaml"]},

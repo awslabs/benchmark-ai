@@ -11,7 +11,7 @@ Metrics are labeled using:
  - _action-id_ of the benchmark run which produced them.
  - _client-id_ of the user who submitted the benchmark.
  - All **custom labels** defined in the _info.labels_ section of the descriptor file which defined the benchmark. 
- (see the [example descriptors](https://github.com/MXNetEdge/benchmark-ai/blob/master/executor/README.md#training) for reference)
+ (see the [example descriptors](https://github.com/awslabs/benchmark-ai/blob/master/executor/README.md#training) for reference)
  
  
  ## Example
@@ -47,7 +47,7 @@ With this settings, one metric would be published to CloudWatch, under the names
 ## How it works
 
 User defined metrics are published to Kafka by the [metrics pusher](../metrics-pusher), specifically to the BAI_METRICS topic
-(this is defined in the [metrics pusher configuration](https://github.com/MXNetEdge/benchmark-ai/blob/880fa33c208f39906647b7482f5ff1667d418d1d/executor/src/transpiler/templates/job_single_node.yaml#L167)).
+(this is defined in the [metrics pusher configuration](https://github.com/awslabs/benchmark-ai/blob/880fa33c208f39906647b7482f5ff1667d418d1d/executor/src/transpiler/templates/job_single_node.yaml#L167)).
 The CloudWatch exporter is a Kubernetes deployment which subscribes to this topic and publishes all metrics it receives 
 to CloudWatch using boto3.
 

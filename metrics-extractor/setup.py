@@ -9,7 +9,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 
 setup(
     name="anubis-metrics-extractor",
-    url="https://github.com/MXNetEdge/benchmark-ai",
+    url="https://github.com/awslabs/benchmark-ai",
     package_dir={"": "src"},
     packages=find_packages("src"),
     include_package_data=True,

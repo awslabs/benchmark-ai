@@ -183,7 +183,7 @@ _install_prometheus(){
 
     # The prometheus node-exporter does not support GPU metrics by default. Thus, adding it separately
     # This also provides per-pod metrics. But this requires that a pod actually allocates a gpu. See
-    # https://github.com/MXNetEdge/benchmark-ai/issues/483 for details.
+    # https://github.com/awslabs/benchmark-ai/issues/483 for details.
     # https://github.com/NVIDIA/gpu-monitoring-tools/tree/master/exporters/prometheus-dcgm/k8s/pod-gpu-metrics-exporter#pod-gpu-metrics-exporter
     ${kubectl} apply -f ${k8s_deploy_dir}/pod-gpu-metrics-exporter-daemonset.yaml || return 1
 
