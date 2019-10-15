@@ -433,13 +433,27 @@ snoop_events() {
 }
 
 
-
 main() {
     ((DEBUG)) && echo "Hello, ${AWS_PROFILE}..."
+
+    # So before we start table flipping when looking at the arg
+    # parsing here and talk about how easy this would be to do this in
+    # X language.  Take a moment to see the art here. The high level
+    # view is that you don't want ordering of args to play a big role
+    # in how they get evaluated. So we take three passes over the
+    # args.  The first pass is to check for overall behavioral flags
+    # that affect how we execute or see the script at a global level.
+    # The next pass walks you through args that don't need your
+    # profile set, however, they assist you with setting it.  The
+    # third pass is the usual set of args that get executed.  The last
+    # bit of logic in the "default" case is to acknowledge but ignore
+    # args that are adjudicated in the first two passes. All good
 
     local input_args=($@)
     local current_arg=""
     local idx=0
+
+    # Pass one
 
     while (( idx < ${#input_args[@]} )); do
         current_arg=${input_args[$((idx))]}
@@ -455,6 +469,8 @@ main() {
     done
 
     idx=0
+
+    # Pass two
 
     while (( idx < ${#input_args[@]} )); do
         current_arg=${input_args[$((idx))]}
@@ -475,6 +491,8 @@ main() {
     _is_profile_set
 
     idx=0
+
+    # Pass three
 
     while (( idx < ${#input_args[@]} )); do
         myargs=()
@@ -545,7 +563,7 @@ main() {
                         ((DEBUG)) && echo "  skipping arg ${input_args[$((idx))]}" 1>&2
                         skipped+=("${input_args[$((idx++))]}")
                     done
-                    echo "skipped args: ${skipped[@]}"
+                    echo "skipped args: ${skipped[@]}" 1>&2
                     ((idx--))
                 fi
                 [[ ! "${current_arg}" =~ ^(--debug|--force|--as|--list-profiles|--whoami)$ ]] && \
