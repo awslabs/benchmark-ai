@@ -139,7 +139,7 @@
         "framework": { "type": "string", "enum": ["", "mxnet", "tensorflow"] },
         "framework_version": { "type": "string" },
         "benchmark_code": { "type": "string" },
-        "args": { "type": "array", "items": { "type": "string" } }
+        "args": { "type": "string" }
       },
       "additionalProperties": false
     },
