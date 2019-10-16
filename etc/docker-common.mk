@@ -29,7 +29,7 @@ _post_docker_package:: _docker_package
 docker_package: _post_docker_package
 
 bootstrap_package::
-	$(DOCKER) build -f $(BENCHMARK_DIR)/etc/dev.Dockerfile -t latest .
+	$(DOCKER) build -f $(BENCHMARK_DIR)/etc/Dockerfile-dev -t latest .
 	$(DOCKER) tag latest ${BOOTSTRAP_DOCKER_URL}
 
 publish: docker_publish
