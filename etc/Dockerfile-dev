@@ -1,7 +1,7 @@
 ### Development Dockerfile for all projects
 # Example:
 # cd executor
-# docker build -f etc/dev.Dockerfile -t anubis:base
+# docker build -f etc/Dockerfile-dev -t anubis:base
 # docker run -it anubis:base make
 
 FROM continuumio/miniconda3:4.6.14
