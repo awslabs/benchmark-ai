@@ -45,7 +45,7 @@ One is the installer [`anubis-setup`](docs/anubis-setup.md), that is used to...
 
 - create, configure, operate and destroy the Anubis infrastructure
 
-The other is the [`anubis`](bff/docs/anubis-client.md) client tool that allows users to...
+The other is the [`anubis`](bai-bff/docs/anubis-client.md) client tool that allows users to...
 
 - run a benchmark: `anbis --submit resnet50-descriptor.toml`
 - monitor the progress of a run's activities `anubis --status`
@@ -54,7 +54,7 @@ The other is the [`anubis`](bff/docs/anubis-client.md) client tool that allows u
 The envisioned use-case is that a team or group or org instantiates the service infrastructure to be be used by its constituents. As such only the "admin" needs to run [`anubis-setup`](docs/anubis-setup.md).  While all users of Anubis interact with it using the `anubis` client tool.
 
 For more information on how to use [`anubis-setup`](docs/anubis-setup.md), including use case examples and option explanations, please see the [full documentation here](docs/anubis-setup.md).<br>
-For more information on how to use the [`anubis`](bff/docs/anubis-client.md) client, please see its [starter document](bff/docs/anubis-client.md).
+For more information on how to use the [`anubis`](bai-bff/docs/anubis-client.md) client, please see its [starter document](bai-bff/docs/anubis-client.md).
 
 <hr>
 <i>
@@ -181,7 +181,7 @@ The directory `baictl/drivers/aws/cluster/.terraform/bai` is created with everyt
 
 ## Step 2 - Register The Client
 
-Once the instantiation of the anubis *infrastructure* is complete you may begin to use the [`anubis`](bff/docs/anubis-client.md) client to interact with the system.
+Once the instantiation of the anubis *infrastructure* is complete you may begin to use the [`anubis`](bai-bff/docs/anubis-client.md) client to interact with the system.
 
 #### Download the client:
 
@@ -194,18 +194,18 @@ curl http://xxxxxxxxxxx-xxxx.us-east-1.elb.amazonaws.com:80/api/tools/anubis -o 
 
 #### Register the client:
 
-Once you have downloaded the [`anubis`](bff/docs/anubis-client.md) client you must point it to the Anubis service you wish to interact with. You do this by *registering* your infrastructure's *service endpoint* with the client.  Use the **--register** flag supplying the network **address** and **port** of your Anubis instantiation.  This will be provided to you _out-of-band_ by the Anubis service administrator.  This is the value that was provided at the end of the installation process (above).
+Once you have downloaded the [`anubis`](bai-bff/docs/anubis-client.md) client you must point it to the Anubis service you wish to interact with. You do this by *registering* your infrastructure's *service endpoint* with the client.  Use the **--register** flag supplying the network **address** and **port** of your Anubis instantiation.  This will be provided to you _out-of-band_ by the Anubis service administrator.  This is the value that was provided at the end of the installation process (above).
 
 ``` bash
 # Assuming PWD is `benchmark-ai`
-bff/bin/anubis --register xxxxxxxxxxx-xxxx.us-east-1.elb.amazonaws.com:80
+bai-bff/bin/anubis --register xxxxxxxxxxx-xxxx.us-east-1.elb.amazonaws.com:80
 ```
 
 To check that the client has registered with the Anubis instantiation, **--ping** it.
 
 ``` bash
 # Assuming PWD is `benchmark-ai`
-bff/bin/anubis --ping
+bai-bff/bin/anubis --ping
 
                        _      _
                       | |    (_)
@@ -232,13 +232,13 @@ This means you are good to go ;-) - Nice work.
 
 ## Step 3 - Run benchmarks
 
-To run benchmarks and generally interact with Anubis, use the [Anubis client tool](bff/bin/anubis) ([starter doc here](bff/docs/anubis-client.md)).
+To run benchmarks and generally interact with Anubis, use the [Anubis client tool](bai-bff/bin/anubis) ([starter doc here](bai-bff/docs/anubis-client.md)).
 
 Anubis provides some sample benchmarks at the `benchmark-ai/sample-benchmarks` directory. Let's run some of them:
 
 ```bash
 # Assuming PWD is `benchmark-ai`
-bff/bin/anubis --submit sample-benchmarks/hello-world/descriptor.toml
+bai-bff/bin/anubis --submit sample-benchmarks/hello-world/descriptor.toml
 ```
 
 By doing this you submitted a benchmark run to Anubis (which is a [Kubernetes job](https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/) by the way),
@@ -254,23 +254,23 @@ and the following will be done:
     - Prometheus (both operational metrics, such as CPU or GPU utilization rates, and user defined metrics, such as accuracy or throughput)
     - CloudWatch (only user defined metrics)
 
-*hint: put bff/bin/anubis, or symlink to it, in your $PATH*
+*hint: put bai-bff/bin/anubis, or symlink to it, in your $PATH*
 
-Anubis supports "Script Mode".  This means along with posting the descriptor file, you may also specify and include the actual code that you wish to run.  This is a great way to more explicitly separate your model code from the framework you want to run. See our "Hello World" [README](sample-benchmarks/hello-world) for info on that.  Also look at the `anubis` client program [document](bff/docs/anubis-client.md) located in the bff service.
+Anubis supports "Script Mode".  This means along with posting the descriptor file, you may also specify and include the actual code that you wish to run.  This is a great way to more explicitly separate your model code from the framework you want to run. See our "Hello World" [README](sample-benchmarks/hello-world) for info on that.  Also look at the `anubis` client program [document](bai-bff/docs/anubis-client.md) located in the bff service.
 
 ```bash
 #To watch the status messages showing the progress of the run
-bff/bin/anubis --watch --status
+bai-bff/bin/anubis --watch --status
 ```
 
 ### (To Cancel)
 
 ```bash
 #To cancel a run that is in progress (already been submitted but not completed)
-bff/bin/anubis --cancel <ACTION_ID>
+bai-bff/bin/anubis --cancel <ACTION_ID>
 
 #To definitively cancel a run in progress and all sub processes.
-bff/bin/anubis --purge <ACTION_ID>
+bai-bff/bin/anubis --purge <ACTION_ID>
 ```
 
 ## Step 3 - View the results of your run
@@ -278,18 +278,18 @@ bff/bin/anubis --purge <ACTION_ID>
 
 ### Model output
 
-Using the `--results` option of the [Anubis client tool](bff/bin/anubis) will print out the STDOUT output of your run.
+Using the `--results` option of the [Anubis client tool](bai-bff/bin/anubis) will print out the STDOUT output of your run.
 
 ```bash
 # Assuming PWD is `benchmark-ai`
-bff/bin/anubis --results <ACTION_ID>
+bai-bff/bin/anubis --results <ACTION_ID>
 ```
 
 ### Benchmark metrics
 
 Anubis runs generate two kinds of metrics: _operational_ and _user defined_. Operational metrics inform of
-the health of the nodes running the benchmarks, such as CPU or GPU utilization, and are collected by default when running any Anubis job. 
-On the other hand, user defined metrics must be specified in the descriptor TOML and can contain any kind of data. 
+the health of the nodes running the benchmarks, such as CPU or GPU utilization, and are collected by default when running any Anubis job.
+On the other hand, user defined metrics must be specified in the descriptor TOML and can contain any kind of data.
 Typical examples for user defined metrics are accuracy and throughput.
 
 
@@ -300,22 +300,22 @@ These dashboards can be accesed either by:
  - Using `./anubis-setup --query-graphs`
  - Following the link provided by the anubis client when a submitted benchmark starts running:
  ![metrics-dashboard-link](docs/images/metrics-available.png "Anubis client: link to metrics")
- 
+
 The operational metrics dashboard looks as follows:
 
 ![operational-metrics-dashboard](docs/images/operational-metrics-dashboard.png "Operational metrics")
 
 #### User defined metrics
 
-Users can define custom metrics in the _output.metrics_ section of the descriptor TOML. 
+Users can define custom metrics in the _output.metrics_ section of the descriptor TOML.
 These get exported to Prometheus with the prefix BAI_METRICS, and with the following labels:
 
  - _action-id_ of the benchmark run which produced them.
  - _client-id_ of the user who submitted the benchmark.
  - All **custom labels** defined in the _info.labels_ section of the descriptor file which defined the benchmark.
- 
- As an example, take a metric defined as follows: 
- 
+
+ As an example, take a metric defined as follows:
+
  ```toml
 [[output.metrics]]
 # Name of the metric that will appear in the dashboards.
