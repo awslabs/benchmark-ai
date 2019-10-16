@@ -405,4 +405,4 @@ rollout-history:
 
 # (may want to put in the k8s cycle here as well scale up and down)
 #----------------------------------------------------------------
-.PHONY: test all docs release clean clean-all compile dist publish
+.PHONY: all clean clean-all compile deploy dist docs publish release rollback rollout-history test undeploy undeploy-deployment undeploy-service
