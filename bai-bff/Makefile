@@ -91,7 +91,7 @@ DEPLOY_YML := deploy.yml
 SERVICE_TEMPLATE := etc/service.yml.tmpl
 SERVICE_YML := service.yml
 DOCKER_TEMPLATE := etc/Dockerfile.tmpl
-DOCKER_DEV_TEMPLATE := etc/Dockerfile_dev.tmpl
+DOCKER_DEV_TEMPLATE := etc/Dockerfile-dev.tmpl
 SERVICE_ENDPOINT := ./service_endpoint
 
 #Run Environment (ref: deploy template and runit script)
@@ -205,7 +205,7 @@ clean-all: clean
 	$(shell [[ -f deploy.yml ]]        && rm deploy.yml)
 	$(shell [[ -f service.yml ]]       && rm service.yml)
 	$(shell [[ -f Dockerfile ]]        && rm Dockerfile)
-	$(shell [[ -f Dockerfile_dev ]]    && rm Dockerfile_dev)
+	$(shell [[ -f Dockerfile-dev ]]    && rm Dockerfile-dev)
 	$(shell [[ -d $(RELEASE_PATH) ]]   && rm -rf $(RELEASE_PATH))
 	$(shell [[ -d $(COMPILE_PATH) ]]   && rm -rf $(COMPILE_PATH))
 	$(shell [[ -d $(GEN_DOCS_PATH) ]]  && rm -rf $(GEN_DOCS_PATH))
@@ -405,4 +405,4 @@ rollout-history:
 
 # (may want to put in the k8s cycle here as well scale up and down)
 #----------------------------------------------------------------
-.PHONY: test all docs release clean clean-all compile dist publish
+.PHONY: all clean clean-all compile deploy dist docs publish release rollback rollout-history test undeploy undeploy-deployment undeploy-service
