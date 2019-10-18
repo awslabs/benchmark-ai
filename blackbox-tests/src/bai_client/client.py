@@ -101,8 +101,6 @@ class BaiClient:
     Each method is meant to be a 1:1 translation of the REST api provided by BAI.
     """
 
-    SERVICE_ENDPOINT_PORT = "80"
-
     def __init__(self, endpoint=None):
         if endpoint is None:
             # Copy codebuild artifact to Anubis home dir
@@ -115,10 +113,7 @@ class BaiClient:
             service_endpoint_file = copy2(artifact_output_file, Path(str(anubis_home_dir) + "/service_endpoint"))
 
             if service_endpoint_file.exists():
-                endpoint = (
-                    "http://"
-                    + service_endpoint_file.read_text("utf-8").replace('"', "").replace("\n", "")
-                )
+                endpoint = "http://" + service_endpoint_file.read_text("utf-8").replace('"', "").replace("\n", "")
             elif not artifact_output_file.exists():
                 raise Exception(f"artifact_output_file not found at {artifact_output_file}")
             else:
