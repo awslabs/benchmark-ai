@@ -118,7 +118,6 @@ class BaiClient:
                 endpoint = (
                     "http://"
                     + service_endpoint_file.read_text("utf-8").replace('"', "").replace("\n", "")
-                    + f":{BaiClient.SERVICE_ENDPOINT_PORT}"
                 )
             elif not artifact_output_file.exists():
                 raise Exception(f"artifact_output_file not found at {artifact_output_file}")
