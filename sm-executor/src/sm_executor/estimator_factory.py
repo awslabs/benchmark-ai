@@ -25,11 +25,12 @@ def create_tensorflow_estimator(
     if descriptor.hardware.strategy == DistributedStrategy.HOROVOD:
         kwargs.distributions.mpi = addict.Dict(
             enabled=True,
-            processes_per_host=descriptor.hardware.distributed.processes_per_instance,
+            processes_per_host=int(descriptor.hardware.processes_per_instance),
             custom_mpi_options=MPI_OPTIONS,
         )
 
     kwargs.script_mode = True
+    logger.info(f"Creating TF Estimator with parameters {kwargs}")
     return TensorFlow(**kwargs)
 
 
@@ -37,6 +38,7 @@ def create_mxnet_estimator(
     session: Session, descriptor: BenchmarkDescriptor, source_dir: str, config: SageMakerExecutorConfig
 ) -> Framework:
     kwargs = _create_common_estimator_args(session, descriptor, source_dir, config)
+    logger.info(f"Creating MXNet Estimator with parameters {kwargs}")
     return MXNet(**kwargs)
 
 
