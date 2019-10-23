@@ -29,6 +29,7 @@ JOB_ID = "benchmark-JOB-ID"
         ("training.toml", "training-with-script", ANUBIS_SCRIPTS),
         ("horovod.toml", "horovod", []),
         ("horovod.toml", "horovod-with-script", ANUBIS_SCRIPTS),
+        ("horovod-with-spaces.toml", "horovod", []),
         ("inference.toml", "inference-with-script", ANUBIS_SCRIPTS),
         ("inference.toml", "inference", []),
     ],
