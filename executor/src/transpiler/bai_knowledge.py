@@ -338,6 +338,8 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
             # Using yaml.PreservedScalarString so multiline strings are printed properly
             # HACK: Depending on yaml here makes this module depend on knowledge of how our Kubernetes classes are
             # implemented
+            # strip whitespaces from lines as they can cause the script to fail
+            benchmark_cmd = "\n".join([line.strip() for line in benchmark_cmd.split("\n")])
             benchmark_cmd = yaml.scalarstring.PreservedScalarString(benchmark_cmd)
 
             entrypoint_config_map = self.root.find_config_map(f"entrypoint-{self.job_id}")

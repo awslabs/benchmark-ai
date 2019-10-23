@@ -1,0 +1,58 @@
+  # BenchmarkAI meta
+  spec_version = "0.1.0"
+
+  # These fields don't have any impact on the job to run, they contain
+  # merely informative data so the benchmark can be categorized when displayed
+  # in the dashboard.
+  [info]
+  task_name = "Example Horovod benchmark"
+  description = """ \
+      An example benchmark using Horovod as distributed training strategy. \
+      """
+
+  # 1. Hardware
+  [hardware]
+  instance_type = "p3.8xlarge"
+  strategy = "horovod"
+
+  # [Opt]
+  [hardware.distributed]
+  num_instances = 2
+
+  # 2. Environment
+  [env]
+  # Docker hub <hub-user>/<repo-name>:<tag>
+  docker_image = "user/repo:tag"
+  # Args for the docker container
+  # [Opt] Whether to run the container in privileged mode (default is false)
+  privileged = false
+  # [Opt - default is false] Whether more than 64MB shared memory is needed for containers
+  # (See docker's -shm option)
+  extended_shm = true
+
+  # 3. Machine learning related settings:
+  # dataset, benchmark code and parameters it takes
+  [ml]
+  benchmark_code = """
+  #!/bin/bash
+  echo 'Horovod test descriptor'
+  ./deep-learning-models/models/resnet/tensorflow/train.sh 3
+  """
+
+  # [Opt] 4. Dataset
+  [data]
+  # List all required data sources below.
+  # Make an entry for each with the same format as the ones below.
+  [[data.sources]]
+  # Data download URI.
+  src = "s3://mlperf-data-mxnet-berlin/imagenet/train-480px"
+  # Path where the dataset is stored in the container FS
+  path = "~/data/tf-imagenet/train"
+
+  # Second data source
+  [[data.sources]]
+  # Data download URI.
+  src = "s3://mlperf-data-mxnet-berlin/imagenet/validation-480px"
+  # Path where the dataset is stored in the container FS
+  path = "~/data/tf-imagenet/validation"
+
