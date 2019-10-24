@@ -66,6 +66,7 @@ dependencies:
   - jq 1.6
   - curl 7.54.1
   - coreutils 8.31
+  - aws-iam-authenticator 1.11.5
 EOF
     cmd="${CONDA_EXE} env update -f ${tmp_environment_file}"
     ${cmd}
@@ -83,7 +84,10 @@ if [ "${1}" == "--env-setup" ]; then
     exit $?
 fi
 
-if ! source "${CONDA_EXE%/*}"/activate anubis-setup >& /dev/null; then
+if (( $(sed -n -re 's/^([0-9]*).[0-9]*.[0-9]*.*-release.*/\1/p' <<< "${BASH_VERSION}")  < 5 )); then
+        printf "\n\033[01;33mYour bash is too old, son. You need v5+, money-grip ;-)\033[0m\n\n"; exit 9;fi
+
+if ! source "${CONDA_EXE%/*}"/activate anubis-setup; then
     printf "
   Oops, there seems to be a problem with Conda...
         (Co you have Conda installed? Is it in your \$PATH?)\n"
