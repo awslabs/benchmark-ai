@@ -85,7 +85,7 @@ SYNC_DATA=${SYNC_DATA:-0}
 WATCH=0
 WATCH_PERIOD=5
 
-declare -r VERSION="0.6.1"
+declare -r VERSION="0.6.2"
 declare -r SERVICE_NAME="anubis-client"
 declare -r MY_SHA1=$(sha1sum "${0}" | awk '{print $1}')
 declare -r ANUBIS_HOME=${HOME}/.anubis
