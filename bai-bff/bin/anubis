@@ -17,6 +17,25 @@ conda_usage() {
     exit 9
 }
 
+_which_conda() {
+    if [[ -n "${CONDA_EXE}" ]] && [[ -f "${CONDA_EXE}" ]]; then
+        echo "${CONDA_EXE}"
+        return 0
+    fi
+
+    if [[ -f $(which conda) ]]; then
+        echo $(which conda)
+        return 0
+    fi
+
+    if [[ -f $(type conda) ]]; then
+        echo $(type conda)
+        return 0
+    fi
+}
+
+CONDA_EXE="${CONDA_EXE:-$(_which_conda)}"
+
 #TODO - add the dependencies that cover some of the other tools this script needs:
 #  uuidgen
 #  hostname
@@ -47,12 +66,11 @@ EOF
 " "${0##*/}"
 }
 
-if [ $1 = "--env-setup" ]; then
+if [ "${1}" == "--env-setup" ]; then
     env_setup
     exit $?
 fi
 
-CONDA_EXE="${CONDA_EXE:=$(which conda)}"
 if ! source "${CONDA_EXE%/*}"/activate anubis >& /dev/null; then
     printf "
   Oops, there seems to be a problem with Conda...
@@ -782,68 +800,80 @@ main() {
     local id_status_is_desired_for=""
     local script=""
 
-        while [ -n "$1" ]; do
-            #echo "arg ${i} = $1"
-            local unshift=0
-            case $1 in
-                --force | -f)
-                    FORCE=1
-                    ;;
-                --verbose | -vv)
-                    VERBOSE=1
-                    echo "[verbose mode: on]" 1>&2
-                    ;;
-                --debug | -dbg)
-                    DEBUG=1
-                    echo "[debug mode: on]" 1>&2
-                    ;;
-                --tail)
-                    TAIL_STATUS=1
-                    ;;
-                --sync-data)
-                    SYNC_DATA=1
-                    ((VERBOSE)) && echo "[sync local data <==> service data]"
-                    ;;
-                --watch)
-                    WATCH=1
-                    printf " %b\n" "${emoji[watcher]}"
-                    ;;
+    local input_args=($@)
+    local current_arg=""
+    local idx=0
+
+    # Pass one
+
+    while (( idx < ${#input_args[@]} )); do
+        current_arg=${input_args[$((idx))]}
+        case "${current_arg}" in
+            --force)
+                FORCE=1
+                echo "[force mode: on]" 1>&2
+                ;;
+            --verbose)
+                VERBOSE=1
+                echo "[verbose mode: on]" 1>&2
+                ;;
+            --debug)
+                DEBUG=1
+                echo "[debug mode: on]" 1>&2
+                ;;
+            --tail)
+                TAIL_STATUS=1
+                echo "[tailling mode: on]" 1>&2
+                ;;
+            --sync-data)
+                SYNC_DATA=1
+                ((VERBOSE)) && echo "[sync local data <==> service data]"
+                ;;
+            --watch)
+                WATCH=1
+                printf " %b\n" "${emoji[watcher]}"
+                ;;
+        esac
+        ((idx++))
+    done
+
+    idx=0
+
+    while (( idx < ${#input_args[@]} )); do
+        #echo "arg ${i} = $1"
+        current_arg=${input_args[$((idx))]}
+        case "${current_arg}" in
                 --submit)
-                    shift
                     SUBMIT=1
-                    until [[ -n "$(echo "${1}" | sed -rn '/^\s*--/p')" || -z "${1}" ]]; do
-                        ((DEBUG)) && echo "submit looking at arg $1" 1>&2
-                        descriptor_filename="${1}"
-                        shift
+                    ((idx++))
+                    until [[ -n "$(echo "${input_args[$((idx))]}" | sed -rn '/^\s*--/p')" || -z "${input_args[$((idx))]}" ]]; do
+                        ((DEBUG)) && echo "submit looking at arg ${input_args[$((idx))]}" 1>&2
+                        descriptor_filename="${input_args[$((idx++))]}"
                     done
-                    unshift=1
+                    ((idx--))
                     ;;
                 --script)
-                    shift
-                    until [[ -n "$(echo "${1}" | sed -rn '/^\s*--/p')" || -z "${1}" ]]; do
-                        ((DEBUG)) && echo "script looking at arg $1" 1>&2
-                        script="${1}"
-                        shift
+                    ((idx++))
+                    until [[ -n "$(echo "${input_args[$((idx))]}" | sed -rn '/^\s*--/p')" || -z "${input_args[$((idx))]}" ]]; do
+                        ((DEBUG)) && echo "script looking at arg ${input_args[$((idx))]}" 1>&2
+                        script="${input_args[$((idx++))]}"
                     done
-                    unshift=1
+                    ((idx--))
                     ;;
                 --status)
-                    shift
                     STATUS=1
-                    until [[ -n "$(echo "${1}" | sed -rn '/^\s*--/p')" || -z "${1}" ]]; do
-                        ((DEBUG)) && echo "status looking at arg $1" 1>&2
-                        id_status_is_desired_for="${1}"
-                        shift
+                    ((idx++))
+                    until [[ -n "$(echo "${input_args[$((idx))]}" | sed -rn '/^\s*--/p')" || -z "${input_args[$((idx))]}" ]]; do
+                        ((DEBUG)) && echo "status looking at arg ${input_args[$((idx))]}" 1>&2
+                        id_status_is_desired_for="${input_args[$((idx++))]}"
                     done
-                    unshift=1
+                    ((idx--))
                     ;;
                 --results | --result)
-                    shift
-                    get_results ${1} ; shift
+                    get_results "${input_args[$((++idx))]}"
                     exit $?
                     ;;
                 --last-action-id)
-                    shift
                     echo $(use_last_action_id)
                     exit $?
                     ;;
@@ -852,57 +882,46 @@ main() {
                     exit $?
                     ;;
                 --abort|--cancel)
-                    shift
-                    abort_submission ${@} ; shift
+                    abort_submission "${input_args[@]:$((++idx))}"
                     exit $?
                     ;;
                 --abort\* | --cancel\* | --purge)
-                    shift
-                    abort_submission ${@} '{ "cascade" : true }'; shift
+                    abort_submission "${input_args[@]:$((++idx))}" '{ "cascade" : true }'
                     exit $?
                     ;;
                 --check-prerequisites) # hidden option
-                    shift
                     check_tools
                     exit $?
                     ;;
                 --upgrade)
-                    shift
                     upgrade
                     exit $?
                     ;;
                 --sync-version)
-                    shift
                     sync_version
                     exit $?
                     ;;
                 --register)
-                    shift
-                    register_service_endpoint "${1}"
+                    register_service_endpoint "${input_args[$((++idx))]}"
                     exit $?
                     ;;
                 --ping-service-endpoint | --ping)
-                    shift
                     ping_service_endpoint
                     exit $?
                     ;;
                 --unregister)
-                    shift
-                    unregister_service_endpoint "${1}"
+                    unregister_service_endpoint "${input_args[$((++idx))]}"
                     exit $?
                     ;;
                 --show-registered-service-endpoint)
-                    shift
                     show_registered_service_endpoint
                     exit $?
                     ;;
                 --show-registered-service-endpoint-history)
-                    shift
                     show_registered_service_endpoint_history
                     exit $?
                     ;;
                 --help | -h)
-                    shift
                     usage
                     ;;
                 --legend)
@@ -910,13 +929,11 @@ main() {
                     exit 0
                     ;;
                 --inspect| -i)
-                    shift
-                    inspect "${@}"
+                    inspect "${input_args[@]:$((++idx))}"
                     exit $?
                     ;;
                 --show-descriptor | --show-desc)
-                    shift
-                    show_descriptor "${@}"
+                    show_descriptor "${input_args[@]:$((++idx))}"
                     exit $?
                     ;;
                 --version | -v)
@@ -924,28 +941,36 @@ main() {
                     exit 0
                     ;;
                 --write-descriptor | --write-desc) #"hidden" option
-                    shift
-                    _write_descriptor "${@}"
+                    _write_descriptor "${input_args[@]:$((++idx))}"
                     exit $?
                     ;;
                 --banner) #"hidden" option
-                    shift
                     banner
                     exit $?
                     ;;
                 *)
-                    echo "Unknown flag $1"
+                    if [[ "${current_arg}" =~ ^(--debug|--force|--verbose|--tail|--sync-data|--watch)$ ]] ;then
+                        ((idx++))
+                        until [[ -n "$(echo "${input_args[$((idx))]}" | sed -rn '/^\s*--/p')" || -z "${input_args[$((idx))]}" ]]; do
+                            ((DEBUG)) && echo "  skipping arg ${input_args[$((idx))]}" 1>&2
+                            skipped+=("${input_args[$((idx++))]}")
+                        done
+                        ((DEBUG)) && echo "skipped args: ${skipped[@]}" 1>&2
+                        ((idx--))
+                    fi
+                    [[ ! "${current_arg}" =~ ^(--debug|--force|--verbose|--tail| --sync-data|--watch)$ ]] && \
+                        printf "\033[01;31m => Unknown flag\033[0m [%s]\n" "${current_arg}"
                     ;;
             esac
-            ((!unshift)) && shift
+            ((idx++))
         done
+
         if ((SUBMIT && STATUS)) ; then
             get_submission_status $(submit "${descriptor_filename}" "${script}")
         else
             ((SUBMIT)) && submit "${descriptor_filename}" "${script}"
             ((STATUS)) && get_submission_status "${id_status_is_desired_for}"
         fi
-
 }
 
 main "$@"
