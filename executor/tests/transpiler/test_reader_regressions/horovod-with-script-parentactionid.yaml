@@ -36,11 +36,14 @@ data:
     ./deep-learning-models/models/resnet/tensorflow/train.sh 3
   puller_entrypoint.sh: |-
     #!/bin/bash
-    if [ "$ROLE" == "worker" ]; then
-      /opt/puller/download-s3-files "$@"
-    else
-      echo "Not a worker - no data necessary"
-    fi
+    /opt/puller/download-s3-files "$@"
+    # Horovod job was failing because the launcher node did not have data - disabling this logic here to see
+    # if it remediates the situation - https://github.com/awslabs/benchmark-ai/issues/972
+    # if [ "$ROLE" == "worker" ]; then
+    #  /opt/puller/download-s3-files "$@"
+    # else
+    #  echo "Not a worker - no data necessary"
+    # fi
 ---
 apiVersion: kubeflow.org/v1alpha1
 kind: MPIJob
