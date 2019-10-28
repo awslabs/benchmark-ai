@@ -1,0 +1,63 @@
+{
+    "$id": "anubis_client_submission_event",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "anubis client submission event schema",
+    "description": "Schema for the anubis client submission event",
+
+    "message_id": {
+        "type": "Object",
+        "properties": {
+            "description": "",
+            "type": "string"
+        }
+    },
+    "client_id": {
+        "type": "Object",
+        "properties": {
+            "description": "",
+            "type": "string"
+        }
+    },
+    "client_version": {
+        "type": "Object",
+        "properties": {
+            "description": "",
+            "type": "string"
+        }
+    },
+    "client_sha1": {
+        "type": "Object",
+        "properties": {
+            "description": "",
+            "type": "string"
+        }
+    },
+    "client_username": {
+        "type": "Object",
+        "properties": {
+            "description": "",
+            "type": "string"
+        }
+    },
+    "date": {
+        "type": "Object",
+        "properties": {
+            "description": "",
+            "type": "string"
+        }
+    },
+    "visited": {
+        "type": "Object",
+        "properties": {
+            "description": "",
+            "type": "string"
+        }
+    },
+    "payload": {
+        "type": "Object",
+        "properties": {
+            "description": "",
+            "type": "string"
+        }
+    }
+}
