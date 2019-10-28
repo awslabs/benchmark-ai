@@ -1,14 +1,14 @@
 # Descriptor file
 
 A descriptor file defines a benchmark job. This directory contains a template descriptor including explanatory comments
- on all fields. The descriptor is written in [TOML 0.4.0](https://github.com/toml-lang/toml/blob/master/versions/en/toml-v0.4.0.md).
+ on all fields. The descriptor is written in [TOML 0.4.0](https://github.com/toml-lang/toml/blob/master/versions/en/toml-v0.4.0.md) (and validated via [this schema](bai-bff/resources/descriptor_schema.json))
 
 The file is divided in sections: info, hardware, env, ml, data and output. See the example descriptor below for reference.
 
 ## Example descriptors
 
 
-### Training 
+### Training
 
 The following example shows what the descriptor file for a horovod-based training benchmark looks like.
 
@@ -42,7 +42,7 @@ num_instances = 3
 
 # 2. Environment
 [env]
-# Docker hub <hub-user>/<repo-name>:<tag> 
+# Docker hub <hub-user>/<repo-name>:<tag>
 docker_image = "user/repo:tag"
 # Args for the docker container
 # [Opt] Whether to run the container in privileged mode (default is false)
@@ -51,7 +51,7 @@ privileged = false
 # (See docker's -shm option)
 extended_shm = true
 
-# 3. Machine learning related settings: 
+# 3. Machine learning related settings:
 # dataset, benchmark code and parameters it takes
 [ml]
 # [Opt] Command to run when launching the container (entrypoint is used if not specfied)
@@ -60,11 +60,11 @@ benchmark_code = "python /root/train.sh"
 # The code is called as defined in ml.benchmark_code, plus the args defined here
 args = "--model=resnet50_v2 --batch-size=32"
 
-# [Opt] 4. Dataset 
+# [Opt] 4. Dataset
 [data]
 
 # [Opt] Data sources
-# List all required data sources below. 
+# List all required data sources below.
 # Make an entry for each with the same format as the ones below.
 [[data.sources]]
 # Data download URI.
@@ -113,7 +113,7 @@ spec_version = "0.1.0"
 [info]
 task_name = "Example inference job"
 description = "A sample scheduled inference benchmark"
-scheduling = "*/1 * * * *" 
+scheduling = "*/1 * * * *"
 
 [info.labels]
 # Labels and values must be 63 characters or less, beginning and ending with an alphanumeric character

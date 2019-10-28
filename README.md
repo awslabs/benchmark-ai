@@ -244,7 +244,7 @@ bai-bff/bin/anubis --submit sample-benchmarks/hello-world/descriptor.toml
 By doing this you submitted a benchmark run to Anubis (which is a [Kubernetes job](https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/) by the way),
 and the following will be done:
 
-- The descriptor file is read and validated.
+- The [descriptor file](executor#descriptor-file) is read and validated (must adhere to [schema](bai-bff/resources/descriptor_schema.json)).
 - Anubis submits a job to Kubernetes
 - Kubernetes allocates node(s) for you (using [Cluster Autoscaler](https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler)).
 - The benchmark runs, emitting metrics via the `emit()` method provided by the [client-lib](https://github.com/awslabs/benchmark-ai/tree/master/client-lib).
@@ -256,7 +256,7 @@ and the following will be done:
 
 *hint: put bai-bff/bin/anubis, or symlink to it, in your $PATH*
 
-Anubis supports "Script Mode".  This means along with posting the descriptor file, you may also specify and include the actual code that you wish to run.  This is a great way to more explicitly separate your model code from the framework you want to run. See our "Hello World" [README](sample-benchmarks/hello-world) for info on that.  Also look at the `anubis` client program [document](bai-bff/docs/anubis-client.md) located in the bff service.
+Anubis supports "Script Mode".  This means along with posting the [descriptor file](executor#descriptor-file), you may also specify and include the actual code that you wish to run.  This is a great way to more explicitly separate your model code from the framework you want to run. See our "Hello World" [README](sample-benchmarks/hello-world) for info on that.  Also look at the `anubis` client program [document](bai-bff/docs/anubis-client.md) located in the bff service.
 
 ```bash
 #To watch the status messages showing the progress of the run
@@ -289,7 +289,7 @@ bai-bff/bin/anubis --results <ACTION_ID>
 
 Anubis runs generate two kinds of metrics: _operational_ and _user defined_. Operational metrics inform of
 the health of the nodes running the benchmarks, such as CPU or GPU utilization, and are collected by default when running any Anubis job.
-On the other hand, user defined metrics must be specified in the descriptor TOML and can contain any kind of data.
+On the other hand, user defined metrics must be specified in the [descriptor TOML](executor#descriptor-file) and can contain any kind of data.
 Typical examples for user defined metrics are accuracy and throughput.
 
 
