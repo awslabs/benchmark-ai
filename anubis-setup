@@ -84,7 +84,7 @@ if [ "${1}" == "--env-setup" ]; then
     exit $?
 fi
 
-if ! source "${CONDA_EXE%/*}"/activate anubis-setup; then
+if ! source "${CONDA_EXE%/*}"/activate anubis-setup >& /dev/null; then
     printf "
   Oops, there seems to be a problem with Conda...
         (Co you have Conda installed? Is it in your \$PATH?)\n"
