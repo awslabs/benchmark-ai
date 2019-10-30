@@ -2,62 +2,78 @@
     "$id": "anubis_client_submission_event",
     "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "anubis client submission event schema",
-    "description": "Schema for the anubis client submission event",
+    "description": "Schema for the anubis client submission event. See: https://github.com/awslabs/benchmark-ai/blob/master/docs/anubis-event-design.md",
 
-    "message_id": {
-        "type": "Object",
-        "properties": {
-            "description": "",
-            "type": "string"
+    "definitions": {
+        "message_id": {
+            "type": "object",
+            "properties": {
+                "description": "Unique identifier for this message (UUID)",
+                "type": "string"
+            }
+        },
+        "client_id": {
+            "type": "object",
+            "properties": {
+                "description": "Identifier of the user sending this message (UUID)",
+                "type": "string"
+            }
+        },
+        "client_version": {
+            "type": "object",
+            "properties": {
+                "description": "Semantic version of this communication protocol X.X.X",
+                "type": "string",
+                "pattern": "[0-9]*\\.[0-9]*\\.[0-9]*"
+            }
+        },
+        "client_sha1": {
+            "type": "object",
+            "properties": {
+                "description": "",
+                "type": "string"
+            }
+        },
+        "client_username": {
+            "type": "object",
+            "properties": {
+                "description": "Human readable name of the user",
+                "type": "string"
+            }
+        },
+        "date": {
+            "type": "object",
+            "properties": {
+                "description": "The date of the creation of this event",
+                "type": "string"
+            }
+        },
+        "visited_entry": {
+            "type": "object",
+            "properties": {
+                "src" : {"type": "string"},
+                "tstamp" : {"type": "number"},
+                "version" : {"type": "string"}
+            },
+            "uniqueItems" : true,
+            "required": ["src", "tstamp", "version"]
+        },
+        "visited": {
+            "type": "array",
+            "items":  { "$ref": "#/definitions/visited_entry" }
         }
     },
-    "client_id": {
-        "type": "Object",
-        "properties": {
-            "description": "",
-            "type": "string"
-        }
+
+    "type": "object",
+    "properties": {
+        "message_id": { "$ref": "#/definitions/message_id" },
+        "client_id": { "$ref": "#/definitions/client_id" },
+        "client_version" : { "$ref": "#/definitions/client_version" },
+        "client_sha1" : { "$ref": "#/definitions/client_sha1" },
+        "client_username" : { "$ref": "#/definitions/client_username" },
+        "date": { "$ref": "#/definitions/date" },
+        "visited": { "$ref": "#/definitions/visited" }
     },
-    "client_version": {
-        "type": "Object",
-        "properties": {
-            "description": "",
-            "type": "string"
-        }
-    },
-    "client_sha1": {
-        "type": "Object",
-        "properties": {
-            "description": "",
-            "type": "string"
-        }
-    },
-    "client_username": {
-        "type": "Object",
-        "properties": {
-            "description": "",
-            "type": "string"
-        }
-    },
-    "date": {
-        "type": "Object",
-        "properties": {
-            "description": "",
-            "type": "string"
-        }
-    },
-    "visited": {
-        "type": "Object",
-        "properties": {
-            "description": "",
-            "type": "string"
-        }
-    },
-    "payload": {
-        "type": "Object",
-        "properties": {
-            "description": "",
-            "type": "string"
-        }
-    }
+    "additionalProperties": true,
+    "required" : ["message_id", "client_id", "client_version", "client_sha1", "client_username", "date", "visited"]
 }
