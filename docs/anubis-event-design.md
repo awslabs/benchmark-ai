@@ -23,7 +23,10 @@ _Kafka Topics_...<br>
 
 TOML → Client Tool (anubis): → BFF via web service call.
 
-(The TOML format is described [here](https://github.com/awslabs/benchmark-ai/tree/master/executor/#example-descriptor))
+TOML descriptor format is described [here](/executor/#descriptor-file)<br>
+JSON Schema for descriptor information is located is located [here](/bai-bff/resources/descriptor_schema.json)<br>
+JSON Schema for the enveloping message protocol (below) - the submission event, is located [here](/bai-bff/resources/submit_schema.json)<br>
+
 
 ```
 {
@@ -36,9 +39,9 @@ TOML → Client Tool (anubis): → BFF via web service call.
     visited: [{svc:"baictl", tstamp:"1554901873677" version:"v0.1.0-481dad1"}],
     payload:{
         toml:{
-            descriptor_filename="descriptor_cpu.toml"
-            sha1:d99cf00af3e9019f4fe7b180c47ef047395d2067
-            doc: "Initial toml" //Base64(see https://raw.githubusercontent.com/awslabs/benchmark-ai/master/sample-benchmarks/single-node/descriptor_cpu.toml?token=ABNAFyoEABKZ-1J9XZJet22sFE1Uuc1iks5ctyuDwA%3D%3D)
+            descriptor_filename:"descriptor_cpu.toml"
+            sha1:"d99cf00af3e9019f4fe7b180c47ef047395d2067"
+            doc: "Encoded contents of toml descriptor file" //Base64(see https://raw.githubusercontent.com/awslabs/benchmark-ai/master/sample-benchmarks/single-node/descriptor_cpu.toml?token=ABNAFyoEABKZ-1J9XZJet22sFE1Uuc1iks5ctyuDwA%3D%3D)
         }
     },
 }
@@ -83,9 +86,9 @@ Sent from BFF directly (...to Fetcher) via the Kafka topic **BAI_APP_BFF**<br>
             ]
         toml:{
  ->         contents: { ... }
-            descriptor_filename="descriptor_cpu.toml"
-            sha1:d99cf00af3e9019f4fe7b180c47ef047395d2067
-            doc: "Initial toml" // Base64
+            descriptor_filename:"descriptor_cpu.toml"
+            sha1:"d99cf00af3e9019f4fe7b180c47ef047395d2067"
+            doc: "Encoded contents of toml descriptor file" // Base64
         }
     },
 }
@@ -132,9 +135,9 @@ Sent from Fetcher (...to Executor) via the Kafka topic:<br>
             ],
         toml:{
             contents: {...}
-            descriptor_filename="descriptor_cpu.toml"
-            sha1:d99cf00af3e9019f4fe7b180c47ef047395d2067
-            doc: "Initial toml" // Base64
+            descriptor_filename:"descriptor_cpu.toml"
+            sha1:"d99cf00af3e9019f4fe7b180c47ef047395d2067"
+            doc: "Encoded contents of toml descriptor file" // Base64
         }
     },
 }
@@ -190,9 +193,9 @@ Sent from Executor ... This may be what we would consider the “receipt” for 
             ],
         toml:{
             contents: { ... }
-            descriptor_filename="descriptor_cpu.toml"
-            sha1:d99cf00af3e9019f4fe7b180c47ef047395d2067
-            doc: "Initial toml" // Base64 encoded
+            descriptor_filename:"descriptor_cpu.toml"
+            sha1:"d99cf00af3e9019f4fe7b180c47ef047395d2067"
+            doc: "Encoded contents of toml descriptor file" // Base64 encoded
         }
     },
 }
