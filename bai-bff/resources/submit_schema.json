@@ -5,53 +5,19 @@
     "description": "Schema for the anubis client submission event. See: https://github.com/awslabs/benchmark-ai/blob/master/docs/anubis-event-design.md",
 
     "definitions": {
-        "message_id": {
-            "type": "object",
-            "properties": {
-                "description": "Unique identifier for this message (UUID)",
-                "type": "string"
-            }
-        },
-        "client_id": {
-            "type": "object",
-            "properties": {
-                "description": "Identifier of the user sending this message (UUID)",
-                "type": "string"
-            }
-        },
+        "message_id": { "type": "string" },
+        "client_id": { "type": "string" },
         "client_version": {
-            "type": "object",
-            "properties": {
-                "description": "Semantic version of this communication protocol X.X.X",
-                "type": "string",
-                "pattern": "[0-9]*\\.[0-9]*\\.[0-9]*"
-            }
+            "type": "string",
+            "pattern": "[0-9]*\\.[0-9]*\\.[0-9]*"
         },
-        "client_sha1": {
-            "type": "object",
-            "properties": {
-                "description": "",
-                "type": "string"
-            }
-        },
-        "client_username": {
-            "type": "object",
-            "properties": {
-                "description": "Human readable name of the user",
-                "type": "string"
-            }
-        },
-        "date": {
-            "type": "object",
-            "properties": {
-                "description": "The date of the creation of this event",
-                "type": "string"
-            }
-        },
+        "client_sha1": { "type": "string" },
+        "client_username": { "type": "string" },
+        "date": { "type": "string" },
         "visited_entry": {
             "type": "object",
             "properties": {
-                "src" : {"type": "string"},
+                "svc" : {"type": "string"},
                 "tstamp" : {"type": "number"},
                 "version" : {"type": "string"}
             },
