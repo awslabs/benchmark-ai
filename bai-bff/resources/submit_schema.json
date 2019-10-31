@@ -9,7 +9,7 @@
         "client_id": { "type": "string" },
         "client_version": {
             "type": "string",
-            "pattern": "[0-9]*\\.[0-9]*\\.[0-9]*"
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
         },
         "client_sha1": { "type": "string" },
         "client_username": { "type": "string" },
@@ -38,7 +38,22 @@
         "client_sha1" : { "$ref": "#/definitions/client_sha1" },
         "client_username" : { "$ref": "#/definitions/client_username" },
         "date": { "$ref": "#/definitions/date" },
-        "visited": { "$ref": "#/definitions/visited" }
+        "visited": { "$ref": "#/definitions/visited" },
+        "payload": {
+            "type": "object",
+            "properties": {
+                "toml": {
+                    "type": "object",
+                    "properties": {
+                        "descriptor_filename": {"type": "string"},
+                        "sha1": {"type": "string"},
+                        "doc": {"type":"string"}
+                    },
+                    "uniqueItems": true,
+                    "required": ["descriptor_filename", "sha1", "doc"]
+                }
+            }
+        }
     },
     "additionalProperties": true,
     "required" : ["message_id", "client_id", "client_version", "client_sha1", "client_username", "date", "visited"]
