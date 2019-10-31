@@ -1,11 +1,11 @@
 {
-    "$id": "anubis_client_submission_event",
+    "$id": "anubis_client_command_event",
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "title": "anubis client submission event schema",
-    "description": "Schema for the anubis client submission event. See: https://github.com/awslabs/benchmark-ai/blob/master/docs/anubis-event-design.md",
+    "title": "anubis client command event schema",
+    "description": "Schema for the anubis client command event. See: https://github.com/awslabs/benchmark-ai/blob/master/docs/anubis-event-design.md",
 
     "definitions": {
-        "message_id": { "type": "string", "pattern": "^[a-fA-F0-9-]{8}-([a-fA-F0-9-]{4}-){3}[a-fA-F0-9-]{12}$" },
+        "message_id": { "type": "string", "pattern": "^[a-fA-F0-9-]{8}-([a-fA-F0-9-]{4}-){3}[a-fA-F0-9-]{12}$"},
         "client_id": { "type": "string" },
         "client_version": {
             "type": "string",
@@ -42,19 +42,11 @@
         "payload": {
             "type": "object",
             "properties": {
-                "toml": {
-                    "type": "object",
-                    "properties": {
-                        "descriptor_filename": {"type": "string"},
-                        "sha1": {"type": "string"},
-                        "doc": {"type":"string"}
-                    },
-                    "uniqueItems": true,
-                    "required": ["descriptor_filename", "sha1", "doc"]
-                }
+                "command": {"type": "string"},
+                "args": {"type": "string"}
             },
             "uniqueItems": true,
-            "required": ["toml"]
+            "required": ["command"]
         }
     },
     "additionalProperties": true,
