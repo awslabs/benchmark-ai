@@ -32,6 +32,7 @@
     (partial json-schema/validate schema)))
 
 (def validate-descriptor (descriptor-validator-fn "descriptor_schema.json"))
+(def validate-submit-message (descriptor-validator-fn "submit_event_schema.json"))
 
 (defn decode-document
   "Takes an event and decodes the base64 encoded descriptor

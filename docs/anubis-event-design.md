@@ -25,7 +25,7 @@ TOML → Client Tool (anubis): → BFF via web service call.
 
 TOML descriptor format is described [here](/executor/#descriptor-file)<br>
 JSON Schema for descriptor information is located is located [here](/bai-bff/resources/descriptor_schema.json)<br>
-JSON Schema for the enveloping message protocol (below) - the submission event, is located [here](/bai-bff/resources/submit_schema.json)<br>
+JSON Schema for the enveloping message protocol (below) - the submission event, is located [here](/bai-bff/resources/submit_event_schema.json)<br>
 
 
 ```
