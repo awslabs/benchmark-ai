@@ -22,7 +22,7 @@
                 "version" : {"type": "string"}
             },
             "uniqueItems" : true,
-            "required": ["src", "tstamp", "version"]
+            "required": ["svc", "tstamp", "version"]
         },
         "visited": {
             "type": "array",
