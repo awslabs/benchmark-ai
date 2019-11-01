@@ -1,0 +1,19 @@
+{
+  "message_id": "D6967A37-953E-4D04-8239-443DF47155E0",
+  "client_id": "ca2f097889997d8200b9abc2f8d2ec822246845e",
+  "client_version": "0.6.2",
+  "client_sha1": "6e95db9bbfc35095b28d914e3021ffe6468316b4",
+  "client_username": "bellgav",
+  "date": "Wed Oct 30 13:17:23 UTC 2019",
+  "visited": [
+    {
+      "svc": "anubis-client",
+      "tstamp": 1572441443000,
+      "version": "0.6.2"
+    }
+  ],
+  "payload": {
+      "command": "cancel",
+      "args": "0ed7031f1a0231d320218c8453f3e3fda506d8ac"
+  }
+}
