@@ -25,4 +25,16 @@ where your code runs). In this example, `src/` will be at `BAI_SCRIPTS_PATH/src/
 ### Additional flags
 
 In both scenarios the additional augmenting arguments can be provided to the [anubis](bai-bff/bin/anubis) command to provide additional feedback semantics.<br>
-See: [anubis starter doc](bai-bff/docs/anubis-client.md) and --help for more information.
+
+``` shell
+--force --verbose --debug --tail --watch
+```
+
+If you wish to submit your job and see the status feedback right way and continue to watch them as they arrive update your command line like this.<br>
+
+``` shell
+anubis --watch --status --submit descriptor-script-mode.toml --script src
+```
+(order does not matter)
+
+See: [anubis starter doc](/bai-bff/docs/anubis-client.md) and --help for more information.
