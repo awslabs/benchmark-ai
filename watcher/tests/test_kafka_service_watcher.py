@@ -1,4 +1,4 @@
-from unittest.mock import call
+from unittest.mock import call, MagicMock
 
 import kafka
 import pytest
@@ -61,6 +61,11 @@ def watcher_service_config():
 
 
 @pytest.fixture
+def mock_kafka_service():
+    return MagicMock()
+
+
+@pytest.fixture
 def kafka_service(mocker, kafka_service_config, watcher_service_config):
     kafka_producer_class = mocker.patch.object(kafka, "KafkaProducer")
     kafka_consumer_class = mocker.patch.object(kafka, "KafkaConsumer")
@@ -114,6 +119,12 @@ def test_choose_status_from_benchmark_status(benchmark_job_status):
 
 @pytest.fixture
 def benchmark_event():
+    descriptor = {
+        "spec_version": "0.1.0",
+        "info": {"description": "some description"},
+        "hardware": {"instance_type": "t3.small", "strategy": "single_node"},
+        "env": {"docker_image": "some:image"},
+    }
     return ExecutorBenchmarkEvent(
         action_id=ACTION_ID,
         message_id="MESSAGE_ID",
@@ -125,7 +136,7 @@ def benchmark_event():
         visited=[],
         type="TYPE",
         payload=ExecutorPayload(
-            toml=BenchmarkDoc({"var": "val"}, doc="var=val", sha1="sha"), datasets=[], job=BenchmarkJob(id=ACTION_ID)
+            toml=BenchmarkDoc(descriptor, doc="var=val", sha1="sha"), datasets=[], job=BenchmarkJob(id=ACTION_ID)
         ),
     )
 
@@ -176,7 +187,16 @@ def test_service_instantiates_right_watcher(
     k8s_job_watcher.assert_called_once()
 
     # SageMaker job
-    benchmark_event.payload.toml.contents["info"] = {"execution_engine": "aws.sagemaker"}
+    benchmark_event.payload.toml.contents["info"]["execution_engine"] = "aws.sagemaker"
     watcher = WatchJobsEventHandler(watcher_service_config)
     watcher.handle_event(benchmark_event, kafka_service)
     sagemaker_job_watcher.assert_called_once()
+
+
+def test_horovod_strategy_not_supported(benchmark_event, mock_kafka_service, watcher_service_config):
+    benchmark_event.payload.toml.contents["hardware"]["strategy"] = "horovod"
+    watcher = WatchJobsEventHandler(watcher_service_config)
+    watcher.handle_event(benchmark_event, mock_kafka_service)
+    assert mock_kafka_service.send_status_message_event.call_args_list == [
+        call(benchmark_event, Status.PENDING, "'horovod' strategy is not currently supported.")
+    ]
