@@ -31,7 +31,9 @@
     (log/info "loaded schema:"(str"["json-schema-document"]"))
     (partial json-schema/validate schema)))
 
-(def validate-descriptor (descriptor-validator-fn "descriptor_schema.json"))
+(def validate-descriptor      (descriptor-validator-fn "descriptor_schema.json"))
+(def validate-submit-message  (descriptor-validator-fn "submit_event_schema.json"))
+(def validate-command-message (descriptor-validator-fn "command_event_schema.json"))
 
 (defn decode-document
   "Takes an event and decodes the base64 encoded descriptor
@@ -95,7 +97,8 @@
   code if there are event changes."
   [req message-body]
   (let [tstamp (System/currentTimeMillis)
-        authenticated false] ;NOTE auth should have been taken care of by middleware.
+        authenticated false
+        _ (validate-submit-message message-body)] ;NOTE auth should have been taken care of by middleware.
     (->
      {:message_id      (uuid)                                     ; <--
       :client_id       (some-> message-body :client_id)
@@ -119,7 +122,8 @@
 (defn message->cmd-event
   [req message-body]
   (let [tstamp (System/currentTimeMillis)
-        authenticated false] ;NOTE auth should have been taken care of by middleware.
+        authenticated false
+        _ (validate-command-message message-body)] ;NOTE auth should have been taken care of by middleware.
     (add-my-visited-entry
      {:message_id       (uuid)                                     ; <--
       :client_id        (some-> message-body :client_id)

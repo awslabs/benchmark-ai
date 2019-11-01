@@ -1,0 +1,54 @@
+{
+    "$id": "anubis_client_command_event",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "anubis client command event schema",
+    "description": "Schema for the anubis client command event. See: https://github.com/awslabs/benchmark-ai/blob/master/docs/anubis-event-design.md",
+
+    "definitions": {
+        "message_id": { "type": "string", "pattern": "^[a-fA-F0-9-]{8}-([a-fA-F0-9-]{4}-){3}[a-fA-F0-9-]{12}$"},
+        "client_id": { "type": "string" },
+        "client_version": {
+            "type": "string",
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "client_sha1": { "type": "string" },
+        "client_username": { "type": "string" },
+        "date": { "type": "string" },
+        "visited_entry": {
+            "type": "object",
+            "properties": {
+                "svc" : {"type": "string"},
+                "tstamp" : {"type": "number"},
+                "version" : {"type": "string"}
+            },
+            "uniqueItems" : true,
+            "required": ["svc", "tstamp", "version"]
+        },
+        "visited": {
+            "type": "array",
+            "items":  { "$ref": "#/definitions/visited_entry" }
+        }
+    },
+
+    "type": "object",
+    "properties": {
+        "message_id": { "$ref": "#/definitions/message_id" },
+        "client_id": { "$ref": "#/definitions/client_id" },
+        "client_version" : { "$ref": "#/definitions/client_version" },
+        "client_sha1" : { "$ref": "#/definitions/client_sha1" },
+        "client_username" : { "$ref": "#/definitions/client_username" },
+        "date": { "$ref": "#/definitions/date" },
+        "visited": { "$ref": "#/definitions/visited" },
+        "payload": {
+            "type": "object",
+            "properties": {
+                "command": {"type": "string"},
+                "args": {"type": "string"}
+            },
+            "uniqueItems": true,
+            "required": ["command"]
+        }
+    },
+    "additionalProperties": true,
+    "required" : ["message_id", "client_id", "client_version", "client_sha1", "client_username", "date", "visited", "payload"]
+}

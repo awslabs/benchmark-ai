@@ -139,7 +139,14 @@
         "framework": { "type": "string", "enum": ["", "mxnet", "tensorflow"] },
         "framework_version": { "type": "string" },
         "benchmark_code": { "type": "string" },
-        "args": { "type": "string" }
+        "args": { "type": "string" },
+        "script": {
+            "type":"object",
+            "properties":{
+                "script": {"type": "string"}
+            },
+            "required": ["script"]
+        }
       },
       "additionalProperties": false
     },
