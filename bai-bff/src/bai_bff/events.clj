@@ -97,7 +97,8 @@
   code if there are event changes."
   [req message-body]
   (let [tstamp (System/currentTimeMillis)
-        authenticated false] ;NOTE auth should have been taken care of by middleware.
+        authenticated false
+        _ (validate-submit-message message-body)] ;NOTE auth should have been taken care of by middleware.
     (->
      {:message_id      (uuid)                                     ; <--
       :client_id       (some-> message-body :client_id)
@@ -121,7 +122,8 @@
 (defn message->cmd-event
   [req message-body]
   (let [tstamp (System/currentTimeMillis)
-        authenticated false] ;NOTE auth should have been taken care of by middleware.
+        authenticated false
+        _ (validate-command-message message-body)] ;NOTE auth should have been taken care of by middleware.
     (add-my-visited-entry
      {:message_id       (uuid)                                     ; <--
       :client_id        (some-> message-body :client_id)
