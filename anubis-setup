@@ -58,7 +58,7 @@ _which_conda() {
     fi
 }
 
-CONDA_EXE="${CONDA_EXE:-$(_which_conda)}"y
+CONDA_EXE="${CONDA_EXE:-$(_which_conda)}"
 
 env_setup() {
     if ! "${CONDA_EXE}" --version; then conda_usage; fi;
