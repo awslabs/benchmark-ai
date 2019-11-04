@@ -153,4 +153,4 @@ def test_sample_benchmarks(client, descriptor_filename):
     # All visited services
     visited_services = [visited.svc for msg in status_messages for visited in msg.visited]
     visited_services = set(visited_services)
-    assert visited_services == {"bai-client-python", "bai-bff", "fetcher-dispatcher", "executor", "watcher"}
+    assert visited_services == {"anubis-client", "bai-bff", "fetcher-dispatcher", "executor", "watcher"}

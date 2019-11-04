@@ -18,7 +18,7 @@ from shutil import copy2
 from urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 
-SERVICE_NAME = "bai-client-python"
+SERVICE_NAME = "anubis-client"
 
 logger = logging.getLogger(__name__)
 
@@ -62,13 +62,13 @@ def create_submit_event(descriptor_filename) -> SubmitEvent:
         )
     )
     return SubmitEvent(
-        message_id=str(uuid.uuid4()),
+        message_id=str(uuid.uuid4()).upper(),
         client_id=get_client_id(),
         client_version=__version__,
-        client_sha1="??",  # declare -r MY_SHA1=$(sha1sum ${0} | awk '{print $1}')
+        client_sha1=_sha1sum(getpass.getuser()),
         client_username=getpass.getuser(),
-        date=now.strftime("%a %b %d %H:%M:%S %Z %Y"),
-        visited=[VisitedService(svc=SERVICE_NAME, tstamp=int(now.timestamp()), version=__version__)],
+        date=now.strftime("%a %b %d %H:%M:%S UTC %Y"),
+        visited=[VisitedService(svc=SERVICE_NAME, tstamp=int(now.timestamp()) * 1000, version=__version__)],
         payload=payload,
     )
 
@@ -129,7 +129,18 @@ class BaiClient:
         if not path.exists():
             raise ValueError(f"Descriptor file does not exist: {path}")
         event = create_submit_event(descriptor_filename)
-        event_to_json = event.to_json()
+        event_to_dict = event.to_dict()
+        # HACK - Per G. da Silva 04/11/2019
+        # The submission event is not getting passed the bff validation
+        # because it is sending an event with a 'null' verified, contents,
+        # and 'node' in the visited. This is an artifact of the dataclasses_json serialization.
+        # I could not figure out a way to get it to skip empty values.
+        # So, for now, we just delete the keys.
+        # We should, in any case, switch to using the anubis client for the blackbox tests
+        del event_to_dict["payload"]["toml"]["contents"]
+        del event_to_dict["payload"]["toml"]["verified"]
+        del event_to_dict["visited"][0]["node"]
+        event_to_json = json.dumps(event_to_dict)
         with requests.Session() as session:
             logger.info(f"Submitting {path}")
             logger.debug(f"Submit event for {path}: {event} to {self.endpoint}")
