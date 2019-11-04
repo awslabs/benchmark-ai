@@ -1,5 +1,9 @@
 FROM continuumio/miniconda3:4.6.14 as base
 
+# Install build essential as gcc is needed by 
+# the executor dependencies - otherwise the integrationt test stage will fail
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential
+
 RUN conda update -n base -c conda-forge conda
 
 ARG SERVICE
