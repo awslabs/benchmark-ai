@@ -66,8 +66,8 @@
         (>!! @eventbus/send-event-channel-atom [event])
         (response (:action_id event))))
     (catch Exception e
-      (log/error "Could Not Parse Descriptor Input")
-      (bad-request "Could Not Parse Submitted Descriptor "))))
+      (log/error "Could Not Parse Descriptor Input" (.getMessage e))
+      (bad-request (str "Could Not Parse Submitted Descriptor " (.getMessage e))))))
 
 ;;----------------------
 ;; Misc Helper functions...
