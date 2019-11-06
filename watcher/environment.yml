@@ -9,6 +9,7 @@ dependencies:
   - python-kubernetes 9.0.*
   - pycurl 7.43.*
   - kafka-python 1.4.6
+  - python-crontab >= 2.3
   - pip
   - pip:
       - dataclasses-json
