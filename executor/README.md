@@ -260,7 +260,7 @@ For any required data source, users can provide a download URI and a destination
 * (Upcoming) **Output**: Section for users to declare the metrics they will be tracking with this benchmark, along with the alarming information: thresholds (can be dynamic, such as 2-sigma) and who should be notified when they are triggered.
 
 <hr>
-(special note for `--script-mode`)
+#### Special note for script mode (`--script`)
 
 
 | Section                | Field            | Description                                                                                                                                            | Values                                                      | Required/Optional |
