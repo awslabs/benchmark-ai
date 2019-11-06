@@ -217,6 +217,7 @@ VAR2 = "value2"
 | hardware               | instance_type      | Type of EC2 instance where the job is to run                                                                                                         | EC2 instance [API name](https://ec2instances.info)          | Required          |
 | hardware               | strategy           | Whether to run on single node or distributed. In the latter case, a distributed strategy, such as horovod or mxnet_parameter_server, must be specified | One of ['single_node', 'horovod', 'client_server', 'mxnet_parameter_server'] | Required          |
 | hardware.distributed   | num_instances      | Number of nodes to use for distributed training                                                                                                      | Int                                                         | Optional          |
+| hardware.distributed   | processes_per_instance  | Number of processes to use for each distributed instance                                                                                        | Int                                                         | Optional          |
 | env                    | docker_image       | Docker image which runs the benchmark (it must contain the benchmark code)                                                                           | Docker image as user/repo:tag                               | Required          |
 | env                    | privileged         | Whether to run the container in privileged mode                                                                                                      | boolean (default: false)                                    | Optional          |
 | env                    | extended_shm       | Whether more than 64MB shared memory is needed for containers                                                                                        | boolean (default: true)                                     | Optional          |
@@ -247,7 +248,7 @@ VAR2 = "value2"
 | server.env.readiness_probe | success_threshold      | Minimum consecutive successes for probe to be considered successful                                                                                    | Integer >= 1 (default: 1)                                   | Optional           |
 | server.env.readiness_probe | failure_threshold      | Minimum consecutire failured for probe to be considered failed                                                                                         | Integer >= 1 (default: 3)                                   | Optional           |
 
-Notes on the sections:
+### Notes on the sections:
 
 * **Info**: The scheduling field lets users specify when the job is supposed to run. This is done using cron expressions, such as `0 * * * *` or `@daily`, for example.
 * **Hardware**: Users must specify a strategy to run their benchmark, be it single_node or one of the distributed alternatives, such as horovod.
@@ -258,6 +259,45 @@ For any required data source, users can provide a download URI and a destination
 * **Server**: This section must specify the inference server hardware and environment. It is only relevant to the *inference* strategy.
 * (Upcoming) **Output**: Section for users to declare the metrics they will be tracking with this benchmark, along with the alarming information: thresholds (can be dynamic, such as 2-sigma) and who should be notified when they are triggered.
 
+<hr>
+#### Special note for script mode (`--script`)
+
+
+| Section                | Field            | Description                                                                                                                                            | Values                                                      | Required/Optional |
+|------------------------|----------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------|-------------------|
+| ml.script                     | script     | Actual code or the top level directory of code that you wish to be present and run in the container. A result of using the `--script` flag of the anubis client                                                                      | String                                                      | Optional          |
+
+When "script mode" is used (by calling the [anubis client's](/bai-bff/docs/anubis-client.md) `--script` option), the descriptor file is modified automatically to include a special `[ml.script]` section. Ex:
+
+at command line....
+```bash
+anubis --submit my-descriptor-file.toml --script my-code-or-toplevel-directory-of-code-to-include-in-container
+```
+
+Anubis will automatically modify your descriptor to include...
+``` toml
+### --- beginning of anubis generated entry --- ###
+[ml.script]
+script = "2cf5f8ef69c341e62a8c827a787eca248d482ce3.tar"
+### --- ending of anubis generated entry --- ###
+```
+
+**DO NOT** edit this section. It represents the script that you have specified to include with the benchmark run.<br>
+(you may remove entirely, but do not edit the contents)
+
+The code is placed in the container at the location held in the environment variable `BAI_SCRIPTS_PATH`. This location is at the script or top level directory specified.
+To direct the container to run your specific benchmark code you must set the descriptor's `benchmark_code` field (in the `ml` section) as described above.
+
+Ex:
+
+``` bash
+[ml]
+benchmark_code = "$(BAI_SCRIPTS_PATH)/my-code-or-toplevel-directory-of-code-to-include-in-container/mycode.sh"
+```
+
+Notice: this continues to support the reproducibility tenet of his project.  You can share this descriptor file and the recipient would be able to directly run this script without actually having your *script* code. ;-)<<br>
+*(under the hood - the `--script` value specified is tarred and stored in $ANUBIS_HOME/script_staging directory and named by its sha1sum.)*
+<hr>
 
 ## Integration tests
 

@@ -9,7 +9,7 @@ Anubis provides a simple, self service solution for teams to schedule and run be
 
 # Features
 
-* Simple single _declarative_ _document-based_ input that gives user full control of Model / Framework / Hardware dimensions
+* Simple single [_declarative__ input file](executor#descriptor-file) that gives user full control of Model / Framework / Hardware dimensions
   ([TOML](https://github.com/toml-lang/toml) format)
 * Simple command-line interface
 * Strong Reproducibility
