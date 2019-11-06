@@ -295,7 +295,7 @@ Ex:
 benchmark_code = "$(BAI_SCRIPTS_PATH)/my-code-or-toplevel-directory-of-code-to-include-in-container/mycode.sh"
 ```
 
-Notice: this continues to support the reproduceability tenet of his project.  You can share this descriptor file and the recipient would be able to directly run this script without actually having your *script* code. ;-)<<br>
+Notice: this continues to support the reproducibility tenet of his project.  You can share this descriptor file and the recipient would be able to directly run this script without actually having your *script* code. ;-)<<br>
 *(under the hood - the `--script` value specified is tarred and stored in $ANUBIS_HOME/script_staging directory and named by its sha1sum.)*
 <hr>
 
