@@ -43,7 +43,7 @@
         (db/save-client-job event)
         (>!! @eventbus/send-event-channel-atom [(status-event :bai-bff.events/succeeded (str "Submission has been successfully received..."))])
         (>!! @eventbus/send-event-channel-atom [event])
-        (:action_id event)))
+        (response (:action_id event))))
     (catch Exception e
       (log/error "Could Not Parse Descriptor Input:" (.getMessage e))
       (bad-request (str "Could Not Parse Submitted Descriptor: " (.getMessage e))))))
@@ -64,10 +64,10 @@
         (log/info (json/generate-string event {:pretty true}))
         (>!! @eventbus/send-event-channel-atom [(status-event :bai-bff.events/pending (str "Action received, dispatching delete for <"action-id">"))])
         (>!! @eventbus/send-event-channel-atom [event])
-        (:action_id event)))
+        (response (:action_id event))))
     (catch Exception e
-      (log/error "Could Not Parse Descriptor Input")
-      (bad-request "Could Not Parse Submitted Descriptor "))))
+      (log/error "Could Not Parse Descriptor Input" (.getMessage e))
+      (bad-request (str "Could Not Parse Submitted Descriptor " (.getMessage e))))))
 
 ;;----------------------
 ;; Misc Helper functions...
@@ -110,7 +110,7 @@
              (GET  "/script/:filename" [filename] (response (if (eventbus/has-file? filename) (str "true") (str "false"))))
              (GET  "/results/:client-id/:action-id" [client-id action-id] (response (eventbus/get-job-results client-id action-id)))
              (POST "/" {body :body :as request} (post-proc-results (log/info (pprint request)) #_(create-job body)));TODO - implement me
-             (POST "/descriptor" {{body :submit-event} :params :as request} (response (dispatch-submit-job request body)))
+             (POST "/descriptor" {{body :submit-event} :params :as request} (dispatch-submit-job request body))
              (context "/:client-id" [client-id]
                       (defroutes client-routes
                         (GET    "/" {{:keys[since] :or {since "0"}} :params :as req} (post-proc-results (eventbus/get-client-jobs client-id since)))
@@ -118,7 +118,7 @@
                       (context "/:action-id" [action-id]
                                (defroutes action-routes
                                  (GET    "/" {{:keys[since] :or {since "0"}} :params :as req} (post-proc-results (eventbus/get-client-job-status-for-action client-id action-id since)))
-                                 (DELETE "/" {body :body :as request} (response (dispatch-delete-job request body action-id)))))))) ;
+                                 (DELETE "/" {body :body :as request} (dispatch-delete-job request body action-id))))))) ;
   (ANY "*" []
        (route/not-found (slurp (io/resource "404.html")))))
 
