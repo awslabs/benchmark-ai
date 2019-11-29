@@ -68,6 +68,6 @@ def fetcher_benchmark_event(benchmark_event_dummy_payload: BenchmarkEvent) -> Fe
         "ml": {"benchmark_code": "echo hello world"},
         "info": {"description": "something", "task_name": "test-2"},
         "hardware": {"instance_type": "local", "strategy": "single_node"},
-        "env": {"docker_image": "alpine", "vars": {"FOO": "BAR", "IVAL": 42}},
+        "env": {"docker_image": "alpine", "vars": {"FOO": "BAR"}},
     }
     return create_fetcher_benchmark_event_from_dict(benchmark_event_dummy_payload, toml_dict)
