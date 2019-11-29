@@ -13,11 +13,10 @@ admin:
 # https://grafana.com/docs/installation/configuration/#auth
 
 grafana:
-  metadata:
-    annotations:
-      service.beta.kubernetes.io/aws-load-balancer-extra-security-groups: @@SECURITY_GROUP_ID@@
   service:
     type: LoadBalancer
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-extra-security-groups: @@SECURITY_GROUP_ID@@
 
 prometheus:
   prometheusSpec:
