@@ -56,8 +56,6 @@ spec:
           value: VAR
         - name: SECOND_VAL
           value: VAR
-        - name: INT_VAL
-          value: '11'
         - name: FOO
           value: bar
         volumeMounts:

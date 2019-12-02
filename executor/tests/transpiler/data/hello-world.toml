@@ -27,7 +27,6 @@ docker_image = "edisongustavo/bai-benchmarks-hello-world:latest"
 [env.vars]
 FIST_VAL="VAR"
 SECOND_VAL="VAR"
-INT_VAL = 11
 FOO = "bar"
 
 

@@ -632,7 +632,7 @@ def create_scheduled_benchmark_bai_k8s_builder(
 
 
 def create_job_yaml_spec(
-    descriptor_contents: Dict,
+    descriptor_contents: Dict[str, str],
     executor_config: ExecutorConfig,
     fetched_data_sources: List[DownloadableContent],
     fetched_models: List[DownloadableContent],
