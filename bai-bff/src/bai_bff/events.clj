@@ -52,7 +52,7 @@
 
 (defn validate-toml-crontab [event]
   (when-let [crontab-string (some-> event :payload :toml :contents :info :scheduling)]
-    (when-not (parsers/valid-crontab? crontab-string) (throw (Exception. (str "INVALID CRONTAB ENTRY: " crontab-string)))))
+    (when-not (or (parsers/valid-crontab? crontab-string) (= "single_run" crontab-string)) (throw (Exception. (str "INVALID CRONTAB ENTRY: " crontab-string)))))
   event)
 
 (defn glean-dataset-info
