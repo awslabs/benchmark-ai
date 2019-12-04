@@ -40,8 +40,24 @@ def test_handle_event(mocker, metrics_event, mock_kafka_service):
                 "MetricName": metrics_event.name,
                 "Dimensions": expected_dimensions,
                 "Unit": "None",
-                "Value": metrics_event.value,
+                "Value": float(metrics_event.value),
             }
         ],
         Namespace="ANUBIS/METRICS",
     )
+
+
+def test_put_metric_data_with_string_value_in_event_is_called_with_float(mocker, metrics_event, mock_kafka_service):
+    metric_value_str = "10"
+    metrics_event.value = metric_value_str
+
+    mock_boto_cloudwatch = MagicMock()
+    mock_boto_cloudwatch.put_metric_data = MagicMock()
+    mocker.patch("cloudwatch_exporter.cloudwatch_exporter.boto3.client", return_value=mock_boto_cloudwatch)
+
+    cw_exporter_handler = CloudWatchExporterHandler()
+    cw_exporter_handler.handle_event(metrics_event, mock_kafka_service)
+
+    args, kwargs = mock_boto_cloudwatch.put_metric_data.call_args_list[0]
+    metric_data = kwargs['MetricData'][0]
+    assert metric_data['Value'] == float(metric_value_str)
