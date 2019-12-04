@@ -59,5 +59,5 @@ def test_put_metric_data_with_string_value_in_event_is_called_with_float(mocker,
     cw_exporter_handler.handle_event(metrics_event, mock_kafka_service)
 
     args, kwargs = mock_boto_cloudwatch.put_metric_data.call_args_list[0]
-    metric_data = kwargs['MetricData'][0]
-    assert metric_data['Value'] == float(metric_value_str)
+    metric_data = kwargs["MetricData"][0]
+    assert metric_data["Value"] == 10.0
