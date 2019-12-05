@@ -359,7 +359,7 @@ deploy.yml: FORCE
 
 service.yml: FORCE
 	@echo "Generating kubernetes service.yaml from template..."
-	@sed -e 's|@@BFF_SECURITY_GROUP_ID@@|$(shell PATH=$(PATH) kubectl get configmaps  outputs-infrastructure --output json | PATH=$(PATH) jq '.data.bff_security_group_id')|g' \
+	@sed -e 's|@@PREFIX_LIST_CIDR_BLOCKS@@|$(shell PATH=$(PATH) kubectl get configmaps outputs-infrastructure --output json | PATH=$(PATH) jq '.data.prefix_list_cidr_blocks')|g' \
 	     -e 's|@@PROJECT@@|$(PROJECT)|g' \
 	     -e 's|@@ENVIRONMENT@@|$(ENVIRONMENT)|g' \
 	     -e 's|@@JMX_PORT@@|$(JMX_PORT)|g' \
