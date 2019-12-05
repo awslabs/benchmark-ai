@@ -30,6 +30,11 @@ output "availability_zones" {
   value       = "${zipmap(data.aws_availability_zones.available.zone_ids, data.aws_availability_zones.available.names)}"
 }
 
+output "prefix_list_cidr_blocks" {
+  description = "Comma separated list of the prefix list CIDR blocks"
+  value       = "${var.prefix_list_cidr_blocks}"
+}
+
 output "availability_zones_ids" {
   description = "AWS availability zones."
   value       = "${data.aws_availability_zones.available.zone_ids}"

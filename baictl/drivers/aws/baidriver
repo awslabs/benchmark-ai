@@ -54,11 +54,13 @@ create_infra() {
     cd $terraform_dir
 
     local vars=""
+    local prefix_list_cidr_blocks=$(_get_prefix_list_cidr_blocks "$prefix_list_id" "$region")
 
     [[ -n "$cluster_name" ]] && vars="${vars} -var cluster_name=${cluster_name}"
     [[ -n "$region" ]] && vars="${vars} -var region=${region}"
     [[ -n "$prefix_list_id" ]] && vars="${vars} -var prefix_list_ids=[\"${prefix_list_id}\"]"
     [[ -n "$ssh_access_cidr_blocks" ]] && vars="${vars} -var ssh_access_cidr_blocks=[\"${ssh_access_cidr_blocks}\"]"
+    [[ -n "$prefix_list_cidr_blocks" ]] && vars="${vars} -var prefix_list_cidr_blocks=${prefix_list_cidr_blocks}"
 
     echo "==> Initializing terraform"
     _initialize_terraform_backend ${region} || return 1
@@ -117,6 +119,13 @@ create_infra() {
 
     echo "==> Syncing remote data directory"
     sync_bai_datadir --aws-region=${region} --mode="push" || return 1
+}
+
+_get_prefix_list_cidr_blocks() {
+    local prefix_list_id=$1
+    local region=$2
+    local cidrs=$(aws ec2 describe-prefix-lists --prefix-list-ids="${prefix_list_id}" --region="${region}" | jq -cr ".PrefixLists[].Cidrs")
+    echo "${cidrs}"
 }
 
 _initialize_terraform_backend() {

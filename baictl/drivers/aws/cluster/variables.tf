@@ -14,6 +14,11 @@ variable "ssh_access_cidr_blocks" {
   default = []
 }
 
+variable "prefix_list_cidr_blocks" {
+  type    = "list"
+  default = []
+}
+
 variable "cluster_name_prefix" {
   type    = "string"
   default = "benchmark-cluster"
