@@ -30,7 +30,9 @@ class CloudWatchExporterHandler(KafkaServiceCallback):
         dimensions = [{"Name": name, "Value": val} for name, val in event.labels.items()]
         # Put custom metrics
         self.cloudwatch_client.put_metric_data(
-            MetricData=[{"MetricName": event.name, "Dimensions": dimensions, "Unit": "None", "Value": event.value}],
+            MetricData=[
+                {"MetricName": event.name, "Dimensions": dimensions, "Unit": "None", "Value": float(event.value)}
+            ],
             Namespace="ANUBIS/METRICS",
         )
 
