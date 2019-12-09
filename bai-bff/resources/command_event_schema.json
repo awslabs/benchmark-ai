@@ -46,7 +46,7 @@
                 "args": {
                     "type": "object",
                     "properties": {
-                        "target-action-id": {"type": "string"}
+                        "target_action_id": {"type": "string"}
                     },
                 }
             },
