@@ -22,7 +22,7 @@ dependencies:
   - curl
   - wget >= 1.20.1
   - pip:
-      - ConfigArgParse
+      - ConfigArgParse==0.15.1
       - python-crontab
       - dataclasses-json
       - dacite

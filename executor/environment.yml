@@ -9,12 +9,12 @@ dependencies:
   - toml 0.9.*
   - addict 2.2.*
   - python-kubernetes 9.0.*
-  - ConfigArgParse >= 0.13
   - python-crontab >= 2.3
   - flake8
   - kafka-python 1.4.6
   - jsonschema >= 3.0.2
   - pip
   - pip:
+    - ConfigArgParse==0.15.1
     - dataclasses-json==0.2.7
     - dacite

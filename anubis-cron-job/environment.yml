@@ -9,7 +9,7 @@ dependencies:
   - pip
   - pip:
     - dacite
-    - ConfigArgParse
+    - ConfigArgParse==0.15.1
     - python-crontab >= 2.3
     - dataclasses-json==0.2.7
     - flake8-black
