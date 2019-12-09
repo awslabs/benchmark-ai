@@ -15,6 +15,6 @@ dependencies:
   - rfc3987 >= v1.3.8
   - toml 0.9.*
   - pip:
-      - ConfigArgParse
+      - ConfigArgParse==0.15.1
       - dataclasses-json==0.2.7
       - dacite

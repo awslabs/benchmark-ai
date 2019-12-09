@@ -16,7 +16,7 @@ grafana:
   service:
     type: LoadBalancer
     annotations:
-      service.beta.kubernetes.io/aws-load-balancer-extra-security-groups: @@SECURITY_GROUP_ID@@
+      service.beta.kubernetes.io/load-balancer-source-ranges: @@PREFIX_LIST_CIDR_BLOCKS@@
 
 prometheus:
   prometheusSpec:

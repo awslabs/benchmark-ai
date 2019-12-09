@@ -13,5 +13,5 @@ dependencies:
   - pip
   - pip:
       - dataclasses-json==0.2.7
-      - ConfigArgParse
+      - ConfigArgParse==0.15.1
       - dacite

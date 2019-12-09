@@ -11,4 +11,4 @@ dependencies:
   - flake8
   - pip
   - pip:
-      - ConfigArgParse
+      - ConfigArgParse==0.15.1

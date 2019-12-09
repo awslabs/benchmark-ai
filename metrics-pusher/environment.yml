@@ -10,6 +10,6 @@ dependencies:
   - kafka-python 1.4.6
   - pip
   - pip:
-      - ConfigArgParse
+      - ConfigArgParse==0.15.1
       - dataclasses-json
       - dacite

@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: @@PROJECT@@
   annotations:
-    service.beta.kubernetes.io/aws-load-balancer-extra-security-groups: @@BFF_SECURITY_GROUP_ID@@
+    service.beta.kubernetes.io/load-balancer-source-ranges: @@PREFIX_LIST_CIDR_BLOCKS@@
 spec:
   selector:
     app: benchmark-ai
