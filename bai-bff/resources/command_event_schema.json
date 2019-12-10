@@ -43,7 +43,12 @@
             "type": "object",
             "properties": {
                 "command": {"type": "string"},
-                "args": {"type": "string"}
+                "args": {
+                    "type": "object",
+                    "properties": {
+                        "target_action_id": {"type": "string"}
+                    },
+                }
             },
             "uniqueItems": true,
             "required": ["command"]
