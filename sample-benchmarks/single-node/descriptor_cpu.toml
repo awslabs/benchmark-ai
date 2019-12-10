@@ -70,4 +70,4 @@ name = "throughput"
 # Metric unit (required)
 units = "img/s"
 # Pattern for log parsing for this metric.
-pattern = "throughput=([-+]?\\d*\\.\\d+|\\d+)"
+pattern = "Speed: ([-+]?\\d*\\.\\d+|\\d+) samples/sec"

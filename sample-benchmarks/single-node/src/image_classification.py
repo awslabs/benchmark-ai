@@ -158,7 +158,6 @@ def train(epochs, ctx, dtype):
         name, acc = metric.get()
         logging.info("[Epoch %d] training: %s=%f" % (epoch, name, acc))
         logging.info("[Epoch %d] time cost: %f" % (epoch, time.time() - tic))
-        logging.info("[Epoch %d] throughput=%f img/s" % )
         name, val_acc = test(ctx, dtype)
         logging.info("[Epoch %d] validation: %s=%f" % (epoch, name, val_acc))
 

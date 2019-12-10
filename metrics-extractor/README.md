@@ -46,9 +46,13 @@ pattern = "throughput=[0-9\.]+"
 units = "img/sec"
 ```
 
+Refer to the [single node example descriptor](../sample-benchmarks/single-node/descriptor_cpu.toml) for an instance of a
+descriptor which uses this feature.
+
+
 ### Architecture
 
-[metrics-extractor-architecture](../docs/images/metrics-extractor.png 'Metrics extractor architecture')
+![metrics-extractor-architecture](../docs/images/metrics-extractor.png 'Metrics extractor architecture')
 
 
 ## Python dependencies
