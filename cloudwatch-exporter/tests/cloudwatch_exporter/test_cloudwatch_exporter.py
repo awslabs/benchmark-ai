@@ -1,6 +1,7 @@
 import kafka
 
 from unittest.mock import MagicMock
+from datetime import datetime
 from cloudwatch_exporter.cloudwatch_exporter import CloudWatchExporterService, CloudWatchExporterHandler, create_service
 
 
@@ -41,6 +42,8 @@ def test_handle_event(mocker, metrics_event, mock_kafka_service):
                 "Dimensions": expected_dimensions,
                 "Unit": "None",
                 "Value": float(metrics_event.value),
+                "StorageResolution": 1,
+                "Timestamp": datetime.fromtimestamp(metrics_event.timestamp/1000),
             }
         ],
         Namespace="ANUBIS/METRICS",

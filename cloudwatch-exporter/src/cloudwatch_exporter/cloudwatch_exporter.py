@@ -1,5 +1,7 @@
 import boto3
 
+from datetime import datetime
+
 from bai_kafka_utils.events import MetricsEvent, Status
 from bai_kafka_utils.kafka_client import create_kafka_consumer, create_kafka_producer, metrics_json_deserializer
 from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService, KafkaServiceConfig
@@ -31,7 +33,14 @@ class CloudWatchExporterHandler(KafkaServiceCallback):
         # Put custom metrics
         self.cloudwatch_client.put_metric_data(
             MetricData=[
-                {"MetricName": event.name, "Dimensions": dimensions, "Unit": "None", "Value": float(event.value)}
+                {
+                    "MetricName": event.name,
+                    "Dimensions": dimensions,
+                    "Unit": "None",
+                    "Value": float(event.value),
+                    "Timestamp": datetime.fromtimestamp(event.timestamp/1000),
+                    "StorageResolution": 1,
+                }
             ],
             Namespace="ANUBIS/METRICS",
         )
