@@ -22,7 +22,7 @@ aws_zone_id="use1-az2"
 # 2. Environment
 [env]
 # Docker hub <hub-user>/<repo-name>:<tag>
-docker_image = "benchmarkai/single-node-gpu:180619"
+docker_image = "benchmarkai/single-node-gpu:091219"
 
 # 3. Machine learning related settings:
 # dataset, benchmark code and parameters it takes
@@ -69,17 +69,8 @@ path = "/data/mnist/t10k-labels-idx1-ubyte.gz"
 # Make an entry in same format as the one below.
 [[output.metrics]]
 # Name of the metric that will appear in the dashboards.
-name = "accuracy"
-# Pattern for log parsing for this metric.
-pattern = "accuracy=([-+]?\\d*\\.\\d+|\\d+)"
-# [Opt] Units for the metric (can be used in the dashboard as well)
-units = "ratio"
-
-[[output.metrics]]
-# Name of the metric that will appear in the dashboards.
 name = "throughput"
+# Metric unit (required)
+units = "img/s"
 # Pattern for log parsing for this metric.
-pattern = "throughput=([-+]?\\d*\\.\\d+|\\d+)"
-# [Opt] Units for the metric (can be used in the dashboard as well)
-units = "img/sec"
-
+pattern = "Speed: ([-+]?\\d*\\.\\d+|\\d+) samples/sec"

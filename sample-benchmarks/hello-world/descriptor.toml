@@ -34,10 +34,8 @@ benchmark_code = "python3 hello-world.py"
 # Make an entry in same format as the one below.
 [[output.metrics]]
 # Name of the metric that will appear in the dashboards.
-name = "accuracy"
-
+name = "elapsed"
 # Metric unit (required)
-units = "ratio"
-
+units = "ms"
 # Pattern for log parsing for this metric.
-pattern = "accuracy=([-+]?\\d*\\.\\d+|\\d+)"
+pattern = "elapsed: ([-+]?\\d*\\.\\d+|\\d+)"
