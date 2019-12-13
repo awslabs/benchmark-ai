@@ -38,7 +38,7 @@ class CloudWatchExporterHandler(KafkaServiceCallback):
                     "Dimensions": dimensions,
                     "Unit": "None",
                     "Value": float(event.value),
-                    "Timestamp": datetime.fromtimestamp(event.timestamp/1000),
+                    "Timestamp": datetime.fromtimestamp(event.timestamp / 1000),
                     "StorageResolution": 1,
                 }
             ],

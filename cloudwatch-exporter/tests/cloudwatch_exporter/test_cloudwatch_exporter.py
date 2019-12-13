@@ -43,7 +43,7 @@ def test_handle_event(mocker, metrics_event, mock_kafka_service):
                 "Unit": "None",
                 "Value": float(metrics_event.value),
                 "StorageResolution": 1,
-                "Timestamp": datetime.fromtimestamp(metrics_event.timestamp/1000),
+                "Timestamp": datetime.fromtimestamp(metrics_event.timestamp / 1000),
             }
         ],
         Namespace="ANUBIS/METRICS",
