@@ -23,7 +23,7 @@ ORGANIZATION := MXNet Berlin
 RELEASE_NAME := flatbush
 PROFILE := prod
 AUTHOR := Gavin M. Bell
-REPO_SITE = https://github.com/awslabs/benchmark-ai/bff
+REPO_SITE = https://github.com/awslabs/benchmark-ai/$(PROJECT)
 
 RESOURCE_PATHS := resources
 SOURCE_PATHS := src
@@ -374,7 +374,7 @@ deploy: _deploy_venv deploy.yml service.yml
 	kubectl $(K8S_KUBECTL_ARGS) apply -f service.yml
 	@touch $(SERVICE_ENDPOINT)
 	@while [ ! -s $(SERVICE_ENDPOINT) ]; do \
-	  kubectl $(K8S_KUBECTL_ARGS) get service bai-bff -o json | jq '.status.loadBalancer.ingress[].hostname,.spec.ports[0].port' | xargs | sed 's/ /:/' > $(SERVICE_ENDPOINT); \
+	  kubectl $(K8S_KUBECTL_ARGS) get service $(PROJECT) -o json | jq '.status.loadBalancer.ingress[].hostname,.spec.ports[0].port' | xargs | sed 's/ /:/' > $(SERVICE_ENDPOINT); \
 	  sleep 5; \
 	done
 
