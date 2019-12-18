@@ -39,7 +39,8 @@ name = "response_time"
 # Metric unit (required)
 units = "seconds"
 # Pattern for log parsing for this metric.
-pattern = "response_time:([-+]?\\d*\\.\\d+|\\d+)"
+# This is a literal string: use SINGLE QUOTES
+pattern = 'response_time:([-+]?\d*\.\d+|\d+)'
 
 
 [server]
@@ -73,5 +74,5 @@ name = "Requests2XX"
 # Metric unit (required)
 units = "requests"
 # Pattern for log parsing for this metric.
-pattern = "Requests2XX\\.Count:(\\d+)"
+pattern = 'Requests2XX\.Count:(\d+)'
 
