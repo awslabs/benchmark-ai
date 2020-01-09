@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 from bai_kafka_utils.events import DownloadableContent, BenchmarkEvent
 from bai_kafka_utils.events import FileSystemObject
 from bai_kafka_utils.executors.descriptor import DescriptorError, BenchmarkDescriptor, DistributedStrategy
-from bai_kafka_utils.utils import METRICS_PUSHER_BACKEND_ARG_PREFIX
+from bai_kafka_utils.utils import METRICS_PUSHER_CUSTOM_LABEL_PREFIX
 from ruamel import yaml
 
 from executor import SERVICE_NAME
@@ -197,11 +197,11 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         else:
             # Add custom labels metrics pusher
             for label, value in self.descriptor.info.labels.items():
-                self.add_metrics_pusher_backend_arg(label, value)
+                self.add_metrics_pusher_env_var(label, value, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX)
 
         if self.event.parent_action_id:
             self.root.add_label("parent-action-id", self.event.parent_action_id)
-            self.add_metrics_pusher_backend_arg("parent-action-id", self.event.parent_action_id)
+            self.add_metrics_pusher_env_var("parent-action-id", self.event.parent_action_id, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX)
 
         if self.config.suppress_job_affinity:
             self.root.remove_affinity()
@@ -236,13 +236,12 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
 
         return random_object.choice(list(environment_info.availability_zones.values()))
 
-    def add_metrics_pusher_backend_arg(self, key: str, value: str):
-        env_var_name = METRICS_PUSHER_BACKEND_ARG_PREFIX.upper() + key.upper()
-        # self.root.add_env_vars(METRICS_PUSHER_CONTAINER, )
+    def add_metrics_pusher_env_var(self, key: str, value: str, prefix: str):
+        env_var_name = prefix.upper() + key.upper()
         try:
             metrics_pusher_container = self.root.find_container(METRICS_PUSHER_CONTAINER)
         except ValueError:
-            logger.debug(f"Could not add backend arg {env_var_name} to metrics pusher sidecar.")
+            logger.debug(f"Could not add env var {env_var_name} to metrics pusher sidecar.")
             return
         metrics_pusher_env = metrics_pusher_container.get("env", [])
         metrics_pusher_env.append({"name": env_var_name, "value": value})
@@ -491,9 +490,9 @@ class InferenceServerJobKubernetedObjectBuilder(SingleRunBenchmarkKubernetesObje
         if not self.descriptor.server.output:
             self.remove_metrics_sidecars()
         else:
-            # Add custom labels metrics pusher
+            # Add custom labels to metrics pusher as env variables
             for label, value in self.descriptor.info.labels.items():
-                self.add_metrics_pusher_backend_arg(label, value)
+                self.add_metrics_pusher_env_var(label, value, METRICS_PUSHER_CUSTOM_LABEL_PREFIX)
 
         if self.config.suppress_job_affinity:
             self.root.remove_affinity()

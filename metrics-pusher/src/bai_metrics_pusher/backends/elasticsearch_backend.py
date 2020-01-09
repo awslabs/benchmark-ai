@@ -11,9 +11,12 @@ logger = logging.getLogger("backend.elasticsearch")
 
 
 class ElasticsearchBackend(Backend):
-    def __init__(self, action_id: str, client_id: str, *, hostname: str = "localhost", port: int = 9200):
+    def __init__(
+        self, action_id: str, client_id: str, labels: Dict[str, str], *, hostname: str = "localhost", port: int = 9200
+    ):
         self.action_id = action_id
         self.client_id = client_id
+        self.labels = labels
         verify_certs = True
 
         # Easier local testing
@@ -27,6 +30,7 @@ class ElasticsearchBackend(Backend):
         doc = {
             "action-id": self.action_id,
             "client-id": self.client_id,
+            **self.labels,
             "timestamp": timestamp,
             "metrics": metrics,
             "tracing": {"service": "metrics-pusher"},

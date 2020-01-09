@@ -4,9 +4,9 @@ import typing
 
 import configargparse
 from bai_metrics_pusher.backends import BACKENDS
-from bai_kafka_utils.utils import METRICS_PUSHER_BACKEND_ARG_PREFIX
+from bai_kafka_utils.utils import METRICS_PUSHER_BACKEND_ARG_PREFIX, METRICS_PUSHER_CUSTOM_LABEL_PREFIX
 from dataclasses import dataclass
-from typing import Optional, Dict, Callable
+from typing import Optional, Dict, Callable, Any
 
 
 @dataclass()
@@ -14,7 +14,7 @@ class InputValue:
     backend: str
     pod_name: Optional[str]
     pod_namespace: Optional[str]
-    backend_args: Dict[str, str]
+    backend_args: Dict[str, Any]
 
 
 def get_input(argv, environ: Dict[str, str] = None) -> InputValue:
@@ -28,8 +28,13 @@ def get_input(argv, environ: Dict[str, str] = None) -> InputValue:
     args = parser.parse_args(argv)
 
     environ = {key.lower(): value for key, value in environ.items()}
+
+    labels = create_dict_of_custom_labels(values=environ, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX)
     backend_args = create_dict_of_parameter_values_for_callable(
-        prefix=METRICS_PUSHER_BACKEND_ARG_PREFIX, values=environ, method=BACKENDS[args.backend]
+        prefix=METRICS_PUSHER_BACKEND_ARG_PREFIX,
+        values=environ,
+        method=BACKENDS[args.backend],
+        extra_args={"labels": labels if labels else {}},
     )
 
     return InputValue(
@@ -37,7 +42,9 @@ def get_input(argv, environ: Dict[str, str] = None) -> InputValue:
     )
 
 
-def create_dict_of_parameter_values_for_callable(prefix: str, values: Dict[str, str], method: Callable):
+def create_dict_of_parameter_values_for_callable(
+    prefix: str, values: Dict[str, str], method: Callable, extra_args: Dict[str, Any] = {}
+):
     """
     Creates a dict with the parameters that can be accepted by the signature of :param(method).
 
@@ -60,6 +67,7 @@ def create_dict_of_parameter_values_for_callable(prefix: str, values: Dict[str, 
     :param prefix: A prefix to limit the items considered when inspecting the keys in :param(values).
     :param values: The values to inspect for parameters that can be passed to :param(method)
     :param method: The method to inspect
+    :param extra_args: A dictionary containing any additional arguments not included in :param(values)
     :return:
     :raises: AssertionError when :param(method) does not have all its parameters annotated
     """
@@ -81,10 +89,13 @@ def create_dict_of_parameter_values_for_callable(prefix: str, values: Dict[str, 
 
         key = prefix + argname
         if key not in values:
-            raise ValueError(
-                "Parameter `%s` of `%s` is missing from the specified values. Prefix: `%s`. Specified keys: %s"
-                % (argname, method, prefix, set(values.keys()))
-            )
+            if argname in extra_args:
+                continue
+            else:
+                raise ValueError(
+                    "Parameter `%s` of `%s` is missing from the specified values. Prefix: `%s`. Specified keys: %s"
+                    % (argname, method, prefix, set(values.keys()))
+                )
 
         string_value = values[key]
 
@@ -97,4 +108,18 @@ def create_dict_of_parameter_values_for_callable(prefix: str, values: Dict[str, 
             value = parameter_type(string_value)
 
         args[argname] = value
-    return args
+
+    # for key, string_value in extra_args.items():
+    #     if key not in signature.parameters:
+    #         extra_args.
+
+    return {**args, **extra_args}
+
+
+def create_dict_of_custom_labels(values: Dict[str, str], prefix: str):
+    labels = {}
+    for key, value in values.items():
+        if key.startswith(prefix):
+            label_name = key[len(prefix) :].lower()
+            labels[label_name] = value
+    return labels
