@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# ensure this script exits with an error code
+# if any of the commands fail - this script is run
+# inside an initContainer - so the pod should fail
+# in case of errors
+set -e
+
 BUCKET=$1
 
 declare -a HELP=("--help" "-h" "help")
