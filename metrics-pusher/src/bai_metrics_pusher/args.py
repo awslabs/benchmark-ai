@@ -109,10 +109,6 @@ def create_dict_of_parameter_values_for_callable(
 
         args[argname] = value
 
-    # for key, string_value in extra_args.items():
-    #     if key not in signature.parameters:
-    #         extra_args.
-
     return {**args, **extra_args}
 
 
