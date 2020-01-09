@@ -33,7 +33,7 @@ is_prefix(){
 # executing before they get assigned the AWS role.
 # https://github.com/jtblin/kube2iam/issues/136
 # wait until s3 can be reached, or timeout.
-function wait_for_s3 {
+wait_for_s3() {
     # waits up to 5 minutes...
     local max_attempts=30
     local timeout=10
@@ -58,6 +58,11 @@ function wait_for_s3 {
     echo "Could not reach S3...exiting..."
     exit $exit_code
 }
+
+# Exit successfully if no files are required to be downloaded
+if [ ${#FILES[@]} -eq 0 ]; then
+    exit 0
+fi
 
 # Make sure s3 can be reached before continuing...
 wait_for_s3
