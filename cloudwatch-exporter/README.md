@@ -11,7 +11,9 @@ Metrics are labeled using:
  - _action-id_ of the benchmark run which produced them.
  - _client-id_ of the user who submitted the benchmark.
  - All **custom labels** defined in the _info.labels_ section of the descriptor file which defined the benchmark. 
- (see the [example descriptors](https://github.com/awslabs/benchmark-ai/blob/master/executor/README.md#training) for reference)
+ (see the [example descriptors](https://github.com/awslabs/benchmark-ai/blob/master/executor/README.md#training) for reference).
+ **Note:** CloudWatch imposes a limit of 10 dimensions per data point, with a _dimension_ meaning a label. Therefore, Anubis
+ will only export up to 8 custom labels (2 dimensions are used for action and client IDs).
  
  
  ## Example

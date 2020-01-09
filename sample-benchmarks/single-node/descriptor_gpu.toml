@@ -11,6 +11,10 @@ description = """ \
     using ResNet50 on MXNet. \
     """
 
+[info.labels]
+# Example of a custom label
+experiment-type = "example"
+
 # 1. Hardware
 [hardware]
 instance_type = "p3.8xlarge"
