@@ -201,7 +201,9 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
 
         if self.event.parent_action_id:
             self.root.add_label("parent-action-id", self.event.parent_action_id)
-            self.add_metrics_pusher_env_var("parent-action-id", self.event.parent_action_id, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX)
+            self.add_metrics_pusher_env_var(
+                "parent-action-id", self.event.parent_action_id, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX
+            )
 
         if self.config.suppress_job_affinity:
             self.root.remove_affinity()
