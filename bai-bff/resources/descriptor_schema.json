@@ -97,7 +97,7 @@
         "task_name": { "type": "string" },
         "scheduling": { "type": "string", "pattern": "^(single_run|((\\*|\\?|\\d+((\\/|\\-){0,1}(\\d+))*)\\s*){5})$" },
         "execution_engine": { "type": "string", "enum": ["default", "aws.sagemaker"] },
-        "labels": { "$ref": "#/definitions/str_dict" }
+        "labels": { "type": "object", "additionalProperties": {"type": "string"}, "maxProperties": 8}
       },
       "additionalProperties": false,
       "required": ["description"]
