@@ -27,14 +27,13 @@ def get_input(argv, environ: Dict[str, str] = None) -> InputValue:
 
     args = parser.parse_args(argv)
 
-    environ = {key.lower(): value for key, value in environ.items()}
-
     labels = create_dict_of_custom_labels(values=environ, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX)
+
+    environ = {key.lower(): value for key, value in environ.items()}
+    environ[METRICS_PUSHER_BACKEND_ARG_PREFIX.lower() + "labels"] = labels if labels else {}
+
     backend_args = create_dict_of_parameter_values_for_callable(
-        prefix=METRICS_PUSHER_BACKEND_ARG_PREFIX,
-        values=environ,
-        method=BACKENDS[args.backend],
-        extra_args={"labels": labels if labels else {}},
+        prefix=METRICS_PUSHER_BACKEND_ARG_PREFIX, values=environ, method=BACKENDS[args.backend],
     )
 
     return InputValue(
@@ -42,9 +41,7 @@ def get_input(argv, environ: Dict[str, str] = None) -> InputValue:
     )
 
 
-def create_dict_of_parameter_values_for_callable(
-    prefix: str, values: Dict[str, str], method: Callable, extra_args: Dict[str, Any] = {}
-):
+def create_dict_of_parameter_values_for_callable(prefix: str, values: Dict[str, Any], method: Callable):
     """
     Creates a dict with the parameters that can be accepted by the signature of :param(method).
 
@@ -67,7 +64,6 @@ def create_dict_of_parameter_values_for_callable(
     :param prefix: A prefix to limit the items considered when inspecting the keys in :param(values).
     :param values: The values to inspect for parameters that can be passed to :param(method)
     :param method: The method to inspect
-    :param extra_args: A dictionary containing any additional arguments not included in :param(values)
     :return:
     :raises: AssertionError when :param(method) does not have all its parameters annotated
     """
@@ -89,33 +85,31 @@ def create_dict_of_parameter_values_for_callable(
 
         key = prefix + argname
         if key not in values:
-            if argname in extra_args:
-                continue
+            raise ValueError(
+                "Parameter `%s` of `%s` is missing from the specified values. Prefix: `%s`. Specified keys: %s"
+                % (argname, method, prefix, set(values.keys()))
+            )
+
+        value = values[key]
+
+        if type(value) == str:
+            if parameter_type == typing.List[str]:
+                value = value.split(",")
+            elif parameter_type == typing.List[int]:
+                value = map(int, value.split(","))
+                value = list(value)
             else:
-                raise ValueError(
-                    "Parameter `%s` of `%s` is missing from the specified values. Prefix: `%s`. Specified keys: %s"
-                    % (argname, method, prefix, set(values.keys()))
-                )
-
-        string_value = values[key]
-
-        if parameter_type == typing.List[str]:
-            value = string_value.split(",")
-        elif parameter_type == typing.List[int]:
-            value = map(int, string_value.split(","))
-            value = list(value)
-        else:
-            value = parameter_type(string_value)
+                value = parameter_type(value)
 
         args[argname] = value
 
-    return {**args, **extra_args}
+    return args
 
 
 def create_dict_of_custom_labels(values: Dict[str, str], prefix: str):
     labels = {}
     for key, value in values.items():
-        if key.startswith(prefix):
+        if key.lower().startswith(prefix):
             label_name = key[len(prefix) :].lower()
             labels[label_name] = value
     return labels

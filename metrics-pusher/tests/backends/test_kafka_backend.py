@@ -29,7 +29,7 @@ def freeze_time_to_1_second_after_epoch(mocker):
     yield
 
 
-def test_1_metric(mock_kafka_producer, kafka_backend):
+def test_1_metric_with_custom_label(mock_kafka_producer, kafka_backend):
     kafka_backend.emit({"metric": 0.1})
 
     expected_metric_object = KafkaExporterMetric(
@@ -37,6 +37,18 @@ def test_1_metric(mock_kafka_producer, kafka_backend):
         value=0.1,
         timestamp=1000,
         labels={"action-id": "action-id", "client-id": "client-id", "label": "value"},
+    )
+    assert mock_kafka_producer.send.call_args_list == [
+        call("KAFKA_TOPIC", value=expected_metric_object, key="KAFKA_KEY")
+    ]
+
+
+def test_1_metric_no_custom_label(mock_kafka_producer):
+    kafka_backend = KafkaBackend("action-id", "client-id", labels={}, topic="KAFKA_TOPIC", key="KAFKA_KEY")
+    kafka_backend.emit({"metric": 0.1})
+
+    expected_metric_object = KafkaExporterMetric(
+        name="metric", value=0.1, timestamp=1000, labels={"action-id": "action-id", "client-id": "client-id"},
     )
     assert mock_kafka_producer.send.call_args_list == [
         call("KAFKA_TOPIC", value=expected_metric_object, key="KAFKA_KEY")
