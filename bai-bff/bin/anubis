@@ -958,7 +958,7 @@ main() {
                         ((DEBUG)) && echo "skipped args: ${skipped[@]}" 1>&2
                         ((idx--))
                     fi
-                    [[ ! "${current_arg}" =~ ^(--debug|--force|--verbose|--tail| --sync-data|--watch)$ ]] && \
+                    [[ ! "${current_arg}" =~ ^(--debug|--force|--verbose|--tail|--sync-data|--watch)$ ]] && \
                         printf "\033[01;31m => Unknown flag\033[0m [%s]\n" "${current_arg}"
                     ;;
             esac
