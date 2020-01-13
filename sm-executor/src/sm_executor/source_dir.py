@@ -11,6 +11,19 @@ from bai_kafka_utils.events import FileSystemObject
 
 
 class ScriptSourceDirectory:
+    """
+    The SageMaker-Executor relies on the SageMaker SDK to trigger training jobs in SageMaker.
+    An Estimator object is used to define the training job. This object does not support setting custom
+    environment variables in the docker container. The toml, however, defines the environment variable section.
+    Therefore, in order to maintain parity with the Kubernetes execution engine, we need to be able to set
+    the environment variables in the docker container running in SageMaker. Additionally, SageMaker does not
+    support setting a bash script as the entry_point. Only a python script. Therefore, also to keep parity,
+    we create a bash script that exports the environment variables defined in the benchmark descriptor and then calls
+    the "benchmark_code" defined in the descriptor along with any additional "args".
+    We then wrap this bash script in a python script, which is then used as an entry_point in
+    the SageMaker Estimator object.
+    """
+
     SHELL_SHEBANG = "#!/usr/bin/env bash"
 
     SHELL_ENTRY_POINT = "tmp_entry.sh"
@@ -48,7 +61,10 @@ class ScriptSourceDirectory:
         file.write(ScriptSourceDirectory.SHELL_SHEBANG + os.linesep)
         for var, val in descriptor.env.vars.items():
             file.write(f'export {var}="{val}"' + os.linesep)
-        file.write(descriptor.ml.benchmark_code + os.linesep)
+        cmd = descriptor.ml.benchmark_code
+        if descriptor.ml.args:
+            cmd = cmd + " " + descriptor.ml.args
+        file.write(cmd + os.linesep)
 
     @staticmethod
     def _create_python_shell_wrapper(file: TextIO):

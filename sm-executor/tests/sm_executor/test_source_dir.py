@@ -1,14 +1,15 @@
 import os
 import tarfile
+from io import BytesIO, StringIO, IOBase
+from typing import NamedTuple, List, Callable
+from unittest.mock import call
 
 import boto3
+import pytest
 from bai_kafka_utils.events import FileSystemObject
 from bai_kafka_utils.executors.descriptor import BenchmarkDescriptor
 from botocore.stub import Stubber
-from io import BytesIO, StringIO, IOBase
 from pytest import fixture
-from typing import NamedTuple, List, Callable
-from unittest.mock import call
 
 from sm_executor import source_dir
 from sm_executor.source_dir import ScriptSourceDirectory
@@ -108,8 +109,10 @@ def test_create_dir_download_files(
     validate_unpacked_script(mock_bltn_open.files[1], SECOND_CONTENT)
 
 
-def test_create_dir_shell_entry_point(descriptor: BenchmarkDescriptor, mock_open: PatchedOpen):
+@pytest.mark.parametrize("args", [None, "--hello world"])
+def test_create_dir_shell_entry_point(descriptor: BenchmarkDescriptor, mock_open: PatchedOpen, args: str):
     descriptor.env.vars = {"FOO": "BAR"}
+    descriptor.ml.args = args
 
     ScriptSourceDirectory.create(descriptor, DST_PATH)
 
@@ -118,4 +121,8 @@ def test_create_dir_shell_entry_point(descriptor: BenchmarkDescriptor, mock_open
     shell_entry = mock_open.files[0]
     lines = [line for line in shell_entry.getvalue().split(os.linesep) if line]
 
-    assert lines == [ScriptSourceDirectory.SHELL_SHEBANG, 'export FOO="BAR"', descriptor.ml.benchmark_code]
+    cmd = descriptor.ml.benchmark_code
+    if args:
+        cmd = cmd + " " + args
+
+    assert lines == [ScriptSourceDirectory.SHELL_SHEBANG, 'export FOO="BAR"', cmd]
