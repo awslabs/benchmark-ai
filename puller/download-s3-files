@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# ensure this script exits with an error code
+# if any of the commands fail - this script is run
+# inside an initContainer - so the pod should fail
+# in case of errors
+set -e
+
 BUCKET=$1
 
 declare -a HELP=("--help" "-h" "help")
@@ -22,6 +28,11 @@ is_prefix(){
     pre=$(aws s3 ls s3://${BUCKET}/${S3FILE} ${S3_ENDPOINT_ARG} | grep " PRE ")
     [ -n "${pre}" ] || return 1
 }
+
+# Exit successfully if no files are required to be downloaded
+if [ ${#FILES[@]} -eq 0 ]; then
+    exit 0
+fi
 
 for file in "${FILES[@]}"; do
     PIECES=(${file//,/ })
