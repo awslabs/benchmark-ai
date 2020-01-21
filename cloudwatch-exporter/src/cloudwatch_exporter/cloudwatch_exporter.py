@@ -30,12 +30,18 @@ class CloudWatchExporterHandler(KafkaServiceCallback):
     def handle_event(self, event: MetricsEvent, kafka_service: KafkaService):
         logger.info(event)
         dimensions = [{"Name": name, "Value": val} for name, val in event.labels.items()]
+        dims = []
+        for item in dimensions:
+            if item['Name'] == "action-id" or item['Name'] == "client-id":
+                continue
+            else:
+                dims.append(item)
         # Put custom metrics
         self.cloudwatch_client.put_metric_data(
             MetricData=[
                 {
                     "MetricName": event.name,
-                    "Dimensions": dimensions,
+                    "Dimensions": dims,
                     "Unit": "None",
                     "Value": float(event.value),
                     "Timestamp": datetime.fromtimestamp(event.timestamp / 1000),
