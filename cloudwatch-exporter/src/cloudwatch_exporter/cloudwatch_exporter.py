@@ -40,6 +40,12 @@ class CloudWatchExporterHandler(KafkaServiceCallback):
         dimensions = [
             {"Name": name, "Value": val} for name, val in islice(event.labels.items(), CLOUDWATCH_MAX_DIMENSIONS)
         ]
+        dims = []
+        for item in dimensions:
+            if item["Name"] == "action-id" or item["Name"] == "client-id":
+                continue
+            else:
+                dims.append(item)
         # Put custom metrics
         self.cloudwatch_client.put_metric_data(
             MetricData=[
