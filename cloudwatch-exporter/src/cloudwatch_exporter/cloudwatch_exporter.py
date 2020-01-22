@@ -32,7 +32,7 @@ class CloudWatchExporterHandler(KafkaServiceCallback):
         dimensions = [{"Name": name, "Value": val} for name, val in event.labels.items()]
         dims = []
         for item in dimensions:
-            if item['Name'] == "action-id" or item['Name'] == "client-id":
+            if item['Name'] == 'action-id' or item['Name'] == 'client-id':
                 continue
             else:
                 dims.append(item)
