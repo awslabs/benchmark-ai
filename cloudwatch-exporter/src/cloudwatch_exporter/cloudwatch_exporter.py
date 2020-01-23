@@ -51,7 +51,7 @@ class CloudWatchExporterHandler(KafkaServiceCallback):
             MetricData=[
                 {
                     "MetricName": event.name,
-                    "Dimensions": dimensions,
+                    "Dimensions": dims,
                     "Unit": "None",
                     "Value": float(event.value),
                     "Timestamp": datetime.fromtimestamp(event.timestamp / 1000),
