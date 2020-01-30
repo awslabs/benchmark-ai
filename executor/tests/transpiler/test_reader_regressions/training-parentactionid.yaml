@@ -99,11 +99,11 @@ spec:
       volumes:
       - name: benchmark-ai
         emptyDir: {}
+      - name: datasets-volume
+        emptyDir: {}
       - name: fsx
         persistentVolumeClaim:
           claimName: tensorpack-fsx
-      - name: datasets-volume
-        emptyDir: {}
       - name: dshm
         emptyDir:
           medium: Memory
