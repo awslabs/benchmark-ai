@@ -256,6 +256,9 @@ spec:
             claimName: tensorpack-fsx
       - name: scripts-volume
         emptyDir: {{}}
+      - name: fsx
+        persistentVolumeClaim:
+          claimName: tensorpack-fsx
       nodeSelector:
         beta.kubernetes.io/instance-type: {descriptor.hardware.instance_type}
         node.type: bai-worker
