@@ -61,6 +61,8 @@ spec:
         volumeMounts:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
+        - name: fsx
+          mountPath: /fsx
         - name: dshm
           mountPath: /dev/shm
       - name: metrics-pusher
@@ -127,6 +129,9 @@ spec:
       volumes:
       - name: benchmark-ai
         emptyDir: {}
+      - name: fsx
+        persistentVolumeClaim:
+          claimName: tensorpack-fsx
       - name: dshm
         emptyDir:
           medium: Memory

@@ -128,6 +128,8 @@ spec:
           subPath: entrypoint.sh
         - name: benchmark-ai
           mountPath: /tmp/benchmark-ai
+        - name: fsx
+          mountPath: /fsx
         - name: datasets-volume
           mountPath: ~/data/tf-imagenet/train
           subPath: p0
@@ -152,6 +154,9 @@ spec:
         emptyDir: {}
       - name: datasets-volume
         emptyDir: {}
+      - name: fsx
+        persistentVolumeClaim:
+          claimName: tensorpack-fsx
       - name: dshm
         emptyDir:
           medium: Memory

@@ -164,6 +164,8 @@ spec:
           subPath: entrypoint.sh
         - name: benchmark-ai
           mountPath: /tmp/benchmark-ai
+        - name: fsx
+          mountPath: /fsx
         - mountPath: /bai/scipts
           name: scripts-volume
         - name: datasets-volume
@@ -192,6 +194,9 @@ spec:
         emptyDir: {}
       - name: datasets-volume
         emptyDir: {}
+      - name: fsx
+        persistentVolumeClaim:
+          claimName: tensorpack-fsx
       - name: scripts-volume
         emptyDir: {}
       - name: dshm

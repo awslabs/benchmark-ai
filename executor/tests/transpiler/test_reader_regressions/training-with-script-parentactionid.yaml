@@ -109,6 +109,8 @@ spec:
         volumeMounts:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
+        - name: fsx
+          mountPath: /fsx
         - mountPath: /bai/scripts
           name: scripts-volume
         - name: datasets-volume
@@ -131,6 +133,9 @@ spec:
         emptyDir: {}
       - name: scripts-volume
         emptyDir: {}
+      - name: fsx
+        persistentVolumeClaim:
+          claimName: tensorpack-fsx
       - name: dshm
         emptyDir:
           medium: Memory
