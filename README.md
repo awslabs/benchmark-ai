@@ -335,6 +335,7 @@ It will be accesible in grafana as _BAI_METRICS_accuracy_. Therefore, it can be 
 
 
 
+
 ## Step 4 - Destroy Anubis Infrastructure
 
 ```bash
