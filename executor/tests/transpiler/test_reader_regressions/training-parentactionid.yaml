@@ -99,9 +99,6 @@ spec:
       volumes:
       - name: benchmark-ai
         emptyDir: {}
-      - name: fsx
-        persistentVolumeClaim:
-          claimName: tensorpack-fsx
       - name: datasets-volume
         emptyDir: {}
       - name: fsx
