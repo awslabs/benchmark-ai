@@ -194,11 +194,11 @@ spec:
         emptyDir: {}
       - name: datasets-volume
         emptyDir: {}
+      - name: scripts-volume
+        emptyDir: {}
       - name: fsx
         persistentVolumeClaim:
           claimName: tensorpack-fsx
-      - name: scripts-volume
-        emptyDir: {}
       - name: dshm
         emptyDir:
           medium: Memory
