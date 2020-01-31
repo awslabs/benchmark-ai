@@ -20,7 +20,7 @@ phases:
       # Regular make staff - lint/test. If this fails - no sense to continue.
       - make
       - |
-        if [ "${RUN_INTEGRATION_TESTS}" != "false" ]; then
+        if [ "${RUN_INTEGRATION_TESTS}" != "true" ]; then
             # Start k8s 1.12 cluster
             kind create cluster --image=$K8S_KINDEST_V12 --config=integration-test-cluster.yml
             # Prebuild the docker image in parallel to cluster initialization
