@@ -90,14 +90,23 @@
       "required": ["hardware", "env"],
       "additionalProperties": false
     },
+    "labels_structure": {
+      "type": "object",
+      "patternProperties": {
+        "task_name": { "type": "string" },
+        "^.{1,255}$": { "type": "string", "minLength": 1, "maxLength": 255 }
+      },
+      "additionalProperties": false,
+      "required": ["task_name"],
+      "maxProperties": 10
+    },
     "benchmark_info": {
       "type": "object",
       "properties": {
         "description": { "type": "string" },
-        "task_name": { "type": "string" },
         "scheduling": { "type": "string", "pattern": "^(single_run|((\\*|\\?|\\d+((\\/|\\-){0,1}(\\d+))*)\\s*){5})$" },
         "execution_engine": { "type": "string", "enum": ["default", "aws.sagemaker"] },
-        "labels": { "$ref": "#/definitions/str_dict" }
+        "labels": { "$ref": "#/definitions/labels_structure" }
       },
       "additionalProperties": false,
       "required": ["description"]

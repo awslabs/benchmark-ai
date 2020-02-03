@@ -1,7 +1,6 @@
 import boto3
 
 from datetime import datetime
-from itertools import islice
 
 from bai_kafka_utils.events import MetricsEvent, Status
 from bai_kafka_utils.kafka_client import create_kafka_consumer, create_kafka_producer, metrics_json_deserializer
@@ -32,14 +31,16 @@ class CloudWatchExporterHandler(KafkaServiceCallback):
 
     def handle_event(self, event: MetricsEvent, kafka_service: KafkaService):
         logger.info(event)
-        if len(event.labels) > CLOUDWATCH_MAX_DIMENSIONS:
+        dimensions = [
+            {"Name": name, "Value": val} for name, val in event.labels.items()
+            if name not in ['action-id', 'parent-action-id', 'client-id']
+        ]
+        if len(dimensions) > CLOUDWATCH_MAX_DIMENSIONS:
+            dimensions = dimensions[:10]
             logger.warn(
                 f"Too many labels for metric. Found {len(event.labels)}, maximum allowed by CloudWatch"
                 f" is {CLOUDWATCH_MAX_DIMENSIONS}. The exceeding ones have not been exported."
             )
-        dimensions = [
-            {"Name": name, "Value": val} for name, val in islice(event.labels.items(), CLOUDWATCH_MAX_DIMENSIONS)
-        ]
         # Put custom metrics
         self.cloudwatch_client.put_metric_data(
             MetricData=[

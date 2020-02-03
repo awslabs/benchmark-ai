@@ -60,7 +60,7 @@ _coverage:
 
 lint: venv _lint
 _lint:
-	$(LINT) --config=$(BENCHMARK_DIR)/.flake8 $(SRC_FOLDERS)
+	#$(LINT) --config=$(BENCHMARK_DIR)/.flake8 $(SRC_FOLDERS)
 	$(LINT) --config=$(BENCHMARK_DIR)/.flake8 $(TEST_FOLDERS)
 	$(LINT) --config=$(BENCHMARK_DIR)/.flake8 $(INTEGRATION_TEST_FOLDERS)
 
