@@ -4,9 +4,9 @@ import typing
 
 import configargparse
 from bai_metrics_pusher.backends import BACKENDS
-from bai_kafka_utils.utils import METRICS_PUSHER_BACKEND_ARG_PREFIX
+from bai_kafka_utils.utils import METRICS_PUSHER_BACKEND_ARG_PREFIX, METRICS_PUSHER_CUSTOM_LABEL_PREFIX
 from dataclasses import dataclass
-from typing import Optional, Dict, Callable
+from typing import Optional, Dict, Callable, Any
 
 
 @dataclass()
@@ -14,7 +14,7 @@ class InputValue:
     backend: str
     pod_name: Optional[str]
     pod_namespace: Optional[str]
-    backend_args: Dict[str, str]
+    backend_args: Dict[str, Any]
 
 
 def get_input(argv, environ: Dict[str, str] = None) -> InputValue:
@@ -27,9 +27,13 @@ def get_input(argv, environ: Dict[str, str] = None) -> InputValue:
 
     args = parser.parse_args(argv)
 
+    labels = create_dict_of_custom_labels(values=environ, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX)
+
     environ = {key.lower(): value for key, value in environ.items()}
+    environ[METRICS_PUSHER_BACKEND_ARG_PREFIX.lower() + "labels"] = labels if labels else {}
+
     backend_args = create_dict_of_parameter_values_for_callable(
-        prefix=METRICS_PUSHER_BACKEND_ARG_PREFIX, values=environ, method=BACKENDS[args.backend]
+        prefix=METRICS_PUSHER_BACKEND_ARG_PREFIX, values=environ, method=BACKENDS[args.backend],
     )
 
     return InputValue(
@@ -37,7 +41,7 @@ def get_input(argv, environ: Dict[str, str] = None) -> InputValue:
     )
 
 
-def create_dict_of_parameter_values_for_callable(prefix: str, values: Dict[str, str], method: Callable):
+def create_dict_of_parameter_values_for_callable(prefix: str, values: Dict[str, Any], method: Callable):
     """
     Creates a dict with the parameters that can be accepted by the signature of :param(method).
 
@@ -86,15 +90,26 @@ def create_dict_of_parameter_values_for_callable(prefix: str, values: Dict[str, 
                 % (argname, method, prefix, set(values.keys()))
             )
 
-        string_value = values[key]
+        value = values[key]
 
-        if parameter_type == typing.List[str]:
-            value = string_value.split(",")
-        elif parameter_type == typing.List[int]:
-            value = map(int, string_value.split(","))
-            value = list(value)
-        else:
-            value = parameter_type(string_value)
+        if type(value) == str:
+            if parameter_type == typing.List[str]:
+                value = value.split(",")
+            elif parameter_type == typing.List[int]:
+                value = map(int, value.split(","))
+                value = list(value)
+            else:
+                value = parameter_type(value)
 
         args[argname] = value
+
     return args
+
+
+def create_dict_of_custom_labels(values: Dict[str, str], prefix: str):
+    labels = {}
+    for key, value in values.items():
+        if key.lower().startswith(prefix):
+            label_name = key[len(prefix) :].lower()
+            labels[label_name] = value
+    return labels

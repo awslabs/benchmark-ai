@@ -44,9 +44,16 @@ class KafkaBackend(Backend):
     """
 
     def __init__(
-        self, action_id: str, client_id: str, *, topic: str, bootstrap_servers: List[str] = None, key: str = None
+        self,
+        action_id: str,
+        client_id: str,
+        labels: Dict[str, str],
+        *,
+        topic: str,
+        bootstrap_servers: List[str] = None,
+        key: str = None
     ):
-        self.labels = {"action-id": action_id, "client-id": client_id}
+        self.labels = {"action-id": action_id, "client-id": client_id, **labels}
         if bootstrap_servers is None:
             bootstrap_servers = ["localhost:9092"]
         self._producer = create_kafka_producer(bootstrap_servers)

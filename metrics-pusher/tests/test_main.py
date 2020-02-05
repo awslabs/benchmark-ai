@@ -7,6 +7,8 @@ def test_main(mocker):
 
     main("--backend stdout --pod-namespace pod-namespace --pod-name pod-name ")
 
-    expected_input = InputValue(backend="stdout", pod_name="pod-name", pod_namespace="pod-namespace", backend_args={})
+    expected_input = InputValue(
+        backend="stdout", pod_name="pod-name", pod_namespace="pod-namespace", backend_args={"labels": {}}
+    )
 
     mock_start_loop.assert_called_with(expected_input)
