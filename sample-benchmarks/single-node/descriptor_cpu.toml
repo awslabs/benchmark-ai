@@ -74,4 +74,5 @@ name = "throughput"
 # Metric unit (required)
 units = "img/s"
 # Pattern for log parsing for this metric.
-pattern = "Speed: ([-+]?\\d*\\.\\d+|\\d+) samples/sec"
+# This is a literal string: use SINGLE QUOTES
+pattern = 'Speed: ([-+]?\d*\.\d+|\d+) samples/sec'
