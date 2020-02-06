@@ -56,6 +56,11 @@ class MLFramework(Enum):
 
 
 @dataclass
+class MLScript:
+    script: str
+
+
+@dataclass
 class InfoDescriptor:
     description: str
     task_name: Optional[str] = None
@@ -70,6 +75,7 @@ class MLDescriptor:
     benchmark_code: Optional[str] = None
     args: Optional[str] = None
     framework_version: Optional[str] = None
+    script: Optional[MLScript] = None
 
 
 @dataclass
@@ -226,6 +232,10 @@ class BenchmarkDescriptor:
         if self.ml:
             if self.ml.framework_version and self.ml.framework == MLFramework.NONE:
                 raise DescriptorError("Framework version is present, but not framework")
+            if self.ml.script and not self.ml.script.script.endswith(".tar"):
+                raise DescriptorError(
+                    f"Script mode section is present, but script file: {self.ml.script.script} is " f"not a tar file"
+                )
 
     @classmethod
     def from_dict(cls, descriptor_dict: Dict[str, Any], config: DescriptorConfig = None):

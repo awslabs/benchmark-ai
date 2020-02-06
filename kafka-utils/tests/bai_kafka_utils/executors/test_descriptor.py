@@ -133,6 +133,14 @@ def test_framework_required(descriptor_as_adict, descriptor_config):
         BenchmarkDescriptor.from_dict(descriptor_as_adict.to_dict(), descriptor_config)
 
 
+@pytest.mark.parametrize("script_value", ["", "_invalid"])
+def test_script_file_required(descriptor_as_adict, script_value):
+    descriptor_as_adict.ml.script.script = script_value
+
+    with pytest.raises(DescriptorError):
+        BenchmarkDescriptor.from_dict(descriptor_as_adict.to_dict())
+
+
 def test_framework_invalid(descriptor_as_adict, descriptor_config):
     descriptor_config.valid_frameworks = ["foo"]
     descriptor_as_adict.ml.framework = "bar"
