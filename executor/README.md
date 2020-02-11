@@ -27,6 +27,8 @@ scheduling = 'single_run'
 [info.labels]
 # Labels and values must be 63 characters or less, beginning and ending with an alphanumeric character
 # ([a-z0-9A-Z]) with dashes (-), underscores (_), dots (.), and alphanumerics between
+# task_name is a mandatory label which will be exported as a dimension for this job's metrics
+task_name = "single_node_training_benchmark"
 custom-label = "value"
 other-label = "other-value"
 
@@ -118,6 +120,8 @@ scheduling = "*/1 * * * *"
 [info.labels]
 # Labels and values must be 63 characters or less, beginning and ending with an alphanumeric character
 # ([a-z0-9A-Z]) with dashes (-), underscores (_), dots (.), and alphanumerics between
+# task_name is a mandatory label which will be exported as a dimension for this job's metrics
+task_name = "single_node_inference_benchmark"
 custom-label = "value"
 other-label = "other-value"
 
@@ -214,6 +218,8 @@ VAR2 = "value2"
 | info                   | task_name          | Name of the benchmark job                                                                                                                            | String                                                      | Required          |
 | info                   | description        | Description (informative field)                                                                                                                      | String                                                      | Required          |
 | info                   | scheduling         | Job scheduling: whether to run it a single time or periodically and when    | [Cron expression](https://kubernetes.io/docs/tasks/job/automated-tasks-with-cron-jobs/#schedule) to schedule a job, 'single_run' to run it right away (default)| Optional |
+| info.labels            | task_name          | Mandatory label to be exported for metrics                                                                                                           | String                                                      | Required          |
+| info                   | labels             | Optional labels to be exported for metrics                                                                                                           | Key-value pairs                                             | Optional          |
 | hardware               | instance_type      | Type of EC2 instance where the job is to run                                                                                                         | EC2 instance [API name](https://ec2instances.info)          | Required          |
 | hardware               | strategy           | Whether to run on single node or distributed. In the latter case, a distributed strategy, such as horovod or mxnet_parameter_server, must be specified | One of ['single_node', 'horovod', 'client_server', 'mxnet_parameter_server'] | Required          |
 | hardware.distributed   | num_instances      | Number of nodes to use for distributed training                                                                                                      | Int                                                         | Optional          |
@@ -221,6 +227,7 @@ VAR2 = "value2"
 | env                    | docker_image       | Docker image which runs the benchmark (it must contain the benchmark code)                                                                           | Docker image as user/repo:tag                               | Required          |
 | env                    | privileged         | Whether to run the container in privileged mode                                                                                                      | boolean (default: false)                                    | Optional          |
 | env                    | extended_shm       | Whether more than 64MB shared memory is needed for containers                                                                                        | boolean (default: true)                                     | Optional          |
+| env                    | vars               | Environment variables section                                                                                                                        | Key-value pairs                                             | Optional          |
 | ml                     | benchmark_code     | Command to run the benchmark code                                                                                                                    | String                                                      | Optional          |
 | ml                     | args               | Additional arguments for the benchmark scripts                                                                                                       | String                                                      | Optional          |
 | data                   | sources            | List with all required data sources (see below for the fields required for each source)                                                              | List of data.sources                                        | Optional          |
@@ -251,6 +258,8 @@ VAR2 = "value2"
 ### Notes on the sections:
 
 * **Info**: The scheduling field lets users specify when the job is supposed to run. This is done using cron expressions, such as `0 * * * *` or `@daily`, for example.
+* **Info.labels**: This section lets users specify dimensions for the metrics (`task_name` is a mandatory label). Users
+ need to ensure the set of (dimensions/labels + metric name) specified in toml file is unique for each job.
 * **Hardware**: Users must specify a strategy to run their benchmark, be it single_node or one of the distributed alternatives, such as horovod.
 * **Env**: Environment is defined by passing the identifier (user/repo:tag) of the docker image containing the benchmark code.
 * **Ml**: Users can specify the command to run on their docker image (benchmark_code) or the args to be passed to the container's entrypoint. If both are specified, the args are concatenated with the command.

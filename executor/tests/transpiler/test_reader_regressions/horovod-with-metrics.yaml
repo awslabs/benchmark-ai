@@ -8,6 +8,7 @@ metadata:
     action-id: ACTION_ID
     client-id: CLIENT_ID
     created-by: executor
+    task_name: example_horovod_benchmark
 subjects:
 - kind: ServiceAccount
   name: benchmark-job-id-launcher
@@ -27,6 +28,7 @@ metadata:
     action-id: ACTION_ID
     client-id: CLIENT_ID
     created-by: executor
+    task_name: example_horovod_benchmark
 data:
   entrypoint.sh: |
     #!/bin/bash
@@ -49,6 +51,7 @@ metadata:
     action-id: ACTION_ID
     client-id: CLIENT_ID
     created-by: executor
+    task_name: example_horovod_benchmark
 spec:
   replicas: 2
   template:
@@ -60,6 +63,7 @@ spec:
         action-id: ACTION_ID
         client-id: CLIENT_ID
         created-by: executor
+        task_name: example_horovod_benchmark
     spec:
       serviceAccountName: benchmark
       affinity:
@@ -167,6 +171,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: CUSTOM_LABEL_TASK_NAME
+          value: example_horovod_benchmark
         volumeMounts:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai

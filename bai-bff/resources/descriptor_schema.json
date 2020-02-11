@@ -90,14 +90,29 @@
       "required": ["hardware", "env"],
       "additionalProperties": false
     },
+    "labels_structure": {
+      "type": "object",
+      "patternProperties": {
+        "task_name": {
+          "type": "string",
+          "pattern": "^(?=.{1,63}$)([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]$"
+        },
+        "^(?=.{1,63}$)([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]$": {
+            "type": "string",
+            "pattern": "^(?=.{1,63}$)([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]$"
+        }
+      },
+      "additionalProperties": false,
+      "required": ["task_name"],
+      "maxProperties": 10
+    },
     "benchmark_info": {
       "type": "object",
       "properties": {
         "description": { "type": "string" },
-        "task_name": { "type": "string" },
         "scheduling": { "type": "string", "pattern": "^(single_run|((\\*|\\?|\\d+((\\/|\\-){0,1}(\\d+))*)\\s*){5})$" },
         "execution_engine": { "type": "string", "enum": ["default", "aws.sagemaker"] },
-        "labels": { "type": "object", "additionalProperties": {"type": "string"}, "maxProperties": 8}
+        "labels": { "$ref": "#/definitions/labels_structure" }
       },
       "additionalProperties": false,
       "required": ["description"]

@@ -5,12 +5,15 @@ spec_version = "0.1.0"
 # merely informative data so the benchmark can be categorized when displayed
 # in the dashboard.
 [info]
-task_name = "Title"
 description = """ \
     Description of the job. Users might want to include details \
     such as whether it's inference or training, particular aspects \
     of their model, etc.\
     """
+
+[info.labels]
+task_name = "title"
+other_dimension = "value"
 
 # 1. Hardware
 [hardware]

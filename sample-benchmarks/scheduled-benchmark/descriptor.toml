@@ -5,7 +5,6 @@ spec_version = "0.1.0"
 # merely informative data so the benchmark can be categorized when displayed
 # in the dashboard.
 [info]
-task_name = "Hello world"
 description = """ \
     A hello world example of using Benchmark AI\
     """
@@ -13,6 +12,13 @@ description = """ \
 # Benchmark schedule in Cron format (https://en.wikipedia.org/wiki/Cron)
 # E.g. everyday at midnight
 scheduling = "0 0 * * *"
+
+# Labels for metrics
+[info.labels]
+# Labels and values must be 63 characters or less, beginning and ending with an alphanumeric character
+# ([a-z0-9A-Z]) with dashes (-), underscores (_), dots (.), and alphanumerics between
+# task_name is a mandatory label which will be exported as a dimension for this job's metrics
+task_name = "periodic_benchmark_example"
 
 # 1. Hardware
 [hardware]
