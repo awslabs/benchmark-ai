@@ -1,6 +1,13 @@
 [info]
 execution_engine = "aws.sagemaker"
 
+# Labels for metrics
+[info.labels]
+# Labels and values must be 63 characters or less, beginning and ending with an alphanumeric character
+# ([a-z0-9A-Z]) with dashes (-), underscores (_), dots (.), and alphanumerics between
+# task_name is a mandatory label which will be exported as a dimension for this job's metrics
+task_name = "example_sagemaker_benchmark"
+
 [ml]
 benchmark_code = "python -W ignore horovod/examples/tensorflow_synthetic_benchmark.py --no-cuda --num-warmup-batche 10 --num-iters 10 --model ResNet50"
 framework = "tensorflow"

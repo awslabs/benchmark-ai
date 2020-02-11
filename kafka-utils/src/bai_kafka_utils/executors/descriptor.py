@@ -31,7 +31,7 @@ SINGLE_RUN_SCHEDULING = "single_run"
 
 ONE_PER_GPU = "gpus"
 
-LABEL_VALIDATION_REGEX = re.compile("([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]")
+LABEL_VALIDATION_REGEX = re.compile("(?=.{1,63}$)([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]")
 INVALID_LABEL_MESSAGE = (
     f"(RegExp used for validation is ([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9] "
     f"Please use Kubernetes label syntax: "
@@ -218,9 +218,9 @@ class BenchmarkDescriptor:
                 )
 
         for label, value in self.info.labels.items():
-            if not LABEL_VALIDATION_REGEX.fullmatch(label) or len(label) > 63:
+            if not LABEL_VALIDATION_REGEX.fullmatch(label):
                 raise DescriptorError(f"Invalid custom label key: {label}. " + INVALID_LABEL_MESSAGE)
-            if value and not LABEL_VALIDATION_REGEX.fullmatch(value) or len(value) > 63:
+            if value and not LABEL_VALIDATION_REGEX.fullmatch(value):
                 raise DescriptorError(f"Invalid value for label {label}: {value} " + INVALID_LABEL_MESSAGE)
 
         if self.ml:

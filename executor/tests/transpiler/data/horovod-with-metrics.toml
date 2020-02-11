@@ -5,10 +5,11 @@ spec_version = "0.1.0"
 # merely informative data so the benchmark can be categorized when displayed
 # in the dashboard.
 [info]
-task_name = "Example Horovod benchmark"
 description = """ \
     An example benchmark using Horovod as distributed training strategy. \
     """
+[info.labels]
+task_name = "example_horovod_benchmark"
 
 # 1. Hardware
 [hardware]

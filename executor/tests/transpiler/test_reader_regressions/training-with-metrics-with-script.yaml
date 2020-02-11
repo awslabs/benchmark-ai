@@ -7,6 +7,8 @@ metadata:
     action-id: ACTION_ID
     client-id: CLIENT_ID
     created-by: executor
+    task_name: title
+    other_dimension: value
 spec:
   template:
     metadata:
@@ -15,6 +17,8 @@ spec:
         action-id: ACTION_ID
         client-id: CLIENT_ID
         created-by: executor
+        task_name: title
+        other_dimension: value
       annotations:
         iam.amazonaws.com/role: benchmark-host
     spec:
@@ -145,6 +149,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: CUSTOM_LABEL_TASK_NAME
+          value: title
+        - name: CUSTOM_LABEL_OTHER_DIMENSION
+          value: value
         volumeMounts:
         - mountPath: /tmp/benchmark-ai
           name: benchmark-ai
