@@ -52,10 +52,10 @@ class K8SExecutionEngine(ExecutionEngine):
             )
             self._kubernetes_apply(yaml)
         except DescriptorError as e:
-            logger.exception(f"Error parsing descriptor file")
+            logger.exception("Error parsing descriptor file")
             raise ExecutionEngineException(f"Error parsing descriptor file: {str(e)}") from e
         except CalledProcessError as e:
-            logger.exception(f"Error executing benchmark")
+            logger.exception("Error executing benchmark")
             raise ExecutionEngineException(f"Error executing benchmark: {str(e)}") from e
 
         return BenchmarkJob(id=job_id, extras={K8SExecutionEngine.EXTRA_K8S_YAML: yaml})
@@ -73,10 +73,10 @@ class K8SExecutionEngine(ExecutionEngine):
             yaml = create_scheduled_job_yaml_spec(descriptor_contents, self.config, job_id, event=event)
             self._kubernetes_apply(yaml)
         except DescriptorError as e:
-            logger.exception(f"Error parsing descriptor file")
+            logger.exception("Error parsing descriptor file")
             raise ExecutionEngineException(f"Error parsing descriptor file: {str(e)}") from e
         except CalledProcessError as e:
-            logger.exception(f"Error creating scheduled benchmark")
+            logger.exception("Error creating scheduled benchmark")
             raise ExecutionEngineException(f"Error executing benchmark: {str(e)}") from e
 
         return BenchmarkJob(id=job_id, extras={K8SExecutionEngine.EXTRA_K8S_YAML: yaml})

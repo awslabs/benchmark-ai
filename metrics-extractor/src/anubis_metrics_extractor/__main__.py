@@ -61,10 +61,10 @@ def main(argv=None):
         logger.info(f"Loading KUBECONFIG from {kubeconfig}")
         config.load_kube_config(kubeconfig)
     else:
-        logger.info(f"Loading in cluster KUBECONFIG")
+        logger.info("Loading in cluster KUBECONFIG")
         config.load_incluster_config()
 
-    logger.info(f"Starting listening")
+    logger.info("Starting listening")
     extractor.listen()
 
 

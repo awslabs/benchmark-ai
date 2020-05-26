@@ -59,10 +59,11 @@ _coverage:
 	$(PYTEST) $(TEST_FLAGS) $(TEST_FOLDERS) $(COVERAGE_FLAGS)
 
 lint: venv _lint
+# --ignore=E902 temporary: https://github.com/awslabs/benchmark-ai/issues/1027 
 _lint:
-	$(LINT) --config=$(BENCHMARK_DIR)/.flake8 $(SRC_FOLDERS)
-	$(LINT) --config=$(BENCHMARK_DIR)/.flake8 $(TEST_FOLDERS)
-	$(LINT) --config=$(BENCHMARK_DIR)/.flake8 $(INTEGRATION_TEST_FOLDERS)
+	$(LINT) --config=$(BENCHMARK_DIR)/.flake8 --ignore=E902 $(SRC_FOLDERS)
+	$(LINT) --config=$(BENCHMARK_DIR)/.flake8 --ignore=E902 $(TEST_FOLDERS)
+	$(LINT) --config=$(BENCHMARK_DIR)/.flake8 --ignore=E902 $(INTEGRATION_TEST_FOLDERS)
 
 build: clean lint coverage
 
