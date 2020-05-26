@@ -80,9 +80,7 @@ class ExecutorEventHandler(KafkaServiceCallback):
             return
 
         try:
-            kafka_service.send_status_message_event(
-                event, Status.PENDING, f"Processing benchmark submission request..."
-            )
+            kafka_service.send_status_message_event(event, Status.PENDING, "Processing benchmark submission request...")
             job = engine.run(event)
         except ExecutionEngineException as e:
             logger.exception("Engine throws exception")
@@ -93,7 +91,7 @@ class ExecutorEventHandler(KafkaServiceCallback):
 
         response_event = create_from_object(ExecutorBenchmarkEvent, event, payload=payload)
 
-        kafka_service.send_status_message_event(response_event, Status.SUCCEEDED, f"Benchmark successfully created...")
+        kafka_service.send_status_message_event(response_event, Status.SUCCEEDED, "Benchmark successfully created...")
         kafka_service.send_event(response_event, topic=self.producer_topic)
 
     @staticmethod

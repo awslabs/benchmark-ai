@@ -8,7 +8,7 @@ dependencies:
   - configargparse 0.14.*
   - setuptools == 41.0.1
   - kubernetes >= 1.13
-  - flake8
+  - flake8 3.8.*
   - pip
   - pip:
       - ConfigArgParse==0.15.1

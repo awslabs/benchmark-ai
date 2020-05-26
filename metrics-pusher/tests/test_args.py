@@ -9,7 +9,7 @@ from bai_metrics_pusher.args import (
 )
 from bai_kafka_utils.utils import METRICS_PUSHER_CUSTOM_LABEL_PREFIX
 
-ALL_ARGS = f"--pod-namespace pod-namespace --pod-name pod-name "
+ALL_ARGS = "--pod-namespace pod-namespace --pod-name pod-name "
 
 
 def test_get_input_with_stdout():

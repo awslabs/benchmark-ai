@@ -6,7 +6,7 @@ dependencies:
   - python 3.7.*
   - setuptools == 41.0.1
   - python-crontab >= 2.3
-  - flake8
+  - flake8 3.8.*
   - kafka-python 1.4.6
   - boto3 1.9.*
   - pip
