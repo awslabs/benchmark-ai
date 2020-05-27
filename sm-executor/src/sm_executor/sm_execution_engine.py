@@ -55,7 +55,7 @@ class SageMakerExecutionEngine(ExecutionEngine):
         try:
             descriptor = BenchmarkDescriptor.from_dict(event.payload.toml.contents, CONFIG)
         except DescriptorError as e:
-            logger.exception(f"Could not parse descriptor", e)
+            logger.exception("Could not parse descriptor", e)
             raise ExecutionEngineException("Cannot process the request") from e
 
         with tempfile.TemporaryDirectory(prefix=self.config.tmp_sources_dir) as tmpdirname:
@@ -66,7 +66,7 @@ class SageMakerExecutionEngine(ExecutionEngine):
             try:
                 estimator = self.estimator_factory(session, descriptor, tmpdirname, self.config)
             except Exception as e:
-                logger.exception(f"Could not create estimator", e)
+                logger.exception("Could not create estimator", e)
                 raise ExecutionEngineException("Cannot create estimator") from e
 
             # Estimate the total size

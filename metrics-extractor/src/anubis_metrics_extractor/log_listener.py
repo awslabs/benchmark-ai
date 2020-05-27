@@ -52,7 +52,7 @@ class LogExtractor:
         self.options: LogExtractorOptions = options
         self.metrics = {}
         if not options.metrics:
-            logger.info(f"no metrics requested")
+            logger.info("no metrics requested")
             return
         for metric in options.metrics:
             self.add_metric(metric)
@@ -86,7 +86,7 @@ class LogExtractor:
 
     def listen(self):
         if not self.metrics:
-            logger.info(f"no metrics requested")
+            logger.info("no metrics requested")
             return
 
         for metric, pattern in self.metrics.items():

@@ -33,9 +33,9 @@ ONE_PER_GPU = "gpus"
 
 LABEL_VALIDATION_REGEX = re.compile("(?=.{1,63}$)([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]")
 INVALID_LABEL_MESSAGE = (
-    f"(RegExp used for validation is ([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9] "
-    f"Please use Kubernetes label syntax: "
-    f"https://kubernetes.io/docs/concepts/overview/working-with-objects/labels"
+    "(RegExp used for validation is ([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9] "
+    "Please use Kubernetes label syntax: "
+    "https://kubernetes.io/docs/concepts/overview/working-with-objects/labels"
 )
 
 
@@ -220,7 +220,7 @@ class BenchmarkDescriptor:
             if not CronSlices.is_valid(self.info.scheduling):
                 raise DescriptorError(
                     f"Invalid cron expression in scheduling field: {self.info.scheduling}. "
-                    f'Please use Kubernetes cron job syntax or "single_run" for non-periodic runs'
+                    'Please use Kubernetes cron job syntax or "single_run" for non-periodic runs'
                 )
 
         for label, value in self.info.labels.items():
@@ -234,7 +234,7 @@ class BenchmarkDescriptor:
                 raise DescriptorError("Framework version is present, but not framework")
             if self.ml.script and not self.ml.script.script.endswith(".tar"):
                 raise DescriptorError(
-                    f"Script mode section is present, but script file: {self.ml.script.script} is " f"not a tar file"
+                    f"Script mode section is present, but script file: {self.ml.script.script} is not a tar file"
                 )
 
     @classmethod

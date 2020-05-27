@@ -28,7 +28,7 @@ class ScheduledBenchmarkExecutorEventHandler(KafkaServiceCallback):
 
         try:
             kafka_service.send_status_message_event(
-                event, Status.PENDING, f"Processing scheduled benchmark submission request..."
+                event, Status.PENDING, "Processing scheduled benchmark submission request..."
             )
             job = self.k8s_execution_engine.schedule(event)
         except ExecutionEngineException as e:

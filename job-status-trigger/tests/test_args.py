@@ -38,4 +38,4 @@ def test_get_job_status_trigger_config(statuses, expected_statuses):
 
 
 def test_dont_fail_unrecognized():
-    get_job_status_trigger_config(MOST_ARGS + f" --trigger-statuses=SUCCEEDED" + " -foo")
+    get_job_status_trigger_config(MOST_ARGS + " --trigger-statuses=SUCCEEDED" + " -foo")

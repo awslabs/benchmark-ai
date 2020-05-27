@@ -27,7 +27,7 @@ def load_kubernetes_config(kubeconfig=None):
         logger.info(f"Loading kubeconfig from {kubeconfig}")
         kubernetes.config.load_kube_config(str(kubeconfig))
     else:
-        logger.info(f"Loading kubeconfig from incluster")
+        logger.info("Loading kubeconfig from incluster")
         kubernetes.config.load_incluster_config()
 
 
