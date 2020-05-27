@@ -27,6 +27,7 @@ KazooWatcher = Callable[[WatchedEvent], None]
 
 NOT_SUPPORTED_YET = "Can not simulate this yet"
 
+
 # While we generally highly convinced, that mocks should be simple and it's not a good idea to simulate
 # the complex behaviour with it, we think it makes sense to implement this easy KazooClient simulator
 @fixture
