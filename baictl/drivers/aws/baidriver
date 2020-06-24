@@ -19,8 +19,8 @@ create_infra() {
     local cluster_name=""
     local prefix_list_id=""
     local ssh_access_cidr_blocks=""
-    local white_listed_cidr=""
     local validate=true
+
     for arg in "$@"; do
         case "${arg}" in
         --name=*)
@@ -41,23 +41,20 @@ create_infra() {
         --extra-roles=*)
             extra_roles="${arg#*=}"
             ;;
-         --cidr-block=*)
-          white_listed_cidr="${arg#*=}"
-            ;;
         --no-validate)
             validate=false
             ;;
         esac
     done
+
     #Temporary behavior
     [ -z "$prefix_list_id" ] && printf "Missing required argument --aws-prefix-list-id\n" && return 1
     [ -z "$region" ] && printf "Missing required argument --aws-region\n" && return 1
 
     cd $terraform_dir
+
     local vars=""
-    local prefix_list_cidr_blocks=""
-    prefix_list_cidr_blocks=$(_get_prefix_list_cidr_blocks "$prefix_list_id" "$region" "$white_listed_cidr")
-    echo "$prefix_list_cidr_blocks"
+    local prefix_list_cidr_blocks=$(_get_prefix_list_cidr_blocks "$prefix_list_id" "$region")
 
     [[ -n "$cluster_name" ]] && vars="${vars} -var cluster_name=${cluster_name}"
     [[ -n "$region" ]] && vars="${vars} -var region=${region}"
@@ -65,63 +62,63 @@ create_infra() {
     [[ -n "$ssh_access_cidr_blocks" ]] && vars="${vars} -var ssh_access_cidr_blocks=[\"${ssh_access_cidr_blocks}\"]"
     [[ -n "$prefix_list_cidr_blocks" ]] && vars="${vars} -var prefix_list_cidr_blocks=${prefix_list_cidr_blocks}"
 
-#    echo "==> Initializing terraform"
-#    _initialize_terraform_backend ${region} || return 1
-#
-#    echo "==> Syncing remote data directory"
-#    sync_bai_datadir --aws-region=${region} --mode="pull" || return 1
-#
-#    echo "==> Calling terraform plan with ${vars}"
-#    terraform plan --out=$terraform_plan -var data_dir=$data_dir ${vars} || return 1
-#    terraform apply $terraform_plan || return 1
-#
-#    terraform output kubectl_config > $kubeconfig || return 1
-#
-#    echo "==> Syncing remote data directory"
-#    sync_bai_datadir --aws-region=${region} --mode="push" || return 1
-#
-#    echo "==> Creating Kubernetes objects"
-#    ${kubectl} apply -f $data_dir/fluentd-daemonset.yaml
-#    ${kubectl} -n kube-system rollout status ds/fluentd
-#
-#    ${kubectl} apply -f $data_dir/autoscaler-deployment.yaml
-#
-#    ${kubectl} apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v1.11/nvidia-device-plugin.yml
-#    ${kubectl} apply -f ${project_dir}/metrics-extractor/metrics-extractor-roles.yaml
-#    ${kubectl} apply -f ${project_dir}/metrics-pusher/metrics-pusher-roles.yaml
-#
-#    echo "==> Adding permission for CodeBuild role to deploy into the Kubernetes cluster"
-#    _add_codebuild_role || return 1
-#
-#    echo "==> Adding permission for extra users and roles into the Kubernetes cluster"
-#    _add_extra_users_roles || return 1
-#
-#    echo "==> Creating configmap from Terraform outputs"
-#    _create_configmap_yaml_from_terraform_outputs || return 1
-#
-#    echo "==> Installing kubeflow operators"
-#    _install_kubeflow_operators || return 1
-#
-#    echo "==> Installing Tiller"
-#    _install_tiller || return 1
-#
-#    echo "==> Installing kubernetes-dashboard"
-#    _install_kubernetes_dashboard || return 1
-#
-#    echo "==> Installing Prometheus"
-#    _install_prometheus || return 1
-#
-#    echo "==> Installing kube2iam"
-#    _install_kube2iam || return 1
-#
-#    echo "==> Installing zookeeper"
-#    _install_zookeeper || return 1
-#
-#    echo "==> Validating infrastructure"
-#    [[ "$validate" == false ]] || validate_infra $@
-#
-#    echo "==> Syncing remote data directory"
-#    sync_bai_datadir --aws-region=${region} --mode="push" || return 1
+    echo "==> Initializing terraform"
+    _initialize_terraform_backend ${region} || return 1
+
+    echo "==> Syncing remote data directory"
+    sync_bai_datadir --aws-region=${region} --mode="pull" || return 1
+
+    echo "==> Calling terraform plan with ${vars}"
+    terraform plan --out=$terraform_plan -var data_dir=$data_dir ${vars} || return 1
+    terraform apply $terraform_plan || return 1
+
+    terraform output kubectl_config > $kubeconfig || return 1
+
+    echo "==> Syncing remote data directory"
+    sync_bai_datadir --aws-region=${region} --mode="push" || return 1
+
+    echo "==> Creating Kubernetes objects"
+    ${kubectl} apply -f $data_dir/fluentd-daemonset.yaml
+    ${kubectl} -n kube-system rollout status ds/fluentd
+
+    ${kubectl} apply -f $data_dir/autoscaler-deployment.yaml
+
+    ${kubectl} apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v1.11/nvidia-device-plugin.yml
+    ${kubectl} apply -f ${project_dir}/metrics-extractor/metrics-extractor-roles.yaml
+    ${kubectl} apply -f ${project_dir}/metrics-pusher/metrics-pusher-roles.yaml
+
+    echo "==> Adding permission for CodeBuild role to deploy into the Kubernetes cluster"
+    _add_codebuild_role || return 1
+
+    echo "==> Adding permission for extra users and roles into the Kubernetes cluster"
+    _add_extra_users_roles || return 1
+
+    echo "==> Creating configmap from Terraform outputs"
+    _create_configmap_yaml_from_terraform_outputs || return 1
+
+    echo "==> Installing kubeflow operators"
+    _install_kubeflow_operators || return 1
+
+    echo "==> Installing Tiller"
+    _install_tiller || return 1
+
+    echo "==> Installing kubernetes-dashboard"
+    _install_kubernetes_dashboard || return 1
+
+    echo "==> Installing Prometheus"
+    _install_prometheus || return 1
+
+    echo "==> Installing kube2iam"
+    _install_kube2iam || return 1
+
+    echo "==> Installing zookeeper"
+    _install_zookeeper || return 1
+
+    echo "==> Validating infrastructure"
+    [[ "$validate" == false ]] || validate_infra $@
+
+    echo "==> Syncing remote data directory"
+    sync_bai_datadir --aws-region=${region} --mode="push" || return 1
 }
 
 _get_prefix_list_cidr_blocks() {
@@ -130,13 +127,9 @@ _get_prefix_list_cidr_blocks() {
     local cidrs=""
     local _tmp=""
     local delim=""
-    local white_listed_cidr="$3"
+
     if [ -n "${prefix_list_id}" ] && [ -n "${region}" ]; then
-        #_tmp=$(for item in $(aws ec2 describe-prefix-lists --prefix-list-ids="${prefix_list_id}" --region="${region}" | jq -cr ".PrefixLists[].Cidrs[]"); do printf "%s\"%s\"" "$delim" "$item"; delim=","; done)
-      _tmp="1,2,3"
-      if [ -n "${white_listed_cidr}" ]; then
-          _tmp+=",${white_listed_cidr}"
-      fi
+        _tmp=$(for item in $(aws ec2 describe-prefix-lists --prefix-list-ids="${prefix_list_id}" --region="${region}" | jq -cr ".PrefixLists[].Cidrs[]"); do printf "%s\"%s\"" "$delim" "$item"; delim=","; done)
       [[ -n "${_tmp}" ]] && cidrs="[${_tmp}]"
     fi
     echo "${cidrs}"
