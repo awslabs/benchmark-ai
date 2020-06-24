@@ -331,7 +331,7 @@ _install_kubeflow_operators() {
     __create_kubeflow_namespace | ${kubectl} apply -f - || return 1
 
     echo "-> Creating kubeflow environment"
-    ks registry describe kubeflow || ks registry add kubeflow https://github.com/kubeflow/kubeflow/tree/v0.4.1/kubeflow || return 1
+    ks registry describe kubeflow || ks registry add kubeflow https://github.com/kubeflow/kubeflow/tree/v0.5.1/kubeflow || return 1
     ks env describe "$kubeflow_namespace" || ks env add kubeflow --namespace "$kubeflow_namespace" || return 1
 
     echo "-> Applying kubeflow stuff"
