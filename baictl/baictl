@@ -99,6 +99,8 @@ dir=$(dirname "$(realpath ${BASH_SOURCE})")
 backend=${dir}/drivers/${target}/baidriver
 
 if [ -f "${backend}" ]; then
+  echo "$@"
+  echo adasds
    ${backend} "$@" || print_usage_and_exit
 else
    printf "Backend %s does not exist.\n" "$target"
