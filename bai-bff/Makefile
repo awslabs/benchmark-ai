@@ -377,7 +377,7 @@ deploy: _deploy_venv deploy.yml service.yml
 	  kubectl $(K8S_KUBECTL_ARGS) get service bai-bff -o json | jq '.status.loadBalancer.ingress[].hostname,.spec.ports[0].port' | xargs | sed 's/ /:/' > $(SERVICE_ENDPOINT); \
 	  sleep 5; \
 	done
-	@echo $(SERVICE_ENDPOINT)
+
 
 undeploy-deployment:
 	kubectl $(K8S_KUBECTL_ARGS) delete deployment $(PROJECT) --grace-period=60
