@@ -19,8 +19,8 @@ create_infra() {
     local cluster_name=""
     local prefix_list_id=""
     local ssh_access_cidr_blocks=""
+    local white_listed_cidr=""
     local validate=true
-
     for arg in "$@"; do
         case "${arg}" in
         --name=*)
@@ -41,6 +41,9 @@ create_infra() {
         --extra-roles=*)
             extra_roles="${arg#*=}"
             ;;
+        --cidr-block=*)
+            white_listed_cidr="${arg#*=}"
+            ;;
         --no-validate)
             validate=false
             ;;
@@ -54,7 +57,9 @@ create_infra() {
     cd $terraform_dir
 
     local vars=""
-    local prefix_list_cidr_blocks=$(_get_prefix_list_cidr_blocks "$prefix_list_id" "$region")
+    local prefix_list_cidr_blocks=""
+    prefix_list_cidr_blocks=$(_get_prefix_list_cidr_blocks "$prefix_list_id" "$region" "$white_listed_cidr")
+
 
     [[ -n "$cluster_name" ]] && vars="${vars} -var cluster_name=${cluster_name}"
     [[ -n "$region" ]] && vars="${vars} -var region=${region}"
@@ -127,9 +132,12 @@ _get_prefix_list_cidr_blocks() {
     local cidrs=""
     local _tmp=""
     local delim=""
-
+    local white_listed_cidr="$3"
     if [ -n "${prefix_list_id}" ] && [ -n "${region}" ]; then
         _tmp=$(for item in $(aws ec2 describe-prefix-lists --prefix-list-ids="${prefix_list_id}" --region="${region}" | jq -cr ".PrefixLists[].Cidrs[]"); do printf "%s\"%s\"" "$delim" "$item"; delim=","; done)
+      if [ -n "${white_listed_cidr}" ]; then
+          _tmp+=",${white_listed_cidr}"
+      fi
       [[ -n "${_tmp}" ]] && cidrs="[${_tmp}]"
     fi
     echo "${cidrs}"
@@ -169,7 +177,7 @@ _install_tiller(){
     ${kubectl} get serviceaccount -n ${tiller_namespace} tiller -o yaml || $kubectl create serviceaccount --namespace ${tiller_namespace} tiller || return 1
     ${kubectl} get clusterrolebinding tiller-cluster-rule -o yaml || $kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=${tiller_namespace}:tiller || return 1
 
-    ${helm} init --wait --service-account tiller || return 1
+    ${helm} init --upgrade --wait --service-account tiller || return 1
     #TODO: Secure through TLS?: https://github.com/jonbcampos/kubernetes-series/blob/master/helm/scripts/add_secure_helm.sh
     # TODO: Permissions RBAC
     # https://medium.com/@amimahloof/how-to-setup-helm-and-tiller-with-rbac-and-namespaces-34bf27f7d3c3
