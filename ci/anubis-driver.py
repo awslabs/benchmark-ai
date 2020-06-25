@@ -111,7 +111,7 @@ class Config:
         )
         variable_names.remove("extra_users")
         parser.add_argument(
-            "--white_listed_cidr",
+            "--white-listed-cidr",
             help="Provide a cidr to whitelist so that Anubis can be reached from outside the Amazon network"
         )
         variable_names.remove("white_listed_cidr")
