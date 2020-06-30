@@ -37,6 +37,11 @@ resource "aws_codebuild_project" "ci-create-infra" {
       value = var.prefix_list_id
     }
 
+    environment_variable {
+      name  = "WHITE_LISTED_CIDR_BLOCKS"
+      value = var.white_listed_cidr_blocks
+    }
+
     # This exposes the VPC gateway of the Blackbox Tests VPC to the Anubis Infrastructure
     environment_variable {
       name  = "EXTRA_CIDR_BLOCK"
