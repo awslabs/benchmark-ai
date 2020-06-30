@@ -96,6 +96,7 @@ This is the administrative command-line tool for the Anubis system
                         --prefix-list-id PREFIX_LIST_ID
                         [--extra-users EXTRA_USERS]
                         [--extra-roles EXTRA_ROLES]
+                        [--white-listed-cidrs WHITE_LISTED_CIDRS]
                         [--chime-hook-url CHIME_HOOK_URL]
                         [--run-integration-tests RUN_INTEGRATION_TESTS]
                         [--github-organization GITHUB_ORGANIZATION]
@@ -111,6 +112,8 @@ optional arguments:
                         user's IAM ARN
   --extra-roles EXTRA_ROLES
                         Same as extra-users except with AWS IAM roles
+  --white-listed-cirds WHITE_LISTED_CIDRS
+                        In order to run anubis from native aws provide cidrs to whitelist
   --chime-hook-url CHIME_HOOK_URL
                         Provide a chime URL for notification of pipeline
                         failures

@@ -42,7 +42,7 @@ class Config:
         "prefix_list_id",
         "extra_users",
         "extra_roles",
-        "white_listed_cidr"
+        "white_listed_cidrs"
     }
 
     def __init__(self):
@@ -111,10 +111,10 @@ class Config:
         )
         variable_names.remove("extra_users")
         parser.add_argument(
-            "--white-listed-cidr",
-            help="Provide a cidr to whitelist so that Anubis can be reached from outside the Amazon network"
+            "--white-listed-cidrs",
+            help="Provide a list of cidrs to whitelist so that Anubis can be reached from outside the Amazon network"
         )
-        variable_names.remove("white_listed_cidr")
+        variable_names.remove("white_listed_cidrs")
         parser.add_argument("--extra-roles", help="Same as extra-users except with AWS IAM roles")
         variable_names.remove("extra_roles")
         parser.add_argument("--chime-hook-url", help="Provide a chime URL for notification of pipeline failures")

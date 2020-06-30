@@ -19,7 +19,7 @@ create_infra() {
     local cluster_name=""
     local prefix_list_id=""
     local ssh_access_cidr_blocks=""
-    local white_listed_cidr=""
+    local white_listed_cidrs=""
     local validate=true
     for arg in "$@"; do
         case "${arg}" in
@@ -41,8 +41,8 @@ create_infra() {
         --extra-roles=*)
             extra_roles="${arg#*=}"
             ;;
-        --cidr-block=*)
-            white_listed_cidr="${arg#*=}"
+        --cidr-blocks=*)
+            white_listed_cidrs="${arg#*=}"
             ;;
         --no-validate)
             validate=false
@@ -58,9 +58,7 @@ create_infra() {
 
     local vars=""
     local prefix_list_cidr_blocks=""
-    prefix_list_cidr_blocks=$(_get_prefix_list_cidr_blocks "$prefix_list_id" "$region" "$white_listed_cidr")
-
-
+    prefix_list_cidr_blocks=$(_get_prefix_list_cidr_blocks "$prefix_list_id" "$region" "$white_listed_cidrs")
     [[ -n "$cluster_name" ]] && vars="${vars} -var cluster_name=${cluster_name}"
     [[ -n "$region" ]] && vars="${vars} -var region=${region}"
     [[ -n "$prefix_list_id" ]] && vars="${vars} -var prefix_list_ids=[\"${prefix_list_id}\"]"
@@ -132,11 +130,11 @@ _get_prefix_list_cidr_blocks() {
     local cidrs=""
     local _tmp=""
     local delim=""
-    local white_listed_cidr="$3"
+    local white_listed_cidrs="$3"
     if [ -n "${prefix_list_id}" ] && [ -n "${region}" ]; then
         _tmp=$(for item in $(aws ec2 describe-prefix-lists --prefix-list-ids="${prefix_list_id}" --region="${region}" | jq -cr ".PrefixLists[].Cidrs[]"); do printf "%s\"%s\"" "$delim" "$item"; delim=","; done)
-      if [ -n "${white_listed_cidr}" ]; then
-          _tmp+=",${white_listed_cidr}"
+      if [ -n "${white_listed_cidrs}" ]; then
+          _tmp+=",${white_listed_cidrs}"
       fi
       [[ -n "${_tmp}" ]] && cidrs="[${_tmp}]"
     fi
