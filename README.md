@@ -137,6 +137,7 @@ Inspect the output line presented, if okay, type 'yes' when prompted and terrafo
  - prefix-list-id: (REQUIRED) In order to access Anubis infrastructure from corp we can add the corresponding corp prefix list from the Amazon Prefix List Lookup tool
  - extra-users: *Provide as comma delimited list arn:aws:iam::1234:user/user1,arn:aws:iam::1234:user/user2* In order for a user to directly run kubectl commands against the Anubis EKS cluster you must provide that user's IAM ARN.  By default the users that are added are the Codebuild pipeline user, and your current aws user (find this out by running `aws sts get-caller-identity`)
  - extra-roles: Same as extra-users except with AWS IAM roles
+ - white-listed-cidrs: Provides cidrs to whitelist so that Anubis may be reached from outside the Amazon network
  - github-organization / github-branch: To point the pipeline to track a branch other than master, good for personal pipeline development
  - chime-hook-url: Provide a chime URL for notification of pipeline failures
  - clean: Deletes the terraform statefile, backend config, terraform variable file, and terraform plan file.  Useful for debugging failures or resetting configuration.
