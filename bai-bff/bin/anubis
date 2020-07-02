@@ -161,6 +161,7 @@ This is the command-line, client-side interface to the Bechmark AI service...
           --show-registered-service-endpoint : The hostname|IP:PORT of anubis service you are using
           --show-registered-service-endpoint-history : listing of endpoints you have previously registered
           --version                : shows version
+          --get-client-id          : shows client-id
           --legend                 : displays quick legend of the emojis used
           --help                   : (this output)
 
@@ -230,7 +231,11 @@ _construct_endpoint_URL() {
 }
 
 get_client_id() {
-    echo -n "$(printf "$(whoami)+$(hostname)" | sha1sum | awk '{print $1}')"
+    if [[ -z "${CLIENT_ID}" ]]; then
+      echo -n "$(printf "$(whoami)+$(hostname)" | sha1sum | awk '{print $1}')"
+    else
+      echo "${CLIENT_ID}"
+    fi
 }
 
 service_version_check() {
@@ -907,6 +912,10 @@ main() {
                     ;;
                 --ping-service-endpoint | --ping)
                     ping_service_endpoint
+                    exit $?
+                    ;;
+                --get-client-id)
+                    get_client_id
                     exit $?
                     ;;
                 --unregister)
