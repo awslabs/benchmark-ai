@@ -240,7 +240,7 @@ set_client_id(){
         echo "${client_id} has been registered before, setting as current client-id..." >&2
         sed -i '/^'${client_id}'$/d' "${ANUBIS_CLIENT_ID_CONFIG}"
     else
-        echo "Adding new anubis client-id: ${client_id}" >&2
+        echo "Adding new anubis client-id!: ${client_id}" >&2
     fi
     echo "${client_id}" >> "${ANUBIS_CLIENT_ID_CONFIG}"
 }
