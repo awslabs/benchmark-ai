@@ -250,7 +250,7 @@ get_client_id() {
     if [[ -n "${client_id}" ]]; then
        echo "${client_id}"
     else
-      echo -n "$(printf "$(whoami)+$(hostname)" | sha1sum | awk '{print $1}')"
+       echo -n "$(printf "$(whoami)+$(hostname)" | sha1sum | awk '{print $1}')"
     fi
 }
 
