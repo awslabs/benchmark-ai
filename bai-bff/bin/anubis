@@ -84,6 +84,7 @@ TAIL_STATUS=0
 SYNC_DATA=${SYNC_DATA:-0}
 WATCH=0
 WATCH_PERIOD=5
+TIMEOUT_COUNTER=0
 
 declare -r VERSION="0.6.2"
 declare -r SERVICE_NAME="anubis-client"
@@ -161,7 +162,6 @@ This is the command-line, client-side interface to the Bechmark AI service...
           --show-registered-service-endpoint : The hostname|IP:PORT of anubis service you are using
           --show-registered-service-endpoint-history : listing of endpoints you have previously registered
           --version                : shows version
-          --get-client-id          : shows client-id
           --legend                 : displays quick legend of the emojis used
           --help                   : (this output)
 
@@ -582,7 +582,7 @@ _read_local_submission_status() {
         ((VERBOSE)) && printf "Events datafile [%s] is not present\n" "${datafile}"
         return 1
     fi
-    failed=$(jq --compact-output '{src: .visited[-1].svc , id: .message_id, msg: .payload.message, tstamp: .visited[-1].tstamp}' "${datafile}"  | grep "failed")
+    failed=$(jq 'select(.payload.status|test("FAILED"))' "${datafile}")
     if [[ -n "${failed}" ]]; then
       exit 1
     else
@@ -607,9 +607,9 @@ _read_remote_submission_status() {
         echo "${response}" | jq '.[]' | tee $( [[ ${since_tstamp} != "0" ]] && echo -n "-a") ${ANUBIS_DATABASE}/${path}/data 2> /dev/null | jq --compact-output '{src: .visited[-1].svc , id: .message_id, msg: .payload.message, tstamp: .visited[-1].tstamp} +{"new" : "1"}' | while read line; do _as_status_line $line; done;
     fi
     if [[ -z "${response}" ]]; then
-      echo 5
+      TIMEOUT_COUNTER=$((TIMEOUT_COUNTER+WATCH_PERIOD))
     else
-      echo 0
+      TIMEOUT_COUNTER=0
     fi
 }
 
@@ -625,8 +625,6 @@ _looks_like_an_action_id() {
 #REST API call
 get_submission_status() {
     local action_id=${1:-$(use_last_action_id)}
-    local timeout_counter=0
-    local remote_status=0
     ((DEBUG)) && echo "[DEBUG] - get_submission_status, was passed in [${action_id}]" 1>&2
     if ! _looks_like_an_action_id "${action_id}" ; then
         printf "\033[01;31m[ERROR] Incorrect action-id format: expecting a UUID\033[0m\n"
@@ -660,11 +658,8 @@ get_submission_status() {
                 fi
             fi
             printf "\033[01;32m.\033[0m"
-            remote_status=$(_read_remote_submission_status "${action_id}")
-            timeout_counter=$((timeout_counter+remote_status))
-            if [[ remote_status -eq 0 ]]; then
-              timeout_counter=0
-            elif [[ timeout_counter -eq 30 ]]; then
+            _read_remote_submission_status "${action_id}"
+            if [[ TIMEOUT_COUNTER -eq 30 ]]; then
               printf "\033[01;31m[no connection to service... checking local logs]\033[0m\n"
               _read_local_submission_status
               printf "\033[01;31m[no local logs.... error]\033[0m\n"
@@ -930,10 +925,6 @@ main() {
                     ;;
                 --ping-service-endpoint | --ping)
                     ping_service_endpoint
-                    exit $?
-                    ;;
-                --get-client-id)
-                    get_client_id
                     exit $?
                     ;;
                 --unregister)
