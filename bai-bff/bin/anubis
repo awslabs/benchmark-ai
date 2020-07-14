@@ -606,6 +606,8 @@ _read_remote_submission_status() {
         [[ ! -d "${ANUBIS_DATABASE}/${path}" ]] && mkdir -p "${ANUBIS_DATABASE}/${path}"
         echo "${response}" | jq '.[]' | tee $( [[ ${since_tstamp} != "0" ]] && echo -n "-a") ${ANUBIS_DATABASE}/${path}/data 2> /dev/null | jq --compact-output '{src: .visited[-1].svc , id: .message_id, msg: .payload.message, tstamp: .visited[-1].tstamp} +{"new" : "1"}' | while read line; do _as_status_line $line; done;
     fi
+    #Checks response from api if empty adds to counter
+    #If there is a response reset counter to 0
     if [[ -z "${response}" ]]; then
       TIMEOUT_COUNTER=$((TIMEOUT_COUNTER+WATCH_PERIOD))
     else
