@@ -231,11 +231,7 @@ _construct_endpoint_URL() {
 }
 
 get_client_id() {
-    if [[ -z "${CLIENT_ID}" ]]; then
-      echo -n "$(printf "$(whoami)+$(hostname)" | sha1sum | awk '{print $1}')"
-    else
-      echo "${CLIENT_ID}"
-    fi
+    echo -n "$(printf "$(whoami)+$(hostname)" | sha1sum | awk '{print $1}')"
 }
 
 service_version_check() {
