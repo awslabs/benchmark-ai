@@ -237,12 +237,11 @@ _construct_endpoint_URL() {
 set_client_id(){
     local client_id=${1:?"set_client_id() -> You MUST supply the client-id"}
     if [ -n "$(sed -ne '/^'${client_id}'$/p' ${ANUBIS_CLIENT_ID_CONFIG})" ]; then
-        echo "${client_id} has been registered before, setting as current client-id..." >&2
-        sed -i '/^'${client_id}'$/d' "${ANUBIS_CLIENT_ID_CONFIG}"
+        echo "${client_id} is already the client-id"
     else
-        echo "Adding new anubis client-id!: ${client_id}" >&2
+        echo "${client_id}" > "${ANUBIS_CLIENT_ID_CONFIG}"
+        echo "${client_id} has been set as client-id"
     fi
-    echo "${client_id}" >> "${ANUBIS_CLIENT_ID_CONFIG}"
 }
 
 get_client_id() {
