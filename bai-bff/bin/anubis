@@ -577,7 +577,6 @@ _read_local_submission_status() {
         ((VERBOSE)) && printf "Events datafile [%s] is not present\n" "${datafile}"
         return 1
     fi
-   # check_logs_for_exit_status "local"
 }
 
 _read_remote_submission_status() {
