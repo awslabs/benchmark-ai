@@ -85,7 +85,7 @@ SYNC_DATA=${SYNC_DATA:-0}
 WATCH=0
 WATCH_PERIOD=5
 TIMEOUT_COUNTER=0
-
+WATCHER_EXIT_STATUS=0
 declare -r VERSION="0.6.2"
 declare -r SERVICE_NAME="anubis-client"
 declare -r MY_SHA1=$(sha1sum "${0}" | awk '{print $1}')
@@ -231,7 +231,7 @@ _construct_endpoint_URL() {
 }
 
 get_client_id() {
-    echo -n "$(printf "$(whoami)+$(hostname)" | sha1sum | awk '{print $1}')"
+    echo -n 10ee3cf3d2e7a7944b385579fe8addeec35f90f1
 }
 
 service_version_check() {
@@ -570,7 +570,6 @@ _read_local_submission_status() {
     local action_id=${1:-$(use_last_action_id)}
     ((DEBUG)) && echo "_read_local_submission_status for action: ${action_id}" 1>&2
     current_action_id=$action_id
-
     local datafile=${ANUBIS_DATABASE}/$(get_client_id)"/"${action_id}/data
     if [[ -f "${datafile}" ]]; then
         jq --compact-output '{src: .visited[-1].svc , id: .message_id, msg: .payload.message, tstamp: .visited[-1].tstamp}' "${datafile}" | while read line; do _as_status_line $line; done;
@@ -578,12 +577,7 @@ _read_local_submission_status() {
         ((VERBOSE)) && printf "Events datafile [%s] is not present\n" "${datafile}"
         return 1
     fi
-    failed=$(jq 'select(.payload.status|test("FAILED"))' "${datafile}")
-    if [[ -n "${failed}" ]]; then
-      exit 1
-    else
-      exit 0
-    fi
+   # check_logs_for_exit_status "local"
 }
 
 _read_remote_submission_status() {
@@ -604,10 +598,23 @@ _read_remote_submission_status() {
     fi
     #Checks response from api if empty adds to counter
     #If there is a response reset counter to 0
+    check_logs_for_exit_status "remote"
     if [[ -z "${response}" ]]; then
       TIMEOUT_COUNTER=$((TIMEOUT_COUNTER+WATCH_PERIOD))
     else
       TIMEOUT_COUNTER=0
+    fi
+}
+
+check_logs_for_exit_status(){
+    local origin=${1}
+    local datafile=${ANUBIS_DATABASE}/$(get_client_id)"/"${action_id}/data
+    failed=$(jq 'select(.payload.status|test("FAILED"))' "${datafile}")
+    if [[ -n "${failed}" && origin == "local" ]]; then
+      echo failed
+      exit 1
+    elif [[ -n "${failed}" && origin == "remote" ]]; then
+      WATCHER_EXIT_STATUS=1
     fi
 }
 
@@ -658,10 +665,8 @@ get_submission_status() {
             printf "\033[01;32m.\033[0m"
             _read_remote_submission_status "${action_id}"
             if [[ TIMEOUT_COUNTER -eq 30 ]]; then
-              printf "\033[01;31m[no connection to service... checking local logs]\033[0m\n"
-              _read_local_submission_status
-              printf "\033[01;31m[no local logs.... error]\033[0m\n"
-              exit 1
+              printf "\033[01;31m[no new logs from service...]\033[0m\n"
+              exit "${WATCHER_EXIT_STATUS}"
             fi
             sleep "${WATCH_PERIOD}"
 
@@ -669,7 +674,7 @@ get_submission_status() {
     else
         curl -s "$(_construct_endpoint_URL)"/ready >& /dev/null
         if (( $? != 0 )); then
-            printf "\n\033[01;31m[No connection/timedout... check for local submission file]\033[0m\n"
+            printf "\n\033[01;31m[no connection to service]\033[0m\n"
             exit 9
         fi
         _read_remote_submission_status "${action_id}"
