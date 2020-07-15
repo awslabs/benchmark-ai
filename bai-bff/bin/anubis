@@ -231,7 +231,7 @@ _construct_endpoint_URL() {
 }
 
 get_client_id() {
-    echo -n 10ee3cf3d2e7a7944b385579fe8addeec35f90f1
+    echo -n "$(printf "$(whoami)+$(hostname)" | sha1sum | awk '{print $1}')"
 }
 
 service_version_check() {
@@ -664,7 +664,7 @@ get_submission_status() {
             fi
             printf "\033[01;32m.\033[0m"
             _read_remote_submission_status "${action_id}"
-            if [[ TIMEOUT_COUNTER -eq 30 ]]; then
+            if [[ TIMEOUT_COUNTER -eq 60 ]]; then
               printf "\033[01;31m[no new logs from service...]\033[0m\n"
               exit "${WATCHER_EXIT_STATUS}"
             fi
