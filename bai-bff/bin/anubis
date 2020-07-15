@@ -610,11 +610,17 @@ check_logs_for_exit_status(){
     local origin=${1}
     local datafile=${ANUBIS_DATABASE}/$(get_client_id)"/"${action_id}/data
     failed=$(jq 'select(.payload.status|test("FAILED"))' "${datafile}")
+    successful=$(jq 'select(.payload.message|test("Benchmark finished"))' "${datafile}")
+    #If local we can exit immediately
+    #If remote we will let it ping the server until no response
     if [[ -n "${failed}" && origin == "local" ]]; then
-      echo failed
       exit 1
     elif [[ -n "${failed}" && origin == "remote" ]]; then
       WATCHER_EXIT_STATUS=1
+    elif [[ -n "${successful}" && origin == "local" ]]; then
+      exit 0
+    elif [[ -n "${successful}" && origin == "remote" ]]; then
+      WATCHER_EXIT_STATUS=0
     fi
 }
 
@@ -674,7 +680,7 @@ get_submission_status() {
     else
         curl -s "$(_construct_endpoint_URL)"/ready >& /dev/null
         if (( $? != 0 )); then
-            printf "\n\033[01;31m[no connection to service]\033[0m\n"
+            printf "\033[01;31m[no connection to service]\033[0m\n"
             exit 9
         fi
         _read_remote_submission_status "${action_id}"
