@@ -575,8 +575,8 @@ _read_local_submission_status() {
         jq --compact-output '{src: .visited[-1].svc , id: .message_id, msg: .payload.message, tstamp: .visited[-1].tstamp}' "${datafile}" | while read line; do _as_status_line $line; done;
     else
         ((VERBOSE)) && printf "Events datafile [%s] is not present\n" "${datafile}"
-        return 1
     fi
+    check_logs_for_exit_status "local"
 }
 
 _read_remote_submission_status() {
@@ -595,8 +595,8 @@ _read_remote_submission_status() {
         [[ ! -d "${ANUBIS_DATABASE}/${path}" ]] && mkdir -p "${ANUBIS_DATABASE}/${path}"
         echo "${response}" | jq '.[]' | tee $( [[ ${since_tstamp} != "0" ]] && echo -n "-a") ${ANUBIS_DATABASE}/${path}/data 2> /dev/null | jq --compact-output '{src: .visited[-1].svc , id: .message_id, msg: .payload.message, tstamp: .visited[-1].tstamp} +{"new" : "1"}' | while read line; do _as_status_line $line; done;
     fi
-    #Checks response from api if empty adds to counter
-    #If there is a response reset counter to 0
+    # Checks response from api if empty adds to counter
+    # If there is a response reset counter to 0
     check_logs_for_exit_status "remote"
     if [[ -z "${response}" ]]; then
       TIMEOUT_COUNTER=$((TIMEOUT_COUNTER+WATCH_PERIOD))
@@ -608,10 +608,16 @@ _read_remote_submission_status() {
 check_logs_for_exit_status(){
     local origin=${1}
     local datafile=${ANUBIS_DATABASE}/$(get_client_id)"/"${action_id}/data
-    failed=$(jq 'select(.payload.status|test("FAILED"))' "${datafile}")
-    successful=$(jq 'select(.payload.message|test("Benchmark finished"))' "${datafile}")
-    #If local we can exit immediately
-    #If remote we will let it ping the server until no response
+    # If local logs exist check for benchmark-status
+    if [[ -f "${datafile}" ]]; then
+        failed=$(jq 'select(.payload.status|test("FAILED"))' "${datafile}")
+        successful=$(jq 'select(.payload.message|test("Benchmark finished"))' "${datafile}")
+    else
+      # Return so that remote_status can continue to ping api for response until status exists in logs
+      return 1
+    fi
+    # If checking from local_status we can exit immediately logs are complete
+    # If checking from remote_status we will let it ping the server until no response
     if [[ -n "${failed}" && origin == "local" ]]; then
       exit 1
     elif [[ -n "${failed}" && origin == "remote" ]]; then
