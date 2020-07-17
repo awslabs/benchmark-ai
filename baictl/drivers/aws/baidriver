@@ -131,12 +131,16 @@ _get_prefix_list_cidr_blocks() {
     local _tmp=""
     local delim=""
     local white_listed_cidrs="$3"
+    if [ -n "${white_listed_cidrs}" ] && [ -z "${prefix_list_id}" ]; then
+        _tmp="\"${white_listed_cidrs}\""
+
+    elif [ -n "${white_listed_cidrs}" ] && [ -n "${prefix_list_id}" ]; then
+        _tmp="\"${white_listed_cidrs}\","
+    fi
+
     if [ -n "${prefix_list_id}" ] && [ -n "${region}" ]; then
-        _tmp=$(for item in $(aws ec2 describe-prefix-lists --prefix-list-ids="${prefix_list_id}" --region="${region}" | jq -cr ".PrefixLists[].Cidrs[]"); do printf "%s\"%s\"" "$delim" "$item"; delim=","; done)
-      if [ -n "${white_listed_cidrs}" ]; then
-          _tmp+=",${white_listed_cidrs}"
-      fi
-      [[ -n "${_tmp}" ]] && cidrs="[${_tmp}]"
+        _tmp+=$(for item in $(aws ec2 describe-prefix-lists --prefix-list-ids="${prefix_list_id}" --region="${region}" | jq -cr ".PrefixLists[].Cidrs[]"); do printf "%s\"%s\"" "$delim" "$item"; delim=","; done)
+        [[ -n "${_tmp}" ]] && cidrs="[${_tmp}]"
     fi
     echo "${cidrs}"
 }
