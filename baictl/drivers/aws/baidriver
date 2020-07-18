@@ -131,11 +131,12 @@ _get_prefix_list_cidr_blocks() {
     local _tmp=""
     local delim=""
     local white_listed_cidrs="$3"
+    white_listed_cidrs=$(echo ${white_listed_cidrs} | tr ',' ' ')
     if [ -n "${white_listed_cidrs}" ] && [ -z "${prefix_list_id}" ]; then
-        _tmp="\"${white_listed_cidrs}\""
-
+        _tmp=${white_listed_cidrs}
     elif [ -n "${white_listed_cidrs}" ] && [ -n "${prefix_list_id}" ]; then
-        _tmp="\"${white_listed_cidrs}\","
+        _tmp+=$(for item in ${white_listed_cidrs}; do printf "%s\"%s\"" "$delim" "$item"; delim=","; done)
+        _tmp+=,
     fi
 
     if [ -n "${prefix_list_id}" ] && [ -n "${region}" ]; then
