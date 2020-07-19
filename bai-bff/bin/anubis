@@ -606,7 +606,7 @@ _read_remote_submission_status() {
 }
 
 check_logs_for_exit_status(){
-    local origin=${1}
+    local origin="${1}"
     local datafile=${ANUBIS_DATABASE}/$(get_client_id)"/"${action_id}/data
     # If local logs exist check for benchmark-status
     if [[ -f "${datafile}" ]]; then
@@ -618,13 +618,13 @@ check_logs_for_exit_status(){
     fi
     # If checking from local_status we can exit immediately logs are complete
     # If checking from remote_status we will let it ping the server until no response
-    if [[ -n "${failed}" && origin == "local" ]]; then
+    if [[ -n "${failed}" && "${origin}" == "local" ]]; then
       exit 1
-    elif [[ -n "${failed}" && origin == "remote" ]]; then
+    elif [[ -n "${failed}" && "${origin}" == "remote" ]]; then
       WATCHER_EXIT_STATUS=1
-    elif [[ -n "${successful}" && origin == "local" ]]; then
+    elif [[ -n "${successful}" && "${origin}" == "local" ]]; then
       exit 0
-    elif [[ -n "${successful}" && origin == "remote" ]]; then
+    elif [[ -n "${successful}" && "${origin}" == "remote" ]]; then
       WATCHER_EXIT_STATUS=0
     fi
 }
