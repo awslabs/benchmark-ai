@@ -127,22 +127,20 @@ create_infra() {
 _get_prefix_list_cidr_blocks() {
     local prefix_list_id="$1"
     local region="$2"
+    local white_listed_cidrs="$3"
     local cidrs=""
     local _tmp=""
     local delim=""
-    local white_listed_cidrs="$3"
-    white_listed_cidrs=$(echo ${white_listed_cidrs} | tr ',' ' ')
-    if [ -n "${white_listed_cidrs}" ] && [ -z "${prefix_list_id}" ]; then
-        _tmp=${white_listed_cidrs}
-    elif [ -n "${white_listed_cidrs}" ] && [ -n "${prefix_list_id}" ]; then
-        _tmp+=$(for item in ${white_listed_cidrs}; do printf "%s\"%s\"" "$delim" "$item"; delim=","; done)
-        _tmp+=,
+
+    if [ -n "${white_listed_cidrs}" ]; then
+        _tmp+=$(for item in $(tr ',' ' ' <<< "${white_listed_cidrs}"); do printf "%s\"%s\"" "$delim" "$item"; delim=","; done)
     fi
 
     if [ -n "${prefix_list_id}" ] && [ -n "${region}" ]; then
         _tmp+=$(for item in $(aws ec2 describe-prefix-lists --prefix-list-ids="${prefix_list_id}" --region="${region}" | jq -cr ".PrefixLists[].Cidrs[]"); do printf "%s\"%s\"" "$delim" "$item"; delim=","; done)
-        [[ -n "${_tmp}" ]] && cidrs="[${_tmp}]"
     fi
+
+    [[ -n "${_tmp}" ]] && cidrs="[${_tmp}]"
     echo "${cidrs}"
 }
 
