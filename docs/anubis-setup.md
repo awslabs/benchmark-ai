@@ -112,7 +112,7 @@ optional arguments:
                         user's IAM ARN
   --extra-roles EXTRA_ROLES
                         Same as extra-users except with AWS IAM roles
-  --white-listed-cirds WHITE_LISTED_CIDRS
+  --white-listed-cidrs WHITE_LISTED_CIDRS
                         In order to run anubis from native aws provide cidrs to whitelist
   --chime-hook-url CHIME_HOOK_URL
                         Provide a chime URL for notification of pipeline
