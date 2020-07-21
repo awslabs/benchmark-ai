@@ -236,7 +236,7 @@ _construct_endpoint_URL() {
 
 set_client_id(){
     local client_id=${1:?"set_client_id() -> You MUST supply the client-id"}
-    if [ -n "$(sed -ne '/^'${client_id}'$/p' ${ANUBIS_CLIENT_ID_CONFIG})" ]; then
+    if [[ -n "$(sed -r -n '1 s/\s*('"${client_id}"')\s*/\1/p' "${ANUBIS_CLIENT_ID_CONFIG}")" ]]; then
         echo "${client_id} is already the client-id"
     else
         echo "${client_id}" > "${ANUBIS_CLIENT_ID_CONFIG}"
