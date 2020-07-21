@@ -42,6 +42,7 @@ class Config:
         "prefix_list_id",
         "extra_users",
         "extra_roles",
+        "white_listed_cidrs"
     }
 
     def __init__(self):
@@ -109,6 +110,11 @@ class Config:
             help="In order for a user to directly run kubectl commands against the Anubis EKS cluster you must provide that user's IAM ARN",
         )
         variable_names.remove("extra_users")
+        parser.add_argument(
+            "--white-listed-cidrs",
+            help="Provide a list of cidrs to whitelist so that Anubis can be reached from outside the Amazon network"
+        )
+        variable_names.remove("white_listed_cidrs")
         parser.add_argument("--extra-roles", help="Same as extra-users except with AWS IAM roles")
         variable_names.remove("extra_roles")
         parser.add_argument("--chime-hook-url", help="Provide a chime URL for notification of pipeline failures")

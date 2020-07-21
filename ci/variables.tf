@@ -60,6 +60,10 @@ variable "prefix_list_id" {
   type = string
 }
 
+variable "white_listed_cidr_blocks" {
+  type = string
+}
+
 variable "extra_users" {
   type    = string
   default = ""
