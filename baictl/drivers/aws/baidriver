@@ -305,17 +305,18 @@ _install_kubeflow_operators() {
     mkdir $data_dir/kubeflow-operators
     cd $data_dir/kubeflow-operators
 
-    wget https://raw.githubusercontent.com/kubeflow/mpi-operator/master/deploy/v1alpha2/mpi-operator.yaml
-    kubectl create -f mpi-operator.yaml
+    wget https://raw.githubusercontent.com/kubeflow/mpi-operator/master/deploy/v1alpha2/mpi-operator.yaml || { echo "[ERROR] Error downloading mpi-operator.yaml" ;  exit 1; }
+    kubectl delete -f mpi-operator.yaml
+    kubectl create -f mpi-operator.yaml || exit 1
 
-    git clone https://github.com/kubeflow/mxnet-operator.git
-    kubectl create -k mxnet-operator/manifests/overlays/v1beta1/    
+    git clone https://github.com/kubeflow/mxnet-operator.git temp || { echo "[ERROR] Error clonning the mxnet-operator repository" ; exit 1; }
+    rm -rf mxnet-operator
+    mv temp mxnet-operator
+    kubectl delete -k mxnet-operator/manifests/overlays/v1beta1/
+    kubectl create -k mxnet-operator/manifests/overlays/v1beta1/
     )
-
     local exit_code=$?
-    #kubectl create returns 1 in case operators are already exists
-    #TODO: add a handler
-    #[[ "$exit_code" != 0 ]] && echo "[ERROR] Failed with exit code: $exit_code" && return 1
+    [[ "$exit_code" != 0 ]] && echo "[ERROR] Failed with exit code: $exit_code" && return 1
    
     return 0
 }
