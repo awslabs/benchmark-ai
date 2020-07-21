@@ -94,6 +94,7 @@ declare -r ANUBIS_SCRIPT_STAGING=${ANUBIS_HOME}/script_staging
 declare -r ANUBIS_ACTION_IDS=${ANUBIS_HOME}/action_ids
 declare -r ANUBIS_DATABASE=${ANUBIS_HOME}/db
 declare -r ANUBIS_SERVICE_ENDPOINT_CONFIG=${ANUBIS_HOME}/service_endpoint
+declare -r ANUBIS_CLIENT_ID_CONFIG=${ANUBIS_HOME}/client_id
 declare -r TSTAMP_FILENAME=latest_tstamp
 
 declare -r head_='^###.*begin.*anubis.*###$'
@@ -161,6 +162,9 @@ This is the command-line, client-side interface to the Bechmark AI service...
           --show-registered-service-endpoint : The hostname|IP:PORT of anubis service you are using
           --show-registered-service-endpoint-history : listing of endpoints you have previously registered
           --version                : shows version
+          --get-client-id          : shows client-id
+          --set-client-id          : sets a client-id for this client, will persist after is set
+          --unset-client-id        : if the client-id was explicitly set, this value is unset and the default is used
           --legend                 : displays quick legend of the emojis used
           --help                   : (this output)
 
@@ -215,6 +219,8 @@ _setup() {
     touch "${ANUBIS_HOME}/action_ids"
     touch "${ANUBIS_HOME}/history"
     touch "${ANUBIS_HOME}/service_endpoint"
+    touch "${ANUBIS_HOME}/client_id"
+
 }
 
 #---------------------------------------------------------
@@ -229,8 +235,27 @@ _construct_endpoint_URL() {
     printf "http://%s" "$(_get_current_service_endpoint)"
 }
 
+set_client_id(){
+    local client_id=${1:?"set_client_id() -> You MUST supply the client-id"}
+    if [[ -n "$(sed -r -n '1 s/\s*('"${client_id}"')\s*/\1/p' "${ANUBIS_CLIENT_ID_CONFIG}")" ]]; then
+        echo "${client_id} is already the client-id"
+    else
+        echo "${client_id}" > "${ANUBIS_CLIENT_ID_CONFIG}"
+        echo "${client_id} has been set as client-id"
+    fi
+}
+
+unset_client_id() {
+    [[ -f "${ANUBIS_CLIENT_ID_CONFIG}" ]] && cat /dev/null > "${ANUBIS_CLIENT_ID_CONFIG}"
+}
+
 get_client_id() {
-    echo -n "$(printf "$(whoami)+$(hostname)" | sha1sum | awk '{print $1}')"
+    local client_id="$(sed -n -e '$p' "${ANUBIS_CLIENT_ID_CONFIG}")"
+    if [[ -n "${client_id}" ]]; then
+       echo "${client_id}"
+    else
+       echo -n "$(printf "$(whoami)+$(hostname)" | sha1sum | awk '{print $1}')"
+    fi
 }
 
 service_version_check() {
@@ -907,6 +932,18 @@ main() {
                     ;;
                 --ping-service-endpoint | --ping)
                     ping_service_endpoint
+                    exit $?
+                    ;;
+                --get-client-id)
+                    get_client_id
+                    exit $?
+                    ;;
+                --set-client-id)
+                    set_client_id "${input_args[$((++idx))]}"
+                    exit $?
+                    ;;
+                --unset-client-id | --reset-client-id)
+                    unset_client_id
                     exit $?
                     ;;
                 --unregister)
