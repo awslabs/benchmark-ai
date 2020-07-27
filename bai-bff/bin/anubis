@@ -156,7 +156,8 @@ This is the command-line, client-side interface to the Bechmark AI service...
           --sync-version           : synchronized this tool with that of the service endpoint
           --tail                   : when showing status, only show the latest from the service
           --sync-data              : clean local cached data and refetch from service
-          --terminate              : exits Anubis after watcher recieves SUCCESS or FAILED
+          --watch                  : displays messages as they are emitted from the service (must CTRL-C to break)
+          --terminate              : use only with --watch; lets this client EXIT after SUCCESS or FAILED event is received.
           --history                : lists recently returned <action id> : <descriptor path> : <date>
           --register <hostname|IP and PORT of anubis service> | Ex: anubis.aws.amazon.com:7100
           --unregister             : clears service endpoint from configuration
@@ -840,7 +841,9 @@ main() {
                 printf " %b\n" "${emoji[watcher]}"
                 ;;
             --terminate)
-               TERMINATE=1
+                TERMINATE=1
+                echo "Terminiation Mode Set..." 1>&2
+                ;;
         esac
         ((idx++))
     done
