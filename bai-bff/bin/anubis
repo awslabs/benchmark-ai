@@ -84,6 +84,7 @@ TAIL_STATUS=0
 SYNC_DATA=${SYNC_DATA:-0}
 WATCH=0
 WATCH_PERIOD=5
+TERMINATE=0
 
 declare -r VERSION="0.6.2"
 declare -r SERVICE_NAME="anubis-client"
@@ -156,6 +157,8 @@ This is the command-line, client-side interface to the Bechmark AI service...
           --sync-version           : synchronized this tool with that of the service endpoint
           --tail                   : when showing status, only show the latest from the service
           --sync-data              : clean local cached data and refetch from service
+          --watch                  : displays messages as they are emitted from the service (must CTRL-C to break)
+          --terminate              : use only with --watch; lets this client EXIT after SUCCESS or FAILED event is received.
           --history                : lists recently returned <action id> : <descriptor path> : <date>
           --register <hostname|IP and PORT of anubis service> | Ex: anubis.aws.amazon.com:7100
           --unregister             : clears service endpoint from configuration
@@ -594,9 +597,7 @@ _read_local_submission_status() {
     local action_id=${1:-$(use_last_action_id)}
     ((DEBUG)) && echo "_read_local_submission_status for action: ${action_id}" 1>&2
     current_action_id=$action_id
-
     local datafile=${ANUBIS_DATABASE}/$(get_client_id)"/"${action_id}/data
-
     if [[ -f "${datafile}" ]]; then
         jq --compact-output '{src: .visited[-1].svc , id: .message_id, msg: .payload.message, tstamp: .visited[-1].tstamp}' "${datafile}" | while read line; do _as_status_line $line; done;
     else
@@ -608,24 +609,31 @@ _read_remote_submission_status() {
     local action_id=${1:-$(use_last_action_id)}
     ((DEBUG)) && echo "_read_remote_submission_status for action: ${action_id}" 1>&2
     current_action_id=$action_id
-
     local path=$(get_client_id)"/"${action_id}
     local current_service_endpoint=$(_get_current_service_endpoint)
     local cmd
-
     ((VERBOSE)) && echo "database = ${ANUBIS_DATABASE}"
-
     local since_tstamp=$(get_latest_event_timestamp "${action_id}")
-
     cmd="curl -s -D >(service_version_check) -X GET -G -H Content-Type: application/json --data-urlencode since="${since_tstamp}" http://"${current_service_endpoint}"/api/job/"${path}
     ((VERBOSE)) && echo ${cmd}
     local response=$(eval ${cmd})
-
     if [[ -n "${response}" ]]; then
         [[ ! -d "${ANUBIS_DATABASE}/${path}" ]] && mkdir -p "${ANUBIS_DATABASE}/${path}"
         echo "${response}" | jq '.[]' | tee $( [[ ${since_tstamp} != "0" ]] && echo -n "-a") ${ANUBIS_DATABASE}/${path}/data 2> /dev/null | jq --compact-output '{src: .visited[-1].svc , id: .message_id, msg: .payload.message, tstamp: .visited[-1].tstamp} +{"new" : "1"}' | while read line; do _as_status_line $line; done;
     fi
+
+    if ((TERMINATE)) && [[ -n "${response}" ]] ; then
+      local msg=$(echo "${response}" | jq '.[]' | jq --compact-output '{msg: .payload.message}')
+      if [[ "${msg}" == *"Benchmark failed"* ]]; then
+        exit 1
+      elif [[ "${msg}" == *"Benchmark finished"* ]]; then
+        exit 0
+      fi
+
+    fi
 }
+
+
 
 _looks_like_an_action_id() {
     local action_id="${1}"
@@ -674,6 +682,7 @@ get_submission_status() {
             printf "\033[01;32m.\033[0m"
             _read_remote_submission_status "${action_id}"
             sleep "${WATCH_PERIOD}"
+
         done
     else
         curl -s "$(_construct_endpoint_URL)"/ready >& /dev/null
@@ -690,7 +699,6 @@ _print_status() {
     local src=${2:-"anubis-client"}
     local id=${3:-"00000000"}
     local new=${4:-0}
-
     printf "%b|\033[0$( ((new)) && printf "1" || printf "0");33m%s\033[0m|%s\n" "${emoji[${src}]}" "${id:0:8}" "${msg}" >&2
 }
 
@@ -703,7 +711,6 @@ _as_status_line() {
     local new=$(jq --compact-output '.new' <<<"$line")
 
     _print_status "$(sed 's/^.\(.*\).$/\1/' <<<"$msg")" "$(sed 's/^.\(.*\).$/\1/' <<<"$src")" "$(sed 's/^.\(.*\).$/\1/' <<<"$id")" "$(sed 's/^.\(.*\).$/\1/' <<<"$new")"
-
     local tstamp=$(jq --compact-output '.tstamp' <<<"$line")
     [[ ! -d "${ANUBIS_DATABASE}/$(get_client_id)/${current_action_id}" ]] && mkdir -p "${ANUBIS_DATABASE}/$(get_client_id)/${current_action_id}"
     echo "$tstamp:$id" > "${ANUBIS_DATABASE}/$(get_client_id)/${current_action_id}/${TSTAMP_FILENAME}"
@@ -858,6 +865,10 @@ main() {
                 WATCH=1
                 printf " %b\n" "${emoji[watcher]}"
                 ;;
+            --terminate)
+                TERMINATE=1
+                echo "Terminiation Mode Set..." 1>&2
+                ;;
         esac
         ((idx++))
     done
@@ -986,7 +997,7 @@ main() {
                     exit $?
                     ;;
                 *)
-                    if [[ "${current_arg}" =~ ^(--debug|--force|--verbose|--tail|--sync-data|--watch)$ ]] ;then
+                    if [[ "${current_arg}" =~ ^(--debug|--force|--verbose|--tail|--sync-data|--watch|--terminate)$ ]] ;then
                         ((idx++))
                         until [[ -n "$(echo "${input_args[$((idx))]}" | sed -rn '/^\s*--/p')" || -z "${input_args[$((idx))]}" ]]; do
                             ((DEBUG)) && echo "  skipping arg ${input_args[$((idx))]}" 1>&2
@@ -995,7 +1006,7 @@ main() {
                         ((DEBUG)) && echo "skipped args: ${skipped[@]}" 1>&2
                         ((idx--))
                     fi
-                    [[ ! "${current_arg}" =~ ^(--debug|--force|--verbose|--tail|--sync-data|--watch)$ ]] && \
+                    [[ ! "${current_arg}" =~ ^(--debug|--force|--verbose|--tail|--sync-data|--watch|--terminate)$ ]] && \
                         printf "\033[01;31m => Unknown flag\033[0m [%s]\n" "${current_arg}"
                     ;;
             esac
