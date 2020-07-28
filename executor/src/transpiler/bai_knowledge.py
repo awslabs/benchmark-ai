@@ -392,7 +392,9 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
 
         return s3_bucket, s3_object
 
-    def _update_data_puller(self, data_volumes: Dict[str, PullerDataSource], data_sources: List[DownloadableContent], **kwargs):
+    def _update_data_puller(
+        self, data_volumes: Dict[str, PullerDataSource], data_sources: List[DownloadableContent], **kwargs
+    ):
         """
         Completes the data puller by adding the required arguments and volume mounts.
         If no data sources are found, the data puller is deleted.
@@ -460,7 +462,17 @@ class HorovodJobKubernetesObjectBuilder(SingleRunBenchmarkKubernetesObjectBuilde
         environment_info: EnvironmentInfo,
         random_object: random.Random = None,
     ):
-        super().__init__(descriptor, config, data_sources, scripts, job_id, template_name=template_name, event=event, environment_info=environment_info, random_object=random_object)
+        super().__init__(
+            descriptor,
+            config,
+            data_sources,
+            scripts,
+            job_id,
+            template_name=template_name,
+            event=event,
+            environment_info=environment_info,
+            random_object=random_object,
+        )
 
     def _feed_additional_template_values(self):
         super()._feed_additional_template_values()
@@ -474,23 +486,29 @@ class HorovodJobKubernetesObjectBuilder(SingleRunBenchmarkKubernetesObjectBuilde
             self.add_scripts(self.scripts, mpiReplica=replica_type)
             self.add_shared_memory(mpiReplica=replica_type)
             self.add_env_vars(mpiReplica=replica_type)
-            
+
             if not self.descriptor.output:
                 self.remove_metrics_sidecars(mpiReplica=replica_type)
             else:
                 # Add custom labels metrics pusher
                 for label, value in self.descriptor.info.labels.items():
-                    self.add_metrics_pusher_env_var(label, value, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX, mpiReplica=replica_type)
+                    self.add_metrics_pusher_env_var(
+                        label, value, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX, mpiReplica=replica_type
+                    )
 
             if self.event.parent_action_id:
                 self.root.add_label("parent-action-id", self.event.parent_action_id)
                 self.add_metrics_pusher_env_var(
-                    "parent-action-id", self.event.parent_action_id, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX, mpiReplica=replica_type
+                    "parent-action-id",
+                    self.event.parent_action_id,
+                    prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX,
+                    mpiReplica=replica_type,
                 )
-            
+
             if self.config.suppress_job_affinity:
                 self.root.remove_affinity(mpiReplica=replica_type)
-    
+
+
 class InferenceServerJobKubernetedObjectBuilder(SingleRunBenchmarkKubernetesObjectBuilder):
     def __init__(
         self,
@@ -623,7 +641,7 @@ def create_single_run_benchmark_bai_k8s_builder(
             event=event,
             environment_info=environment_info,
             **extra_bai_config_args,
-    )
+        )
     else:
         bai_k8s_builder = SingleRunBenchmarkKubernetesObjectBuilder(
             descriptor,
