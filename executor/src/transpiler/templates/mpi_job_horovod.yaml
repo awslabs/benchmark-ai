@@ -12,11 +12,7 @@ data:
   entrypoint.sh: echo "Entrypoint"
   puller_entrypoint.sh: |-
     #!/bin/bash
-    if [ "$ROLE" == "worker" ]; then
-      /opt/puller/download-s3-files "$@"
-    else
-      echo "Not a worker - no data necessary"
-    fi
+    /opt/puller/download-s3-files "$@"
 ---
 
 kind: RoleBinding
@@ -51,7 +47,7 @@ metadata:
     created-by: {service_name}
 spec:
   cleanPodPolicy: Running
-  slotsPerWorker: {descriptor.hardware.distributed.processes_per_instance}
+  slotsPerWorker: {descriptor.hardware.gpus_per_instance}
   mpiReplicaSpecs:
     Launcher:
       replicas: 1
@@ -77,42 +73,6 @@ spec:
                     - benchmark-ai
                 topologyKey: kubernetes.io/hostname
           initContainers:
-          - name: data-puller
-            image: {config.puller_docker_image}
-            command: 
-            - /bin/puller_entrypoint.sh
-            volumeMounts:
-            - name: entrypoints-volume
-              mountPath: /bin/puller_entrypoint.sh
-              readOnly: true
-              subPath: puller_entrypoint.sh
-            - name: datasets-volume
-              mountPath: /data
-            env:
-            - name: ROLE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.labels['mpi_role_type']
-            - name: S3_ENDPOINT
-              valueFrom:
-                configMapKeyRef:
-                  name: outputs-infrastructure
-                  key: s3_endpoint
-            # This environment variables are optional.
-            # They reference a config map missing in DEVO/PROD.
-            # Enable the integration tests
-            - name: AWS_ACCESS_KEY_ID
-              valueFrom:
-                configMapKeyRef:
-                  name: s3
-                  key: access-key-id
-                  optional: true
-            - name: AWS_SECRET_ACCESS_KEY
-              valueFrom:
-                configMapKeyRef:
-                  name: s3
-                  key: secret-access-key
-                  optional: true
           - name: script-puller
             image: {config.puller_docker_image}
             command:
@@ -248,8 +208,6 @@ spec:
               name: entrypoint-{job_id}
           - name: benchmark-ai
             emptyDir: {{}}
-          - name: datasets-volume
-            emptyDir: {{}}
           - name: scripts-volume
             emptyDir: {{}}
           nodeSelector:
@@ -280,6 +238,42 @@ spec:
                     - benchmark-ai
                 topologyKey: kubernetes.io/hostname
           initContainers:
+          - name: data-puller
+            image: {config.puller_docker_image}
+            command: 
+            - /bin/puller_entrypoint.sh
+            volumeMounts:
+            - name: entrypoints-volume
+              mountPath: /bin/puller_entrypoint.sh
+              readOnly: true
+              subPath: puller_entrypoint.sh
+            - name: datasets-volume
+              mountPath: /data
+            env:
+            - name: ROLE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['mpi_role_type']
+            - name: S3_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: outputs-infrastructure
+                  key: s3_endpoint
+            # This environment variables are optional.
+            # They reference a config map missing in DEVO/PROD.
+            # Enable the integration tests
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: s3
+                  key: access-key-id
+                  optional: true
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: s3
+                  key: secret-access-key
+                  optional: true
           - name: script-puller
             image: {config.puller_docker_image}
             command:
@@ -417,6 +411,8 @@ spec:
           - name: benchmark-ai
             emptyDir: {{}}
           - name: scripts-volume
+            emptyDir: {{}}
+          - name: datasets-volume
             emptyDir: {{}}
           nodeSelector:
             beta.kubernetes.io/instance-type: {descriptor.hardware.instance_type}

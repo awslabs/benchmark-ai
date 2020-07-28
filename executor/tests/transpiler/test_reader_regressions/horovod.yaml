@@ -34,11 +34,7 @@ data:
     ./deep-learning-models/models/resnet/tensorflow/train.sh 3
   puller_entrypoint.sh: |-
     #!/bin/bash
-    if [ "$ROLE" == "worker" ]; then
-      /opt/puller/download-s3-files "$@"
-    else
-      echo "Not a worker - no data necessary"
-    fi
+    /opt/puller/download-s3-files "$@"
 ---
 apiVersion: kubeflow.org/v1alpha2
 kind: MPIJob
@@ -51,10 +47,69 @@ metadata:
     created-by: executor
 spec:
   cleanPodPolicy: Running
-  slotsPerWorker: 1
+  slotsPerWorker: 4
   mpiReplicaSpecs:
     Launcher:
       replicas: 1
+      template:
+        metadata:
+          annotations:
+            iam.amazonaws.com/role: benchmark-host
+          labels:
+            app: benchmark-ai
+            action-id: ACTION_ID
+            client-id: CLIENT_ID
+            created-by: executor
+        spec:
+          serviceAccountName: benchmark
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                    - benchmark-ai
+                topologyKey: kubernetes.io/hostname
+          initContainers: []
+          containers:
+          - image: user/repo:tag
+            name: benchmark
+            command:
+            - /bin/entrypoint.sh
+            volumeMounts:
+            - name: entrypoints-volume
+              mountPath: /bin/entrypoint.sh
+              readOnly: true
+              subPath: entrypoint.sh
+            - name: benchmark-ai
+              mountPath: /tmp/benchmark-ai
+            - name: dshm
+              mountPath: /dev/shm
+            env:
+            - name: BENCHMARK_AI
+              value: fifo
+            - name: BENCHMARK_AI_FIFO_FILEPATH
+              value: /tmp/benchmark-ai/fifo
+            - name: BENCHMARK_AI_FIFO_MAX_WAIT_TIME
+              value: '60'
+          volumes:
+          - name: entrypoints-volume
+            configMap:
+              defaultMode: 0700
+              name: entrypoint-benchmark-job-id
+          - name: benchmark-ai
+            emptyDir: {}
+          - name: dshm
+            emptyDir:
+              medium: Memory
+          nodeSelector:
+            beta.kubernetes.io/instance-type: p3.8xlarge
+            node.type: bai-worker
+            failure-domain.beta.kubernetes.io/zone: us-east-1a
+    Worker:
+      replicas: 2
       template:
         metadata:
           annotations:
@@ -113,72 +168,6 @@ spec:
             args:
             - puller-data
             - object-name/dir0,777,p0:object-name/dir1,777,p1
-          containers:
-          - image: user/repo:tag
-            name: benchmark
-            command:
-            - /bin/entrypoint.sh
-            volumeMounts:
-            - name: entrypoints-volume
-              mountPath: /bin/entrypoint.sh
-              readOnly: true
-              subPath: entrypoint.sh
-            - name: benchmark-ai
-              mountPath: /tmp/benchmark-ai
-            - name: datasets-volume
-              mountPath: ~/data/tf-imagenet/train
-              subPath: p0
-            - name: datasets-volume
-              mountPath: ~/data/tf-imagenet/validation
-              subPath: p1
-            - name: dshm
-              mountPath: /dev/shm
-            env:
-            - name: BENCHMARK_AI
-              value: fifo
-            - name: BENCHMARK_AI_FIFO_FILEPATH
-              value: /tmp/benchmark-ai/fifo
-            - name: BENCHMARK_AI_FIFO_MAX_WAIT_TIME
-              value: '60'
-          volumes:
-          - name: entrypoints-volume
-            configMap:
-              defaultMode: 0700
-              name: entrypoint-benchmark-job-id
-          - name: benchmark-ai
-            emptyDir: {}
-          - name: datasets-volume
-            emptyDir: {}
-          - name: dshm
-            emptyDir:
-              medium: Memory
-          nodeSelector:
-            beta.kubernetes.io/instance-type: p3.8xlarge
-            node.type: bai-worker
-            failure-domain.beta.kubernetes.io/zone: us-east-1a
-    Worker:
-      replicas: 2
-      template:
-        metadata:
-          annotations:
-            iam.amazonaws.com/role: benchmark-host
-          labels:
-            app: benchmark-ai
-            action-id: ACTION_ID
-            client-id: CLIENT_ID
-            created-by: executor
-        spec:
-          serviceAccountName: benchmark
-          affinity:
-            podAntiAffinity:
-              requiredDuringSchedulingIgnoredDuringExecution:
-              - labelSelector:
-                  matchExpressions:
-                  - key: app
-                    operator: In
-                    values:
-                    - benchmark-ai
-                topologyKey: kubernetes.io/hostname
           containers:
           - image: user/repo:tag
             name: benchmark
