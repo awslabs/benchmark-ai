@@ -97,7 +97,7 @@ class KubernetesRootObjectHelper:
         else:
             self._validate()
             self.create_empty_fields()
-        
+
     def create_empty_fields(self, **kwargs):
 
         # Create empty fields if required
@@ -117,14 +117,14 @@ class KubernetesRootObjectHelper:
         if not self.get_pod_spec().containers:
             raise ValueError("A Pod must have at least 1 container on its definition")
 
-    def get_pod_spec(self,**kwargs)-> PodSpec:
-        if 'mpiReplica' in kwargs:
-            mpiReplica = kwargs['mpiReplica']
+    def get_pod_spec(self, **kwargs) -> PodSpec:
+        if "mpiReplica" in kwargs:
+            mpiReplica = kwargs["mpiReplica"]
             if self._root.spec.mpiReplicaSpecs[mpiReplica].template.spec:
                 return self._root.spec.mpiReplicaSpecs[mpiReplica].template.spec
             else:
                 raise KeyError(f"Cannot find pod spec. root object is {self._root}")
-        else: 
+        else:
             if self._root.spec.template:
                 return self._root.spec.template.spec
             elif self._root.spec.jobTemplate:
@@ -133,7 +133,7 @@ class KubernetesRootObjectHelper:
                 return self._root.spec.jobTemplate.spec
             else:
                 raise KeyError(f"Cannot find pod spec. root object is {self._root}")
-        
+
     def _validate_mpi_spec(self):
         if not self._root.spec:
             raise ValueError("Spec of root object not found at yaml definition of the Kubernetes object")
@@ -141,7 +141,6 @@ class KubernetesRootObjectHelper:
             raise ValueError("MXJOB must have mpiReplicaSpecs")
         if not self._root.spec.mpiReplicaSpecs.Launcher:
             raise ValueError("MXJOB must have launcher")
-        
 
     def find_container(self, container_name: str, **kwargs) -> Container:
         """
