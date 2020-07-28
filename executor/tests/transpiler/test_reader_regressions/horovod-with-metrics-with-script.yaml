@@ -36,11 +36,7 @@ data:
     ./deep-learning-models/models/resnet/tensorflow/train.sh 3
   puller_entrypoint.sh: |-
     #!/bin/bash
-    if [ "$ROLE" == "worker" ]; then
-      /opt/puller/download-s3-files "$@"
-    else
-      echo "Not a worker - no data necessary"
-    fi
+    /opt/puller/download-s3-files "$@"
 ---
 apiVersion: kubeflow.org/v1alpha2
 kind: MPIJob
@@ -54,7 +50,7 @@ metadata:
     task_name: example_horovod_benchmark
 spec:
   cleanPodPolicy: Running
-  slotsPerWorker: 1
+  slotsPerWorker: 4
   mpiReplicaSpecs:
     Launcher:
       replicas: 1
@@ -81,42 +77,6 @@ spec:
                     - benchmark-ai
                 topologyKey: kubernetes.io/hostname
           initContainers:
-          - name: data-puller
-            image: benchmarkai/puller:3115770
-            command:
-            - /bin/puller_entrypoint.sh
-            volumeMounts:
-            - name: entrypoints-volume
-              mountPath: /bin/puller_entrypoint.sh
-              readOnly: true
-              subPath: puller_entrypoint.sh
-            - name: datasets-volume
-              mountPath: /data
-            env:
-            - name: ROLE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.labels['mpi_role_type']
-            - name: S3_ENDPOINT
-              valueFrom:
-                configMapKeyRef:
-                  name: outputs-infrastructure
-                  key: s3_endpoint
-            - name: AWS_ACCESS_KEY_ID
-              valueFrom:
-                configMapKeyRef:
-                  name: s3
-                  key: access-key-id
-                  optional: true
-            - name: AWS_SECRET_ACCESS_KEY
-              valueFrom:
-                configMapKeyRef:
-                  name: s3
-                  key: secret-access-key
-                  optional: true
-            args:
-            - puller-data
-            - object-name/dir0,777,p0:object-name/dir1,777,p1
           - name: script-puller
             image: benchmarkai/puller:3115770
             command:
@@ -167,12 +127,6 @@ spec:
               mountPath: /tmp/benchmark-ai
             - mountPath: /bai/scipts
               name: scripts-volume
-            - name: datasets-volume
-              mountPath: ~/data/tf-imagenet/train
-              subPath: p0
-            - name: datasets-volume
-              mountPath: ~/data/tf-imagenet/validation
-              subPath: p1
             - name: dshm
               mountPath: /dev/shm
             env:
@@ -244,8 +198,6 @@ spec:
               name: entrypoint-benchmark-job-id
           - name: benchmark-ai
             emptyDir: {}
-          - name: datasets-volume
-            emptyDir: {}
           - name: scripts-volume
             emptyDir: {}
           - name: dshm
@@ -280,6 +232,42 @@ spec:
                     - benchmark-ai
                 topologyKey: kubernetes.io/hostname
           initContainers:
+          - name: data-puller
+            image: benchmarkai/puller:3115770
+            command:
+            - /bin/puller_entrypoint.sh
+            volumeMounts:
+            - name: entrypoints-volume
+              mountPath: /bin/puller_entrypoint.sh
+              readOnly: true
+              subPath: puller_entrypoint.sh
+            - name: datasets-volume
+              mountPath: /data
+            env:
+            - name: ROLE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['mpi_role_type']
+            - name: S3_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: outputs-infrastructure
+                  key: s3_endpoint
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: s3
+                  key: access-key-id
+                  optional: true
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: s3
+                  key: secret-access-key
+                  optional: true
+            args:
+            - puller-data
+            - object-name/dir0,777,p0:object-name/dir1,777,p1
           - name: script-puller
             image: benchmarkai/puller:3115770
             command:
@@ -408,9 +396,9 @@ spec:
               name: entrypoint-benchmark-job-id
           - name: benchmark-ai
             emptyDir: {}
-          - name: datasets-volume
-            emptyDir: {}
           - name: scripts-volume
+            emptyDir: {}
+          - name: datasets-volume
             emptyDir: {}
           - name: dshm
             emptyDir:
