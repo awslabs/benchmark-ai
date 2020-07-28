@@ -449,6 +449,10 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
 
 
 class HorovodJobKubernetesObjectBuilder(SingleRunBenchmarkKubernetesObjectBuilder):
+    """
+    Adds the logic into the Kubernetes root object that represents launching a benchmark for MPIJob
+    """
+
     def __init__(
         self,
         descriptor: BenchmarkDescriptor,
@@ -478,22 +482,22 @@ class HorovodJobKubernetesObjectBuilder(SingleRunBenchmarkKubernetesObjectBuilde
         super()._feed_additional_template_values()
 
     def _update_root_k8s_object(self):
-        self.add_data_volume_mounts(self.data_sources, BENCHMARK_CONTAINER, mpiReplica=MPI_JOB_WORKER)
-        self.add_benchmark_cmd(mpiReplica=MPI_JOB_LAUNCHER)
+        self.add_data_volume_mounts(self.data_sources, BENCHMARK_CONTAINER, mpiReplicaType=MPI_JOB_WORKER)
+        self.add_benchmark_cmd(mpiReplicaType=MPI_JOB_LAUNCHER)
 
         for replica_type in [MPI_JOB_LAUNCHER, MPI_JOB_WORKER]:
-            self.root.set_service_account(BENCHMARK_SERVICE_ACCOUNT, mpiReplica=replica_type)
-            self.add_scripts(self.scripts, mpiReplica=replica_type)
-            self.add_shared_memory(mpiReplica=replica_type)
-            self.add_env_vars(mpiReplica=replica_type)
+            self.root.set_service_account(BENCHMARK_SERVICE_ACCOUNT, mpiReplicaType=replica_type)
+            self.add_scripts(self.scripts, mpiReplicaType=replica_type)
+            self.add_shared_memory(mpiReplicaType=replica_type)
+            self.add_env_vars(mpiReplicaType=replica_type)
 
             if not self.descriptor.output:
-                self.remove_metrics_sidecars(mpiReplica=replica_type)
+                self.remove_metrics_sidecars(mpiReplicaType=replica_type)
             else:
                 # Add custom labels metrics pusher
                 for label, value in self.descriptor.info.labels.items():
                     self.add_metrics_pusher_env_var(
-                        label, value, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX, mpiReplica=replica_type
+                        label, value, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX, mpiReplicaType=replica_type
                     )
 
             if self.event.parent_action_id:
@@ -502,11 +506,11 @@ class HorovodJobKubernetesObjectBuilder(SingleRunBenchmarkKubernetesObjectBuilde
                     "parent-action-id",
                     self.event.parent_action_id,
                     prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX,
-                    mpiReplica=replica_type,
+                    mpiReplicaType=replica_type,
                 )
 
             if self.config.suppress_job_affinity:
-                self.root.remove_affinity(mpiReplica=replica_type)
+                self.root.remove_affinity(mpiReplicaType=replica_type)
 
 
 class InferenceServerJobKubernetedObjectBuilder(SingleRunBenchmarkKubernetesObjectBuilder):

@@ -93,7 +93,7 @@ class KubernetesRootObjectHelper:
         if kind == "MPIJob":
             self._validate_mpi_spec()
             for replica_type in [MPI_JOB_LAUNCHER, MPI_JOB_WORKER]:
-                self.create_empty_fields(mpiReplica=replica_type)
+                self.create_empty_fields(mpiReplicaType=replica_type)
         else:
             self._validate()
             self.create_empty_fields()
@@ -118,10 +118,10 @@ class KubernetesRootObjectHelper:
             raise ValueError("A Pod must have at least 1 container on its definition")
 
     def get_pod_spec(self, **kwargs) -> PodSpec:
-        if "mpiReplica" in kwargs:
-            mpiReplica = kwargs["mpiReplica"]
-            if self._root.spec.mpiReplicaSpecs[mpiReplica].template.spec:
-                return self._root.spec.mpiReplicaSpecs[mpiReplica].template.spec
+        if "mpiReplicaType" in kwargs:
+            mpiReplicaType = kwargs["mpiReplicaType"]
+            if self._root.spec.mpiReplicaSpecs[mpiReplicaType].template.spec:
+                return self._root.spec.mpiReplicaSpecs[mpiReplicaType].template.spec
             else:
                 raise KeyError(f"Cannot find pod spec. root object is {self._root}")
         else:
@@ -138,9 +138,19 @@ class KubernetesRootObjectHelper:
         if not self._root.spec:
             raise ValueError("Spec of root object not found at yaml definition of the Kubernetes object")
         if not self._root.spec.mpiReplicaSpecs:
-            raise ValueError("MXJOB must have mpiReplicaSpecs")
+            raise ValueError("MPIJob must have mpiReplicaSpecs")
         if not self._root.spec.mpiReplicaSpecs.Launcher:
-            raise ValueError("MXJOB must have launcher")
+            raise ValueError("The replica specs of MPIJob must have Launcher")
+        if not self.get_pod_spec(mpiReplicaType="Launcher"):
+            raise ValueError("Pod not found at yaml definition of the Launcher Kubernetes object")
+        if not self.get_pod_spec(mpiReplicaType="Launcher").containers:
+            raise ValueError("A Pod must have at least 1 container on its Launcher replica definition")
+        if not self._root.spec.mpiReplicaSpecs.Worker:
+            raise ValueError("The replica specs of MPIJob must have Worker")
+        if not self.get_pod_spec(mpiReplicaType="Worker"):
+            raise ValueError("Pod not found at yaml definition of the Worker Kubernetes object")
+        if not self.get_pod_spec(mpiReplicaType="Worker").containers:
+            raise ValueError("A Pod must have at least 1 container on its Worker replica definition")
 
     def find_container(self, container_name: str, **kwargs) -> Container:
         """
