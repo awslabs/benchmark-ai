@@ -7,7 +7,6 @@ from bai_kafka_utils.events import ExecutorBenchmarkEvent, Status
 from bai_kafka_utils.kafka_client import create_kafka_consumer_producer
 from bai_kafka_utils.kafka_service import KafkaServiceCallback, KafkaService, KafkaServiceConfig
 from bai_kafka_utils.utils import get_pod_name
-from bai_kafka_utils.executors.descriptor import BenchmarkDescriptor, DistributedStrategy
 
 from bai_watcher import SERVICE_NAME, __version__, service_logger
 from bai_watcher.args import WatcherServiceConfig
@@ -127,14 +126,6 @@ class WatchJobsEventHandler(KafkaServiceCallback):
         if job_id in self.watchers:
             # This shouldn't happen, so it is here more as a protection mechanism
             logger.warning("There is already a watcher for job '%s'", job_id)
-            return
-
-        descriptor = BenchmarkDescriptor.from_dict(event.payload.toml.contents)
-        if descriptor.hardware.strategy not in [DistributedStrategy.SINGLE_NODE, DistributedStrategy.INFERENCE]:
-            logger.info(f"Unsupported strategy {descriptor.hardware.strategy}")
-            kafka_service.send_status_message_event(
-                event, Status.PENDING, f"'{descriptor.hardware.strategy.value}' strategy is not currently supported."
-            )
             return
 
         logger.info("Starting to watch the job '%s'", job_id)
