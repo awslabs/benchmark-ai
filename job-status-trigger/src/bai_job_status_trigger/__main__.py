@@ -88,7 +88,7 @@ def main():
     if success:
         logger.info(check_output(["bash", "-c", config.command]))
     else:
-        logger.exception("Job status watcher failed", err)
+        logger.exception("Job status watcher failed %s", err)
         sys.exit(1)
 
 
