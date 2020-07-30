@@ -88,9 +88,7 @@ def main():
     if success:
         logger.info(check_output(["bash", "-c", config.command]))
     else:
-        # commenting out the below as it results in test failure:
-        # TypeError: not all arguments converted during string formatting
-        # logger.exception("Job status watcher failed", err)
+        logger.exception("Job status watcher failed %s", err)
         sys.exit(1)
 
 
