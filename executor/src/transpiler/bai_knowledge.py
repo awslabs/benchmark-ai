@@ -145,7 +145,7 @@ class ScheduledBenchmarkKubernetedObjectBuilder(BaiKubernetesObjectBuilder):
         pass
 
 
-class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
+class BenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
     """
     Adds the logic required from BAI into the Kubernetes root object that represents
     launching a benchmark.
@@ -186,39 +186,7 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         self.config_template.feed({"metrics": self.get_metrics_from_descriptor(self.descriptor)})
 
     def _update_root_k8s_object(self):
-        self.root.set_service_account(BENCHMARK_SERVICE_ACCOUNT)
-        self.add_data_volume_mounts(self.data_sources, BENCHMARK_CONTAINER)
-        self.add_scripts(self.scripts)
-        self.add_shared_memory()
-        self.add_env_vars()
-        self.add_benchmark_cmd()
-
-        if not self.descriptor.output:
-            self.remove_metrics_sidecars()
-        else:
-            # Add custom labels metrics pusher
-            for label, value in self.descriptor.info.labels.items():
-                self.add_metrics_pusher_env_var(label, value, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX)
-
-        if self.event.parent_action_id:
-            self.root.add_label("parent-action-id", self.event.parent_action_id)
-            self.add_metrics_pusher_env_var(
-                "parent-action-id", self.event.parent_action_id, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX
-            )
-
-        if self.config.suppress_job_affinity:
-            self.root.remove_affinity()
-
-        if self.descriptor.is_inference_strategy():
-            # Use inference server service account
-            self.root.set_service_account(INFERENCE_SERVER_SERVICE_ACCOUNT)
-            # add server environment variables
-            self.add_server_env_vars()
-
-        # remove server lock init container from non-inference strategy
-        # single node benchmarks
-        elif self.descriptor.hardware.strategy == DistributedStrategy.SINGLE_NODE:
-            self.root.remove_container(INFERENCE_SERVER_LOCK_CONTAINER)
+        pass
 
     @staticmethod
     def choose_availability_zone(
@@ -448,7 +416,76 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         self.internal_env_vars["BAI_SCRIPTS_PATH"] = SCRIPTS_MOUNT_PATH
 
 
-class HorovodJobKubernetesObjectBuilder(SingleRunBenchmarkKubernetesObjectBuilder):
+class SingleRunBenchmarkKubernetesObjectBuilder(BenchmarkKubernetesObjectBuilder):
+    """
+    Adds the logic into the Kubernetes root object that represents launching a benchmark for single node job
+    """
+
+    def __init__(
+        self,
+        descriptor: BenchmarkDescriptor,
+        config: BaiConfig,
+        data_sources: List[DownloadableContent],
+        scripts: List[BaiScriptSource],
+        job_id: str,
+        *,
+        template_name: str,
+        event: BenchmarkEvent,
+        environment_info: EnvironmentInfo,
+        random_object: random.Random = None,
+    ):
+        super().__init__(
+            descriptor,
+            config,
+            data_sources,
+            scripts,
+            job_id,
+            template_name=template_name,
+            event=event,
+            environment_info=environment_info,
+            random_object=random_object,
+        )
+
+    def _feed_additional_template_values(self):
+        super()._feed_additional_template_values()
+
+    def _update_root_k8s_object(self):
+        self.root.set_service_account(BENCHMARK_SERVICE_ACCOUNT)
+        self.add_data_volume_mounts(self.data_sources, BENCHMARK_CONTAINER)
+        self.add_scripts(self.scripts)
+        self.add_shared_memory()
+        self.add_env_vars()
+        self.add_benchmark_cmd()
+
+        if not self.descriptor.output:
+            self.remove_metrics_sidecars()
+        else:
+            # Add custom labels metrics pusher
+            for label, value in self.descriptor.info.labels.items():
+                self.add_metrics_pusher_env_var(label, value, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX)
+
+        if self.event.parent_action_id:
+            self.root.add_label("parent-action-id", self.event.parent_action_id)
+            self.add_metrics_pusher_env_var(
+                "parent-action-id", self.event.parent_action_id, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX
+            )
+
+        if self.config.suppress_job_affinity:
+            self.root.remove_affinity()
+
+        if self.descriptor.is_inference_strategy():
+            # Use inference server service account
+            self.root.set_service_account(INFERENCE_SERVER_SERVICE_ACCOUNT)
+            # add server environment variables
+            self.add_server_env_vars()
+
+        # remove server lock init container from non-inference strategy
+        # single node benchmarks
+        elif self.descriptor.hardware.strategy == DistributedStrategy.SINGLE_NODE:
+            self.root.remove_container(INFERENCE_SERVER_LOCK_CONTAINER)
+
+
+class HorovodJobKubernetesObjectBuilder(BenchmarkKubernetesObjectBuilder):
     """
     Adds the logic into the Kubernetes root object that represents launching a benchmark for MPIJob
     """
@@ -513,7 +550,7 @@ class HorovodJobKubernetesObjectBuilder(SingleRunBenchmarkKubernetesObjectBuilde
                 self.root.remove_affinity(mpiReplicaType=replica_type)
 
 
-class InferenceServerJobKubernetedObjectBuilder(SingleRunBenchmarkKubernetesObjectBuilder):
+class InferenceServerJobKubernetedObjectBuilder(BenchmarkKubernetesObjectBuilder):
     def __init__(
         self,
         descriptor: BenchmarkDescriptor,
