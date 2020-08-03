@@ -63,6 +63,8 @@ rules:
   verbs: ["list", "delete"]
 ---
 # Role for observing pod status and logs
+# This permissions are required in order to grant pod-status role
+# to the service account created for the MPI (Horovod) benchmark
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
