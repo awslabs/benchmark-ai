@@ -145,7 +145,7 @@
         "sagemaker_enable_cloudwatch_metrics": { "type": "boolean" },
         "sagemaker_job_name": { "type": "string" },
         "sagemaker_program": { "type": "string" },
-        "sagemaker_region": { "type":  "string " },
+        "sagemaker_region": { "type":  "string" },
         "sagemaker_submit_directory": { "type":  "string" }
       },
       "additionalProperties": false
