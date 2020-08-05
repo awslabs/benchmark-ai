@@ -137,7 +137,7 @@
       "additionalProperties": false,
       "required": ["instance_type"]
     },
-     "benchmark_hyperparams": {
+     "benchmark_hyper_params": {
       "type": "object",
       "properties": {
         "model_dir": { "type":  "string" },
@@ -196,7 +196,8 @@
     "ml": { "$ref": "#/definitions/benchmark_ml" },
     "data": { "$ref": "#/definitions/benchmark_data" },
     "output": { "$ref": "#/definitions/output" },
-    "server": { "$ref": "#/definitions/server" }
+    "server": { "$ref": "#/definitions/server" },
+    "hyper_params": { "$ref": "#/definitions/server" }
   },
   "additionalProperties": false,
   "required": ["spec_version", "info", "hardware", "env"]
