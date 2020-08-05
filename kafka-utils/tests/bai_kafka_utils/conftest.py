@@ -1,4 +1,7 @@
 from pytest import fixture
+import sys
+
+sys.path.append('/Users/ryanstea/benchmark-ai/kafka-utils/src')
 
 from bai_kafka_utils.events import BenchmarkEvent
 

@@ -79,6 +79,17 @@ class MLDescriptor:
 
 
 @dataclass
+class HyperParamsDescriptor:
+    model_dir: Optional[str] = None
+    sagemaker_container_log_level: Optional[int] = None
+    sagemaker_enable_cloudwatch_metrics: Optional[bool] = None
+    sagemaker_job_name: Optional[str] = None
+    sagemaker_program: Optional[str] = None
+    sagemaker_region: Optional[str] = None
+    sagemaker_submit_directory: Optional[str] = None
+
+
+@dataclass
 class HttpProbeDescriptor:
     path: str
     port: Optional[int] = None
@@ -197,7 +208,7 @@ class BenchmarkDescriptor:
     output: Optional[OutputDescriptor] = None
     ml: Optional[MLDescriptor] = None
     data: Optional[BenchmarkDataDescriptor] = None
-
+    hyper_params: Optional[HyperParamsDescriptor] = None
     # required under inference strategy
     server: Optional[ServerDescriptor] = None
 

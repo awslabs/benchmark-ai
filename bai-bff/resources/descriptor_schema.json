@@ -137,6 +137,19 @@
       "additionalProperties": false,
       "required": ["instance_type"]
     },
+     "benchmark_hyperparams": {
+      "type": "object",
+      "properties": {
+        "model_dir": { "type":  "string" },
+        "sagemaker_container_log_level": { "type": "number" },
+        "sagemaker_enable_cloudwatch_metrics": { "type": "boolean" },
+        "sagemaker_job_name": { "type": "string" },
+        "sagemaker_program": { "type": "string" },
+        "sagemaker_region": { "type":  "string " },
+        "sagemaker_submit_directory": { "type":  "string" }
+      },
+      "additionalProperties": false
+    },
     "benchmark_env": {
       "type": "object",
       "properties": {
