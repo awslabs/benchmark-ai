@@ -658,43 +658,39 @@ def create_single_run_benchmark_bai_k8s_builder(
     if extra_bai_config_args is None:
         extra_bai_config_args = {}
 
-    template_files = {
-        DistributedStrategy.SINGLE_NODE: "job_single_node.yaml",
-        DistributedStrategy.HOROVOD: "mpi_job_horovod.yaml",
-        # Benchmark job component of inference strategy
-        DistributedStrategy.INFERENCE: "job_single_node.yaml",
+    distributed_strategy_metadata = {
+        DistributedStrategy.SINGLE_NODE: {
+            "template_name": "job_single_node.yaml",
+            "strategy_type_class": SingleRunBenchmarkKubernetesObjectBuilder,
+        },
+        DistributedStrategy.INFERENCE: {
+            # Benchmark job component of inference strategy
+            "template_name": "job_single_node.yaml",
+            "strategy_type_class": SingleRunBenchmarkKubernetesObjectBuilder,
+        },
+        DistributedStrategy.HOROVOD: {
+            "template_name": "mpi_job_horovod.yaml",
+            "strategy_type_class": HorovodJobKubernetesObjectBuilder,
+        },
     }
 
-    template_name = template_files.get(descriptor.hardware.strategy)
+    template_name = distributed_strategy_metadata.get(descriptor.hardware.strategy)["template_name"]
     if not template_name:
         raise ValueError(f"Unsupported distributed strategy in descriptor file: '{descriptor.hardware.strategy}'")
 
     bai_scripts = create_scripts(scripts)
 
-    if descriptor.hardware.strategy == DistributedStrategy.HOROVOD:
-        bai_k8s_builder = HorovodJobKubernetesObjectBuilder(
-            descriptor,
-            bai_config,
-            fetched_data_sources,
-            bai_scripts,
-            job_id,
-            template_name=template_name,
-            event=event,
-            environment_info=environment_info,
-            **extra_bai_config_args,
-        )
-    else:
-        bai_k8s_builder = SingleRunBenchmarkKubernetesObjectBuilder(
-            descriptor,
-            bai_config,
-            fetched_data_sources,
-            bai_scripts,
-            job_id,
-            template_name=template_name,
-            event=event,
-            environment_info=environment_info,
-            **extra_bai_config_args,
-        )
+    bai_k8s_builder = distributed_strategy_metadata.get(descriptor.hardware.strategy)["strategy_type_class"](
+        descriptor,
+        bai_config,
+        fetched_data_sources,
+        bai_scripts,
+        job_id,
+        template_name=template_name,
+        event=event,
+        environment_info=environment_info,
+        **extra_bai_config_args,
+    )
 
     return bai_k8s_builder.build()
 
