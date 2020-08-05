@@ -1,6 +1,6 @@
-import json
-
 import pytest
+
+
 from bai_kafka_utils.executors.descriptor import BenchmarkDescriptor, DistributedStrategy
 from mock import PropertyMock
 from pytest import fixture
@@ -127,9 +127,9 @@ def test_estimator_factory_hyperparams_tensorflow(
     estimator = create_tensorflow_estimator(mock_session, hyperparams_descriptor, SOURCE_DIR, sagemaker_config)
     validate_estimator_hyperparams(estimator, mock_session, hyperparams_descriptor, sagemaker_config)
 
-def test_estimator_factory_mxnet(
+
+def test_estimator_factory_mxnet_hyperparams(
     mock_session: Session, hyperparams_descriptor: BenchmarkDescriptor, sagemaker_config: SageMakerExecutorConfig
 ):
     estimator = create_mxnet_estimator(mock_session, hyperparams_descriptor, SOURCE_DIR, sagemaker_config)
     validate_estimator_hyperparams(estimator, mock_session, hyperparams_descriptor, sagemaker_config)
-
