@@ -314,7 +314,7 @@ _install_kubeflow_operators() {
     mkdir $data_dir/kubeflow-operators
     cd $data_dir/kubeflow-operators
 
-    wget -O mpi-operator.yaml https://raw.githubusercontent.com/kubeflow/mpi-operator/master/deploy/v1alpha2/mpi-operator.yaml || { echo "[ERROR] Error downloading mpi-operator.yaml" ;  exit 1; }
+    wget -O mpi-operator.yaml https://raw.githubusercontent.com/kubeflow/mpi-operator/v0.2.3/deploy/v1alpha2/mpi-operator.yaml || { echo "[ERROR] Error downloading mpi-operator.yaml" ;  exit 1; }
     kubectl apply -f mpi-operator.yaml || exit 1
 
     git clone https://github.com/kubeflow/mxnet-operator.git temp || { echo "[ERROR] Error clonning the mxnet-operator repository" ; exit 1; }
