@@ -15,5 +15,5 @@ dependencies:
     - ConfigArgParse==0.15.1
     - dataclasses-json==0.2.7
     - dacite
-    - sagemaker
+    - sagemaker<2
     - tensorflow
