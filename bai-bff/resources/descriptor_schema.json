@@ -197,7 +197,7 @@
     "data": { "$ref": "#/definitions/benchmark_data" },
     "output": { "$ref": "#/definitions/output" },
     "server": { "$ref": "#/definitions/server" },
-    "hyper_params": { "$ref": "#/definitions/server" }
+    "hyper_params": { "$ref": "#/definitions/benchmark_hyper_params" }
   },
   "additionalProperties": false,
   "required": ["spec_version", "info", "hardware", "env"]
