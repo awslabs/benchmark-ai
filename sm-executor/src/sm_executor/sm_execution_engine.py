@@ -55,7 +55,7 @@ class SageMakerExecutionEngine(ExecutionEngine):
         try:
             descriptor = BenchmarkDescriptor.from_dict(event.payload.toml.contents, CONFIG)
         except DescriptorError as e:
-            logger.exception("Could not parse descriptor", e)
+            logger.exception("Could not parse descriptor %s", e)
             raise ExecutionEngineException("Cannot process the request") from e
 
         with tempfile.TemporaryDirectory(prefix=self.config.tmp_sources_dir) as tmpdirname:
@@ -66,7 +66,7 @@ class SageMakerExecutionEngine(ExecutionEngine):
             try:
                 estimator = self.estimator_factory(session, descriptor, tmpdirname, self.config)
             except Exception as e:
-                logger.exception("Could not create estimator", e)
+                logger.exception("Could not create estimator %s", e)
                 raise ExecutionEngineException("Cannot create estimator") from e
 
             # Estimate the total size
@@ -125,7 +125,7 @@ class SageMakerExecutionEngine(ExecutionEngine):
             else:
                 logging.info(f"""Skipping delete. Job status is {training_job["TrainingJobStatus"]}""")
         except botocore.exceptions.ClientError as err:
-            logging.exception(f"Could not stop training job {action_id}", err)
+            logging.exception(f"Could not stop training job {action_id} %s", err)
             if is_not_found_error(err):
                 raise NoResourcesFoundException(action_id) from err
             raise ExecutionEngineException(str(err)) from err
