@@ -28,11 +28,12 @@ def create_tensorflow_estimator(
             processes_per_host=int(descriptor.hardware.processes_per_instance),
             custom_mpi_options=MPI_OPTIONS,
         )
+    hps = {}
     if descriptor.hyper_params:
-        kwargs["hyperparameters"] = descriptor.hyper_params.__dict__
+        hps = descriptor.hyper_params.ml_hyper_params
     kwargs.script_mode = True
     logger.info(f"Creating TF Estimator with parameters {kwargs}")
-    return TensorFlow(**kwargs)
+    return TensorFlow(**kwargs, hyperparameters=hps)
 
 
 def create_mxnet_estimator(
@@ -40,9 +41,10 @@ def create_mxnet_estimator(
 ) -> Framework:
     kwargs = _create_common_estimator_args(session, descriptor, source_dir, config)
     logger.info(f"Creating MXNet Estimator with parameters {kwargs}")
+    hps = {}
     if descriptor.hyper_params:
-        kwargs["hyperparameters"] = descriptor.hyper_params.__dict__
-    return MXNet(**kwargs)
+        hps = descriptor.hyper_params.ml_hyper_params
+    return MXNet(**kwargs, hyperparameters=hps)
 
 
 def _create_common_estimator_args(
@@ -55,7 +57,7 @@ def _create_common_estimator_args(
         image_name=descriptor.env.docker_image,
         py_version="py3",
         framework_version=descriptor.ml.framework_version or "",  # None is not a valid value
-        hyperparameters=descriptor.hyper_params or "",
+        # hyperparameters=descriptor.hyper_params or "",
         train_instance_type=descriptor.hardware.instance_type,
         train_instance_count=descriptor.hardware.distributed.num_instances,
         role=config.sm_role,

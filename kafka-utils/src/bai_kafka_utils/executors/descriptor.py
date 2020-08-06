@@ -80,13 +80,8 @@ class MLDescriptor:
 
 @dataclass
 class HyperParamsDescriptor:
-    model_dir: Optional[str] = None
-    sagemaker_container_log_level: Optional[int] = None
-    sagemaker_enable_cloudwatch_metrics: Optional[bool] = None
-    sagemaker_job_name: Optional[str] = None
-    sagemaker_program: Optional[str] = None
-    sagemaker_region: Optional[str] = None
-    sagemaker_submit_directory: Optional[str] = None
+    python_version: Optional[str] = None
+    ml_hyper_params: Optional[Dict[str, str]] = field(default_factory=dict)
 
 
 @dataclass

@@ -62,7 +62,6 @@ class SageMakerExecutionEngine(ExecutionEngine):
             ScriptSourceDirectory.create(descriptor, tmpdirname, event.payload.scripts)
 
             session = self.session_factory()
-
             try:
                 estimator = self.estimator_factory(session, descriptor, tmpdirname, self.config)
             except Exception as e:

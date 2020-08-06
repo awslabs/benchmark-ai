@@ -61,7 +61,13 @@ def descriptor_hyperparams_as_adict(descriptor_config):
             framework="tensorflow",
             framework_version="1.12",
         ),
-        hyper_params=addict.Dict(sagemaker_job_name="Test_job_name", sagemaker_enable_cloudwatch_metrics=True),
+        hyper_params=addict.Dict(
+            ml_hyper_params={
+                "sagemaker_job_name": "Test_job_name",
+                "sagemaker_container_log_level": 5,
+                "sagemaker_enable_cloudwatch_metrics": True,
+            }
+        ),
         data=addict.Dict(sources=[addict.Dict(src="foo1", path="bar1"), addict.Dict(src="foo2", path="bar2")]),
     )
 
