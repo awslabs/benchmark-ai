@@ -17,6 +17,13 @@ EstimatorFactory = Callable[[Session, BenchmarkDescriptor, str, SageMakerExecuto
 logger = logging.getLogger(__name__)
 
 
+def get_custom_params(descriptor: BenchmarkDescriptor):
+    hps = {}
+    if descriptor.custom_params:
+        hps = descriptor.custom_params.hyper_params
+    return hps
+
+
 def create_tensorflow_estimator(
     session: Session, descriptor: BenchmarkDescriptor, source_dir: str, config: SageMakerExecutorConfig
 ) -> Framework:
@@ -28,12 +35,10 @@ def create_tensorflow_estimator(
             processes_per_host=int(descriptor.hardware.processes_per_instance),
             custom_mpi_options=MPI_OPTIONS,
         )
-    hps = {}
-    if descriptor.hyper_params:
-        hps = descriptor.hyper_params.ml_hyper_params
+    hps = get_custom_params(descriptor)
     kwargs.script_mode = True
     logger.info(f"Creating TF Estimator with parameters {kwargs}")
-    return TensorFlow(**kwargs, hyperparameters=hps)
+    return TensorFlow(**kwargs, hyperparameters=hps, enable_sagemaker_metrics=True, enable_cloudwatch_metrics=True)
 
 
 def create_mxnet_estimator(
@@ -41,7 +46,7 @@ def create_mxnet_estimator(
 ) -> Framework:
     kwargs = _create_common_estimator_args(session, descriptor, source_dir, config)
     logger.info(f"Creating MXNet Estimator with parameters {kwargs}")
-    hps = {}
+    hps = get_custom_params(descriptor)
     if descriptor.hyper_params:
         hps = descriptor.hyper_params.ml_hyper_params
     return MXNet(**kwargs, hyperparameters=hps)
@@ -60,7 +65,6 @@ def _create_common_estimator_args(
         image_name=descriptor.env.docker_image,
         py_version=py_version or "py3",
         framework_version=descriptor.ml.framework_version or "",  # None is not a valid value
-        # hyperparameters=descriptor.hyper_params or "",
         train_instance_type=descriptor.hardware.instance_type,
         train_instance_count=descriptor.hardware.distributed.num_instances,
         role=config.sm_role,

@@ -50,13 +50,9 @@ def test_minimal_descriptor(datadir, filename):
 @pytest.mark.parametrize("filename", ["cs_hyperparameter_descriptor.toml"])
 def test_hyper_params_job_name(datadir, filename):
     descriptor = BenchmarkDescriptor.from_toml(str(datadir / filename))
-    assert descriptor.hyper_params.ml_hyper_params["sagemaker_job_name"] == "Test_job_name"
-
-
-@pytest.mark.parametrize("filename", ["cs_hyperparameter_descriptor.toml"])
-def test_hyper_params_cloudwatch_metrics(datadir, filename):
-    descriptor = BenchmarkDescriptor.from_toml(str(datadir / filename))
-    assert descriptor.hyper_params.ml_hyper_params["sagemaker_enable_cloudwatch_metrics"]
+    assert descriptor.custom_params.hyper_params["amp"] == "True"
+    assert descriptor.custom_params.hyper_params["validation_frequency"] == 10
+    assert descriptor.custom_params.python_version == "py2"
 
 
 @pytest.mark.parametrize("scheduling", ["0 0 0 0", "* * ? * *", "single"])

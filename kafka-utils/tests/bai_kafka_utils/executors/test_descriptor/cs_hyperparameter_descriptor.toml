@@ -43,12 +43,12 @@ benchmark_code = "python -W ignore horovod/examples/tensorflow_synthetic_benchma
 framework = "tensorflow"
 framework_version = "1.12.0"
 
-[hyper_params]
+[custom_params]
+python_version = "py2"
+enable_sagemaker_metrics = false
 
-[hyper_params.ml_hyper_params]
-sagemaker_job_name = "Test_job_name"
-sagemaker_enable_cloudwatch_metrics = true
-sagemaker_container_log_level = 15
-model_dir = "test/"
+[custom_params.hyper_params]
+amp = "true"
+validation_frequency = 10
 
 

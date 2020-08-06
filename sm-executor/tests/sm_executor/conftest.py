@@ -50,7 +50,7 @@ def descriptor(descriptor_config, descriptor_as_adict):
 
 
 @fixture
-def descriptor_hyperparams_as_adict(descriptor_config):
+def descriptor_customparams_as_adict(descriptor_config):
     return addict.Dict(
         spec_version="0.1.0",
         info=addict.Dict(description="something"),
@@ -61,11 +61,11 @@ def descriptor_hyperparams_as_adict(descriptor_config):
             framework="tensorflow",
             framework_version="1.12",
         ),
-        hyper_params=addict.Dict(
-            ml_hyper_params={
-                "sagemaker_job_name": "Test_job_name",
-                "sagemaker_container_log_level": 5,
-                "sagemaker_enable_cloudwatch_metrics": True,
+        custom_params=addict.Dict(
+            hyper_params={
+                "validiation_frequency": 10,
+                "amp": True,
+                "weight": 0.1,
             }
         ),
         data=addict.Dict(sources=[addict.Dict(src="foo1", path="bar1"), addict.Dict(src="foo2", path="bar2")]),
@@ -73,5 +73,5 @@ def descriptor_hyperparams_as_adict(descriptor_config):
 
 
 @fixture
-def hyperparams_descriptor(descriptor_config, descriptor_hyperparams_as_adict):
-    return BenchmarkDescriptor.from_dict(descriptor_hyperparams_as_adict.to_dict(), descriptor_config)
+def customparams_descriptor(descriptor_config, descriptor_customparams_as_adict):
+    return BenchmarkDescriptor.from_dict(descriptor_customparams_as_adict.to_dict(), descriptor_config)

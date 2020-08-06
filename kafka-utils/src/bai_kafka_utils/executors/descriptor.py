@@ -79,9 +79,11 @@ class MLDescriptor:
 
 
 @dataclass
-class HyperParamsDescriptor:
+class CustomParamsDescriptor:
     python_version: Optional[str] = None
-    ml_hyper_params: Optional[Dict[str, str]] = field(default_factory=dict)
+    sagemaker_job_name: Optional[str] = None
+    enable_sagemaker_metrics: Optional[bool] = None
+    hyper_params: Optional[Dict[str, Any]] = field(default_factory=dict)
 
 
 @dataclass
@@ -203,7 +205,7 @@ class BenchmarkDescriptor:
     output: Optional[OutputDescriptor] = None
     ml: Optional[MLDescriptor] = None
     data: Optional[BenchmarkDataDescriptor] = None
-    hyper_params: Optional[HyperParamsDescriptor] = None
+    custom_params: Optional[CustomParamsDescriptor] = None
     # required under inference strategy
     server: Optional[ServerDescriptor] = None
 
