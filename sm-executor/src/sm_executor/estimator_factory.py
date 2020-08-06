@@ -56,8 +56,8 @@ def _create_common_estimator_args(
     session: Session, descriptor: BenchmarkDescriptor, source_dir: str, config: SageMakerExecutorConfig
 ) -> addict.Dict:
     py_version = "py3"
-    if descriptor.hyper_params and descriptor.hyper_params.python_version:
-        py_version = descriptor.hyper_params.python_version
+    if descriptor.custom_params and descriptor.custom_params.python_version:
+        py_version = descriptor.custom_params.python_version
     return addict.Dict(
         source_dir=source_dir,
         entry_point="tmp_entry.py",
