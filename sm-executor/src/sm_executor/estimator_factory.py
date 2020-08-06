@@ -50,12 +50,15 @@ def create_mxnet_estimator(
 def _create_common_estimator_args(
     session: Session, descriptor: BenchmarkDescriptor, source_dir: str, config: SageMakerExecutorConfig
 ) -> addict.Dict:
+    py_version = "py3"
+    if descriptor.hyper_params and descriptor.hyper_params.python_version:
+        py_version = descriptor.hyper_params.python_version
     return addict.Dict(
         source_dir=source_dir,
         entry_point="tmp_entry.py",
         sagemaker_session=session,
         image_name=descriptor.env.docker_image,
-        py_version="py3",
+        py_version=py_version or "py3",
         framework_version=descriptor.ml.framework_version or "",  # None is not a valid value
         # hyperparameters=descriptor.hyper_params or "",
         train_instance_type=descriptor.hardware.instance_type,

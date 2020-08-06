@@ -1,30 +1,54 @@
 # BenchmarkAI meta
 spec_version = "0.1.0"
 
+#infoooo
+#ddd
 [info]
-task_name = "Title"
-description = "Description"
+description = """ sagemaker tf  """
+execution_engine = "aws.sagemaker"
+
+[info.labels]
+# Labels and values must be 63 characters or less, beginning and ending with an alphanumeric character
+# ([a-z0-9A-Z]) with dashes (-), underscores (_), dots (.), and alphanumerics between
+# task_name is a mandatory label which will be exported as a dimension for this job's metrics
+task_name = "example_sagemaker_benchmark"
 
 # 1. Hardware
 [hardware]
-instance_type = "p3.8xlarge"
+instance_type="ml.c5.18xlarge"
+strategy = "single_node"
+
+
+[hardware.distributed]
+num_instances = 4
 
 # 2. Environment
 [env]
-docker_image = "jlcont/benchmarking:270219"
+docker_image = "763104351884.dkr.ecr.us-east-1.amazonaws.com/tensorflow-training:1.15.3-cpu-py37-ubuntu18.04"
 
-# 3. Machine learning related settings:
-# dataset, benchmark code and parameters it takes
+[env.vars]
+TENSORFLOW_INTER_OP_PARALLELISM = "2"
+TENSORFLOW_INTRA_OP_PARALLELISM = "72"
+OMP_NUM_THREADS = "36"
+KMP_AFFINITY = "granularity=fine,verbose,compact,1,0"
+TENSORFLOW_SESSION_PARALLELISM = "9"
+KMP_BLOCKTIME = "1"
+KMP_SETTINGS = "0"
+
+# 3. ML settings
 [ml]
-benchmark_code = "python /home/benchmark/image_classification.py"
-# [Opt] Arguments to pass to the script in ml.benchmark_code
-# The code is called as defined in ml.benchmark_code, plus the args defined here
-args = "--model=resnet50_v2 --batch-size=32"
 
+benchmark_code = "python -W ignore horovod/examples/tensorflow_synthetic_benchmark.py --no-cuda --model_dir test/ --num-warmup-batches 10 --num-iters 10 --model ResNet50 --sagemaker_job_name Testjob --sagemaker_container_log_level 15"
 
+framework = "tensorflow"
+framework_version = "1.12.0"
 
 [hyper_params]
+
+[hyper_params.ml_hyper_params]
 sagemaker_job_name = "Test_job_name"
 sagemaker_enable_cloudwatch_metrics = true
+sagemaker_container_log_level = 15
+model_dir = "test/"
 
 

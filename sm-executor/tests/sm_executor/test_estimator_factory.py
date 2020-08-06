@@ -129,7 +129,7 @@ def test_estimator_factory_hyperparams_tensorflow(
 
 
 def test_estimator_factory_mxnet_hyperparams(
-    mock_session: Session, hyperparams_descriptor: BenchmarkDescriptor, sagemaker_config: SageMakerExecutorConfig,
+    mock_session: Session, hyperparams_descriptor: BenchmarkDescriptor, sagemaker_config: SageMakerExecutorConfig
 ):
     estimator = create_mxnet_estimator(mock_session, hyperparams_descriptor, SOURCE_DIR, sagemaker_config)
     validate_estimator_hyperparams(estimator, mock_session, hyperparams_descriptor, sagemaker_config)

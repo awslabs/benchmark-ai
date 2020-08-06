@@ -140,7 +140,8 @@
      "benchmark_hyper_params": {
       "type": "object",
       "properties": {
-        "vars": { "$ref": "#/definitions/str_dict" }
+        "python_version": { "type": "string" },
+        "ml_hyper_params": { "$ref": "#/definitions/str_dict" }
       },
       "additionalProperties": false
     },
