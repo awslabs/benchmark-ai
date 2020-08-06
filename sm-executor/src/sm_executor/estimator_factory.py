@@ -47,8 +47,6 @@ def create_mxnet_estimator(
     kwargs = _create_common_estimator_args(session, descriptor, source_dir, config)
     logger.info(f"Creating MXNet Estimator with parameters {kwargs}")
     hps = get_custom_params(descriptor)
-    if descriptor.hyper_params:
-        hps = descriptor.hyper_params.ml_hyper_params
     return MXNet(**kwargs, hyperparameters=hps)
 
 
