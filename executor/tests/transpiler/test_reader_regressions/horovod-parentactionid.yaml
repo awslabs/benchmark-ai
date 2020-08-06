@@ -36,13 +36,9 @@ data:
     ./deep-learning-models/models/resnet/tensorflow/train.sh 3
   puller_entrypoint.sh: |-
     #!/bin/bash
-    if [ "$ROLE" == "worker" ]; then
-      /opt/puller/download-s3-files "$@"
-    else
-      echo "Not a worker - no data necessary"
-    fi
+    /opt/puller/download-s3-files "$@"
 ---
-apiVersion: kubeflow.org/v1alpha1
+apiVersion: kubeflow.org/v1alpha2
 kind: MPIJob
 metadata:
   name: benchmark-job-id
@@ -53,109 +49,171 @@ metadata:
     created-by: executor
     parent-action-id: parentactionid
 spec:
-  replicas: 2
-  template:
-    metadata:
-      annotations:
-        iam.amazonaws.com/role: benchmark-host
-      labels:
-        app: benchmark-ai
-        action-id: ACTION_ID
-        client-id: CLIENT_ID
-        created-by: executor
-        parent-action-id: parentactionid
-    spec:
-      serviceAccountName: benchmark
-      affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-              - key: app
-                operator: In
-                values:
-                - benchmark-ai
-            topologyKey: kubernetes.io/hostname
-      initContainers:
-      - name: data-puller
-        image: benchmarkai/puller:3115770
-        command:
-        - /bin/puller_entrypoint.sh
-        volumeMounts:
-        - name: entrypoints-volume
-          mountPath: /bin/puller_entrypoint.sh
-          readOnly: true
-          subPath: puller_entrypoint.sh
-        - name: datasets-volume
-          mountPath: /data
-        env:
-        - name: ROLE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.labels['mpi_role_type']
-        - name: S3_ENDPOINT
-          valueFrom:
-            configMapKeyRef:
-              name: outputs-infrastructure
-              key: s3_endpoint
-        - name: AWS_ACCESS_KEY_ID
-          valueFrom:
-            configMapKeyRef:
-              name: s3
-              key: access-key-id
-              optional: true
-        - name: AWS_SECRET_ACCESS_KEY
-          valueFrom:
-            configMapKeyRef:
-              name: s3
-              key: secret-access-key
-              optional: true
-        args:
-        - puller-data
-        - object-name/dir0,777,p0:object-name/dir1,777,p1
-      containers:
-      - image: user/repo:tag
-        name: benchmark
-        resources:
-          limits:
-            nvidia.com/gpu: 4
-        command:
-        - /bin/entrypoint.sh
-        volumeMounts:
-        - name: entrypoints-volume
-          mountPath: /bin/entrypoint.sh
-          readOnly: true
-          subPath: entrypoint.sh
-        - name: benchmark-ai
-          mountPath: /tmp/benchmark-ai
-        - name: datasets-volume
-          mountPath: ~/data/tf-imagenet/train
-          subPath: p0
-        - name: datasets-volume
-          mountPath: ~/data/tf-imagenet/validation
-          subPath: p1
-        - name: dshm
-          mountPath: /dev/shm
-        env:
-        - name: BENCHMARK_AI
-          value: fifo
-        - name: BENCHMARK_AI_FIFO_FILEPATH
-          value: /tmp/benchmark-ai/fifo
-        - name: BENCHMARK_AI_FIFO_MAX_WAIT_TIME
-          value: '60'
-      volumes:
-      - name: entrypoints-volume
-        configMap:
-          defaultMode: 0700
-          name: entrypoint-benchmark-job-id
-      - name: benchmark-ai
-        emptyDir: {}
-      - name: datasets-volume
-        emptyDir: {}
-      - name: dshm
-        emptyDir:
-          medium: Memory
-      nodeSelector:
-        beta.kubernetes.io/instance-type: p3.8xlarge
-        node.type: bai-worker
-        failure-domain.beta.kubernetes.io/zone: us-east-1a
+  cleanPodPolicy: Running
+  slotsPerWorker: 4
+  mpiReplicaSpecs:
+    Launcher:
+      replicas: 1
+      template:
+        metadata:
+          annotations:
+            iam.amazonaws.com/role: benchmark-host
+          labels:
+            app: benchmark-ai
+            action-id: ACTION_ID
+            client-id: CLIENT_ID
+            created-by: executor
+            parent-action-id: parentactionid
+        spec:
+          serviceAccountName: benchmark
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                    - benchmark-ai
+                topologyKey: kubernetes.io/hostname
+          initContainers: []
+          containers:
+          - image: user/repo:tag
+            name: benchmark
+            command:
+            - /bin/entrypoint.sh
+            volumeMounts:
+            - name: entrypoints-volume
+              mountPath: /bin/entrypoint.sh
+              readOnly: true
+              subPath: entrypoint.sh
+            - name: benchmark-ai
+              mountPath: /tmp/benchmark-ai
+            - name: dshm
+              mountPath: /dev/shm
+            env:
+            - name: BENCHMARK_AI
+              value: fifo
+            - name: BENCHMARK_AI_FIFO_FILEPATH
+              value: /tmp/benchmark-ai/fifo
+            - name: BENCHMARK_AI_FIFO_MAX_WAIT_TIME
+              value: '60'
+          volumes:
+          - name: entrypoints-volume
+            configMap:
+              defaultMode: 0700
+              name: entrypoint-benchmark-job-id
+          - name: benchmark-ai
+            emptyDir: {}
+          - name: dshm
+            emptyDir:
+              medium: Memory
+          nodeSelector:
+            beta.kubernetes.io/instance-type: p3.8xlarge
+            node.type: bai-worker
+            failure-domain.beta.kubernetes.io/zone: us-east-1a
+    Worker:
+      replicas: 2
+      template:
+        metadata:
+          annotations:
+            iam.amazonaws.com/role: benchmark-host
+          labels:
+            app: benchmark-ai
+            action-id: ACTION_ID
+            client-id: CLIENT_ID
+            created-by: executor
+            parent-action-id: parentactionid
+        spec:
+          serviceAccountName: benchmark
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                    - benchmark-ai
+                topologyKey: kubernetes.io/hostname
+          initContainers:
+          - name: data-puller
+            image: benchmarkai/puller:3115770
+            command:
+            - /bin/puller_entrypoint.sh
+            volumeMounts:
+            - name: entrypoints-volume
+              mountPath: /bin/puller_entrypoint.sh
+              readOnly: true
+              subPath: puller_entrypoint.sh
+            - name: datasets-volume
+              mountPath: /data
+            env:
+            - name: ROLE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['mpi_role_type']
+            - name: S3_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: outputs-infrastructure
+                  key: s3_endpoint
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: s3
+                  key: access-key-id
+                  optional: true
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: s3
+                  key: secret-access-key
+                  optional: true
+            args:
+            - puller-data
+            - object-name/dir0,777,p0:object-name/dir1,777,p1
+          containers:
+          - image: user/repo:tag
+            name: benchmark
+            resources:
+              limits:
+                nvidia.com/gpu: 4
+            volumeMounts:
+            - name: entrypoints-volume
+              mountPath: /bin/entrypoint.sh
+              readOnly: true
+              subPath: entrypoint.sh
+            - name: benchmark-ai
+              mountPath: /tmp/benchmark-ai
+            - name: datasets-volume
+              mountPath: ~/data/tf-imagenet/train
+              subPath: p0
+            - name: datasets-volume
+              mountPath: ~/data/tf-imagenet/validation
+              subPath: p1
+            - name: dshm
+              mountPath: /dev/shm
+            env:
+            - name: BENCHMARK_AI
+              value: fifo
+            - name: BENCHMARK_AI_FIFO_FILEPATH
+              value: /tmp/benchmark-ai/fifo
+            - name: BENCHMARK_AI_FIFO_MAX_WAIT_TIME
+              value: '60'
+          volumes:
+          - name: entrypoints-volume
+            configMap:
+              defaultMode: 0700
+              name: entrypoint-benchmark-job-id
+          - name: benchmark-ai
+            emptyDir: {}
+          - name: datasets-volume
+            emptyDir: {}
+          - name: dshm
+            emptyDir:
+              medium: Memory
+          nodeSelector:
+            beta.kubernetes.io/instance-type: p3.8xlarge
+            node.type: bai-worker
+            failure-domain.beta.kubernetes.io/zone: us-east-1a

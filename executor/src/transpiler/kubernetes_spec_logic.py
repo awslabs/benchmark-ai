@@ -51,6 +51,9 @@ HostPath = addict.Dict
 ConfigMap = addict.Dict
 EnvVar = addict.Dict
 
+MPI_JOB_LAUNCHER = "Launcher"
+MPI_JOB_WORKER = "Worker"
+
 logger = logging.getLogger(__name__)
 
 
@@ -87,14 +90,22 @@ class KubernetesRootObjectHelper:
             else:
                 raise ValueError("Kubernetes yaml object is of an unsupported kind type: {}".format(d["kind"]))
 
-        self._validate()
+        if kind == "MPIJob":
+            self._validate_mpi_spec()
+            for replica_type in [MPI_JOB_LAUNCHER, MPI_JOB_WORKER]:
+                self.create_empty_fields(mpiReplicaType=replica_type)
+        else:
+            self._validate()
+            self.create_empty_fields()
+
+    def create_empty_fields(self, **kwargs):
 
         # Create empty fields if required
-        if not self.get_pod_spec().initContainers:
-            self.get_pod_spec().initContainers = []
-        if not self.get_pod_spec().volumes:
-            self.get_pod_spec().volumes = []
-        for container in self.get_pod_spec().containers:
+        if not self.get_pod_spec(**kwargs).initContainers:
+            self.get_pod_spec(**kwargs).initContainers = []
+        if not self.get_pod_spec(**kwargs).volumes:
+            self.get_pod_spec(**kwargs).volumes = []
+        for container in self.get_pod_spec(**kwargs).containers:
             if not container.volumeMounts:
                 container.volumeMounts = []
 
@@ -106,25 +117,51 @@ class KubernetesRootObjectHelper:
         if not self.get_pod_spec().containers:
             raise ValueError("A Pod must have at least 1 container on its definition")
 
-    def get_pod_spec(self) -> PodSpec:
-        if self._root.spec.template:
-            return self._root.spec.template.spec
-        elif self._root.spec.jobTemplate:
-            if self._root.spec.jobTemplate.spec.template:
-                return self._root.spec.jobTemplate.spec.template.spec
-            return self._root.spec.jobTemplate.spec
+    def get_pod_spec(self, **kwargs) -> PodSpec:
+        if "mpiReplicaType" in kwargs:
+            mpiReplicaType = kwargs["mpiReplicaType"]
+            if self._root.spec.mpiReplicaSpecs[mpiReplicaType].template.spec:
+                return self._root.spec.mpiReplicaSpecs[mpiReplicaType].template.spec
+            else:
+                raise KeyError(f"Cannot find pod spec. root object is {self._root}")
         else:
-            raise KeyError(f"Cannot find pod spec. root object is {self._root}")
+            if self._root.spec.template:
+                return self._root.spec.template.spec
+            elif self._root.spec.jobTemplate:
+                if self._root.spec.jobTemplate.spec.template:
+                    return self._root.spec.jobTemplate.spec.template.spec
+                return self._root.spec.jobTemplate.spec
+            else:
+                raise KeyError(f"Cannot find pod spec. root object is {self._root}")
 
-    def find_container(self, container_name: str) -> Container:
+    def _validate_mpi_spec(self):
+        if not self._root.spec:
+            raise ValueError("Spec of root object not found at yaml definition of the Kubernetes object")
+        if not self._root.spec.mpiReplicaSpecs:
+            raise ValueError("MPIJob must have mpiReplicaSpecs")
+        if not self._root.spec.mpiReplicaSpecs.Launcher:
+            raise ValueError("The replica specs of MPIJob must have Launcher")
+        if not self.get_pod_spec(mpiReplicaType="Launcher"):
+            raise ValueError("Pod not found at yaml definition of the Launcher Kubernetes object")
+        if not self.get_pod_spec(mpiReplicaType="Launcher").containers:
+            raise ValueError("A Pod must have at least 1 container on its Launcher replica definition")
+        if not self._root.spec.mpiReplicaSpecs.Worker:
+            raise ValueError("The replica specs of MPIJob must have Worker")
+        if not self.get_pod_spec(mpiReplicaType="Worker"):
+            raise ValueError("Pod not found at yaml definition of the Worker Kubernetes object")
+        if not self.get_pod_spec(mpiReplicaType="Worker").containers:
+            raise ValueError("A Pod must have at least 1 container on its Worker replica definition")
+
+    def find_container(self, container_name: str, **kwargs) -> Container:
         """
         Finds a given container (can be an initContainer)
         :param container_name: The name of the container
         :return: The container object
         :raises: ValueError if the container could not be found
         """
-        containers = self.get_pod_spec().containers
-        init_containers = self.get_pod_spec().initContainers
+
+        containers = self.get_pod_spec(**kwargs).containers
+        init_containers = self.get_pod_spec(**kwargs).initContainers
         for container in itertools.chain(containers, init_containers):
             if container.name == container_name:
                 return container
@@ -134,17 +171,17 @@ class KubernetesRootObjectHelper:
             )
         )
 
-    def remove_affinity(self):
-        del self.get_pod_spec().affinity
+    def remove_affinity(self, **kwargs):
+        del self.get_pod_spec(**kwargs).affinity
 
-    def remove_container(self, container_name: str):
+    def remove_container(self, container_name: str, **kwargs):
         """
         Removes a given container (can be an initContainer)
         :param container_name: The name of the container
         :raises: ValueError if the container could not be found
         """
-        containers = self.get_pod_spec().containers
-        init_containers = self.get_pod_spec().initContainers
+        containers = self.get_pod_spec(**kwargs).containers
+        init_containers = self.get_pod_spec(**kwargs).initContainers
 
         for container_list in [containers, init_containers]:
             for container in container_list:
@@ -192,8 +229,8 @@ class KubernetesRootObjectHelper:
                 "failureThreshold": probe.failure_threshold,
             }
 
-    def set_service_account(self, service_account_name: str):
-        self.get_pod_spec().serviceAccountName = service_account_name
+    def set_service_account(self, service_account_name: str, **kwargs):
+        self.get_pod_spec(**kwargs).serviceAccountName = service_account_name
 
     @staticmethod
     def _add_label(k8s_obj: Dict[Any, Any], key: str, value: str):
@@ -212,13 +249,13 @@ class KubernetesRootObjectHelper:
 
                 nodes.extend(current.values())
 
-    def remove_volume(self, volume_name: str):
+    def remove_volume(self, volume_name: str, **kwargs):
         """
         Removes a given volume
         :param volume_name: The name of the container
         :raises: ValueError if the volume could not be found
         """
-        volumes = self.get_pod_spec().volumes
+        volumes = self.get_pod_spec(**kwargs).volumes
 
         was_removed = False
         for volume in volumes:
@@ -228,8 +265,8 @@ class KubernetesRootObjectHelper:
                 break
 
         if was_removed:
-            containers = self.get_pod_spec().containers
-            init_containers = self.get_pod_spec().initContainers
+            containers = self.get_pod_spec(**kwargs).containers
+            init_containers = self.get_pod_spec(**kwargs).initContainers
             for container_list in [containers, init_containers]:
                 for container in container_list:
                     for mount in container.volumeMounts:
@@ -248,11 +285,11 @@ class KubernetesRootObjectHelper:
             "ConfigMap {} not found. Available ones are: {}".format(name, [cm.metadata.name for cm in self.config_maps])
         )
 
-    def add_env_vars(self, container_name, env: Dict[str, str]):
+    def add_env_vars(self, container_name, env: Dict[str, str], **kwargs):
         if not env:
             return
         # Since we use python 3.7 the order of insertion is preserved in the dict
-        container = self.find_container(container_name)
+        container = self.find_container(container_name, **kwargs)
         container.env = container.env or []
         env_old = {var.name: var.value for var in container.env}
         env_new = {**env_old, **env}
