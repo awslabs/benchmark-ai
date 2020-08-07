@@ -31,6 +31,9 @@ SINGLE_RUN_SCHEDULING = "single_run"
 
 ONE_PER_GPU = "gpus"
 
+MPI_JOB_LAUNCHER = "Launcher"
+MPI_JOB_WORKER = "Worker"
+
 LABEL_VALIDATION_REGEX = re.compile("(?=.{1,63}$)([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]")
 INVALID_LABEL_MESSAGE = (
     "(RegExp used for validation is ([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9] "

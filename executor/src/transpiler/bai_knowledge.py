@@ -11,7 +11,13 @@ from urllib.parse import urlparse
 
 from bai_kafka_utils.events import DownloadableContent, BenchmarkEvent
 from bai_kafka_utils.events import FileSystemObject
-from bai_kafka_utils.executors.descriptor import DescriptorError, BenchmarkDescriptor, DistributedStrategy
+from bai_kafka_utils.executors.descriptor import (
+    DescriptorError,
+    BenchmarkDescriptor,
+    DistributedStrategy,
+    MPI_JOB_LAUNCHER,
+    MPI_JOB_WORKER,
+)
 from bai_kafka_utils.utils import METRICS_PUSHER_CUSTOM_LABEL_PREFIX
 from ruamel import yaml
 
@@ -39,8 +45,6 @@ SCRIPTS_VOLUME_NAME = "scripts-volume"
 SCRIPTS_PULLER_CONTAINER = "script-puller"
 INFERENCE_SERVER_LOCK_CONTAINER = "inference-server-lock"
 INFERENCE_SERVER_CONTAINER = "inference-server"
-MPI_JOB_LAUNCHER = "Launcher"
-MPI_JOB_WORKER = "Worker"
 # To make things easier it's the same path in puller and benchmark
 SCRIPTS_MOUNT_PATH = "/bai/scripts"
 
