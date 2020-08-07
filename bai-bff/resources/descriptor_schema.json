@@ -147,8 +147,6 @@
         "python_version": { "type": "string" },
         "sagemaker_job_name": { "type": "string" },
         "enable_sagemaker_metrics":{ "type":  "boolean" },
-        "source_dir":{ "type":  "string" },
-        "entry_point":{ "type":  "string" },
         "hyper_params": { "$ref": "#/definitions/any_dict" }
       },
       "additionalProperties": false

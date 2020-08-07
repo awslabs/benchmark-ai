@@ -82,8 +82,6 @@ class MLDescriptor:
 class CustomParamsDescriptor:
     python_version: Optional[str] = None
     sagemaker_job_name: Optional[str] = None
-    source_dir: Optional[str] = None
-    entry_point: Optional[str] = None
     enable_sagemaker_metrics: Optional[bool] = None
     hyper_params: Optional[Dict[str, Any]] = field(default_factory=dict)
 
