@@ -82,8 +82,8 @@ class MLDescriptor:
 class CustomParamsDescriptor:
     python_version: Optional[str] = None
     sagemaker_job_name: Optional[str] = None
-    enable_sagemaker_metrics: Optional[bool] = None
     hyper_params: Optional[Dict[str, Any]] = field(default_factory=dict)
+    metric_definitions: Optional[List[Dict[str, str]]] = field(default_factory=dict)
 
 
 @dataclass
@@ -168,7 +168,7 @@ class ServerEnvDescriptor:
     # optional
     privileged: bool = False
     extended_shm: bool = True
-    vars: Dict[str, str] = field(default_factory=dict)
+    vars: Dict[str, str] = field(default_factory=list)
     readiness_probe: Optional[HttpProbeDescriptor] = None
     start_command_args: Optional[str] = None
 

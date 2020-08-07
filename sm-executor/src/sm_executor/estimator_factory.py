@@ -54,8 +54,10 @@ def _create_common_estimator_args(
     session: Session, descriptor: BenchmarkDescriptor, source_dir: str, config: SageMakerExecutorConfig
 ) -> addict.Dict:
     py_version = "py3"
-    if descriptor.custom_params and descriptor.custom_params.python_version:
+    metrics = None
+    if descriptor.custom_params:
         py_version = descriptor.custom_params.python_version
+        metrics = descriptor.custom_params.metric_definitions
     return addict.Dict(
         source_dir=source_dir,
         entry_point="tmp_entry.py",
@@ -69,6 +71,7 @@ def _create_common_estimator_args(
         output_path=f"s3://{config.s3_output_bucket}",
         security_group_ids=config.security_group_ids,
         subnets=config.subnets,
+        metric_definitions=metrics or None
     )
 
 
