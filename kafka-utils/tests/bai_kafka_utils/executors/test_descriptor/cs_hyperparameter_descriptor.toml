@@ -45,7 +45,6 @@ framework_version = "1.12.0"
 
 [custom_params]
 python_version = "py2"
-enable_sagemaker_metrics = false
 
 [custom_params.hyper_params]
 amp = "true"

@@ -71,7 +71,7 @@ def _create_common_estimator_args(
         output_path=f"s3://{config.s3_output_bucket}",
         security_group_ids=config.security_group_ids,
         subnets=config.subnets,
-        metric_definitions=metrics or None
+        metric_definitions=metrics or None,
     )
 
 
