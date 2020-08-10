@@ -274,7 +274,7 @@ bai-bff/bin/anubis --cancel <ACTION_ID>
 bai-bff/bin/anubis --purge <ACTION_ID>
 ```
 
-## Step 3 - View the results of your run
+## Step 4 - View the results of your run
 
 
 ### Model output
@@ -336,7 +336,7 @@ It will be accesible in grafana as _BAI_METRICS_accuracy_. Therefore, it can be 
 
 
 
-## Step 4 - Destroy Anubis Infrastructure
+## Step 5 - Destroy Anubis Infrastructure
 
 ```bash
 # Assuming PWD is `benchmark-ai`
@@ -457,7 +457,7 @@ related.
 
 # Design and architecture
 
-The system is built to embody a few guiding tenets:
+The system is built to embody a few guiding tenets ([see details](/docs/anubis-project-tenets.md)):
 
 <ul>
   <li>Self Service</li>
@@ -467,9 +467,11 @@ The system is built to embody a few guiding tenets:
   <li>Use best of breed technology that has significant mind share</li>
 </ul>
 
+There are many design and implementation decisions were made, all of them well informed.  Please read our [Anubis Design FAQ](/docs/anubis-architecture-faq.md) if you are curious.
+
 The picture below shows the "infrastructure" layer of Anubis.
 
-![Anubis design](docs/images/anubis_architecture_diagram.png "Anubis Design")
+![Anubis design](/docs/images/anubis_architecture_diagram.png "Anubis Design")
 
 The orchestration layer consists of services running on K8s, sending
 [events](docs/anubis-event-design.md#benchmark-ai-event-design) to
