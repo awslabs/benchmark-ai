@@ -54,7 +54,7 @@ In this document I will answer common questions about Anubis and provide enough 
 
 
 * **Q: Commands?**
-* A: In order to lower the entropy of the interface / api to the system we have command event objects, inspired by UNIX itself.  this makes it easy for anyone to come up with new commands and not have to rebuild interfaces etc.  They only have to wire in the implementation and route the command to the implementing endpoint service.  All the processing and checking of events you get for free. (not streaming yet but easy to implement).
+* A: In order to lower the entropy of the interface / api to the system we have command event objects, inspired by UNIX itself.  this makes it easy for anyone to come up with new commands and not have to rebuild interfaces etc.  They only have to wire in the implementation and route the command to the implementing endpoint service.  All the processing and checking of events you get for free (not streaming yet but easy to implement).
 
 
 
