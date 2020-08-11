@@ -106,7 +106,7 @@ We designed the system to have strong reproducibility guarantees that can be tak
 * **“Push Button”** - Solutions with robust results
     Our solutions are made as simple as possible.  We exceed our end-users expectations with the output from our systems. (*invent and simplify)*
 * **Complete Delivery** -
-    Our solutions are well packaged and complete; including well produced and rich documentation. (Single document origin point, Clear explanations, helpful images, well sectioned prose, etc.)
+    Our solutions are well packaged and complete; including well produced and rich documentation. (Single document origin point, clear explanations, helpful images, well sectioned prose, etc.)
 * **Clear Mental Model (Transparency)** -
     Our solutions are designed to provide the end user with a clear mental model of what is happening in the system such that the client can effectively use and provide feedback for our products.
 * **We use tools that are best of breed with significant mind share.** -
