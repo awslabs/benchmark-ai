@@ -1,7 +1,7 @@
 A "framework/tool/service" that enables you to perform benchmarks of your machine learning models/frameworks/hardware in order to evaluate functionality, performance and detect regressions.
 
 
-![how_good_is_uour_ml](docs/images/anubis.scales.jpg "Anubis")
+![how_good_is_uour_ml](docs/images/anubis_logo.jpg "Anubis")
 
 
 
