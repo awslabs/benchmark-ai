@@ -69,7 +69,7 @@ In this document I will answer common questions about Anubis and provide enough 
 
 
 * **Q: Does it do periodic jobs runs?**
-* A: Yes, In the submitted descriptor file there is a section where you can specify a ‘scheduling’ attribute that ostensibly is a “crontab” entry.  With that set, this descriptor will be internally resubmitted (and the appropriate bookkeeping done) to have jobs run on a periodic basis.
+* A: Yes, in the submitted descriptor file there is a section where you can specify a ‘scheduling’ attribute that ostensibly is a “crontab” entry.  With that set, this descriptor will be internally resubmitted (and the appropriate bookkeeping done) to have jobs run on a periodic basis.
 
 
 
