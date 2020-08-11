@@ -11,7 +11,7 @@ In this document I will answer common questions about Anubis and provide enough 
 
 
 * **Q: Why services?**
-* A: We created an architecture that would scale and be build on a set of technologies and software practices that would allow it to grow organically. Each service has a distinct concern.  We cleave the software based on the cardinality of the number of instances and elasticity inherent for each concern.  The characteristics of the BFF is different from the Fetcher, is different from the Executor - for example.
+* A: We created an architecture that would scale and be built on a set of technologies and software practices that would allow it to grow organically. Each service has a distinct concern.  We cleave the software based on the cardinality of the number of instances and elasticity inherent for each concern.  The characteristics of the BFF are different from the Fetcher, which are different from the Executor - for example.
 
 
 
