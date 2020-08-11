@@ -26,7 +26,7 @@ In this document I will answer common questions about Anubis and provide enough 
 
 
 * **Q: Why are you using Make?**
-* A: The Anubis system is build from a series of services that speak to each over over a message bus.  Services are free to be written in more than one language.  Every language has their own build management tools. In order to uniformly support a polyglot environment we use Make as the lowest common denominator build tool that can delegate to tool specific build apparatus.  Make also provides a lingua-franca for build pipelines.  The CI/CD system only needs to trigger make directives.  There are a fixed set of core make directives that addresses the requirements of all build and deployment pipelines.  Make has been around for a long time and is well battle tested for its function.
+* A: The Anubis system is built from a series of services that speak to each over over a message bus.  Services are free to be written in more than one language.  Every language has their own build management tools. In order to uniformly support a polyglot environment we use Make as the lowest common denominator build tool that can delegate to tool specific build apparatus.  Make also provides a lingua-franca for build pipelines.  The CI/CD system only needs to trigger make directives.  There is a fixed set of core make directives that addresses the requirements of all build and deployment pipelines.  Make has been around for a long time and is well battle tested for its function.
 
 
 
