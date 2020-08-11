@@ -7,7 +7,7 @@ import ruamel.yaml as yaml
 from itertools import chain
 from typing import Dict, Any, List
 
-from bai_kafka_utils.executors.descriptor import HttpProbeDescriptor
+from bai_kafka_utils.executors.descriptor import HttpProbeDescriptor, MPI_JOB_LAUNCHER, MPI_JOB_WORKER
 
 
 # Using the official Kubernetes Model classes (https://github.com/kubernetes-client/python) is avoided here
@@ -50,9 +50,6 @@ EmptyDirVolumeSource = addict.Dict
 HostPath = addict.Dict
 ConfigMap = addict.Dict
 EnvVar = addict.Dict
-
-MPI_JOB_LAUNCHER = "Launcher"
-MPI_JOB_WORKER = "Worker"
 
 logger = logging.getLogger(__name__)
 
