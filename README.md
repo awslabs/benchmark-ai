@@ -467,7 +467,7 @@ The system is built to embody a few guiding tenets ([see details](/docs/anubis-p
   <li>Use best of breed technology that has significant mind share</li>
 </ul>
 
-There are many design and implementation decisions were made, all of them well informed.  Please read our [Anubis Design FAQ](/docs/anubis-architecture-faq.md) if you are curious.
+Many design and implementation decisions were made, all of them well informed.  Please read our [Anubis Design FAQ](/docs/anubis-architecture-faq.md) if you are curious.
 
 The picture below shows the "infrastructure" layer of Anubis.
 
