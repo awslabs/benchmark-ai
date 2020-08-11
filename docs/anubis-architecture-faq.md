@@ -21,7 +21,7 @@ In this document I will answer common questions about Anubis and provide enough 
 
 
 * **Q: Why events?**
-* A: [Events](/docs/anubis-event-design.md) are a great way to represent data, capture and push around state. The services are transformers of these events.  The primary services move data around via the Kafka event bus.  The there are events that are serially pushed through the system from service to service and then there are broadcast events that every service gets.
+* A: [Events](/docs/anubis-event-design.md) are a great way to represent data, capture and push around state. The services are transformers of these events.  The primary services move data around via the Kafka event bus.  There are events that are serially pushed through the system from service to service and then there are broadcast events that every service gets.
 
 
 
