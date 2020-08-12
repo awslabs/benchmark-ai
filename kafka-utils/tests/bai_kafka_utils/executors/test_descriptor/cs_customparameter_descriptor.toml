@@ -44,10 +44,11 @@ framework = "tensorflow"
 framework_version = "1.12.0"
 
 [custom_params]
-python_version = "py2"
 
-[custom_params.hyper_params]
-amp = "true"
-validation_frequency = 10
+[[custom_params.metric_definitions]]
+Name = "img_sec"
+Regex = 'Iter: (.*?)\s'
+
+
 
 
