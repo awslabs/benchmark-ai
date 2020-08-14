@@ -9,6 +9,10 @@
       "type": "object",
       "additionalProperties": {"type": "string"}
     },
+    "any_dict": {
+      "type": "object",
+      "additionalProperties": {}
+    },
     "http_probe": {
       "type": "object",
       "properties": {
@@ -137,6 +141,16 @@
       "additionalProperties": false,
       "required": ["instance_type"]
     },
+     "benchmark_custom_params": {
+      "type": "object",
+      "properties": {
+        "python_version": { "type": "string" },
+        "sagemaker_job_name": { "type": "string" },
+        "enable_sagemaker_metrics":{ "type":  "boolean" },
+        "hyper_params": { "$ref": "#/definitions/any_dict" }
+      },
+      "additionalProperties": false
+    },
     "benchmark_env": {
       "type": "object",
       "properties": {
@@ -183,7 +197,8 @@
     "ml": { "$ref": "#/definitions/benchmark_ml" },
     "data": { "$ref": "#/definitions/benchmark_data" },
     "output": { "$ref": "#/definitions/output" },
-    "server": { "$ref": "#/definitions/server" }
+    "server": { "$ref": "#/definitions/server" },
+    "custom_params": { "$ref": "#/definitions/benchmark_custom_params" }
   },
   "additionalProperties": false,
   "required": ["spec_version", "info", "hardware", "env"]

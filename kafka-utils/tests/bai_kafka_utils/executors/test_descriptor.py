@@ -37,6 +37,7 @@ def test_wrong_descriptor(datadir, filename):
     "filename",
     [
         "minimal_descriptor.toml",
+        "cs_hyperparameter_descriptor.toml",
         "cs_minimal_descriptor.toml",
         "cs_with_optionals_descriptor.toml",
         "cs_minimal_with_models_descriptor.toml",
@@ -44,6 +45,14 @@ def test_wrong_descriptor(datadir, filename):
 )
 def test_minimal_descriptor(datadir, filename):
     BenchmarkDescriptor.from_toml(str(datadir / filename))
+
+
+@pytest.mark.parametrize("filename", ["cs_hyperparameter_descriptor.toml"])
+def test_hyper_params_job_name(datadir, filename):
+    descriptor = BenchmarkDescriptor.from_toml(str(datadir / filename))
+    assert descriptor.custom_params.hyper_params["amp"]
+    assert descriptor.custom_params.hyper_params["validation_frequency"] == 10
+    assert descriptor.custom_params.python_version == "py2"
 
 
 @pytest.mark.parametrize("scheduling", ["0 0 0 0", "* * ? * *", "single"])

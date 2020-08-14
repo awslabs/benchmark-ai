@@ -1,5 +1,4 @@
 import datetime
-from unittest.mock import create_autospec, PropertyMock
 
 import addict
 import boto3
@@ -21,11 +20,11 @@ from botocore.stub import Stubber
 from pytest import fixture
 from sagemaker import Session
 from sagemaker.estimator import EstimatorBase, Framework
-
 from sm_executor import sm_execution_engine
 from sm_executor.args import SageMakerExecutorConfig
 from sm_executor.estimator_factory import create_estimator, EstimatorFactory
 from sm_executor.sm_execution_engine import SageMakerExecutionEngine
+from unittest.mock import create_autospec, PropertyMock
 
 HUGE_DATASET_GB = 100
 

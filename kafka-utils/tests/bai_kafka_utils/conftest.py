@@ -1,5 +1,6 @@
 from pytest import fixture
 
+
 from bai_kafka_utils.events import BenchmarkEvent
 
 

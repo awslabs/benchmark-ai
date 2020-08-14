@@ -62,7 +62,6 @@ class SageMakerExecutionEngine(ExecutionEngine):
             ScriptSourceDirectory.create(descriptor, tmpdirname, event.payload.scripts)
 
             session = self.session_factory()
-
             try:
                 estimator = self.estimator_factory(session, descriptor, tmpdirname, self.config)
             except Exception as e:
@@ -77,6 +76,8 @@ class SageMakerExecutionEngine(ExecutionEngine):
 
             try:
                 job_name = SageMakerExecutionEngine._get_job_name(event.action_id)
+                if descriptor.custom_params and descriptor.custom_params.sagemaker_job_name:
+                    job_name = descriptor.custom_params.sagemaker_job_name
                 logger.info(f"Attempting to start training job {job_name}")
                 estimator.fit(data, wait=False, logs=False, job_name=job_name)
 

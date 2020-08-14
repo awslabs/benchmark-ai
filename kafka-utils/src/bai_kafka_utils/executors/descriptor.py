@@ -82,6 +82,14 @@ class MLDescriptor:
 
 
 @dataclass
+class CustomParamsDescriptor:
+    python_version: Optional[str] = None
+    sagemaker_job_name: Optional[str] = None
+    enable_sagemaker_metrics: Optional[bool] = None
+    hyper_params: Optional[Dict[str, Any]] = field(default_factory=dict)
+
+
+@dataclass
 class HttpProbeDescriptor:
     path: str
     port: Optional[int] = None
@@ -200,7 +208,7 @@ class BenchmarkDescriptor:
     output: Optional[OutputDescriptor] = None
     ml: Optional[MLDescriptor] = None
     data: Optional[BenchmarkDataDescriptor] = None
-
+    custom_params: Optional[CustomParamsDescriptor] = None
     # required under inference strategy
     server: Optional[ServerDescriptor] = None
 

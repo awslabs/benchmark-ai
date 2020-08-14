@@ -17,6 +17,13 @@ EstimatorFactory = Callable[[Session, BenchmarkDescriptor, str, SageMakerExecuto
 logger = logging.getLogger(__name__)
 
 
+def get_custom_params(descriptor: BenchmarkDescriptor):
+    hps = {}
+    if descriptor.custom_params:
+        hps = descriptor.custom_params.hyper_params
+    return hps
+
+
 def create_tensorflow_estimator(
     session: Session, descriptor: BenchmarkDescriptor, source_dir: str, config: SageMakerExecutorConfig
 ) -> Framework:
@@ -28,10 +35,10 @@ def create_tensorflow_estimator(
             processes_per_host=int(descriptor.hardware.processes_per_instance),
             custom_mpi_options=MPI_OPTIONS,
         )
-
+    hps = get_custom_params(descriptor)
     kwargs.script_mode = True
     logger.info(f"Creating TF Estimator with parameters {kwargs}")
-    return TensorFlow(**kwargs)
+    return TensorFlow(**kwargs, hyperparameters=hps, enable_sagemaker_metrics=True, enable_cloudwatch_metrics=True)
 
 
 def create_mxnet_estimator(
@@ -39,18 +46,22 @@ def create_mxnet_estimator(
 ) -> Framework:
     kwargs = _create_common_estimator_args(session, descriptor, source_dir, config)
     logger.info(f"Creating MXNet Estimator with parameters {kwargs}")
-    return MXNet(**kwargs)
+    hps = get_custom_params(descriptor)
+    return MXNet(**kwargs, hyperparameters=hps)
 
 
 def _create_common_estimator_args(
     session: Session, descriptor: BenchmarkDescriptor, source_dir: str, config: SageMakerExecutorConfig
 ) -> addict.Dict:
+    py_version = "py3"
+    if descriptor.custom_params and descriptor.custom_params.python_version:
+        py_version = descriptor.custom_params.python_version
     return addict.Dict(
         source_dir=source_dir,
         entry_point="tmp_entry.py",
         sagemaker_session=session,
         image_name=descriptor.env.docker_image,
-        py_version="py3",
+        py_version=py_version or "py3",
         framework_version=descriptor.ml.framework_version or "",  # None is not a valid value
         train_instance_type=descriptor.hardware.instance_type,
         train_instance_count=descriptor.hardware.distributed.num_instances,

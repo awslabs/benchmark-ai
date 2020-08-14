@@ -57,6 +57,7 @@ src = "s3://mlperf-data-mxnet-berlin/imagenet/validation-480px"
 # Path where the dataset is stored in the container FS
 path = "~/data/tf-imagenet/validation"
 
+
 [[output.metrics]]
 # Name of the metric that will appear in the dashboards.
 name = "accuracy"
