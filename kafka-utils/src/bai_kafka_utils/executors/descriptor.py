@@ -168,7 +168,7 @@ class ServerEnvDescriptor:
     # optional
     privileged: bool = False
     extended_shm: bool = True
-    vars: Dict[str, str] = field(default_factory=list)
+    vars: Dict[str, str] = field(default_factory=dict)
     readiness_probe: Optional[HttpProbeDescriptor] = None
     start_command_args: Optional[str] = None
 
