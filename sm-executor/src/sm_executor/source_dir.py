@@ -23,7 +23,7 @@ class ScriptSourceDirectory:
             ScriptSourceDirectory._create_shell_entrypoint(bash_entry, descriptor)
 
         with open(os.path.join(dst_path, ScriptSourceDirectory.PYTHON_ENTRY_POINT), "wt") as py_bash_wrapper:
-            ScriptSourceDirectory._create_python_shell_wrapper(py_bash_wrapper)
+            ScriptSourceDirectory._create_python_shell_wrapper(py_bash_wrapper, descriptor)
 
         if scripts:
             s3 = s3 or boto3.client("s3")
@@ -51,11 +51,12 @@ class ScriptSourceDirectory:
         file.write(descriptor.ml.benchmark_code + os.linesep)
 
     @staticmethod
-    def _create_python_shell_wrapper(file: TextIO):
+    def _create_python_shell_wrapper(file: TextIO, descriptor: BenchmarkDescriptor):
         file.write("import os" + os.linesep)
         file.write("import boto3" + os.linesep)
         file.write("myCmd = 'chmod 777 tmp_entry.sh && ./tmp_entry.sh'" + os.linesep)
         file.write("os.system(myCmd)" + os.linesep)
-        with open("metric-agg.txt") as metric_aggs:
-            for line in metric_aggs:
-                file.write(line)
+        if descriptor.custom_params.metric_definitions:
+            with open("metric-agg.txt") as metric_aggs:
+                for line in metric_aggs:
+                    file.write(line)
