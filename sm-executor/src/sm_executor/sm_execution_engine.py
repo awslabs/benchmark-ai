@@ -76,6 +76,7 @@ class SageMakerExecutionEngine(ExecutionEngine):
 
             try:
                 job_name = SageMakerExecutionEngine._get_job_name(event.action_id)
+                merge = False
                 if descriptor.custom_params and descriptor.custom_params.sagemaker_job_name:
                     job_name = descriptor.custom_params.sagemaker_job_name
                     merge = descriptor.custom_params.merge
