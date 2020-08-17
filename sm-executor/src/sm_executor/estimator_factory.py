@@ -35,10 +35,9 @@ def create_tensorflow_estimator(
             processes_per_host=int(descriptor.hardware.processes_per_instance),
             custom_mpi_options=MPI_OPTIONS,
         )
-    hps = get_custom_params(descriptor)
     kwargs.script_mode = True
     logger.info(f"Creating TF Estimator with parameters {kwargs}")
-    return TensorFlow(**kwargs, hyperparameters=hps, enable_sagemaker_metrics=True, enable_cloudwatch_metrics=True)
+    return TensorFlow(**kwargs)
 
 
 def create_mxnet_estimator(
@@ -46,24 +45,21 @@ def create_mxnet_estimator(
 ) -> Framework:
     kwargs = _create_common_estimator_args(session, descriptor, source_dir, config)
     logger.info(f"Creating MXNet Estimator with parameters {kwargs}")
-    hps = get_custom_params(descriptor)
-    return MXNet(**kwargs, hyperparameters=hps)
+    return MXNet(**kwargs)
 
 
 def _create_common_estimator_args(
     session: Session, descriptor: BenchmarkDescriptor, source_dir: str, config: SageMakerExecutorConfig
 ) -> addict.Dict:
-    py_version = "py3"
     metrics = None
     if descriptor.custom_params:
-        py_version = descriptor.custom_params.python_version
         metrics = descriptor.custom_params.metric_definitions
     return addict.Dict(
         source_dir=source_dir,
         entry_point="tmp_entry.py",
         sagemaker_session=session,
         image_name=descriptor.env.docker_image,
-        py_version=py_version or "py3",
+        py_version="py3",
         framework_version=descriptor.ml.framework_version or "",  # None is not a valid value
         train_instance_type=descriptor.hardware.instance_type,
         train_instance_count=descriptor.hardware.distributed.num_instances,
