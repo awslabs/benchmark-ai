@@ -78,9 +78,13 @@ class SageMakerExecutionEngine(ExecutionEngine):
                 job_name = SageMakerExecutionEngine._get_job_name(event.action_id)
                 if descriptor.custom_params and descriptor.custom_params.sagemaker_job_name:
                     job_name = descriptor.custom_params.sagemaker_job_name
+                    merge = descriptor.custom_params.merge
                 logger.info(f"Attempting to start training job {job_name}")
-                estimator.fit(data, wait=False, logs=False, job_name=job_name)
-
+                if merge:
+                    estimator.fit(data, wait=True, logs=False, job_name=job_name)
+                    self.merge_metrics(descriptor)
+                else:
+                    estimator.fit(data, wait=False, logs=False, job_name=job_name)
             except botocore.exceptions.ClientError as err:
                 error_message = get_client_error_message(err, default="Unknown")
                 raise ExecutionEngineException(
@@ -105,6 +109,16 @@ class SageMakerExecutionEngine(ExecutionEngine):
         total_size = sum([dataset.size_info.total_size for dataset in event.payload.datasets])
         total_size_gb = int(SageMakerExecutionEngine.SAFETY_FACTOR * ceil(total_size / 1024 ** 3))
         return total_size_gb
+
+    def merge_metrics(self, descriptor):
+        cloudwatch_client = boto3.client("cloudwatch")
+        data = (
+            self.sagemaker_client.describe_training_job(TrainingJobName=descriptor.custom_params.sagemaker_job_name)
+        )["FinalMetricDataList"]
+        for i in data:
+            i.pop("Timestamp")
+            i["Dimensions"] = [{"Name": "task_name", "Value": descriptor.info.labels.task_name}]
+        cloudwatch_client.put_metric_data(Namespace="ANUBIS/METRICS/", MetricData=data)
 
     def cancel(self, client_id: str, action_id: str, cascade: bool = False):
         logger.info(f"Attempting to stop training job {action_id}")
