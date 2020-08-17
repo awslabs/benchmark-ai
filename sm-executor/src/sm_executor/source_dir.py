@@ -53,5 +53,9 @@ class ScriptSourceDirectory:
     @staticmethod
     def _create_python_shell_wrapper(file: TextIO):
         file.write("import os" + os.linesep)
+        file.write("import boto3" + os.linesep)
         file.write("myCmd = 'chmod 777 tmp_entry.sh && ./tmp_entry.sh'" + os.linesep)
         file.write("os.system(myCmd)" + os.linesep)
+        with open("metric-agg.txt") as metric_aggs:
+            for line in metric_aggs:
+                file.write(line)
