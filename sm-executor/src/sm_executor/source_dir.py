@@ -56,7 +56,4 @@ class ScriptSourceDirectory:
         file.write("import boto3" + os.linesep)
         file.write("myCmd = 'chmod 777 tmp_entry.sh && ./tmp_entry.sh'" + os.linesep)
         file.write("os.system(myCmd)" + os.linesep)
-        if descriptor.custom_params.metric_definitions:
-            with open("metric-agg.txt") as metric_aggs:
-                for line in metric_aggs:
-                    file.write(line)
+
