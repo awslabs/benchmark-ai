@@ -199,6 +199,7 @@
     "ml": { "$ref": "#/definitions/benchmark_ml" },
     "data": { "$ref": "#/definitions/benchmark_data" },
     "output": { "$ref": "#/definitions/output" },
+    "custom_params": {"$ref":  "#/definitions/benchmark_custom_params"},
     "server": { "$ref": "#/definitions/server" }
   },
   "additionalProperties": false,
