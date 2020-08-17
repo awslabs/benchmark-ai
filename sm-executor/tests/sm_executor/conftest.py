@@ -3,6 +3,7 @@ import addict
 from bai_kafka_utils.executors.descriptor import DescriptorConfig, BenchmarkDescriptor
 from pytest import fixture
 
+
 from sm_executor.args import SageMakerExecutorConfig
 from sm_executor.frameworks import TENSORFLOW_FRAMEWORK, MXNET_FRAMEWORK
 
@@ -60,10 +61,7 @@ def descriptor_customparams_as_adict(descriptor_config):
             framework="tensorflow",
             framework_version="1.12",
         ),
-        custom_params=addict.Dict(
-            hyper_params={"validiation_frequency": 10, "amp": True, "weight": 0.1},
-            metric_definitions=[{"Img/Sec": r"[d*\.?\d]+"}],
-        ),
+        custom_params=addict.Dict(hyper_params={"validiation_frequency": 10, "amp": True, "weight": 0.1}),
         data=addict.Dict(sources=[addict.Dict(src="foo1", path="bar1"), addict.Dict(src="foo2", path="bar2")]),
     )
 
