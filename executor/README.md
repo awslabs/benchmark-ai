@@ -271,6 +271,7 @@ VAR2 = "value2"
 * **Data**: This section must specify a list of the data sources to be downloaded.
 For any required data source, users can provide a download URI and a destination path where the resulting data will be mounted in the container filesystem for the benchmark script to use it.
 * **Server**: This section must specify the inference server hardware and environment. It is only relevant to the *inference* strategy.
+* **Custom_Params.Metric_definitions**: This section specifies a list containing a dictionary with two key/value pairs. The first key is Name which specifies the metric name. The second key is Regex which specifies the regex for cloudwatch to use to find the metric.
 * (Upcoming) **Output**: Section for users to declare the metrics they will be tracking with this benchmark, along with the alarming information: thresholds (can be dynamic, such as 2-sigma) and who should be notified when they are triggered.
 
 <hr>
