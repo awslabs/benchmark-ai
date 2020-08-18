@@ -118,7 +118,7 @@ def test_estimator_factory_mxnet(
 
 
 @pytest.mark.parametrize("strategy", [DistributedStrategy.SINGLE_NODE, DistributedStrategy.HOROVOD])
-def test_estimator_factory_customarams_tensorflow(
+def test_estimator_factory_tensorflow_customparams(
     mock_session: Session,
     customparams_descriptor: BenchmarkDescriptor,
     sagemaker_config: SageMakerExecutorConfig,
