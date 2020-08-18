@@ -83,10 +83,8 @@ resource "aws_iam_role" "kube2iam-sagemaker-executor-role" {
       "Principal": {
         "AWS": "${module.eks.worker_iam_role_arn}"
       },
-      "Action": [
-        "sts:AssumeRole",
-        "cloudwatch:PutMetricData"
-      ]
+      "Action": "sts:AssumeRole"
+
     }
   ]
 }
