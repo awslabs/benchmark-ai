@@ -115,7 +115,9 @@ class SageMakerExecutionEngine(ExecutionEngine):
         cloudwatch_client = boto3.client("cloudwatch")
         data = {}
         while "FinalMetricDataList" not in data:
-            data = self.sagemaker_client.describe_training_job(TrainingJobName="metricTestV2")
+            data = self.sagemaker_client.describe_training_job(
+                TrainingJobName=descriptor.custom_params.sagemaker_job_name
+            )
         metric_data = data["FinalMetricDataList"]
         for metric in metric_data:
             metric.pop("Timestamp")
