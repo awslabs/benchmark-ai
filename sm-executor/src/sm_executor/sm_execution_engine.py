@@ -113,13 +113,14 @@ class SageMakerExecutionEngine(ExecutionEngine):
 
     def merge_metrics(self, descriptor):
         cloudwatch_client = boto3.client("cloudwatch")
-        data = (
-            self.sagemaker_client.describe_training_job(TrainingJobName=descriptor.custom_params.sagemaker_job_name)
-        )["FinalMetricDataList"]
-        for i in data:
-            i.pop("Timestamp")
-            i["Dimensions"] = [{"Name": "task_name", "Value": descriptor.info.labels["task_name"]}]
-        cloudwatch_client.put_metric_data(Namespace="ANUBIS/METRICS/", MetricData=data)
+        data = {}
+        while "FinalMetricDataList" not in data:
+            data = self.sagemaker_client.describe_training_job(TrainingJobName="metricTestV2")
+        metric_data = data["FinalMetricDataList"]
+        for metric in metric_data:
+            metric.pop("Timestamp")
+            metric["Dimensions"] = [{"Name": "task_name", "Value": descriptor.info.labels["task_name"]}]
+        cloudwatch_client.put_metric_data(Namespace="ANUBIS/METRICS/", MetricData=metric_data)
 
     def cancel(self, client_id: str, action_id: str, cascade: bool = False):
         logger.info(f"Attempting to stop training job {action_id}")
