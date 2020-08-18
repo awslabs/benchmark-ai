@@ -197,9 +197,9 @@
     "env": { "$ref": "#/definitions/benchmark_env" },
     "ml": { "$ref": "#/definitions/benchmark_ml" },
     "data": { "$ref": "#/definitions/benchmark_data" },
+    "custom_params": { "$ref": "#/definitions/benchmark_custom_params" },
     "output": { "$ref": "#/definitions/output" },
     "server": { "$ref": "#/definitions/server" },
-    "custom_params": { "$ref": "#/definitions/benchmark_custom_params" }
   },
   "additionalProperties": false,
   "required": ["spec_version", "info", "hardware", "env"]

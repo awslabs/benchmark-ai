@@ -10,7 +10,7 @@ Currently we support the following distribution scenarios: single node and horov
 
 ### Constraints
 
-In this document we consider the service to be a single host application. It may schedule processes (in a CGI fashion) in the same container, but will not employ any slave nodes. 
+In this document we consider the service to be a single host application. It may schedule processes (in a CGI fashion) in the same container, but will not employ any slave nodes.
 
 ## Solution proposals
 
@@ -18,9 +18,7 @@ In this document we consider the service to be a single host application. It may
 
 Con: Inacceptable performance impact on the service.
 
-### O2. Run both the benchmark and the server as containers in the same pod. 
-
-![twoknights_02.jpg](../images/twoknights_02.jpg)
+### O2. Run both the benchmark and the server as containers in the same pod.
 
 
 * No network latency in the tests
@@ -69,7 +67,7 @@ Expose a port from one container to another is a simple solution.
 
 The k8s template for client-server strategy can be implemented for example in a following way:
 
-The pod template gets a 3rd “orchestrating” container, that will based on the status of the containers manipulate them based on the requirements previously mentioned. 
+The pod template gets a 3rd “orchestrating” container, that will based on the status of the containers manipulate them based on the requirements previously mentioned.
 
 Illustrated actors are containers in the pod.
 
@@ -124,21 +122,20 @@ An alternative like harbouring the orchestration logic in the executor/watcher s
 
 ### O3.1.1 We deploy service as a k8s service with a salted name (RECOMMENDED)
 
-Pro: 
+Pro:
 
 * K8S does the discovery for us
 
-Con: 
+Con:
 
 * Service are globally visible - can be solved with namespaces later
 
-### O3.1.2 We deploy service as a k8s pod 
+### O3.1.2 We deploy service as a k8s pod
 
 Pro:
 
 * Better isolation of the “servers” between benchmark jobs.
 
-Con: 
+Con:
 
 * Unnecessary reimplementation of the discovery
-

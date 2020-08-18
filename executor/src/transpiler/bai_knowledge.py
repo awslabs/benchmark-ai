@@ -11,7 +11,13 @@ from urllib.parse import urlparse
 
 from bai_kafka_utils.events import DownloadableContent, BenchmarkEvent
 from bai_kafka_utils.events import FileSystemObject
-from bai_kafka_utils.executors.descriptor import DescriptorError, BenchmarkDescriptor, DistributedStrategy
+from bai_kafka_utils.executors.descriptor import (
+    DescriptorError,
+    BenchmarkDescriptor,
+    DistributedStrategy,
+    MPI_JOB_LAUNCHER,
+    MPI_JOB_WORKER,
+)
 from bai_kafka_utils.utils import METRICS_PUSHER_CUSTOM_LABEL_PREFIX
 from ruamel import yaml
 
@@ -39,7 +45,6 @@ SCRIPTS_VOLUME_NAME = "scripts-volume"
 SCRIPTS_PULLER_CONTAINER = "script-puller"
 INFERENCE_SERVER_LOCK_CONTAINER = "inference-server-lock"
 INFERENCE_SERVER_CONTAINER = "inference-server"
-
 # To make things easier it's the same path in puller and benchmark
 SCRIPTS_MOUNT_PATH = "/bai/scripts"
 
@@ -144,7 +149,7 @@ class ScheduledBenchmarkKubernetedObjectBuilder(BaiKubernetesObjectBuilder):
         pass
 
 
-class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
+class BenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
     """
     Adds the logic required from BAI into the Kubernetes root object that represents
     launching a benchmark.
@@ -185,39 +190,7 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         self.config_template.feed({"metrics": self.get_metrics_from_descriptor(self.descriptor)})
 
     def _update_root_k8s_object(self):
-        self.root.set_service_account(BENCHMARK_SERVICE_ACCOUNT)
-        self.add_data_volume_mounts(self.data_sources, BENCHMARK_CONTAINER)
-        self.add_scripts(self.scripts)
-        self.add_shared_memory()
-        self.add_env_vars()
-        self.add_benchmark_cmd()
-
-        if not self.descriptor.output:
-            self.remove_metrics_sidecars()
-        else:
-            # Add custom labels metrics pusher
-            for label, value in self.descriptor.info.labels.items():
-                self.add_metrics_pusher_env_var(label, value, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX)
-
-        if self.event.parent_action_id:
-            self.root.add_label("parent-action-id", self.event.parent_action_id)
-            self.add_metrics_pusher_env_var(
-                "parent-action-id", self.event.parent_action_id, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX
-            )
-
-        if self.config.suppress_job_affinity:
-            self.root.remove_affinity()
-
-        if self.descriptor.is_inference_strategy():
-            # Use inference server service account
-            self.root.set_service_account(INFERENCE_SERVER_SERVICE_ACCOUNT)
-            # add server environment variables
-            self.add_server_env_vars()
-
-        # remove server lock init container from non-inference strategy
-        # single node benchmarks
-        elif self.descriptor.hardware.strategy == DistributedStrategy.SINGLE_NODE:
-            self.root.remove_container(INFERENCE_SERVER_LOCK_CONTAINER)
+        pass
 
     @staticmethod
     def choose_availability_zone(
@@ -238,10 +211,10 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
 
         return random_object.choice(list(environment_info.availability_zones.values()))
 
-    def add_metrics_pusher_env_var(self, key: str, value: str, prefix: str):
+    def add_metrics_pusher_env_var(self, key: str, value: str, prefix: str, **kwargs):
         env_var_name = prefix.upper() + key.upper()
         try:
-            metrics_pusher_container = self.root.find_container(METRICS_PUSHER_CONTAINER)
+            metrics_pusher_container = self.root.find_container(METRICS_PUSHER_CONTAINER, **kwargs)
         except ValueError:
             logger.debug(f"Could not add env var {env_var_name} to metrics pusher sidecar.")
             return
@@ -263,31 +236,31 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
 
         self.root.add_env_vars(BENCHMARK_CONTAINER, env_vars)
 
-    def add_benchmark_cmd(self):
+    def add_benchmark_cmd(self, **kwargs):
         if self.descriptor.hardware.strategy in [DistributedStrategy.SINGLE_NODE, DistributedStrategy.INFERENCE]:
             self.add_benchmark_cmd_to_container()
         elif self.descriptor.hardware.strategy == DistributedStrategy.HOROVOD:
-            self.add_benchmark_cmd_to_config_map()
+            self.add_benchmark_cmd_to_config_map(**kwargs)
         else:
             raise ValueError("Unsupported configuration in descriptor file")
 
-    def add_data_volume_mounts(self, data_sources, container: str):
-        benchmark_container = self.root.find_container(container)
+    def add_data_volume_mounts(self, data_sources, container: str, **kwargs):
+        benchmark_container = self.root.find_container(container, **kwargs)
         data_mounts = self._get_data_mounts(data_sources)
-        self._update_data_puller(data_mounts, data_sources)
+        self._update_data_puller(data_mounts, data_sources, **kwargs)
         benchmark_container.volumeMounts.extend(self._get_container_volume_mounts(data_mounts))
 
-    def remove_metrics_sidecars(self):
-        self.root.remove_container(METRICS_EXTRACTOR_CONTAINER)
-        self.root.remove_container(METRICS_PUSHER_CONTAINER)
+    def remove_metrics_sidecars(self, **kwargs):
+        self.root.remove_container(METRICS_EXTRACTOR_CONTAINER, **kwargs)
+        self.root.remove_container(METRICS_PUSHER_CONTAINER, **kwargs)
 
-    def add_shared_memory(self):
+    def add_shared_memory(self, **kwargs):
         if self.descriptor.env.extended_shm:
-            self._add_extended_shm()
+            self._add_extended_shm(**kwargs)
 
-    def _add_extended_shm(self, container=BENCHMARK_CONTAINER):
-        pod_spec_volumes = self.root.get_pod_spec().volumes
-        container_volume_mounts = self.root.find_container(container).volumeMounts
+    def _add_extended_shm(self, container=BENCHMARK_CONTAINER, **kwargs):
+        pod_spec_volumes = self.root.get_pod_spec(**kwargs).volumes
+        container_volume_mounts = self.root.find_container(container, **kwargs).volumeMounts
 
         shared_memory_vol = SHARED_MEMORY_VOLUME
 
@@ -301,14 +274,14 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         return self.root.to_yaml()
 
     # TODO: Move this method into the Kubernetes object
-    def add_benchmark_cmd_to_container(self):
+    def add_benchmark_cmd_to_container(self, **kwargs):
         """
         Extracts the command and args for the benchmark container, formats and inserts them.
         The command is split into args and passed to the container as a list.
         If a benchmark command was specified, command and args are inserted in the container's command field.
         If only args are provided, they are inserted in the container's args field.
         """
-        benchmark_container = self.root.find_container(BENCHMARK_CONTAINER)
+        benchmark_container = self.root.find_container(BENCHMARK_CONTAINER, **kwargs)
 
         def split_args(command: str) -> List[str]:
             if not command:
@@ -330,7 +303,7 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
             benchmark_container.pop("args", None)
 
     # TODO: Move this method into the Kubernetes object
-    def add_benchmark_cmd_to_config_map(self):
+    def add_benchmark_cmd_to_config_map(self, **kwargs):
         """
         Adds the benchmark code and args to the entrypoint configmap.
         """
@@ -348,7 +321,7 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
 
         # If no benchmark_code is specified, we don't need to use the configmap as entrypoint
         else:
-            self.add_benchmark_cmd_to_container()
+            self.add_benchmark_cmd_to_container(**kwargs)
 
     def _get_data_mounts(self, data_sources: List[DownloadableContent]) -> Dict[str, PullerDataSource]:
         """
@@ -391,17 +364,19 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
 
         return s3_bucket, s3_object
 
-    def _update_data_puller(self, data_volumes: Dict[str, PullerDataSource], data_sources: List[DownloadableContent]):
+    def _update_data_puller(
+        self, data_volumes: Dict[str, PullerDataSource], data_sources: List[DownloadableContent], **kwargs
+    ):
         """
         Completes the data puller by adding the required arguments and volume mounts.
         If no data sources are found, the data puller is deleted.
         """
         if not data_sources:
-            self.root.remove_container(DATA_PULLER_CONTAINER)
-            self.root.remove_volume(DATASETS_VOLUME_NAME)
+            self.root.remove_container(DATA_PULLER_CONTAINER, **kwargs)
+            self.root.remove_volume(DATASETS_VOLUME_NAME, **kwargs)
             return
 
-        data_puller = self.root.find_container(DATA_PULLER_CONTAINER)
+        data_puller = self.root.find_container(DATA_PULLER_CONTAINER, **kwargs)
 
         s3_bucket, _ = self._get_s3_bucket_and_object_from_uri(data_sources[0])
 
@@ -417,16 +392,16 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         puller_args = [s3_bucket, ":".join(s3_objects)]
         data_puller.args = puller_args
 
-    def add_env_vars(self):
-        self.root.add_env_vars(BENCHMARK_CONTAINER, self.descriptor.env.vars)
-        self.root.add_env_vars(BENCHMARK_CONTAINER, self.internal_env_vars)
+    def add_env_vars(self, **kwargs):
+        self.root.add_env_vars(BENCHMARK_CONTAINER, self.descriptor.env.vars, **kwargs)
+        self.root.add_env_vars(BENCHMARK_CONTAINER, self.internal_env_vars, **kwargs)
 
-    def add_scripts(self, scripts: List[BaiScriptSource]):
+    def add_scripts(self, scripts: List[BaiScriptSource], **kwargs):
         if not scripts:
-            self.root.remove_container(SCRIPTS_PULLER_CONTAINER)
-            self.root.remove_volume(SCRIPTS_VOLUME_NAME)
+            self.root.remove_container(SCRIPTS_PULLER_CONTAINER, **kwargs)
+            self.root.remove_volume(SCRIPTS_VOLUME_NAME, **kwargs)
             return
-        script_puller = self.root.find_container(SCRIPTS_PULLER_CONTAINER)
+        script_puller = self.root.find_container(SCRIPTS_PULLER_CONTAINER, **kwargs)
         s3_objects = []
 
         for inx, s in enumerate(scripts):
@@ -445,7 +420,141 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BaiKubernetesObjectBuilder):
         self.internal_env_vars["BAI_SCRIPTS_PATH"] = SCRIPTS_MOUNT_PATH
 
 
-class InferenceServerJobKubernetedObjectBuilder(SingleRunBenchmarkKubernetesObjectBuilder):
+class SingleRunBenchmarkKubernetesObjectBuilder(BenchmarkKubernetesObjectBuilder):
+    """
+    Adds the logic into the Kubernetes root object that represents launching a benchmark for single node job
+    """
+
+    def __init__(
+        self,
+        descriptor: BenchmarkDescriptor,
+        config: BaiConfig,
+        data_sources: List[DownloadableContent],
+        scripts: List[BaiScriptSource],
+        job_id: str,
+        *,
+        template_name: str,
+        event: BenchmarkEvent,
+        environment_info: EnvironmentInfo,
+        random_object: random.Random = None,
+    ):
+        super().__init__(
+            descriptor,
+            config,
+            data_sources,
+            scripts,
+            job_id,
+            template_name=template_name,
+            event=event,
+            environment_info=environment_info,
+            random_object=random_object,
+        )
+
+    def _feed_additional_template_values(self):
+        super()._feed_additional_template_values()
+
+    def _update_root_k8s_object(self):
+        self.root.set_service_account(BENCHMARK_SERVICE_ACCOUNT)
+        self.add_data_volume_mounts(self.data_sources, BENCHMARK_CONTAINER)
+        self.add_scripts(self.scripts)
+        self.add_shared_memory()
+        self.add_env_vars()
+        self.add_benchmark_cmd()
+
+        if not self.descriptor.output:
+            self.remove_metrics_sidecars()
+        else:
+            # Add custom labels metrics pusher
+            for label, value in self.descriptor.info.labels.items():
+                self.add_metrics_pusher_env_var(label, value, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX)
+
+        if self.event.parent_action_id:
+            self.root.add_label("parent-action-id", self.event.parent_action_id)
+            self.add_metrics_pusher_env_var(
+                "parent-action-id", self.event.parent_action_id, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX
+            )
+
+        if self.config.suppress_job_affinity:
+            self.root.remove_affinity()
+
+        if self.descriptor.is_inference_strategy():
+            # Use inference server service account
+            self.root.set_service_account(INFERENCE_SERVER_SERVICE_ACCOUNT)
+            # add server environment variables
+            self.add_server_env_vars()
+
+        # remove server lock init container from non-inference strategy
+        # single node benchmarks
+        elif self.descriptor.hardware.strategy == DistributedStrategy.SINGLE_NODE:
+            self.root.remove_container(INFERENCE_SERVER_LOCK_CONTAINER)
+
+
+class HorovodJobKubernetesObjectBuilder(BenchmarkKubernetesObjectBuilder):
+    """
+    Adds the logic into the Kubernetes root object that represents launching a benchmark for MPIJob
+    """
+
+    def __init__(
+        self,
+        descriptor: BenchmarkDescriptor,
+        config: BaiConfig,
+        data_sources: List[DownloadableContent],
+        scripts: List[BaiScriptSource],
+        job_id: str,
+        *,
+        template_name: str,
+        event: BenchmarkEvent,
+        environment_info: EnvironmentInfo,
+        random_object: random.Random = None,
+    ):
+        super().__init__(
+            descriptor,
+            config,
+            data_sources,
+            scripts,
+            job_id,
+            template_name=template_name,
+            event=event,
+            environment_info=environment_info,
+            random_object=random_object,
+        )
+
+    def _feed_additional_template_values(self):
+        super()._feed_additional_template_values()
+
+    def _update_root_k8s_object(self):
+        self.add_data_volume_mounts(self.data_sources, BENCHMARK_CONTAINER, mpiReplicaType=MPI_JOB_WORKER)
+        self.add_benchmark_cmd(mpiReplicaType=MPI_JOB_LAUNCHER)
+
+        for replica_type in [MPI_JOB_LAUNCHER, MPI_JOB_WORKER]:
+            self.root.set_service_account(BENCHMARK_SERVICE_ACCOUNT, mpiReplicaType=replica_type)
+            self.add_scripts(self.scripts, mpiReplicaType=replica_type)
+            self.add_shared_memory(mpiReplicaType=replica_type)
+            self.add_env_vars(mpiReplicaType=replica_type)
+
+            if not self.descriptor.output:
+                self.remove_metrics_sidecars(mpiReplicaType=replica_type)
+            else:
+                # Add custom labels metrics pusher
+                for label, value in self.descriptor.info.labels.items():
+                    self.add_metrics_pusher_env_var(
+                        label, value, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX, mpiReplicaType=replica_type
+                    )
+
+            if self.event.parent_action_id:
+                self.root.add_label("parent-action-id", self.event.parent_action_id)
+                self.add_metrics_pusher_env_var(
+                    "parent-action-id",
+                    self.event.parent_action_id,
+                    prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX,
+                    mpiReplicaType=replica_type,
+                )
+
+            if self.config.suppress_job_affinity:
+                self.root.remove_affinity(mpiReplicaType=replica_type)
+
+
+class InferenceServerJobKubernetedObjectBuilder(BenchmarkKubernetesObjectBuilder):
     def __init__(
         self,
         descriptor: BenchmarkDescriptor,
@@ -553,20 +662,29 @@ def create_single_run_benchmark_bai_k8s_builder(
     if extra_bai_config_args is None:
         extra_bai_config_args = {}
 
-    template_files = {
-        DistributedStrategy.SINGLE_NODE: "job_single_node.yaml",
-        DistributedStrategy.HOROVOD: "mpi_job_horovod.yaml",
-        # Benchmark job component of inference strategy
-        DistributedStrategy.INFERENCE: "job_single_node.yaml",
+    distributed_strategy_metadata = {
+        DistributedStrategy.SINGLE_NODE: {
+            "template_name": "job_single_node.yaml",
+            "strategy_type_class": SingleRunBenchmarkKubernetesObjectBuilder,
+        },
+        DistributedStrategy.INFERENCE: {
+            # Benchmark job component of inference strategy
+            "template_name": "job_single_node.yaml",
+            "strategy_type_class": SingleRunBenchmarkKubernetesObjectBuilder,
+        },
+        DistributedStrategy.HOROVOD: {
+            "template_name": "mpi_job_horovod.yaml",
+            "strategy_type_class": HorovodJobKubernetesObjectBuilder,
+        },
     }
 
-    template_name = template_files.get(descriptor.hardware.strategy)
+    template_name = distributed_strategy_metadata.get(descriptor.hardware.strategy)["template_name"]
     if not template_name:
         raise ValueError(f"Unsupported distributed strategy in descriptor file: '{descriptor.hardware.strategy}'")
 
     bai_scripts = create_scripts(scripts)
 
-    bai_k8s_builder = SingleRunBenchmarkKubernetesObjectBuilder(
+    bai_k8s_builder = distributed_strategy_metadata.get(descriptor.hardware.strategy)["strategy_type_class"](
         descriptor,
         bai_config,
         fetched_data_sources,

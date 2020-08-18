@@ -1,6 +1,5 @@
 # Inception Integration Tests
 
-![inception_setup](images/inception.jpg)
 
 Docker in docker in docker... Oh my!
 
