@@ -83,10 +83,7 @@ resource "aws_iam_role" "kube2iam-sagemaker-executor-role" {
       "Principal": {
         "AWS": "${module.eks.worker_iam_role_arn}"
       },
-       "Action": [
-         "sts:AssumeRole",
-         "cloudwatch:PutMetricData"
-      ]
+      "Action": "sts:AssumeRole"
     }
   ]
 }
@@ -139,7 +136,8 @@ resource "aws_iam_role_policy" "sagemaker-training-job-policy" {
               "sagemaker:ListTrainingJobs",
               "sagemaker:DescribeTrainingJob",
               "sagemaker:CreateTrainingJob",
-	          "sagemaker:StopTrainingJob"
+	          "sagemaker:StopTrainingJob",
+	          "cloudwatch":PutMetricData
           ],
           "Resource": "*"
     }
