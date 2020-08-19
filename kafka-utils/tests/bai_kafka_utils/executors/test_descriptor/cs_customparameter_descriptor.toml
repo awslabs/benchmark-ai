@@ -1,8 +1,7 @@
 # BenchmarkAI meta
 spec_version = "0.1.0"
 
-#infoooo
-#ddd
+# 0. info
 [info]
 description = """ sagemaker tf  """
 execution_engine = "aws.sagemaker"
