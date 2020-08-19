@@ -119,9 +119,12 @@ class SageMakerExecutionEngine(ExecutionEngine):
                 TrainingJobName=descriptor.custom_params.sagemaker_job_name
             )
         metric_data = data["FinalMetricDataList"]
+        dimensions = []
+        for name in descriptor.info.labels:
+            dimensions.append({"Name": name, "Value": descriptor.info.labels["task_name"]})
         for metric in metric_data:
             metric.pop("Timestamp")
-            metric["Dimensions"] = [{"Name": "task_name", "Value": descriptor.info.labels["task_name"]}]
+            metric["Dimensions"] = dimensions
         cloudwatch_client.put_metric_data(Namespace="ANUBIS/METRICS/", MetricData=metric_data)
 
     def cancel(self, client_id: str, action_id: str, cascade: bool = False):
