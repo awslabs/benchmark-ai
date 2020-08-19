@@ -53,7 +53,7 @@ def descriptor(descriptor_config, descriptor_as_adict):
 def descriptor_customparams_as_adict(descriptor_config):
     return addict.Dict(
         spec_version="0.1.0",
-        info=addict.Dict(description="something"),
+        info=addict.Dict(description="something", labels={"task_name": "exampleTask", "batch_size": "64"}),
         hardware=addict.Dict(instance_type="p3.8xlarge", strategy="single_node"),
         env=addict.Dict(docker_image="jlcont/benchmarking:270219"),
         ml=addict.Dict(
@@ -61,7 +61,11 @@ def descriptor_customparams_as_adict(descriptor_config):
             framework="tensorflow",
             framework_version="1.12",
         ),
-        custom_params=addict.Dict(hyper_params={"validiation_frequency": 10, "amp": True, "weight": 0.1}),
+        custom_params=addict.Dict(
+            sagemaker_job_name="testJob",
+            merge=True,
+            hyper_params={"validiation_frequency": 10, "amp": True, "weight": 0.1},
+        ),
         data=addict.Dict(sources=[addict.Dict(src="foo1", path="bar1"), addict.Dict(src="foo2", path="bar2")]),
     )
 
@@ -69,3 +73,11 @@ def descriptor_customparams_as_adict(descriptor_config):
 @fixture
 def customparams_descriptor(descriptor_config, descriptor_customparams_as_adict):
     return BenchmarkDescriptor.from_dict(descriptor_customparams_as_adict.to_dict(), descriptor_config)
+
+
+@fixture
+def sagemaker_final_metric_data_list():
+    return [
+        {"MetricName": "iter", "Value": 51.900001525878906, "Timestamp": "1970-01-19T03:48:31.114000-08:00"},
+        {"MetricName": "img_sec", "Value": 51.900001525878906, "Timestamp": "1970-01-19T03:48:31.114000-08:00"},
+    ]

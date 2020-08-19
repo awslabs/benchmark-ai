@@ -192,6 +192,29 @@ def test_volume_size(
     prop_train_volume_size.assert_called_with(expected_train_volume_size)
 
 
+def test_merge_metrics(
+    sm_execution_engine_to_test: SageMakerExecutionEngine,
+    customparams_descriptor: BenchmarkDescriptor,
+    sagemaker_final_metric_data_list,
+):
+    metrics_with_dimensions = [
+        {
+            "MetricName": "iter",
+            "Value": 51.900001525878906,
+            "Dimensions": [{"Name": "task_name", "Value": "exampleTask"}, {"Name": "batch_size", "Value": "64"}],
+        },
+        {
+            "MetricName": "img_sec",
+            "Value": 51.900001525878906,
+            "Dimensions": [{"Name": "task_name", "Value": "exampleTask"}, {"Name": "batch_size", "Value": "64"}],
+        },
+    ]
+    assert (
+        sm_execution_engine_to_test.tag_dimensions(customparams_descriptor, sagemaker_final_metric_data_list)
+        == metrics_with_dimensions
+    )
+
+
 def test_no_data(
     sagemaker_config: SageMakerExecutorConfig,
     sm_execution_engine_to_test: SageMakerExecutionEngine,

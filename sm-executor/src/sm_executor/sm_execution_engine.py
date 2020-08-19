@@ -84,7 +84,7 @@ class SageMakerExecutionEngine(ExecutionEngine):
                 if merge:
                     estimator.fit(data, wait=True, logs=False, job_name=job_name)
                     self.merge_metrics(descriptor)
-                else:
+                elif not merge:
                     estimator.fit(data, wait=False, logs=False, job_name=job_name)
             except botocore.exceptions.ClientError as err:
                 error_message = get_client_error_message(err, default="Unknown")
@@ -112,20 +112,30 @@ class SageMakerExecutionEngine(ExecutionEngine):
         return total_size_gb
 
     def merge_metrics(self, descriptor):
+        job_name = descriptor.custom_params.sagemaker_job_name
+        logger.info(f"Attempting to merge metrics for training job {job_name}")
         cloudwatch_client = boto3.client("cloudwatch")
         data = {}
+        # TrainingJob may finish but the metrics may have not been uploaded yet
+        # Will loop until the FinalMetricDataList is populated
         while "FinalMetricDataList" not in data:
-            data = self.sagemaker_client.describe_training_job(
-                TrainingJobName=descriptor.custom_params.sagemaker_job_name
-            )
-        metric_data = data["FinalMetricDataList"]
+            data = self.sagemaker_client.describe_training_job(TrainingJobName=job_name)
+        metric_data = self.tag_dimensions(descriptor, data["FinalMetricDataList"])
+        cloudwatch_client.put_metric_data(Namespace="ANUBIS/METRICS", MetricData=metric_data)
+
+    def tag_dimensions(self, descriptor, metric_data):
+        # Metric formatting in seperate method
+        # Easier to debug/test
         dimensions = []
+        # Pass in Names/Values to cloudwatch dimensions this matches non SM Anubis Behavior
         for name in descriptor.info.labels:
             dimensions.append({"Name": name, "Value": descriptor.info.labels[name]})
+        # Timestamp field gets auto-populated with incorrect timestamps
+        # Pop them to make timestamp default to time of put_metric_data call
         for metric in metric_data:
             metric.pop("Timestamp")
             metric["Dimensions"] = dimensions
-        cloudwatch_client.put_metric_data(Namespace="ANUBIS/METRICS/", MetricData=metric_data)
+        return metric_data
 
     def cancel(self, client_id: str, action_id: str, cascade: bool = False):
         logger.info(f"Attempting to stop training job {action_id}")
