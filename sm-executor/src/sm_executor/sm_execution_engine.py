@@ -121,7 +121,7 @@ class SageMakerExecutionEngine(ExecutionEngine):
         metric_data = data["FinalMetricDataList"]
         dimensions = []
         for name in descriptor.info.labels:
-            dimensions.append({"Name": name, "Value": descriptor.info.labels["task_name"]})
+            dimensions.append({"Name": name, "Value": descriptor.info.labels[name]})
         for metric in metric_data:
             metric.pop("Timestamp")
             metric["Dimensions"] = dimensions
