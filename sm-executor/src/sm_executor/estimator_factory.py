@@ -53,8 +53,8 @@ def create_mxnet_estimator(
 def _create_common_estimator_args(
     session: Session, descriptor: BenchmarkDescriptor, source_dir: str, config: SageMakerExecutorConfig
 ) -> addict.Dict:
-    py_version = "py3"
     metrics = None
+    py_version = ""
     if descriptor.custom_params:
         py_version = descriptor.custom_params.python_version
         metrics = descriptor.custom_params.metric_definitions

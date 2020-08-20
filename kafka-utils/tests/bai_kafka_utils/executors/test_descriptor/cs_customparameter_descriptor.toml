@@ -1,8 +1,7 @@
 # BenchmarkAI meta
 spec_version = "0.1.0"
 
-#infoooo
-#ddd
+# 0. info
 [info]
 description = """ sagemaker tf  """
 execution_engine = "aws.sagemaker"
@@ -45,6 +44,11 @@ framework_version = "1.12.0"
 
 [custom_params]
 python_version = "py2"
+sagemaker_job_name = "testJob"
+
+[[custom_params.metric_definitions]]
+Name = "img_sec"
+Regex = 'Iter: (.*?)\s'
 
 [custom_params.hyper_params]
 amp = "true"

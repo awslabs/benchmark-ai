@@ -79,9 +79,10 @@ def validate_estimator_tensorflow(
         assert estimator.distributions.mpi["processes_per_host"] == descriptor.processes_per_instance
 
 
-def validate_estimator_hyperparams(
+def validate_estimator_customparams(
     estimator: Framework, mock_session: Session, descriptor, sagemaker_config: SageMakerExecutorConfig
 ):
+    assert estimator.metric_definitions == descriptor.custom_params.metric_definitions
     assert estimator.hyperparameters()
     assert estimator.source_dir == SOURCE_DIR
     assert estimator.entry_point == ScriptSourceDirectory.PYTHON_ENTRY_POINT
@@ -117,7 +118,7 @@ def test_estimator_factory_mxnet(
 
 
 @pytest.mark.parametrize("strategy", [DistributedStrategy.SINGLE_NODE, DistributedStrategy.HOROVOD])
-def test_estimator_factory_hyperparams_tensorflow(
+def test_estimator_factory_tensorflow_customparams(
     mock_session: Session,
     customparams_descriptor: BenchmarkDescriptor,
     sagemaker_config: SageMakerExecutorConfig,
@@ -125,11 +126,11 @@ def test_estimator_factory_hyperparams_tensorflow(
 ):
     customparams_descriptor.strategy = strategy
     estimator = create_tensorflow_estimator(mock_session, customparams_descriptor, SOURCE_DIR, sagemaker_config)
-    validate_estimator_hyperparams(estimator, mock_session, customparams_descriptor, sagemaker_config)
+    validate_estimator_customparams(estimator, mock_session, customparams_descriptor, sagemaker_config)
 
 
-def test_estimator_factory_mxnet_hyperparams(
+def test_estimator_factory_mxnet_customparams(
     mock_session: Session, customparams_descriptor: BenchmarkDescriptor, sagemaker_config: SageMakerExecutorConfig
 ):
     estimator = create_mxnet_estimator(mock_session, customparams_descriptor, SOURCE_DIR, sagemaker_config)
-    validate_estimator_hyperparams(estimator, mock_session, customparams_descriptor, sagemaker_config)
+    validate_estimator_customparams(estimator, mock_session, customparams_descriptor, sagemaker_config)
