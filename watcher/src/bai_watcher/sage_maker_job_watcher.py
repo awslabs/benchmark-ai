@@ -43,6 +43,8 @@ class SageMakerTrainingJobWatcher(JobWatcher):
             return BenchmarkJobStatus.SM_FAILED_MAX_RUNTIME_EXCEEDED
         elif secondary_status == "MaxWaitTimeExceeded":
             return BenchmarkJobStatus.SM_FAILED_MAX_WAITTIME_EXCEEDED
+        elif secondary_status == "Uploading":
+            return BenchmarkJobStatus.SM_IN_PROGRESS_UPLOADING
         elif secondary_status == "Interrupted":
             return BenchmarkJobStatus.SM_INTERRUPTED
         elif secondary_status == "Completed":

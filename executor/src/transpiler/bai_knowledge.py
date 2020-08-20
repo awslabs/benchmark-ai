@@ -465,7 +465,7 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BenchmarkKubernetesObjectBuilder
             self.remove_metrics_sidecars()
         else:
             # Add custom labels metrics pusher
-            for label, value in self.descriptor.info.labels.items():
+            for label, value in self.descriptor.`info.labels.items():
                 self.add_metrics_pusher_env_var(label, value, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX)
 
         if self.event.parent_action_id:
