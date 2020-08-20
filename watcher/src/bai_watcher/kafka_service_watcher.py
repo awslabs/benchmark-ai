@@ -132,7 +132,7 @@ class WatchJobsEventHandler(KafkaServiceCallback):
             return
 
         descriptor = BenchmarkDescriptor.from_dict(event.payload.toml.contents)
-        if descriptor.custom_params and descriptor.custom_params_merge:
+        if descriptor.custom_params and descriptor.custom_params.merge is True:
             logger.info("Sagemaker training-jobs with metric merging are not yet supported by the watcher")
             kafka_service.send_status_message_event(
                 event,

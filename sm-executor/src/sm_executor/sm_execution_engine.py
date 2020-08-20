@@ -79,12 +79,13 @@ class SageMakerExecutionEngine(ExecutionEngine):
                 merge = False
                 if descriptor.custom_params and descriptor.custom_params.sagemaker_job_name:
                     job_name = descriptor.custom_params.sagemaker_job_name
+                if descriptor.custom_params and descriptor.custom_params.merge:
                     merge = descriptor.custom_params.merge
                 logger.info(f"Attempting to start training job {job_name}")
-                if merge:
+                if merge is True:
                     estimator.fit(data, wait=True, logs=False, job_name=job_name)
                     self.merge_metrics(descriptor)
-                elif not merge:
+                else:
                     estimator.fit(data, wait=False, logs=False, job_name=job_name)
             except botocore.exceptions.ClientError as err:
                 error_message = get_client_error_message(err, default="Unknown")
