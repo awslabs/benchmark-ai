@@ -82,7 +82,7 @@ class SageMakerExecutionEngine(ExecutionEngine):
                 if descriptor.custom_params and descriptor.custom_params.merge:
                     merge = descriptor.custom_params.merge
                 logger.info(f"Attempting to start training job {job_name}")
-                if merge is True:
+                if merge:
                     estimator.fit(data, wait=True, logs=False, job_name=job_name)
                     self.merge_metrics(descriptor)
                 else:
