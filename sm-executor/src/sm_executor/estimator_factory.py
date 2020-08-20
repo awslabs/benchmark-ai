@@ -38,7 +38,7 @@ def create_tensorflow_estimator(
     hps = get_custom_params(descriptor)
     kwargs.script_mode = True
     logger.info(f"Creating TF Estimator with parameters {kwargs}")
-    return TensorFlow(**kwargs, hyperparameters=hps, enable_sagemaker_metrics=True, enable_cloudwatch_metrics=True)
+    return TensorFlow(**kwargs, hyperparameters=hps)
 
 
 def create_mxnet_estimator(
@@ -53,9 +53,11 @@ def create_mxnet_estimator(
 def _create_common_estimator_args(
     session: Session, descriptor: BenchmarkDescriptor, source_dir: str, config: SageMakerExecutorConfig
 ) -> addict.Dict:
-    py_version = "py3"
-    if descriptor.custom_params and descriptor.custom_params.python_version:
+    metrics = None
+    py_version = ""
+    if descriptor.custom_params:
         py_version = descriptor.custom_params.python_version
+        metrics = descriptor.custom_params.metric_definitions
     return addict.Dict(
         source_dir=source_dir,
         entry_point="tmp_entry.py",
@@ -69,6 +71,7 @@ def _create_common_estimator_args(
         output_path=f"s3://{config.s3_output_bucket}",
         security_group_ids=config.security_group_ids,
         subnets=config.subnets,
+        metric_definitions=metrics or None,
     )
 
 
