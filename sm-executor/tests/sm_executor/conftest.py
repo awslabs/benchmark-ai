@@ -63,7 +63,6 @@ def descriptor_customparams_as_adict(descriptor_config):
         ),
         custom_params=addict.Dict(
             sagemaker_job_name="testJob",
-            merge=True,
             hyper_params={"validiation_frequency": 10, "amp": True, "weight": 0.1},
             metric_definitions=[{"Name": "img_sec", "Regex": r"[d*\.?\d]+"}],
         ),
@@ -74,11 +73,3 @@ def descriptor_customparams_as_adict(descriptor_config):
 @fixture
 def customparams_descriptor(descriptor_config, descriptor_customparams_as_adict):
     return BenchmarkDescriptor.from_dict(descriptor_customparams_as_adict.to_dict(), descriptor_config)
-
-
-@fixture
-def sagemaker_final_metric_data_list():
-    return [
-        {"MetricName": "iter", "Value": 51.900001525878906, "Timestamp": "1970-01-19T03:48:31.114000-08:00"},
-        {"MetricName": "img_sec", "Value": 51.900001525878906, "Timestamp": "1970-01-19T03:48:31.114000-08:00"},
-    ]
