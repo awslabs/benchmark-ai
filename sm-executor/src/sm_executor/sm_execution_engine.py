@@ -14,7 +14,6 @@ from bai_kafka_utils.executors.execution_callback import (
     NoResourcesFoundException,
 )
 from bai_sagemaker_utils.utils import get_client_error_message, is_not_found_error
-
 from sm_executor.args import SageMakerExecutorConfig
 from sm_executor.estimator_factory import EstimatorFactory
 from sm_executor.frameworks import MXNET_FRAMEWORK, TENSORFLOW_FRAMEWORK
