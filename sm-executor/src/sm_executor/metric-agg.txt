@@ -1,7 +1,0 @@
-cloudwatch = boto3.client("cloudwatch")
-client = boto3.client("sagemaker")
-data = (client.describe_training_job(TrainingJobName="metricTest"))["FinalMetricDataList"]
-for i in data:
-    i.pop("Timestamp")
-    i["Dimensions"] = [{"Name": "task_name", "Value": "a"}]
-cloudwatch.put_metric_data(Namespace="ANUBIS/METRICS/", MetricData=data)
