@@ -193,10 +193,12 @@ def test_volume_size(
 
 
 def test_merge_metrics(
-    sm_execution_engine_to_test: SageMakerExecutionEngine,
-    customparams_descriptor: BenchmarkDescriptor,
-    sagemaker_final_metric_data_list,
+    sm_execution_engine_to_test: SageMakerExecutionEngine, customparams_descriptor: BenchmarkDescriptor,
 ):
+    metric_data = [
+        {"MetricName": "iter", "Value": 51.900001525878906, "Timestamp": "1970-01-19T03:48:31.114000-08:00"},
+        {"MetricName": "img_sec", "Value": 51.900001525878906, "Timestamp": "1970-01-19T03:48:31.114000-08:00"},
+    ]
     metrics_with_dimensions = [
         {
             "MetricName": "iter",
@@ -209,10 +211,7 @@ def test_merge_metrics(
             "Dimensions": [{"Name": "task_name", "Value": "exampleTask"}, {"Name": "batch_size", "Value": "64"}],
         },
     ]
-    assert (
-        sm_execution_engine_to_test.tag_dimensions(customparams_descriptor, sagemaker_final_metric_data_list)
-        == metrics_with_dimensions
-    )
+    assert sm_execution_engine_to_test.tag_dimensions(customparams_descriptor, metric_data) == metrics_with_dimensions
 
 
 def test_no_data(

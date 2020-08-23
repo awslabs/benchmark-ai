@@ -150,10 +150,9 @@ class WatchJobsEventHandler(KafkaServiceCallback):
         logger.info("Starting to watch the job '%s'", job_id)
 
         watcher_callback = self._make_status_callback(event, kafka_service, not self._is_sage_maker_job(event))
-
         if self._is_sage_maker_job(event):
             watcher = SageMakerTrainingJobWatcher(
-                job_id=event.action_id, callback=watcher_callback, sagemaker_client=boto3.client("sagemaker")
+                job_id=job_id, callback=watcher_callback, sagemaker_client=boto3.client("sagemaker")
             )
             kafka_service.send_status_message_event(event, Status.PENDING, "Watching SageMaker benchmark")
         else:

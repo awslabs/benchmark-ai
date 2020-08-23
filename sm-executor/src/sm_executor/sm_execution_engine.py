@@ -14,7 +14,6 @@ from bai_kafka_utils.executors.execution_callback import (
     NoResourcesFoundException,
 )
 from bai_sagemaker_utils.utils import get_client_error_message, is_not_found_error
-
 from sm_executor.args import SageMakerExecutorConfig
 from sm_executor.estimator_factory import EstimatorFactory
 from sm_executor.frameworks import MXNET_FRAMEWORK, TENSORFLOW_FRAMEWORK
@@ -23,7 +22,6 @@ from sm_executor.source_dir import ScriptSourceDirectory
 CONFIG = DescriptorConfig(["single_node", "horovod"], [TENSORFLOW_FRAMEWORK, MXNET_FRAMEWORK])
 
 SageMakerSessionFactory = Callable[[], sagemaker.Session]
-
 
 logger = logging.getLogger(__name__)
 
@@ -79,12 +77,13 @@ class SageMakerExecutionEngine(ExecutionEngine):
                 merge = False
                 if descriptor.custom_params and descriptor.custom_params.sagemaker_job_name:
                     job_name = descriptor.custom_params.sagemaker_job_name
+                if descriptor.custom_params and descriptor.custom_params.merge:
                     merge = descriptor.custom_params.merge
                 logger.info(f"Attempting to start training job {job_name}")
                 if merge:
                     estimator.fit(data, wait=True, logs=False, job_name=job_name)
                     self.merge_metrics(descriptor)
-                elif not merge:
+                else:
                     estimator.fit(data, wait=False, logs=False, job_name=job_name)
             except botocore.exceptions.ClientError as err:
                 error_message = get_client_error_message(err, default="Unknown")
@@ -112,6 +111,11 @@ class SageMakerExecutionEngine(ExecutionEngine):
         return total_size_gb
 
     def merge_metrics(self, descriptor):
+        """
+        Will create a cloudwatch metric under ANUBIS/METRICS with dimensions provided by descriptor.info.labels
+        :param descriptor: Descriptor object that is generated from reading submited toml file
+        :return: N/A
+        """
         job_name = descriptor.custom_params.sagemaker_job_name
         logger.info(f"Attempting to merge metrics for training job {job_name}")
         cloudwatch_client = boto3.client("cloudwatch")
@@ -124,6 +128,12 @@ class SageMakerExecutionEngine(ExecutionEngine):
         cloudwatch_client.put_metric_data(Namespace="ANUBIS/METRICS", MetricData=metric_data)
 
     def tag_dimensions(self, descriptor, metric_data):
+        """
+        Using the descrriptor's info.labels will populate a dimensions object and create the metric_data object
+        :param descriptor: Descriptor object that is generated from reading submited toml file
+        :param metric_data: The base metric_data that is returned by the sagemaker_client_describe_training_job
+        :return: Returns the formulated final metric_data object that contains all the dimensions provided by the user
+        """
         # Metric formatting in seperate method
         # Easier to debug/test
         dimensions = []
