@@ -53,7 +53,7 @@ def descriptor(descriptor_config, descriptor_as_adict):
 def descriptor_customparams_as_adict(descriptor_config):
     return addict.Dict(
         spec_version="0.1.0",
-        info=addict.Dict(description="something"),
+        info=addict.Dict(description="something", labels={"task_name": "exampleTask", "batch_size": "64"}),
         hardware=addict.Dict(instance_type="p3.8xlarge", strategy="single_node"),
         env=addict.Dict(docker_image="jlcont/benchmarking:270219"),
         ml=addict.Dict(
@@ -62,6 +62,7 @@ def descriptor_customparams_as_adict(descriptor_config):
             framework_version="1.12",
         ),
         custom_params=addict.Dict(
+            sagemaker_job_name="testJob",
             hyper_params={"validiation_frequency": 10, "amp": True, "weight": 0.1},
             metric_definitions=[{"Name": "img_sec", "Regex": r"[d*\.?\d]+"}],
         ),

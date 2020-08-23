@@ -14,7 +14,6 @@ from bai_kafka_utils.executors.execution_callback import (
     NoResourcesFoundException,
 )
 from bai_sagemaker_utils.utils import get_client_error_message, is_not_found_error
-
 from sm_executor.args import SageMakerExecutorConfig
 from sm_executor.estimator_factory import EstimatorFactory
 from sm_executor.frameworks import MXNET_FRAMEWORK, TENSORFLOW_FRAMEWORK
@@ -23,7 +22,6 @@ from sm_executor.source_dir import ScriptSourceDirectory
 CONFIG = DescriptorConfig(["single_node", "horovod"], [TENSORFLOW_FRAMEWORK, MXNET_FRAMEWORK])
 
 SageMakerSessionFactory = Callable[[], sagemaker.Session]
-
 
 logger = logging.getLogger(__name__)
 
@@ -76,11 +74,17 @@ class SageMakerExecutionEngine(ExecutionEngine):
 
             try:
                 job_name = SageMakerExecutionEngine._get_job_name(event.action_id)
+                merge = False
                 if descriptor.custom_params and descriptor.custom_params.sagemaker_job_name:
                     job_name = descriptor.custom_params.sagemaker_job_name
+                if descriptor.custom_params and descriptor.custom_params.merge:
+                    merge = descriptor.custom_params.merge
                 logger.info(f"Attempting to start training job {job_name}")
-                estimator.fit(data, wait=False, logs=False, job_name=job_name)
-
+                if merge:
+                    estimator.fit(data, wait=True, logs=False, job_name=job_name)
+                    self.merge_metrics(descriptor)
+                else:
+                    estimator.fit(data, wait=False, logs=False, job_name=job_name)
             except botocore.exceptions.ClientError as err:
                 error_message = get_client_error_message(err, default="Unknown")
                 raise ExecutionEngineException(
@@ -105,6 +109,43 @@ class SageMakerExecutionEngine(ExecutionEngine):
         total_size = sum([dataset.size_info.total_size for dataset in event.payload.datasets])
         total_size_gb = int(SageMakerExecutionEngine.SAFETY_FACTOR * ceil(total_size / 1024 ** 3))
         return total_size_gb
+
+    def merge_metrics(self, descriptor):
+        """
+        Will create a cloudwatch metric under ANUBIS/METRICS with dimensions provided by descriptor.info.labels
+        :param descriptor: Descriptor object that is generated from reading submited toml file
+        :return: N/A
+        """
+        job_name = descriptor.custom_params.sagemaker_job_name
+        logger.info(f"Attempting to merge metrics for training job {job_name}")
+        cloudwatch_client = boto3.client("cloudwatch")
+        data = {}
+        # TrainingJob may finish but the metrics may have not been uploaded yet
+        # Will loop until the FinalMetricDataList is populated
+        while "FinalMetricDataList" not in data:
+            data = self.sagemaker_client.describe_training_job(TrainingJobName=job_name)
+        metric_data = self.tag_dimensions(descriptor, data["FinalMetricDataList"])
+        cloudwatch_client.put_metric_data(Namespace="ANUBIS/METRICS", MetricData=metric_data)
+
+    def tag_dimensions(self, descriptor, metric_data):
+        """
+        Using the descrriptor's info.labels will populate a dimensions object and create the metric_data object
+        :param descriptor: Descriptor object that is generated from reading submited toml file
+        :param metric_data: The base metric_data that is returned by the sagemaker_client_describe_training_job
+        :return: Returns the formulated final metric_data object that contains all the dimensions provided by the user
+        """
+        # Metric formatting in seperate method
+        # Easier to debug/test
+        dimensions = []
+        # Pass in Names/Values to cloudwatch dimensions this matches non SM Anubis Behavior
+        for name in descriptor.info.labels:
+            dimensions.append({"Name": name, "Value": descriptor.info.labels[name]})
+        # Timestamp field gets auto-populated with incorrect timestamps
+        # Pop them to make timestamp default to time of put_metric_data call
+        for metric in metric_data:
+            metric.pop("Timestamp")
+            metric["Dimensions"] = dimensions
+        return metric_data
 
     def cancel(self, client_id: str, action_id: str, cascade: bool = False):
         logger.info(f"Attempting to stop training job {action_id}")

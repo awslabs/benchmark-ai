@@ -52,6 +52,8 @@ def test_custom_params_descriptor(datadir, filename):
     assert descriptor.custom_params.hyper_params["amp"]
     assert descriptor.custom_params.hyper_params["validation_frequency"] == 10
     assert descriptor.custom_params.python_version == "py2"
+    assert descriptor.custom_params.sagemaker_job_name == "testJob"
+    assert descriptor.custom_params.merge
 
 
 @pytest.mark.parametrize("scheduling", ["0 0 0 0", "* * ? * *", "single"])
