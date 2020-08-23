@@ -31,6 +31,9 @@ resource "aws_iam_policy" "cloudwatch-put-metrics" {
       "Effect": "Allow",
       "Action": [
                 "cloudwatch:PutMetricData"
+                "cloudwatch:ListDashboards"
+                "cloudwatch:GetDashboard"
+                "cloudwatch:PutDashboard"
             ],
             "Resource": "*"
     }

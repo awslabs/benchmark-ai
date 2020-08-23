@@ -1,3 +1,5 @@
+import json
+
 import boto3
 
 from datetime import datetime
@@ -11,7 +13,7 @@ from cloudwatch_exporter import SERVICE_NAME, __version__, service_logger
 
 CLOUDWATCH_MAX_DIMENSIONS = 10
 
-NOT_EXPORTED_LABELS = ["action-id", "parent-action-id", "client-id"]
+NOT_EXPORTED_LABELS = ["action-id", "parent-action-id", "client-id", "dashboard-name"]
 
 logger = service_logger.getChild(__name__)
 
@@ -56,6 +58,71 @@ class CloudWatchExporterHandler(KafkaServiceCallback):
                 }
             ],
             Namespace="ANUBIS/METRICS",
+        )
+        if "dashboard-name" in event.labels:
+            pre_existing_dashboard = False
+            existing_dashboards = self.cloudwatch.list_dashboards()
+            for dashboard in existing_dashboards["DashboardEntries"]:
+                if dashboard["DashboardName"] == event.labels["dashboard-name"]:
+                    pre_existing_dashboard = True
+            if pre_existing_dashboard:
+                self.update_dashboard()
+            else:
+                self.create_dashboard()
+
+    def update_dashboard(self, event):
+        dashboard = self.cloudwatch.get_dashboard(DashboardName=event.labels["dashboard-name"])
+        dashboard_body = json.loads(dashboard["DashboardBody"])
+        metric = ["ANUBIS/METRICS", event.name]
+        for name, val in event.labels.items():
+            if name not in NOT_EXPORTED_LABELS:
+                metric.append(name)
+                metric.append(val)
+        dashboard_body["widgets"].append(
+            {
+                "type": "metric",
+                "properties": {
+                    "metrics": metric,
+                    "region": "us-east-1",
+                    "title": event.labels["task_name"],
+                    "period": 86400,
+                },
+            }
+        )
+        updated_dashboard_body = json.dumps(dashboard_body)
+        self.cloudwatch.put_dashboard(
+            DashboardName=event.labels["dashboard-name"], DashboardBody=updated_dashboard_body
+        )
+
+    def create_dashboard(self, event):
+        metric = ["ANUBIS/METRICS", event.name]
+        for name, val in event.labels.items():
+            if name not in NOT_EXPORTED_LABELS:
+                metric.append(name)
+                metric.append(val)
+        new_dashboard = {
+            "widgets": [
+                {
+                    "type": "metric",
+                    "properties": {
+                        "metrics": [
+                            [
+                                "ANUBIS/METRICS",
+                                "throughput",
+                                "task_name",
+                                "tf_train_single_node_2.3_cpu_py3_resnet50_synthetic",
+                            ]
+                        ],
+                        "region": "us-east-1",
+                        "title": event.labels["task_name"],
+                        "period": 86400,
+                    },
+                }
+            ]
+        }
+        dashboard_as_json = json.dumps(new_dashboard)
+        self.cloudwatch_client.put_dashboard(
+            DashboardName=event.labels["dashboard-name"], DashboardBody=dashboard_as_json
         )
 
     def cleanup(self):
