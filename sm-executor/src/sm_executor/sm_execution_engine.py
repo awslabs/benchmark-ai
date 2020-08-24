@@ -128,17 +128,14 @@ class SageMakerExecutionEngine(ExecutionEngine):
         metric_data = self.tag_dimensions(descriptor, data["FinalMetricDataList"])
         cloudwatch_client.put_metric_data(Namespace="ANUBIS/METRICS", MetricData=metric_data)
         if "dashboard-name" in descriptor.custom_params.dashboard:
-            logger.info("IF worked")
             pre_existing_dashboard = False
             existing_dashboards = self.cloudwatch.list_dashboards()
             for dashboard in existing_dashboards["DashboardEntries"]:
                 if dashboard["DashboardName"] == descriptor.custom_params.dashboard:
                     pre_existing_dashboard = True
             if pre_existing_dashboard:
-                logger.info("We made it to update")
                 self.update_dashboard(descriptor.info.labels, descriptor.custom_params.dashboard)
             else:
-                logger.info("We made it to create")
                 self.create_dashboard(descriptor.info.labels)
 
     def update_dashboard(self, labels, dashboard_name):
