@@ -132,14 +132,6 @@ class WatchJobsEventHandler(KafkaServiceCallback):
             return
 
         descriptor = BenchmarkDescriptor.from_dict(event.payload.toml.contents)
-        if descriptor.custom_params and descriptor.custom_params_merge:
-            logger.info("Sagemaker training-jobs with metric merging are not yet supported by the watcher")
-            kafka_service.send_status_message_event(
-                event,
-                Status.PENDING,
-                "Sagemaker training-jobs with metric merging enabled are not yet supported by the watcher.",
-            )
-            return
         if descriptor.hardware.strategy not in [DistributedStrategy.SINGLE_NODE, DistributedStrategy.INFERENCE]:
             logger.info(f"Unsupported strategy {descriptor.hardware.strategy}")
             kafka_service.send_status_message_event(

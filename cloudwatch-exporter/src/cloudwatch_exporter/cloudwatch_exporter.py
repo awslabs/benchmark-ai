@@ -66,9 +66,9 @@ class CloudWatchExporterHandler(KafkaServiceCallback):
                 if dashboard["DashboardName"] == event.labels["dashboard-name"]:
                     pre_existing_dashboard = True
             if pre_existing_dashboard:
-                self.update_dashboard()
+                self.update_dashboard(event)
             else:
-                self.create_dashboard()
+                self.create_dashboard(event)
 
     def update_dashboard(self, event):
         dashboard = self.cloudwatch.get_dashboard(DashboardName=event.labels["dashboard-name"])
