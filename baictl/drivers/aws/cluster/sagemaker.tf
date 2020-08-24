@@ -138,7 +138,10 @@ resource "aws_iam_role_policy" "sagemaker-training-job-policy" {
               "sagemaker:DescribeTrainingJob",
               "sagemaker:CreateTrainingJob",
 	          "sagemaker:StopTrainingJob",
-	          "cloudwatch:PutMetricData"
+	          "cloudwatch:PutMetricData",
+	          "cloudwatch:ListDashboards",
+              "cloudwatch:GetDashboard",
+              "cloudwatch:PutDashboard"
           ],
           "Resource": "*"
     }
