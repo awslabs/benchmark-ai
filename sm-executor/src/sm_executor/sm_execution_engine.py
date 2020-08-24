@@ -19,6 +19,7 @@ from sm_executor.args import SageMakerExecutorConfig
 from sm_executor.estimator_factory import EstimatorFactory
 from sm_executor.frameworks import MXNET_FRAMEWORK, TENSORFLOW_FRAMEWORK
 from sm_executor.source_dir import ScriptSourceDirectory
+from cloudwatch_exporter.cloudwatch_exporter.py import check_dashboard, update_dashboard, create_dashboard
 
 CONFIG = DescriptorConfig(["single_node", "horovod"], [TENSORFLOW_FRAMEWORK, MXNET_FRAMEWORK])
 
@@ -127,64 +128,11 @@ class SageMakerExecutionEngine(ExecutionEngine):
             data = self.sagemaker_client.describe_training_job(TrainingJobName=job_name)
         metric_data = self.tag_dimensions(descriptor, data["FinalMetricDataList"])
         cloudwatch_client.put_metric_data(Namespace="ANUBIS/METRICS", MetricData=metric_data)
-        if "dashboard-name" in descriptor.custom_params.dashboard:
-            pre_existing_dashboard = False
-            existing_dashboards = self.cloudwatch.list_dashboards()
-            for dashboard in existing_dashboards["DashboardEntries"]:
-                if dashboard["DashboardName"] == descriptor.custom_params.dashboard:
-                    pre_existing_dashboard = True
-            if pre_existing_dashboard:
-                self.update_dashboard(descriptor.info.labels, descriptor.custom_params.dashboard)
-            else:
-                self.create_dashboard(descriptor.info.labels)
-
-    def update_dashboard(self, labels, dashboard_name):
-        dashboard = self.cloudwatch.get_dashboard(DashboardName=dashboard_name)
-        dashboard_body = json.loads(dashboard["DashboardBody"])
-        metric = ["ANUBIS/METRICS", labels["task_name"]]
-        for name, val in labels.items():
-            metric.append(name)
-            metric.append(val)
-        for widget in dashboard_body["widgets"]:
-            properties = widget["properties"]
-            if "metrics" in properties and properties["metrics"][0] == metric:
-                return
-        dashboard_body["widgets"].append(
-            {
-                "type": "metric",
-                "properties": {
-                    "metrics": [metric],
-                    "region": "us-east-1",
-                    "title": labels["task_name"],
-                    "period": 86400,
-                },
-            }
-        )
-        updated_dashboard_body = json.dumps(dashboard_body)
-        retVal = self.cloudwatch.put_dashboard(DashboardName=dashboard_name, DashboardBody=updated_dashboard_body)
-        logger.info(retVal)
-
-    def create_dashboard(self, labels, dashboard_name):
-        metric = ["ANUBIS/METRICS", dashboard_name]
-        for name, val in labels.items():
-            metric.append(name)
-            metric.append(val)
-        new_dashboard = {
-            "widgets": [
-                {
-                    "type": "metric",
-                    "properties": {
-                        "metrics": [metric],
-                        "region": "us-east-1",
-                        "title": labels["task_name"],
-                        "period": 86400,
-                    },
-                }
-            ]
-        }
-        dashboard_as_json = json.dumps(new_dashboard)
-        retVal = self.cloudwatch_client.put_dashboard(DashboardName=dashboard_name, DashboardBody=dashboard_as_json)
-        logger.info(retVal)
+        if descriptor.custom_params.dashboard:
+            labels = descriptor.info.labels
+            labels["dashboard-name"] = descriptor.custom_params.dashboard
+            for metric in metric_data:
+                check_dashboard(cloudwatch_client, labels, metric["MetricName"])
 
     def tag_dimensions(self, descriptor, metric_data):
         """
