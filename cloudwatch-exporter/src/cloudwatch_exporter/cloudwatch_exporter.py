@@ -63,7 +63,7 @@ class CloudWatchExporterHandler(KafkaServiceCallback):
         if "dashboard-name" in event.labels:
             logger.info("IF worked")
             pre_existing_dashboard = False
-            existing_dashboards = self.cloudwatch.list_dashboards()
+            existing_dashboards = self.cloudwatch_client.list_dashboards()
             for dashboard in existing_dashboards["DashboardEntries"]:
                 if dashboard["DashboardName"] == event.labels["dashboard-name"]:
                     pre_existing_dashboard = True
@@ -75,7 +75,7 @@ class CloudWatchExporterHandler(KafkaServiceCallback):
                 self.create_dashboard(event)
 
     def update_dashboard(self, event):
-        dashboard = self.cloudwatch.get_dashboard(DashboardName=event.labels["dashboard-name"])
+        dashboard = self.cloudwatch_client.get_dashboard(DashboardName=event.labels["dashboard-name"])
         dashboard_body = json.loads(dashboard["DashboardBody"])
         metric = ["ANUBIS/METRICS", event.name]
         for name, val in event.labels.items():
@@ -94,7 +94,7 @@ class CloudWatchExporterHandler(KafkaServiceCallback):
             }
         )
         updated_dashboard_body = json.dumps(dashboard_body)
-        retVal = self.cloudwatch.put_dashboard(
+        retVal = self.cloudwatch_client.put_dashboard(
             DashboardName=event.labels["dashboard-name"], DashboardBody=updated_dashboard_body
         )
         logger.info(retVal)
