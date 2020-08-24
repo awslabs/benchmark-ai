@@ -148,6 +148,10 @@ class SageMakerExecutionEngine(ExecutionEngine):
         for name, val in labels.items():
             metric.append(name)
             metric.append(val)
+        for widget in dashboard_body["widgets"]:
+            properties = widget["properties"]
+            if "metrics" in properties and properties["metrics"][0] == metric:
+                return
         dashboard_body["widgets"].append(
             {
                 "type": "metric",
