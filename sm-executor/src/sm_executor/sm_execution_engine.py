@@ -1,4 +1,3 @@
-import json
 import logging
 import tempfile
 from math import ceil
@@ -19,7 +18,7 @@ from sm_executor.args import SageMakerExecutorConfig
 from sm_executor.estimator_factory import EstimatorFactory
 from sm_executor.frameworks import MXNET_FRAMEWORK, TENSORFLOW_FRAMEWORK
 from sm_executor.source_dir import ScriptSourceDirectory
-from cloudwatch_exporter.cloudwatch_exporter.py import check_dashboard, update_dashboard, create_dashboard
+from cloudwatch_exporter.cloudwatch_exporter.py import check_dashboard
 
 CONFIG = DescriptorConfig(["single_node", "horovod"], [TENSORFLOW_FRAMEWORK, MXNET_FRAMEWORK])
 

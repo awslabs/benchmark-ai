@@ -97,7 +97,7 @@ def update_dashboard(cloudwatch_client, labels, metric_name):
     dashboard_body["widgets"].append(
         {
             "type": "metric",
-            "properties": {"metrics": [metric], "region": "us-east-1", "title": labels["task_name"], "period": 86400,},
+            "properties": {"metrics": [metric], "region": "us-east-1", "title": labels["task_name"], "period": 86400},
         }
     )
     updated_dashboard_body = json.dumps(dashboard_body)
