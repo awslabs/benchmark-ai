@@ -59,15 +59,19 @@ class CloudWatchExporterHandler(KafkaServiceCallback):
             ],
             Namespace="ANUBIS/METRICS",
         )
+        logger.info("BEfore if")
         if "dashboard-name" in event.labels:
+            logger.info("IF worked")
             pre_existing_dashboard = False
             existing_dashboards = self.cloudwatch.list_dashboards()
             for dashboard in existing_dashboards["DashboardEntries"]:
                 if dashboard["DashboardName"] == event.labels["dashboard-name"]:
                     pre_existing_dashboard = True
             if pre_existing_dashboard:
+                logger.info("We made it to update")
                 self.update_dashboard(event)
             else:
+                logger.info("We made it to create")
                 self.create_dashboard(event)
 
     def update_dashboard(self, event):
@@ -82,7 +86,7 @@ class CloudWatchExporterHandler(KafkaServiceCallback):
             {
                 "type": "metric",
                 "properties": {
-                    "metrics": metric,
+                    "metrics": [metric],
                     "region": "us-east-1",
                     "title": event.labels["task_name"],
                     "period": 86400,
@@ -90,9 +94,10 @@ class CloudWatchExporterHandler(KafkaServiceCallback):
             }
         )
         updated_dashboard_body = json.dumps(dashboard_body)
-        self.cloudwatch.put_dashboard(
+        retVal = self.cloudwatch.put_dashboard(
             DashboardName=event.labels["dashboard-name"], DashboardBody=updated_dashboard_body
         )
+        logger.info(retVal)
 
     def create_dashboard(self, event):
         metric = ["ANUBIS/METRICS", event.name]
@@ -105,14 +110,7 @@ class CloudWatchExporterHandler(KafkaServiceCallback):
                 {
                     "type": "metric",
                     "properties": {
-                        "metrics": [
-                            [
-                                "ANUBIS/METRICS",
-                                "throughput",
-                                "task_name",
-                                "tf_train_single_node_2.3_cpu_py3_resnet50_synthetic",
-                            ]
-                        ],
+                        "metrics": [metric],
                         "region": "us-east-1",
                         "title": event.labels["task_name"],
                         "period": 86400,
@@ -121,9 +119,10 @@ class CloudWatchExporterHandler(KafkaServiceCallback):
             ]
         }
         dashboard_as_json = json.dumps(new_dashboard)
-        self.cloudwatch_client.put_dashboard(
+        retVal = self.cloudwatch_client.put_dashboard(
             DashboardName=event.labels["dashboard-name"], DashboardBody=dashboard_as_json
         )
+        logger.info(retVal)
 
     def cleanup(self):
         pass
