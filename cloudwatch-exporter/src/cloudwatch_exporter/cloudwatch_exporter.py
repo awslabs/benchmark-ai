@@ -84,11 +84,7 @@ def check_dashboard(cloudwatch_client, labels, metric_name):
 def update_dashboard(cloudwatch_client, labels, metric_name):
     dashboard = cloudwatch_client.get_dashboard(DashboardName=labels["dashboard-name"])
     dashboard_body = json.loads(dashboard["DashboardBody"])
-    metric = ["ANUBIS/METRICS", metric_name]
-    for name, val in labels.items():
-        if name not in NOT_EXPORTED_LABELS:
-            metric.append(name)
-            metric.append(val)
+    metric = create_metric(labels, metric_name)
     for widget in dashboard_body["widgets"]:
         properties = widget["properties"]
         if "metrics" in properties and properties["metrics"][0] == metric:
@@ -105,11 +101,7 @@ def update_dashboard(cloudwatch_client, labels, metric_name):
 
 
 def create_dashboard(cloudwatch_client, labels, metric_name):
-    metric = ["ANUBIS/METRICS", metric_name]
-    for name, val in labels.items():
-        if name not in NOT_EXPORTED_LABELS:
-            metric.append(name)
-            metric.append(val)
+    metric = create_metric(labels, metric_name)
     new_dashboard = {
         "widgets": [
             {
@@ -125,6 +117,15 @@ def create_dashboard(cloudwatch_client, labels, metric_name):
     }
     dashboard_as_json = json.dumps(new_dashboard)
     cloudwatch_client.put_dashboard(DashboardName=labels["dashboard-name"], DashboardBody=dashboard_as_json)
+
+
+def create_metric(labels, metric_name):
+    metric = ["ANUBIS/METRICS", metric_name]
+    for name, val in labels.items():
+        if name not in NOT_EXPORTED_LABELS:
+            metric.append(name)
+            metric.append(val)
+    return metric
 
 
 def create_service(common_kafka_cfg: KafkaServiceConfig) -> KafkaService:
