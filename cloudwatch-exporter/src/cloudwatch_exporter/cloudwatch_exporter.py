@@ -20,7 +20,7 @@ logger = service_logger.getChild(__name__)
 
 class CloudWatchExporterService(KafkaService):
     @staticmethod
-    def _check_mesage_belongs_to_topic(msg, topic):
+    def _check_message_belongs_to_topic(msg, topic):
         # Suppress this check for metrics events since they don't have a 'type' field
         pass
 
@@ -44,7 +44,6 @@ class CloudWatchExporterHandler(KafkaServiceCallback):
                 f"Too many labels for metric. Found {len(event.labels)}, maximum allowed by CloudWatch"
                 f" is {CLOUDWATCH_MAX_DIMENSIONS}. The exceeding ones have not been exported."
             )
-
         # Put metrics
         self.cloudwatch_client.put_metric_data(
             MetricData=[
