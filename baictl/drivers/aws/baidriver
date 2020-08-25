@@ -653,7 +653,7 @@ run_benchmark() {
         local bash_src=$(realpath ${BASH_SOURCE})
         local src_dir=$(dirname "${bash_src}")
 
-        export PYTHONPATH=${src_dir}/../../../executor/src:${src_dir}/../../../kafka-utils/src:${src_dir}/../../../cloudwatch-exporter/src
+        export PYTHONPATH=${src_dir}/../../../executor/src:${src_dir}/../../../kafka-utils/src
 
         pushd ${terraform_dir} > /dev/null
         local azs=$(terraform output -json --state=${terraform_state} availability_zones | jq -r '.value | join(" ")')
