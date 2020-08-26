@@ -13,7 +13,7 @@ from cloudwatch_exporter import SERVICE_NAME, __version__, service_logger
 
 CLOUDWATCH_MAX_DIMENSIONS = 10
 
-NOT_EXPORTED_LABELS = ["action-id", "parent-action-id", "client-id", "dashboard-name"]
+NOT_EXPORTED_LABELS = ["action-id", "parent-action-id", "client-id", "dashboard-name", "region"]
 
 logger = service_logger.getChild(__name__)
 
@@ -60,6 +60,9 @@ class CloudWatchExporterHandler(KafkaServiceCallback):
         )
         # Use labels seperate from event object so that function can be used by SM jobs as well
         labels = event.labels
+        # Default region for Anubis is us-east-1
+        if "region" not in event.labels:
+            event.labels["region"] = "us-east-1"
         check_dashboard(self.cloudwatch_client, labels, event.name)
 
     def cleanup(self):
@@ -112,7 +115,12 @@ def update_dashboard(cloudwatch_client, labels, metric_name):
     dashboard_body["widgets"].append(
         {
             "type": "metric",
-            "properties": {"metrics": [metric], "region": "us-east-1", "title": labels["task_name"], "period": 86400},
+            "properties": {
+                "metrics": [metric],
+                "region": labels["region"],
+                "title": labels["task_name"],
+                "period": 86400,
+            },
         }
     )
     updated_dashboard_body = json.dumps(dashboard_body)
@@ -139,7 +147,7 @@ def create_dashboard(cloudwatch_client, labels, metric_name):
                 "type": "metric",
                 "properties": {
                     "metrics": [metric],
-                    "region": "us-east-1",
+                    "region": labels["region"],
                     "title": labels["task_name"],
                     "period": 86400,
                 },

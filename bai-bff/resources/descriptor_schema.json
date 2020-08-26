@@ -146,8 +146,9 @@
       "properties": {
         "python_version": { "type": "string" },
         "sagemaker_job_name": { "type": "string" },
-        "dashboard": {"type": "string" },
-        "merge": {"type": "boolean" },
+        "region": { "type": "string" },
+        "dashboard": { "type": "string" },
+        "merge": { "type": "boolean" },
         "metric_definitions":{ "type" : "array", "items": { "$ref": "#/definitions/str_dict" }
         },
         "hyper_params": { "$ref": "#/definitions/any_dict" }

@@ -472,6 +472,11 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BenchmarkKubernetesObjectBuilder
                 self.add_metrics_pusher_env_var(
                     "dashboard-name", self.descriptor.custom_params.dashboard, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX
                 )
+            if self.descriptor.custom_params and self.descriptor.custom_params.region:
+                self.root.add_label("region", self.descriptor.custom_params.dashboard)
+                self.add_metrics_pusher_env_var(
+                    "region", self.descriptor.custom_params.region, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX
+                )
 
         if self.event.parent_action_id:
             self.root.add_label("parent-action-id", self.event.parent_action_id)
@@ -553,6 +558,14 @@ class HorovodJobKubernetesObjectBuilder(BenchmarkKubernetesObjectBuilder):
                         prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX,
                         mpiReplicaType=replica_type,
                     )
+                if self.descriptor.custom_params and self.descriptor.custom_params.region:
+                    self.root.add_label("region", self.descriptor.custom_params.dashboard)
+                    self.add_metrics_pusher_env_var(
+                        "region",
+                        self.descriptor.custom_params.region,
+                        prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX,
+                        mpiReplicaType=replica_type,
+                    )
 
             if self.event.parent_action_id:
                 self.root.add_label("parent-action-id", self.event.parent_action_id)
@@ -622,7 +635,11 @@ class InferenceServerJobKubernetedObjectBuilder(BenchmarkKubernetesObjectBuilder
                 self.add_metrics_pusher_env_var(
                     "dashboard-name", self.descriptor.custom_params.dashboard, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX
                 )
-
+            if self.descriptor.custom_params and self.descriptor.custom_params.region:
+                self.root.add_label("region", self.descriptor.custom_params.dashboard)
+                self.add_metrics_pusher_env_var(
+                    "region", self.descriptor.custom_params.region, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX
+                )
         if self.config.suppress_job_affinity:
             self.root.remove_affinity()
 

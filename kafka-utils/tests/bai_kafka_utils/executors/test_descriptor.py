@@ -53,6 +53,7 @@ def test_custom_params_descriptor(datadir, filename):
     assert descriptor.custom_params.hyper_params["validation_frequency"] == 10
     assert descriptor.custom_params.python_version == "py2"
     assert descriptor.custom_params.sagemaker_job_name == "testJob"
+    assert descriptor.custom_params.region == "us-east-1"
     assert descriptor.custom_params.dashboard == "test_dashboard"
     assert descriptor.custom_params.merge
 

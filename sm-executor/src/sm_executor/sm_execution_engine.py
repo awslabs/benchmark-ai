@@ -131,6 +131,8 @@ class SageMakerExecutionEngine(ExecutionEngine):
             # Create labels dictionary from descriptor so that we can call check_dashboard
             labels = descriptor.info.labels
             labels["dashboard-name"] = descriptor.custom_params.dashboard
+            # Set to Anubis default of us-east-1 if empty
+            labels["region"] = descriptor.custom_params.region or "us-east-1"
             # metric_data can contain more than one metric
             for metric in metric_data:
                 check_dashboard(cloudwatch_client, labels, metric["MetricName"])
