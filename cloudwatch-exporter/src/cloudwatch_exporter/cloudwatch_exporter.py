@@ -68,7 +68,8 @@ class CloudWatchExporterHandler(KafkaServiceCallback):
 
 def check_dashboard(cloudwatch_client, labels, metric_name):
     """
-    Checks if dashboard custom-parameter has been set. Will check if dashboard-name exists already, if so will call update
+    Checks if dashboard custom-parameter has been set. Will check if dashboard-name exists already,
+    if so will call update
     If dashboard-name doesn't exist in dashboards will create dashboard with that name
     :param cloudwatch_client: Boto3 Cloudwatch_client passed in from caller
     :param labels: Metric info passed from toml file, always contains task_name and dashboard-name
