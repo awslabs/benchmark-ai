@@ -2,7 +2,12 @@ import kafka
 
 from unittest.mock import MagicMock
 from datetime import datetime
-from cloudwatch_exporter.cloudwatch_exporter import CloudWatchExporterService, CloudWatchExporterHandler, create_service
+from cloudwatch_exporter.cloudwatch_exporter import (
+    CloudWatchExporterService,
+    CloudWatchExporterHandler,
+    create_service,
+    create_dashboard_metric,
+)
 
 
 def test_create_service(mocker, kafka_service_config):
@@ -64,3 +69,17 @@ def test_put_metric_data_with_string_value_in_event_is_called_with_float(mocker,
     args, kwargs = mock_boto_cloudwatch.put_metric_data.call_args_list[0]
     metric_data = kwargs["MetricData"][0]
     assert metric_data["Value"] == 10.0
+
+
+def test_create_dashboard_metric(mocker, metrics_event, mock_kafka_service):
+    created_dashboard_metric = [
+        "ANUBIS/METRICS",
+        "METRIC",
+        "LABEL",
+        "VALUE",
+        "task_name",
+        "test_task",
+        "dashboard_name",
+        "test_dashboard",
+    ]
+    assert create_dashboard_metric(metrics_event.labels, metrics_event.name) == created_dashboard_metric

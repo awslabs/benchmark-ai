@@ -13,7 +13,12 @@ def mock_kafka_service():
 
 @pytest.fixture
 def metrics_event():
-    return MetricsEvent(name="METRIC", value=0, timestamp=1576244976000, labels={"LABEL": "VALUE"})
+    return MetricsEvent(
+        name="METRIC",
+        value=0,
+        timestamp=1576244976000,
+        labels={"LABEL": "VALUE", "task_name": "test_task", "dashboard_name": "test_dashboard"},
+    )
 
 
 @pytest.fixture
