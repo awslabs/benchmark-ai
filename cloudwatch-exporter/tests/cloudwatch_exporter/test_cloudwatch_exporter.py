@@ -9,6 +9,8 @@ from cloudwatch_exporter.cloudwatch_exporter import (
     create_dashboard_metric,
 )
 
+NOT_EXPORTED_LABELS = ["action-id", "parent-action-id", "client-id", "dashboard-name", "region"]
+
 
 def test_create_service(mocker, kafka_service_config):
     kafka_producer_class = mocker.patch.object(kafka, "KafkaProducer")
@@ -39,7 +41,9 @@ def test_handle_event(mocker, metrics_event, mock_kafka_service):
     cw_exporter_handler = CloudWatchExporterHandler()
     cw_exporter_handler.handle_event(metrics_event, mock_kafka_service)
 
-    expected_dimensions = [{"Name": name, "Value": val} for name, val in metrics_event.labels.items()]
+    expected_dimensions = [
+        {"Name": name, "Value": val} for name, val in metrics_event.labels.items() if name not in NOT_EXPORTED_LABELS
+    ]
     mock_boto_cloudwatch.put_metric_data.assert_called_with(
         MetricData=[
             {
@@ -79,7 +83,5 @@ def test_create_dashboard_metric(mocker, metrics_event, mock_kafka_service):
         "VALUE",
         "task_name",
         "test_task",
-        "dashboard_name",
-        "test_dashboard",
     ]
     assert create_dashboard_metric(metrics_event.labels, metrics_event.name) == created_dashboard_metric

@@ -17,7 +17,7 @@ def metrics_event():
         name="METRIC",
         value=0,
         timestamp=1576244976000,
-        labels={"LABEL": "VALUE", "task_name": "test_task", "dashboard_name": "test_dashboard"},
+        labels={"LABEL": "VALUE", "task_name": "test_task", "dashboard-name": "test_dashboard"},
     )
 
 

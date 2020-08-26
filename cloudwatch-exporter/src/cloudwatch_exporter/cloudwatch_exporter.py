@@ -45,6 +45,8 @@ class CloudWatchExporterHandler(KafkaServiceCallback):
                 f" is {CLOUDWATCH_MAX_DIMENSIONS}. The exceeding ones have not been exported."
             )
         # Put metrics
+        print(dimensions)
+
         self.cloudwatch_client.put_metric_data(
             MetricData=[
                 {
