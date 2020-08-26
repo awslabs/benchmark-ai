@@ -467,17 +467,18 @@ class SingleRunBenchmarkKubernetesObjectBuilder(BenchmarkKubernetesObjectBuilder
             # Add custom labels metrics pusher
             for label, value in self.descriptor.info.labels.items():
                 self.add_metrics_pusher_env_var(label, value, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX)
+            if self.descriptor.custom_params and self.descriptor.custom_params.dashboard:
+                self.root.add_label("dashboard-name", self.descriptor.custom_params.dashboard)
+                self.add_metrics_pusher_env_var(
+                    "dashboard-name", self.descriptor.custom_params.dashboard, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX
+                )
 
         if self.event.parent_action_id:
             self.root.add_label("parent-action-id", self.event.parent_action_id)
             self.add_metrics_pusher_env_var(
                 "parent-action-id", self.event.parent_action_id, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX
             )
-        if self.descriptor.custom_params and self.descriptor.custom_params.dashboard:
-            self.root.add_label("dashboard-name", self.descriptor.custom_params.dashboard)
-            self.add_metrics_pusher_env_var(
-                "dashboard-name", self.descriptor.custom_params.dashboard, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX
-            )
+
         if self.config.suppress_job_affinity:
             self.root.remove_affinity()
 
@@ -544,6 +545,14 @@ class HorovodJobKubernetesObjectBuilder(BenchmarkKubernetesObjectBuilder):
                     self.add_metrics_pusher_env_var(
                         label, value, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX, mpiReplicaType=replica_type
                     )
+                if self.descriptor.custom_params and self.descriptor.custom_params.dashboard:
+                    self.root.add_label("dashboard-name", self.descriptor.custom_params.dashboard)
+                    self.add_metrics_pusher_env_var(
+                        "dashboard-name",
+                        self.descriptor.custom_params.dashboard,
+                        prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX,
+                        mpiReplicaType=replica_type,
+                    )
 
             if self.event.parent_action_id:
                 self.root.add_label("parent-action-id", self.event.parent_action_id)
@@ -608,6 +617,11 @@ class InferenceServerJobKubernetedObjectBuilder(BenchmarkKubernetesObjectBuilder
             # Add custom labels to metrics pusher as env variables
             for label, value in self.descriptor.info.labels.items():
                 self.add_metrics_pusher_env_var(label, value, METRICS_PUSHER_CUSTOM_LABEL_PREFIX)
+            if self.descriptor.custom_params and self.descriptor.custom_params.dashboard:
+                self.root.add_label("dashboard-name", self.descriptor.custom_params.dashboard)
+                self.add_metrics_pusher_env_var(
+                    "dashboard-name", self.descriptor.custom_params.dashboard, prefix=METRICS_PUSHER_CUSTOM_LABEL_PREFIX
+                )
 
         if self.config.suppress_job_affinity:
             self.root.remove_affinity()

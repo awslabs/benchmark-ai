@@ -128,8 +128,10 @@ class SageMakerExecutionEngine(ExecutionEngine):
         metric_data = self.tag_dimensions(descriptor, data["FinalMetricDataList"])
         cloudwatch_client.put_metric_data(Namespace="ANUBIS/METRICS", MetricData=metric_data)
         if descriptor.custom_params.dashboard:
+            # Create labels dictionary from descriptor so that we can call check_dashboard
             labels = descriptor.info.labels
             labels["dashboard-name"] = descriptor.custom_params.dashboard
+            # metric_data can contain more than one metric
             for metric in metric_data:
                 check_dashboard(cloudwatch_client, labels, metric["MetricName"])
 

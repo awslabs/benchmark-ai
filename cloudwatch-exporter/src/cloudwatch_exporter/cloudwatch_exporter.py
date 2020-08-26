@@ -58,6 +58,7 @@ class CloudWatchExporterHandler(KafkaServiceCallback):
             ],
             Namespace="ANUBIS/METRICS",
         )
+        # Use labels seperate from event object so that function can be used by SM jobs as well
         labels = event.labels
         check_dashboard(self.cloudwatch_client, labels, event.name)
 
@@ -66,6 +67,14 @@ class CloudWatchExporterHandler(KafkaServiceCallback):
 
 
 def check_dashboard(cloudwatch_client, labels, metric_name):
+    """
+    Checks if dashboard custom-parameter has been set. Will check if dashboard-name exists already, if so will call update
+    If dashboard-name doesn't exist in dashboards will create dashboard with that name
+    :param cloudwatch_client: Boto3 Cloudwatch_client passed in from caller
+    :param labels: Metric info passed from toml file, always contains task_name and dashboard-name
+    :param metric_name: Name of the metric in cloudwatch
+    :return: N/A
+    """
     if "dashboard-name" in labels:
         pre_existing_dashboard = False
         existing_dashboards = cloudwatch_client.list_dashboards()
@@ -78,12 +87,22 @@ def check_dashboard(cloudwatch_client, labels, metric_name):
         else:
             logger.info("Creating new dashboard")
             create_dashboard(cloudwatch_client, labels, metric_name)
+    else:
+        logger.info("Dashboard-name not specified")
 
 
 def update_dashboard(cloudwatch_client, labels, metric_name):
+    """
+    Updates dashboard with specified dashboard-name and places specified metric from labels/metric_name
+    :param cloudwatch_client: Boto3 Cloudwatch_client passed in from caller
+    :param labels: Metric info passed from toml file, always contains task_name and dashboard-name
+    :param metric_name: Name of the metric in cloudwatch
+    :return: N/A
+    """
     dashboard = cloudwatch_client.get_dashboard(DashboardName=labels["dashboard-name"])
     dashboard_body = json.loads(dashboard["DashboardBody"])
     metric = create_dashboard_metric(labels, metric_name)
+    # If exact metric specification is already in Dashboard don't add it again
     for widget in dashboard_body["widgets"]:
         properties = widget["properties"]
         if "metrics" in properties and properties["metrics"][0] == metric:
@@ -96,10 +115,22 @@ def update_dashboard(cloudwatch_client, labels, metric_name):
         }
     )
     updated_dashboard_body = json.dumps(dashboard_body)
-    cloudwatch_client.put_dashboard(DashboardName=labels["dashboard-name"], DashboardBody=updated_dashboard_body)
+    logger.info(updated_dashboard_body)
+    # Log return value from put_dashboard, contains information about success of method call
+    ret_val = cloudwatch_client.put_dashboard(
+        DashboardName=labels["dashboard-name"], DashboardBody=updated_dashboard_body
+    )
+    logger.info(ret_val)
 
 
 def create_dashboard(cloudwatch_client, labels, metric_name):
+    """
+    Creates dashboard with specified dashboard-name and places specified metric from labels/metric_name
+    :param cloudwatch_client: Boto3 Cloudwatch_client passed in from caller
+    :param labels: Metric info passed from toml file, always contains task_name and dashboard-name
+    :param metric_name: Name of the metric in cloudwatch
+    :return: N/A
+    """
     metric = create_dashboard_metric(labels, metric_name)
     new_dashboard = {
         "widgets": [
@@ -115,10 +146,19 @@ def create_dashboard(cloudwatch_client, labels, metric_name):
         ]
     }
     dashboard_as_json = json.dumps(new_dashboard)
-    cloudwatch_client.put_dashboard(DashboardName=labels["dashboard-name"], DashboardBody=dashboard_as_json)
+    logger.info(dashboard_as_json)
+    # Log return value from put_dashboard, contains information about success of method call
+    ret_val = cloudwatch_client.put_dashboard(DashboardName=labels["dashboard-name"], DashboardBody=dashboard_as_json)
+    logger.info(ret_val)
 
 
 def create_dashboard_metric(labels, metric_name):
+    """
+    Creates metric list using labels and metrics name to identify the metric from cloudwatch to be used in the Dashboard
+    :param labels: Metric info passed from toml file, always contains task_name and dashboard-name
+    :param metric_name: Name of the metric in cloudwatch
+    :return: Metric list populated with metric_name and all labels key/value pairs provided by toml
+    """
     metric = ["ANUBIS/METRICS", metric_name]
     for name, val in labels.items():
         if name not in NOT_EXPORTED_LABELS:
