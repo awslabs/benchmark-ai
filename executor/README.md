@@ -264,7 +264,7 @@ KMP_SETTINGS = "0"
 benchmark_code = "python -W ignore horovod/examples/tensorflow_synthetic_benchmark.py --no-cuda --model_dir test/ --num-warmup-batches 10 --num-iters 10 --model ResNet50 --sagemaker_job_name Testjob --sagemaker_container_log_level 15"
 
 framework = "tensorflow"
-framework_version = "1.12.0"
+framework_version = "1.15.3"
 
 
 [custom_params]
