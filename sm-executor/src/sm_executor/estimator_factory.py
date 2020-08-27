@@ -57,9 +57,9 @@ def _create_common_estimator_args(
     py_version = ""
     if descriptor.custom_params:
         py_version = descriptor.custom_params.python_version
-    if descriptor.ml.output:
+    if descriptor.output:
         metrics = []
-        for metric in descriptor.ml.output:
+        for metric in descriptor.output:
             metrics.append({"Name": metric["name"], "Value": metric["value"]})
     return addict.Dict(
         source_dir=source_dir,
