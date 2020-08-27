@@ -82,7 +82,7 @@ def validate_estimator_tensorflow(
 def validate_estimator_customparams(
     estimator: Framework, mock_session: Session, descriptor, sagemaker_config: SageMakerExecutorConfig
 ):
-   # assert estimator.metric_definitions == descriptor.custom_params.metric_definitions
+    # assert estimator.metric_definitions == descriptor.custom_params.metric_definitions
     assert estimator.hyperparameters()
     assert estimator.source_dir == SOURCE_DIR
     assert estimator.entry_point == ScriptSourceDirectory.PYTHON_ENTRY_POINT
