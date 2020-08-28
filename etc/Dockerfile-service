@@ -21,6 +21,7 @@ RUN conda env create -f /tmp/environment.yml -p /opt/env
 
 COPY ./watcher /data/benchmark-ai/watcher
 COPY ./kafka-utils /data/benchmark-ai/kafka-utils
+COPY ./cloudwatch-exporter /data/benchmark-ai/cloudwatch-exporter
 COPY ./$SERVICE /data/benchmark-ai/$SERVICE
 WORKDIR /data/benchmark-ai/$SERVICE
 

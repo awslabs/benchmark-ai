@@ -18,6 +18,7 @@ from sm_executor.args import SageMakerExecutorConfig
 from sm_executor.estimator_factory import EstimatorFactory
 from sm_executor.frameworks import MXNET_FRAMEWORK, TENSORFLOW_FRAMEWORK
 from sm_executor.source_dir import ScriptSourceDirectory
+from cloudwatch_exporter.cloudwatch_exporter import check_dashboard
 
 CONFIG = DescriptorConfig(["single_node", "horovod"], [TENSORFLOW_FRAMEWORK, MXNET_FRAMEWORK])
 
@@ -126,6 +127,15 @@ class SageMakerExecutionEngine(ExecutionEngine):
             data = self.sagemaker_client.describe_training_job(TrainingJobName=job_name)
         metric_data = self.tag_dimensions(descriptor, data["FinalMetricDataList"])
         cloudwatch_client.put_metric_data(Namespace="ANUBIS/METRICS", MetricData=metric_data)
+        if descriptor.custom_params.dashboard:
+            # Create labels dictionary from descriptor so that we can call check_dashboard
+            labels = descriptor.info.labels
+            labels["dashboard-name"] = descriptor.custom_params.dashboard
+            # Set to Anubis default of us-east-1 if empty
+            labels["region"] = descriptor.custom_params.region or "us-east-1"
+            # metric_data can contain more than one metric
+            for metric in metric_data:
+                check_dashboard(cloudwatch_client, labels, metric["MetricName"])
 
     def tag_dimensions(self, descriptor, metric_data):
         """
