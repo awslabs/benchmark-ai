@@ -196,30 +196,18 @@ def test_merge_metrics(
     sm_execution_engine_to_test: SageMakerExecutionEngine, customparams_descriptor: BenchmarkDescriptor,
 ):
     metric_data = [
-        {
-            "MetricName": "iter",
-            "Unit": "iter/sec",
-            "Value": 51.900001525878906,
-            "Timestamp": "1970-01-19T03:48:31.114000-08:00",
-        },
-        {
-            "MetricName": "accuracy",
-            "Unit": "%accuracy*100",
-            "Value": 51.900001525878906,
-            "Timestamp": "1970-01-19T03:48:31.114000-08:00",
-        },
+        {"MetricName": "iter", "Value": 51.900001525878906, "Timestamp": "1970-01-19T03:48:31.114000-08:00",},
+        {"MetricName": "accuracy", "Value": 51.900001525878906, "Timestamp": "1970-01-19T03:48:31.114000-08:00",},
     ]
     metrics_with_dimensions = [
         {
             "MetricName": "iter",
-            "Unit": "iter/sec",
             "Value": 51.900001525878906,
             "Dimensions": [{"Name": "task_name", "Value": "exampleTask"}, {"Name": "batch_size", "Value": "64"}],
         },
         {
             "MetricName": "accuracy",
             "Value": 51.900001525878906,
-            "Unit": "%accuracy*100",
             "Dimensions": [{"Name": "task_name", "Value": "exampleTask"}, {"Name": "batch_size", "Value": "64"}],
         },
     ]
