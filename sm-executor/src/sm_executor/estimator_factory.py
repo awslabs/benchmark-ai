@@ -26,6 +26,12 @@ def get_hyper_params(descriptor: BenchmarkDescriptor):
 
 
 def get_metric_definitions(descriptor: BenchmarkDescriptor):
+    """
+    Translates descriptor.output to fit the necessary input parameter for
+    the estimators metric_definitions
+    :param descriptor: Descriptor object that is populated by the toml file
+    :return: Returns List of dicts with two key/value pairs Name and Regex
+    """
     metrics = []
     if descriptor.output:
         for metric in descriptor.output.metrics:

@@ -277,15 +277,25 @@ merge = true
 # Dashboard to create and populate with metrics displayed from cloudwatch
 dashboard = "anubis_dashboards"
 
-#Metrics to display in Cloudwatch metrics
-[[custom_params.metric_definitions]]
-Name = "iter"
-Regex = 'Iter: (.*?)\s'
+[custom_params.hyper_params]
+hold = true
+training_weight = 0.25
+validation_frequency = 0.15
+notation = "strict"
 
-#Metrics to display in Cloudwatch metrics
-[[custom_params.metric_definitions]]
-Name = "img_sec"
-Regex = 'Img\/sec per CPU: (.*?)\s'
+[output]
+[[output.metrics]]
+name = "iter"
+pattern = 'Iter: (.*?)\s'
+units = "iter/s"
+
+
+[[output.metrics]]
+name = "img"
+pattern = 'Img\/sec per CPU: (.*?)\s'
+units = "img/s"
+
+
 ```
 
 
@@ -310,9 +320,9 @@ Regex = 'Img\/sec per CPU: (.*?)\s'
 | ml                     | benchmark_code     | Command to run the benchmark code                                                                                                                    | String                                                      | Optional          |
 | ml                     | args               | Additional arguments for the benchmark scripts                                                                                                       | String                                                      | Optional          |
 | custom_params          | python_version     | Python version to use for job                                                                                                                        | String                                                      | Optional          |
-| custom_params          | dashboard | Dashboard to create/update and populate with metric defined by either metric_definitions or (ml output)                                                                                                                  | String                                                | Optional          |
-| custom_params          | sagemaker_job_name | Sets Sagemaker Training Job name                                                                                                                    | String                                                      | Optional          |
-| custom_params          | region | Specifies AWS region                                                                                                                    | String                                                      | Optional          |
+| custom_params          | dashboard | Dashboard to create/update and populate with metric defined by output                                                                                                                  | String                                                | Optional          |
+| custom_params          | sagemaker_job_name | Sets Sagemaker Training Job name                                                                                                                    | String (default: action-id)                                                    | Optional          |
+| custom_params          | region | Specifies AWS region                                                                                                                    | String (default: "us-east-1" the default region for Anubis setup)                                                    | Optional          |
 | custom_params          | merge | Creates metric using info.labels                                                                                                                   | boolean (default: false)                                                      | Optional          |
 | custom_params.hyper_params        | hyper_params | Hyperparameters to pass to Sagemaker estimator objects                                                                                                                   | Key-value pairs                                                      | Optional          |
 | data                   | sources            | List with all required data sources (see below for the fields required for each source)                                                              | List of data.sources                                        | Optional          |
