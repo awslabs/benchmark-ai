@@ -285,11 +285,16 @@ validation_frequency = 0.15
 notation = "strict"
 
 [output]
+# [Opt] Custom metrics descriptions
+# List all required metrics descriptions below.
+# Make an entry in same format as the one below.
 [[output.metrics]]
+# Name of the metric that will appear in the dashboards.
 name = "iter"
+# Pattern for log parsing for this metric.
 pattern = 'Iter: (.*?)\s'
+# Metric unit (required)
 units = "iter/s"
-
 
 [[output.metrics]]
 name = "img"
