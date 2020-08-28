@@ -18,7 +18,6 @@ from sm_executor.args import SageMakerExecutorConfig
 from sm_executor.estimator_factory import EstimatorFactory
 from sm_executor.frameworks import MXNET_FRAMEWORK, TENSORFLOW_FRAMEWORK
 from sm_executor.source_dir import ScriptSourceDirectory
-from dataclasses import asdict
 
 CONFIG = DescriptorConfig(["single_node", "horovod"], [TENSORFLOW_FRAMEWORK, MXNET_FRAMEWORK])
 
