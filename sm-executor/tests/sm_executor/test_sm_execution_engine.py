@@ -196,8 +196,8 @@ def test_merge_metrics(
     sm_execution_engine_to_test: SageMakerExecutionEngine, customparams_descriptor: BenchmarkDescriptor,
 ):
     metric_data = [
-        {"MetricName": "iter", "Value": 51.900001525878906, "Timestamp": "1970-01-19T03:48:31.114000-08:00",},
-        {"MetricName": "accuracy", "Value": 51.900001525878906, "Timestamp": "1970-01-19T03:48:31.114000-08:00",},
+        {"MetricName": "iter", "Value": 51.900001525878906, "Timestamp": "1970-01-19T03:48:31.114000-08:00"},
+        {"MetricName": "accuracy", "Value": 51.900001525878906, "Timestamp": "1970-01-19T03:48:31.114000-08:00"},
     ]
     metrics_with_dimensions = [
         {
