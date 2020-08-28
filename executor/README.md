@@ -83,6 +83,12 @@ uri = "s3://bucket/imagenet/validation"
 # Path where the dataset is stored in the container FS
 path = "/data/tf-imagenet/val"
 
+[custom_params]
+# Set to create cloudwatch dashboard with this name and will populate it with metric described in output
+dashboard = "Anubis_dashboard"
+# AWS region
+region = "us-east-1"
+
 # 5. Output
 [output]
 # [Opt] Custom metrics descriptions
@@ -209,6 +215,79 @@ VAR1 = "value1"
 VAR2 = "value2"
 
 ```
+### SM Training job
+Sagemaker training jobs submitted using the Anubis Tool
+```
+# BenchmarkAI meta
+spec_version = "0.1.0"
+
+#infoooo
+[info]
+description = """ sagemaker tf  """
+execution_engine = "aws.sagemaker"
+
+
+[info.labels]
+# Labels and values must be 63 characters or less, beginning and ending with an alphanumeric character
+# ([a-z0-9A-Z]) with dashes (-), underscores (_), dots (.), and alphanumerics between
+# task_name is a mandatory label which will be exported as a dimension for this job's metrics
+task_name = "example_sagemaker_benchmark"
+batch_size = "10"
+geo_location = "Ohio"
+
+
+# 1. Hardware
+[hardware]
+instance_type="ml.c5.18xlarge"
+strategy = "single_node"
+
+
+[hardware.distributed]
+num_instances = 4
+
+# 2. Environment
+[env]
+docker_image = "763104351884.dkr.ecr.us-east-1.amazonaws.com/tensorflow-training:1.15.3-cpu-py37-ubuntu18.04"
+
+[env.vars]
+TENSORFLOW_INTER_OP_PARALLELISM = "2"
+TENSORFLOW_INTRA_OP_PARALLELISM = "72"
+OMP_NUM_THREADS = "36"
+KMP_AFFINITY = "granularity=fine,verbose,compact,1,0"
+TENSORFLOW_SESSION_PARALLELISM = "9"
+KMP_BLOCKTIME = "1"
+KMP_SETTINGS = "0"
+
+# 3. ML settings
+[ml]
+
+benchmark_code = "python -W ignore horovod/examples/tensorflow_synthetic_benchmark.py --no-cuda --model_dir test/ --num-warmup-batches 10 --num-iters 10 --model ResNet50 --sagemaker_job_name Testjob --sagemaker_container_log_level 15"
+
+framework = "tensorflow"
+framework_version = "1.15.3"
+
+
+[custom_params]
+#python version to use in estimator
+python_version = "py2"
+#Training job name to appear in Sagemaker
+sagemaker_job_name = "resnet50SMJob4"
+# Aggregate metrics under shared dimensions and task_name
+merge = true 
+# Dashboard to create and populate with metrics displayed from cloudwatch
+dashboard = "anubis_dashboards"
+
+#Metrics to display in Cloudwatch metrics
+[[custom_params.metric_definitions]]
+Name = "iter"
+Regex = 'Iter: (.*?)\s'
+
+#Metrics to display in Cloudwatch metrics
+[[custom_params.metric_definitions]]
+Name = "img_sec"
+Regex = 'Img\/sec per CPU: (.*?)\s'
+```
+
 
 ## Fields
 
@@ -231,7 +310,9 @@ VAR2 = "value2"
 | ml                     | benchmark_code     | Command to run the benchmark code                                                                                                                    | String                                                      | Optional          |
 | ml                     | args               | Additional arguments for the benchmark scripts                                                                                                       | String                                                      | Optional          |
 | custom_params          | python_version     | Python version to use for job                                                                                                                        | String                                                      | Optional          |
+| custom_params          | dashboard | Dashboard to create/update and populate with metric defined by either metric_definitions or (ml output)                                                                                                                  | String                                                | Optional          |
 | custom_params          | sagemaker_job_name | Sets Sagemaker Training Job name                                                                                                                    | String                                                      | Optional          |
+| custom_params          | region | Specifies AWS region                                                                                                                    | String                                                      | Optional          |
 | custom_params          | merge | Creates metric using info.labels                                                                                                                   | boolean (default: false)                                                      | Optional          |
 | custom_params.hyper_params        | hyper_params | Hyperparameters to pass to Sagemaker estimator objects                                                                                                                   | Key-value pairs                                                      | Optional          |
 | custom_params.metric_definitions  | Name    | Metric name passed to Sagemaker Estimator object (Sagemaker will create cloudwatch metrics)                                              | String                                                      | Optional          |

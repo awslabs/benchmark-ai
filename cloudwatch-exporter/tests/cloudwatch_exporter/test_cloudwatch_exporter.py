@@ -2,7 +2,14 @@ import kafka
 
 from unittest.mock import MagicMock
 from datetime import datetime
-from cloudwatch_exporter.cloudwatch_exporter import CloudWatchExporterService, CloudWatchExporterHandler, create_service
+from cloudwatch_exporter.cloudwatch_exporter import (
+    CloudWatchExporterService,
+    CloudWatchExporterHandler,
+    create_service,
+    create_dashboard_metric,
+)
+
+NOT_EXPORTED_LABELS = ["action-id", "parent-action-id", "client-id", "dashboard-name", "region"]
 
 
 def test_create_service(mocker, kafka_service_config):
@@ -34,7 +41,9 @@ def test_handle_event(mocker, metrics_event, mock_kafka_service):
     cw_exporter_handler = CloudWatchExporterHandler()
     cw_exporter_handler.handle_event(metrics_event, mock_kafka_service)
 
-    expected_dimensions = [{"Name": name, "Value": val} for name, val in metrics_event.labels.items()]
+    expected_dimensions = [
+        {"Name": name, "Value": val} for name, val in metrics_event.labels.items() if name not in NOT_EXPORTED_LABELS
+    ]
     mock_boto_cloudwatch.put_metric_data.assert_called_with(
         MetricData=[
             {
@@ -64,3 +73,15 @@ def test_put_metric_data_with_string_value_in_event_is_called_with_float(mocker,
     args, kwargs = mock_boto_cloudwatch.put_metric_data.call_args_list[0]
     metric_data = kwargs["MetricData"][0]
     assert metric_data["Value"] == 10.0
+
+
+def test_create_dashboard_metric(mocker, metrics_event, mock_kafka_service):
+    created_dashboard_metric = [
+        "ANUBIS/METRICS",
+        "METRIC",
+        "LABEL",
+        "VALUE",
+        "task_name",
+        "test_task",
+    ]
+    assert create_dashboard_metric(metrics_event.labels, metrics_event.name) == created_dashboard_metric

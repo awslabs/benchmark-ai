@@ -7,5 +7,6 @@ setup(
     url="https://github.com/awslabs/benchmark-ai",
     package_dir={"": "src"},
     packages=find_packages("src"),
+    include_package_data=True,
     entry_points={"console_scripts": ["start=cloudwatch_exporter.__main__:main"]},
 )
