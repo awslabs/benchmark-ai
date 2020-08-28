@@ -268,15 +268,16 @@ framework_version = "1.15.3"
 
 
 [custom_params]
-#python version to use in estimator
+# python version to use in estimator
 python_version = "py2"
-#Training job name to appear in Sagemaker
+# Training job name to appear in Sagemaker
 sagemaker_job_name = "resnet50SMJob4"
 # Aggregate metrics under shared dimensions and task_name
 merge = true 
 # Dashboard to create and populate with metrics displayed from cloudwatch
 dashboard = "anubis_dashboards"
 
+# hyperparameters to SM training jobs
 [custom_params.hyper_params]
 hold = true
 training_weight = 0.25
