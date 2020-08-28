@@ -18,6 +18,7 @@ from sm_executor.args import SageMakerExecutorConfig
 from sm_executor.estimator_factory import EstimatorFactory
 from sm_executor.frameworks import MXNET_FRAMEWORK, TENSORFLOW_FRAMEWORK
 from sm_executor.source_dir import ScriptSourceDirectory
+from dataclasses import asdict
 
 CONFIG = DescriptorConfig(["single_node", "horovod"], [TENSORFLOW_FRAMEWORK, MXNET_FRAMEWORK])
 
@@ -140,10 +141,16 @@ class SageMakerExecutionEngine(ExecutionEngine):
         # Pass in Names/Values to cloudwatch dimensions this matches non SM Anubis Behavior
         for name in descriptor.info.labels:
             dimensions.append({"Name": name, "Value": descriptor.info.labels[name]})
+        # Use units from the toml files output parameter, map the name of metric to unit
+        units = {}
+        for metric in descriptor.output.metrics:
+            metric_dict = asdict(metric)
+            units[metric_dict["name"]] = metric_dict["units"]
         # Timestamp field gets auto-populated with incorrect timestamps
         # Pop them to make timestamp default to time of put_metric_data call
         for metric in metric_data:
             metric.pop("Timestamp")
+            metric["Unit"] = units[metric["MetricName"]]
             metric["Dimensions"] = dimensions
         return metric_data
 

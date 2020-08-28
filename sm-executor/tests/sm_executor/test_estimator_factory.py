@@ -14,6 +14,7 @@ from sm_executor.estimator_factory import (
     EstimatorFactory,
     create_tensorflow_estimator,
     create_mxnet_estimator,
+    get_metric_definitions,
 )
 from sm_executor.source_dir import ScriptSourceDirectory
 from sagemaker.tensorflow import TensorFlow
@@ -82,7 +83,7 @@ def validate_estimator_tensorflow(
 def validate_estimator_customparams(
     estimator: Framework, mock_session: Session, descriptor, sagemaker_config: SageMakerExecutorConfig
 ):
-    # assert estimator.metric_definitions == descriptor.custom_params.metric_definitions
+    assert estimator.metric_definitions == get_metric_definitions(descriptor)
     assert estimator.hyperparameters()
     assert estimator.source_dir == SOURCE_DIR
     assert estimator.entry_point == ScriptSourceDirectory.PYTHON_ENTRY_POINT

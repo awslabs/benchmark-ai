@@ -1,6 +1,7 @@
 import logging
 
 from addict import addict
+from dataclasses import asdict
 from bai_kafka_utils.executors.descriptor import BenchmarkDescriptor, MLFramework, DistributedStrategy
 from sagemaker import Session
 from sagemaker.estimator import EstimatorBase, Framework
@@ -22,6 +23,15 @@ def get_hyper_params(descriptor: BenchmarkDescriptor):
     if descriptor.custom_params:
         hps = descriptor.custom_params.hyper_params
     return hps
+
+
+def get_metric_definitions(descriptor: BenchmarkDescriptor):
+    metrics = []
+    if descriptor.output:
+        for metric in descriptor.output.metrics:
+            metric_dict = asdict(metric)
+            metrics.append({"Name": metric_dict["name"], "Regex": metric_dict["pattern"]})
+    return metrics
 
 
 def create_tensorflow_estimator(
@@ -53,14 +63,10 @@ def create_mxnet_estimator(
 def _create_common_estimator_args(
     session: Session, descriptor: BenchmarkDescriptor, source_dir: str, config: SageMakerExecutorConfig
 ) -> addict.Dict:
-    metrics = None
+    metrics = get_metric_definitions(descriptor)
     py_version = ""
     if descriptor.custom_params:
         py_version = descriptor.custom_params.python_version
-    if descriptor.output:
-        metrics = []
-        for metric in descriptor.output:
-            metrics.append({"Name": metric["name"], "Value": metric["value"]})
     return addict.Dict(
         source_dir=source_dir,
         entry_point="tmp_entry.py",
