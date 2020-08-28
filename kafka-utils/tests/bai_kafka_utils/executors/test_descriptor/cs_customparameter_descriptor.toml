@@ -49,9 +49,9 @@ sagemaker_job_name = "testJob"
 merge = true
 
 
-#[custom_params.hyper_params]
-#amp = "true"
-#validation_frequency = 10
+[custom_params.hyper_params]
+amp = "true"
+validation_frequency = 10
 
 [output]
 [[output.metrics]]
