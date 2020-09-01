@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 #  Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License").
@@ -10,8 +12,6 @@
 #  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
 #  express or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-#!/usr/bin/env python
-
 
 def main(argv=None):
     # We import only inside the `main()` method to ensure we configure everything so that nothing from the global
