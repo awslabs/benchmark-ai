@@ -13,6 +13,7 @@
 #  express or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+
 def main(argv=None):
     # We import only inside the `main()` method to ensure we configure everything so that nothing from the global
     # context runs before we configure logging

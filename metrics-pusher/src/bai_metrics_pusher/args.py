@@ -45,7 +45,7 @@ def get_input(argv, environ: Dict[str, str] = None) -> InputValue:
     environ[METRICS_PUSHER_BACKEND_ARG_PREFIX.lower() + "labels"] = labels if labels else {}
 
     backend_args = create_dict_of_parameter_values_for_callable(
-        prefix=METRICS_PUSHER_BACKEND_ARG_PREFIX, values=environ, method=BACKENDS[args.backend],
+        prefix=METRICS_PUSHER_BACKEND_ARG_PREFIX, values=environ, method=BACKENDS[args.backend]
     )
 
     return InputValue(
