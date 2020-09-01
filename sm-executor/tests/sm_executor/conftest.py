@@ -1,6 +1,6 @@
 import addict
 
-from bai_kafka_utils.executors.descriptor import DescriptorConfig, BenchmarkDescriptor
+from bai_kafka_utils.executors.descriptor import DescriptorConfig, BenchmarkDescriptor, MetricDescriptor
 from pytest import fixture
 
 
@@ -61,10 +61,14 @@ def descriptor_customparams_as_adict(descriptor_config):
             framework="tensorflow",
             framework_version="1.12",
         ),
+        output=addict.Dict(
+            metrics=[
+                MetricDescriptor(name="accuracy", units="%accuracy*100", pattern="acc\\d*.\\d+|\\d+"),
+                MetricDescriptor(name="iter", units="iter/sec", pattern="images\\/sec: (\\d*.\\d+|\\d+)"),
+            ]
+        ),
         custom_params=addict.Dict(
-            sagemaker_job_name="testJob",
-            hyper_params={"validiation_frequency": 10, "amp": True, "weight": 0.1},
-            metric_definitions=[{"Name": "img_sec", "Regex": r"[d*\.?\d]+"}],
+            sagemaker_job_name="testJob", hyper_params={"validiation_frequency": 10, "amp": True, "weight": 0.1},
         ),
         data=addict.Dict(sources=[addict.Dict(src="foo1", path="bar1"), addict.Dict(src="foo2", path="bar2")]),
     )

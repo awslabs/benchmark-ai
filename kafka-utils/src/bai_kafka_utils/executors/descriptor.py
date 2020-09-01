@@ -89,7 +89,6 @@ class CustomParamsDescriptor:
     region: Optional[str] = None
     merge: Optional[bool] = None
     hyper_params: Optional[Dict[str, Any]] = field(default_factory=dict)
-    metric_definitions: Optional[List[Dict[str, str]]] = field(default_factory=dict)
 
 
 @dataclass

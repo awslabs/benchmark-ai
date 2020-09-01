@@ -268,24 +268,40 @@ framework_version = "1.15.3"
 
 
 [custom_params]
-#python version to use in estimator
+# python version to use in estimator
 python_version = "py2"
-#Training job name to appear in Sagemaker
+# Training job name to appear in Sagemaker
 sagemaker_job_name = "resnet50SMJob4"
 # Aggregate metrics under shared dimensions and task_name
 merge = true 
 # Dashboard to create and populate with metrics displayed from cloudwatch
 dashboard = "anubis_dashboards"
 
-#Metrics to display in Cloudwatch metrics
-[[custom_params.metric_definitions]]
-Name = "iter"
-Regex = 'Iter: (.*?)\s'
+# hyperparameters to SM training jobs
+[custom_params.hyper_params]
+hold = true
+training_weight = 0.25
+validation_frequency = 0.15
+notation = "strict"
 
-#Metrics to display in Cloudwatch metrics
-[[custom_params.metric_definitions]]
-Name = "img_sec"
-Regex = 'Img\/sec per CPU: (.*?)\s'
+[output]
+# [Opt] Custom metrics descriptions
+# List all required metrics descriptions below.
+# Make an entry in same format as the one below.
+[[output.metrics]]
+# Name of the metric that will appear in the dashboards.
+name = "iter"
+# Pattern for log parsing for this metric.
+pattern = 'Iter: (.*?)\s'
+# Metric unit (required)
+units = "iter/s"
+
+[[output.metrics]]
+name = "img"
+pattern = 'Img\/sec per CPU: (.*?)\s'
+units = "img/s"
+
+
 ```
 
 
@@ -310,13 +326,11 @@ Regex = 'Img\/sec per CPU: (.*?)\s'
 | ml                     | benchmark_code     | Command to run the benchmark code                                                                                                                    | String                                                      | Optional          |
 | ml                     | args               | Additional arguments for the benchmark scripts                                                                                                       | String                                                      | Optional          |
 | custom_params          | python_version     | Python version to use for job                                                                                                                        | String                                                      | Optional          |
-| custom_params          | dashboard | Dashboard to create/update and populate with metric defined by either metric_definitions or (ml output)                                                                                                                  | String                                                | Optional          |
-| custom_params          | sagemaker_job_name | Sets Sagemaker Training Job name                                                                                                                    | String                                                      | Optional          |
-| custom_params          | region | Specifies AWS region                                                                                                                    | String                                                      | Optional          |
+| custom_params          | dashboard | Dashboard to create/update and populate with metric defined by output                                                                                                                  | String                                                | Optional          |
+| custom_params          | sagemaker_job_name | Sets Sagemaker Training Job name                                                                                                                    | String (default: action-id)                                                    | Optional          |
+| custom_params          | region | Specifies AWS region                                                                                                                    | String (default: "us-east-1" the default region for Anubis setup)                                                    | Optional          |
 | custom_params          | merge | Creates metric using info.labels                                                                                                                   | boolean (default: false)                                                      | Optional          |
 | custom_params.hyper_params        | hyper_params | Hyperparameters to pass to Sagemaker estimator objects                                                                                                                   | Key-value pairs                                                      | Optional          |
-| custom_params.metric_definitions  | Name    | Metric name passed to Sagemaker Estimator object (Sagemaker will create cloudwatch metrics)                                              | String                                                      | Optional          |
-| custom_params.metric_definitions  | Regex   | Regex passed to Sagemaker Estimator object to use to check logs (Sagemaker will create cloudwatch metrics)                                              | String                                               | Optional          |
 | data                   | sources            | List with all required data sources (see below for the fields required for each source)                                                              | List of data.sources                                        | Optional          |
 | data.sources           | uri                | Uri of the dataset to be downloaded. We plan to support 's3', 'http', 'https', 'ftp' and 'ftps'                                                      | Uri, such as 's3://bucket/imagenet/'                        | Optional          |
 | data.sources           | path               | Destination path where this data will be mounted in the container FS                                                                                 | String                                                      | Optional          |                                                                                                                    |
@@ -353,7 +367,6 @@ Regex = 'Img\/sec per CPU: (.*?)\s'
 * **Data**: This section must specify a list of the data sources to be downloaded.
 For any required data source, users can provide a download URI and a destination path where the resulting data will be mounted in the container filesystem for the benchmark script to use it.
 * **Server**: This section must specify the inference server hardware and environment. It is only relevant to the *inference* strategy.
-* **Custom_Params.Metric_definitions**: This section specifies a list containing a dictionary with two key/value pairs. The first key is Name which specifies the metric name. The second key is Regex which specifies the regex for cloudwatch to use to find the metric.
 * (Upcoming) **Output**: Section for users to declare the metrics they will be tracking with this benchmark, along with the alarming information: thresholds (can be dynamic, such as 2-sigma) and who should be notified when they are triggered.
 
 <hr>

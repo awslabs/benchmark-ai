@@ -148,8 +148,7 @@
         "sagemaker_job_name": { "type": "string" },
         "region": { "type": "string" },
         "dashboard": { "type": "string" },
-        "merge": { "type": "boolean" },
-        "metric_definitions":{ "type" : "array", "items": { "$ref": "#/definitions/str_dict" }
+        "merge": { "type": "boolean" }
         },
         "hyper_params": { "$ref": "#/definitions/any_dict" }
       },

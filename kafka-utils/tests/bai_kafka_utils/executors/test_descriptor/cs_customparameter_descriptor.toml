@@ -50,12 +50,17 @@ merge = true
 region =  "us-east-1"
 dashboard = "test_dashboard"
 
-[[custom_params.metric_definitions]]
-Name = "img_sec"
-Regex = 'Iter: (.*?)\s'
 
 [custom_params.hyper_params]
 amp = "true"
 validation_frequency = 10
 
+[output]
+[[output.metrics]]
+# Name of the metric that will appear in the dashboards.
+name = "throughput"
+# Metric unit (required)
+units = "img/sec"
+# Pattern for log parsing for this metric.
+pattern = 'images\/sec: (\d*.\d+|\d+)'
 

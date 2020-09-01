@@ -197,7 +197,7 @@ def test_merge_metrics(
 ):
     metric_data = [
         {"MetricName": "iter", "Value": 51.900001525878906, "Timestamp": "1970-01-19T03:48:31.114000-08:00"},
-        {"MetricName": "img_sec", "Value": 51.900001525878906, "Timestamp": "1970-01-19T03:48:31.114000-08:00"},
+        {"MetricName": "accuracy", "Value": 51.900001525878906, "Timestamp": "1970-01-19T03:48:31.114000-08:00"},
     ]
     metrics_with_dimensions = [
         {
@@ -206,7 +206,7 @@ def test_merge_metrics(
             "Dimensions": [{"Name": "task_name", "Value": "exampleTask"}, {"Name": "batch_size", "Value": "64"}],
         },
         {
-            "MetricName": "img_sec",
+            "MetricName": "accuracy",
             "Value": 51.900001525878906,
             "Dimensions": [{"Name": "task_name", "Value": "exampleTask"}, {"Name": "batch_size", "Value": "64"}],
         },
