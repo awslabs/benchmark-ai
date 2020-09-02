@@ -1,3 +1,15 @@
+#  Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License").
+#  You may not use this file except in compliance with the License.
+#  A copy of the License is located at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  or in the "license" file accompanying this file. This file is distributed
+#  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+#  express or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
 import inspect
 import os
 import typing
@@ -33,7 +45,7 @@ def get_input(argv, environ: Dict[str, str] = None) -> InputValue:
     environ[METRICS_PUSHER_BACKEND_ARG_PREFIX.lower() + "labels"] = labels if labels else {}
 
     backend_args = create_dict_of_parameter_values_for_callable(
-        prefix=METRICS_PUSHER_BACKEND_ARG_PREFIX, values=environ, method=BACKENDS[args.backend],
+        prefix=METRICS_PUSHER_BACKEND_ARG_PREFIX, values=environ, method=BACKENDS[args.backend]
     )
 
     return InputValue(

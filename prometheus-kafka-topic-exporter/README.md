@@ -1,3 +1,17 @@
+<!---
+  Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+
+  Licensed under the Apache License, Version 2.0 (the "License").
+  You may not use this file except in compliance with the License.
+  A copy of the License is located at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  or in the "license" file accompanying this file. This file is distributed
+  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+  express or implied. See the License for the specific language governing
+  permissions and limitations under the License.
+-->
 # Prometheus Kafka Topic Exporter
 This services establishes the bridge between Kafka topics and Prometheus. It subscribes to the BAI_METRICS topic
 to listen for metrics that have been published. They will then be available at 0.0.0.0:12340/metrics to be
