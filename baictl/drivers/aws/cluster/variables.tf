@@ -65,7 +65,7 @@ variable "map_users_count" {
 
 variable "k8s_version" {
   description = "Version of Kubernetes"
-  default     = "1.13"
+  default     = "1.14"
 }
 
 variable "benchmark_workers_instance_types" {
