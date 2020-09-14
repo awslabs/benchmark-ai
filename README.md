@@ -61,7 +61,7 @@ One is the installer [`anubis-setup`](docs/anubis-setup.md), that is used to...
 
 The other is the [`anubis`](bai-bff/docs/anubis-client.md) client tool that allows users to...
 
-- run a benchmark: `anbis --submit resnet50-descriptor.toml`
+- run a benchmark: `anubis --submit resnet50-descriptor.toml`
 - monitor the progress of a run's activities `anubis --status`
 - obtain information from a benchmark that was run: `anubis --results`
 

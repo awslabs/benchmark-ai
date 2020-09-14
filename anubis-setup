@@ -574,7 +574,7 @@ main() {
                 usage | more
                 ;;
             *)
-                if [[ "${current_arg}" =~ ^(--debug|--force|--as|--list-profiles|--whoami)$ ]] ;then
+                if [[ "${current_arg}" =~ ^(--debug|--force|--as|--set-profile|--list-profiles|--whoami)$ ]] ;then
                     ((idx++))
                     until [[ -n "$(echo "${input_args[$((idx))]}" | sed -rn '/^\s*--/p')" || -z "${input_args[$((idx))]}" ]]; do
                         ((DEBUG)) && echo "  skipping arg ${input_args[$((idx))]}" 1>&2
@@ -583,7 +583,7 @@ main() {
                     ((DEBUG)) && echo "skipped args: ${skipped[@]}" 1>&2
                     ((idx--))
                 fi
-                [[ ! "${current_arg}" =~ ^(--debug|--force|--as|--list-profiles|--whoami)$ ]] && \
+                [[ ! "${current_arg}" =~ ^(--debug|--force|--as|--set-profile|--list-profiles|--whoami)$ ]] && \
                     printf "\033[01;31m => Unknown flag\033[0m [%s]\n" "${current_arg}"
                 ;;
         esac
