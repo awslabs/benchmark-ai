@@ -71,6 +71,7 @@ resource "aws_codepipeline" "codepipeline" {
         Repo                 = "benchmark-ai"
         Branch               = var.github_branch
         PollForSourceChanges = true
+	OAuthToken           = "***************"
       }
     }
   }

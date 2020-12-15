@@ -373,7 +373,6 @@ def main():
     if args.destroy:
         sync_baictl(region, session)
         destroy_pipeline(region)
-        undeploy_services()
         destroy_infrastructure(region)
         return
 

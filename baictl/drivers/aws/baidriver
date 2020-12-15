@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 
 print_unsupported_verb() {
     local object=$1
@@ -190,6 +191,7 @@ _install_kubernetes_dashboard(){
         echo "INFO: Removing old kubernetes dashboard"
         kubectl delete -f https://raw.githubusercontent.com/kubernetes/dashboard/5c5c73639a0a43df552ff839d8e358c2430b71f7/aio/deploy/recommended/kubernetes-dashboard.yaml
     fi
+    ${helm} repo update    
     ${helm} upgrade --install kubernetes-dashboard --namespace ${tiller_namespace} --wait stable/kubernetes-dashboard || return 1
 }
 
@@ -717,6 +719,7 @@ sync_bai_datadir() {
     [ -z "$region" ] && printf "Missing required argument --aws-region\n" && return 1
     [ -z "$mode" ] && printf "Missing required argument --mode\n" && return 1
 
+    AWS_PAGER=""
     if [[ "$mode" == "push" ]]; then
         aws s3 sync $data_dir s3://$bucket --exclude "terraform.tfstate"
     elif [[ "$mode" == "pull" ]]; then

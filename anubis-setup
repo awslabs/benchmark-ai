@@ -71,7 +71,7 @@ channels:
   - defaults
 dependencies:
   - sed 4.7
-  - terraform  0.12.13
+  - terraform  0.14.2
   - python 3.7.*
   - boto3
   - requests

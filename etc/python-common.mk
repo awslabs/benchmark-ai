@@ -33,7 +33,7 @@ clean:
 #Things to run before - extendable
 _pre_venv::
 	echo "Pre env actions"
-	conda install --override-channels --channel defaults --name base --yes conda==4.6.14
+	conda install --override-channels --channel defaults --name base --yes conda==4.9.2
 
 #venv body - replacable
 _venv: _pre_venv
